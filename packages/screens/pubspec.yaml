@@ -1,0 +1,28 @@
+name: vagina_screens
+description: Main screens for VAGINA app
+version: 1.0.0
+publish_to: 'none'
+
+environment:
+  sdk: ^3.10.1
+  flutter: '>=3.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_riverpod: ^2.6.1
+  vagina_core:
+    path: ../core
+  vagina_ui:
+    path: ../ui
+  vagina_audio:
+    path: ../audio
+  vagina_realtime_client:
+    path: ../realtime_client
+  vagina_assistant_model:
+    path: ../assistant_model
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0

@@ -1,0 +1,22 @@
+name: vagina_realtime_client
+description: WebSocket/HTTP communication and OpenAI Realtime API connector for VAGINA app
+version: 1.0.0
+publish_to: 'none'
+
+environment:
+  sdk: ^3.10.1
+  flutter: '>=3.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_riverpod: ^2.6.1
+  web_socket_channel: ^3.0.3
+  http: ^1.4.0
+  vagina_core:
+    path: ../core
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
