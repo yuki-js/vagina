@@ -2,8 +2,8 @@
 
 ## 前提条件
 
-- Flutter SDK (3.10.0 以上)
-- Dart SDK (3.10.0 以上)
+- Flutter SDK (3.38.3 以上)
+- Dart SDK (3.10.1 以上)
 - Android Studio または VS Code (Flutter 拡張機能付き)
 - Xcode (iOS 開発の場合)
 - Git
@@ -17,11 +17,15 @@ git clone https://github.com/yuki-js/vagina.git
 cd vagina
 ```
 
-### 2. 依存関係のインストール
+### 2. 開発環境セットアップ
 
 ```bash
-flutter pub get
+./scripts/setup.sh
 ```
+
+このスクリプトは以下を行います:
+- Pre-commit hook のインストール
+- Flutter 依存関係のインストール
 
 ### 3. 環境設定
 

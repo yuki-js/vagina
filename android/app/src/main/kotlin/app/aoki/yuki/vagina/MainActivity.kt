@@ -1,4 +1,4 @@
-package app.aoki.yuki.vagina.vagina
+package app.aoki.yuki.vagina
 
 import io.flutter.embedding.android.FlutterActivity
 
