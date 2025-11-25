@@ -59,3 +59,4 @@ app.*.map.json
 # IDE
 .metadata
 vagina.iml
+_codeql_detected_source_root
