@@ -76,19 +76,24 @@ class RealtimeApiClient {
 
   /// Connect to the OpenAI Realtime API
   Future<void> connect(String apiKey) async {
-    const url = AppConfig.realtimeApiUrl;
+    // Build URL with API key as query parameter for authentication
+    final uri = Uri.parse(AppConfig.realtimeApiUrl);
+    final authenticatedUri = uri.replace(
+      queryParameters: {
+        ...uri.queryParameters,
+        'api-key': apiKey,
+      },
+    );
     
-    // Note: WebSocket headers are handled differently in web vs native
-    // For now, we'll use the URL with the API key
-    await _webSocket.connect(url);
+    await _webSocket.connect(authenticatedUri.toString());
 
     _messageSubscription = _webSocket.messages.listen(_handleMessage);
 
     // Configure session after connection
-    await _configureSession(apiKey);
+    await _configureSession();
   }
 
-  Future<void> _configureSession(String apiKey) async {
+  Future<void> _configureSession() async {
     // Send session update with configuration
     _webSocket.send({
       'type': ClientEventType.sessionUpdate.value,

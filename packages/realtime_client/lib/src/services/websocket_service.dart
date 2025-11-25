@@ -15,15 +15,13 @@ class WebSocketService {
   Stream<Map<String, dynamic>> get messages => _messageController.stream;
 
   /// Connect to a WebSocket server
-  Future<void> connect(String url, {Map<String, String>? headers}) async {
+  /// The URL should include any authentication parameters (e.g., api-key query parameter)
+  Future<void> connect(String url) async {
     if (_isConnected) {
       await disconnect();
     }
 
-    _channel = WebSocketChannel.connect(
-      Uri.parse(url),
-      protocols: headers != null ? null : null,
-    );
+    _channel = WebSocketChannel.connect(Uri.parse(url));
 
     _subscription = _channel!.stream.listen(
       (data) {
