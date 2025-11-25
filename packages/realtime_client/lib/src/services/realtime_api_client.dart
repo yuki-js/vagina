@@ -76,7 +76,7 @@ class RealtimeApiClient {
 
   /// Connect to the OpenAI Realtime API
   Future<void> connect(String apiKey) async {
-    final url = '${AppConfig.realtimeApiUrl}';
+    const url = AppConfig.realtimeApiUrl;
     
     // Note: WebSocket headers are handled differently in web vs native
     // For now, we'll use the URL with the API key

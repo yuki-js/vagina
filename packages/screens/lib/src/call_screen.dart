@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vagina_ui/vagina_ui.dart';
 import 'package:vagina_audio/vagina_audio.dart';
-import 'package:vagina_realtime_client/vagina_realtime_client.dart';
 import 'settings_screen.dart';
 
 /// Main call screen with mute, mic gain, disconnect, and settings buttons

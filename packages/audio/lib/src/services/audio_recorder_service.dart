@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 import 'package:record/record.dart';
 import 'package:vagina_core/vagina_core.dart';
 
@@ -21,14 +22,14 @@ class AudioRecorderService {
   }
 
   /// Start recording audio
-  Future<Stream<List<int>>> startRecording() async {
+  Future<Stream<Uint8List>> startRecording() async {
     final hasPermission = await _recorder.hasPermission();
     if (!hasPermission) {
       throw Exception('Microphone permission not granted');
     }
 
     final stream = await _recorder.startStream(
-      RecordConfig(
+      const RecordConfig(
         encoder: AudioEncoder.pcm16bits,
         sampleRate: AppConfig.sampleRate,
         numChannels: AppConfig.channels,

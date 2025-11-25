@@ -11,7 +11,7 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_riverpod: ^2.6.1
-  record: ^5.2.0
+  record: ^6.1.2
   just_audio: ^0.9.46
   permission_handler: ^11.4.0
   vagina_core:
