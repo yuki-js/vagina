@@ -7,6 +7,7 @@ import '../services/storage_service.dart';
 import '../services/realtime_api_client.dart';
 import '../models/assistant_config.dart';
 import '../components/components.dart';
+import 'log_screen.dart';
 
 /// Settings screen for API configuration (2 inputs: Realtime URL + API Key)
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -378,6 +379,39 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ),
                     ),
                     const SizedBox(height: 24),
+                    
+                    // Developer Section
+                    const SectionHeader(title: '開発者向け'),
+                    const SizedBox(height: 12),
+                    SettingsCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ListTile(
+                            leading: const Icon(Icons.article_outlined, color: AppTheme.textSecondary),
+                            title: const Text(
+                              'ログを表示',
+                              style: TextStyle(color: AppTheme.textPrimary),
+                            ),
+                            subtitle: Text(
+                              'トレースログとWebSocketイベントを確認',
+                              style: TextStyle(
+                                color: AppTheme.textSecondary.withValues(alpha: 0.7),
+                                fontSize: 12,
+                              ),
+                            ),
+                            trailing: const Icon(Icons.chevron_right, color: AppTheme.textSecondary),
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(builder: (context) => const LogScreen()),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    
                     const SectionHeader(title: 'このアプリについて'),
                     const SizedBox(height: 12),
                     SettingsCard(

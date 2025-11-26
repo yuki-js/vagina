@@ -5,6 +5,7 @@ import 'audio_recorder_service.dart';
 import 'audio_player_service.dart';
 import 'realtime_api_client.dart';
 import 'storage_service.dart';
+import 'log_service.dart';
 
 /// Enum representing the current state of the call
 enum CallState {
@@ -23,6 +24,8 @@ const double _dbfsRange = 60.0;
 /// Service that manages the entire call lifecycle including
 /// microphone recording, Azure OpenAI Realtime API connection, and audio playback
 class CallService {
+  static const _tag = 'CallService';
+  
   final AudioRecorderService _recorder;
   final AudioPlayerService _player;
   final RealtimeApiClient _apiClient;
@@ -100,22 +103,31 @@ class CallService {
 
   /// Start a call
   Future<void> startCall() async {
-    if (isCallActive) return;
+    if (isCallActive) {
+      logService.warn(_tag, 'Call already active, ignoring startCall');
+      return;
+    }
+
+    logService.info(_tag, 'Starting call');
 
     try {
       _setState(CallState.connecting);
 
       // Check Azure config
+      logService.debug(_tag, 'Checking Azure config');
       final hasConfig = await _storage.hasAzureConfig();
       if (!hasConfig) {
+        logService.error(_tag, 'Azure config not found');
         _emitError('Azure OpenAI設定を先に行ってください');
         _setState(CallState.idle);
         return;
       }
 
       // Check microphone permission
+      logService.debug(_tag, 'Checking microphone permission');
       final hasPermission = await _recorder.hasPermission();
       if (!hasPermission) {
+        logService.error(_tag, 'Microphone permission denied');
         _emitError('マイクの使用を許可してください');
         _setState(CallState.idle);
         return;
@@ -126,25 +138,31 @@ class CallService {
       final apiKey = await _storage.getApiKey();
 
       if (realtimeUrl == null || apiKey == null) {
+        logService.error(_tag, 'Azure credentials not found');
         _emitError('Azure OpenAI設定が見つかりません');
         _setState(CallState.idle);
         return;
       }
 
       // Connect to Azure OpenAI Realtime API
+      logService.info(_tag, 'Connecting to Azure OpenAI');
       await _apiClient.connect(realtimeUrl, apiKey);
 
       // Listen to API errors
       _errorSubscription = _apiClient.errorStream.listen((error) {
+        logService.error(_tag, 'API error received: $error');
         _emitError('API エラー: $error');
       });
 
       // Listen to response audio
+      logService.debug(_tag, 'Setting up audio stream listener');
       _responseAudioSubscription = _apiClient.audioStream.listen((audioData) {
+        logService.debug(_tag, 'Received audio from API: ${audioData.length} bytes');
         _player.addAudioData(audioData);
       });
 
       // Start microphone recording
+      logService.info(_tag, 'Starting microphone recording');
       final audioStream = await _recorder.startRecording();
 
       // Listen to audio stream and send to API
@@ -155,6 +173,7 @@ class CallService {
           }
         },
         onError: (error) {
+          logService.error(_tag, 'Recording error: $error');
           _emitError('録音エラー: $error');
           endCall();
         },
@@ -184,7 +203,9 @@ class CallService {
       });
 
       _setState(CallState.connected);
+      logService.info(_tag, 'Call connected successfully');
     } catch (e) {
+      logService.error(_tag, 'Failed to start call: $e');
       _emitError('接続に失敗しました: $e');
       _setState(CallState.error);
       await _cleanup();
@@ -193,13 +214,19 @@ class CallService {
 
   /// End the call
   Future<void> endCall() async {
-    if (!isCallActive && _currentState != CallState.error) return;
+    if (!isCallActive && _currentState != CallState.error) {
+      logService.debug(_tag, 'Call not active, ignoring endCall');
+      return;
+    }
 
     await _cleanup();
     _setState(CallState.idle);
+    logService.info(_tag, 'Call ended');
   }
 
   Future<void> _cleanup() async {
+    logService.debug(_tag, 'Cleaning up call resources');
+    
     _callTimer?.cancel();
     _callTimer = null;
 
@@ -222,9 +249,12 @@ class CallService {
     _callDuration = 0;
     _durationController.add(0);
     _amplitudeController.add(0.0);
+    
+    logService.debug(_tag, 'Cleanup complete');
   }
 
   void _setState(CallState state) {
+    logService.info(_tag, 'State changed: $_currentState -> $state');
     _currentState = state;
     _stateController.add(state);
   }

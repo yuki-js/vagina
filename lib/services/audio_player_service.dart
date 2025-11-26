@@ -1,9 +1,12 @@
 import 'dart:async';
 import 'dart:typed_data';
 import 'package:just_audio/just_audio.dart';
+import 'log_service.dart';
 
 /// Service for playing audio from Azure OpenAI Realtime API
 class AudioPlayerService {
+  static const _tag = 'AudioPlayer';
+  
   final AudioPlayer _player = AudioPlayer();
   final List<Uint8List> _audioQueue = [];
   bool _isPlaying = false;
@@ -24,8 +27,10 @@ class AudioPlayerService {
 
   /// Add PCM audio data to the playback queue
   void addAudioData(Uint8List pcmData) {
+    logService.debug(_tag, 'Adding audio data to queue: ${pcmData.length} bytes');
     _audioQueue.add(pcmData);
     if (!_isProcessing) {
+      logService.info(_tag, 'Starting queue processing');
       _processQueue();
     }
   }
@@ -35,6 +40,7 @@ class AudioPlayerService {
     
     _isProcessing = true;
     _isPlaying = true;
+    logService.info(_tag, 'Processing audio queue');
 
     while (_audioQueue.isNotEmpty) {
       // Collect audio data up to max batch size
@@ -53,28 +59,37 @@ class AudioPlayerService {
       
       if (allData.isEmpty) continue;
       
+      logService.info(_tag, 'Playing audio batch: ${allData.length} bytes');
+      
       // Convert PCM16 to WAV format
       final wavData = _pcmToWav(Uint8List.fromList(allData));
+      logService.debug(_tag, 'Converted to WAV: ${wavData.length} bytes');
       
       // Play the audio with timeout
       try {
         await _player.setAudioSource(
           BytesAudioSource(wavData),
         );
+        logService.debug(_tag, 'Audio source set, starting playback');
         await _player.play();
+        logService.debug(_tag, 'Play started, waiting for completion');
         // Wait for playback to complete with timeout
         await _player.processingStateStream
             .firstWhere((state) => state == ProcessingState.completed)
             .timeout(_playbackTimeout, onTimeout: () {
+              logService.warn(_tag, 'Playback timeout');
               return ProcessingState.completed;
             });
+        logService.debug(_tag, 'Playback completed');
       } catch (e) {
+        logService.error(_tag, 'Playback error: $e');
         // Continue processing even if playback fails
       }
     }
 
     _isPlaying = false;
     _isProcessing = false;
+    logService.info(_tag, 'Queue processing complete');
   }
 
   /// Convert raw PCM16 data to WAV format
