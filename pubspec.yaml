@@ -23,7 +23,7 @@ dependencies:
   http: ^1.4.0
   
   # Environment configuration
-  flutter_dotenv: ^5.2.1
+  flutter_dotenv: ^6.0.0
   
   # Permissions
   permission_handler: ^11.4.0
