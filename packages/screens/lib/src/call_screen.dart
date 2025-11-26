@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vagina_ui/vagina_ui.dart';
 import 'package:vagina_audio/vagina_audio.dart';
+import 'package:vagina_core/vagina_core.dart';
 import 'settings_screen.dart';
 
 /// Error message provider for displaying errors to users
@@ -27,35 +28,36 @@ class _CallScreenState extends ConsumerState<CallScreen> {
     super.dispose();
   }
 
-  void _startCall() {
-    try {
-      // Clear any previous errors
-      ref.read(errorMessageProvider.notifier).state = null;
-      
-      setState(() {
-        _isCallActive = true;
-        _callDuration = 0;
-      });
-      _callTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-        setState(() {
-          _callDuration++;
-        });
-      });
-    } catch (e) {
-      _showError('Failed to start call: $e');
+  Future<void> _startCall() async {
+    // Clear any previous errors
+    ref.read(errorMessageProvider.notifier).state = null;
+    
+    // Check if Azure settings are configured
+    final storage = ref.read(secureStorageServiceProvider);
+    final hasConfig = await storage.hasAzureConfig();
+    
+    if (!hasConfig) {
+      _showError('Please configure Azure OpenAI settings first');
+      return;
     }
+    
+    setState(() {
+      _isCallActive = true;
+      _callDuration = 0;
+    });
+    _callTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      setState(() {
+        _callDuration++;
+      });
+    });
   }
 
   void _endCall() {
-    try {
-      _callTimer?.cancel();
-      setState(() {
-        _isCallActive = false;
-        _callDuration = 0;
-      });
-    } catch (e) {
-      _showError('Failed to end call: $e');
-    }
+    _callTimer?.cancel();
+    setState(() {
+      _isCallActive = false;
+      _callDuration = 0;
+    });
   }
 
   void _showError(String message) {
