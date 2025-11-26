@@ -11,7 +11,6 @@ class AudioPlayerService {
   static const _tag = 'AudioPlayer';
   
   final FlutterSoundPlayer _player = FlutterSoundPlayer();
-  StreamController<Uint8List>? _streamController;
   bool _isPlaying = false;
   bool _isInitialized = false;
   
@@ -43,11 +42,7 @@ class AudioPlayerService {
     
     logService.info(_tag, 'Starting streaming playback (PCM16, ${_sampleRate}Hz, $_numChannels ch)');
     
-    // Create stream controller for feeding audio data
-    _streamController = StreamController<Uint8List>();
-    
     // Start the player with streaming input
-    // Using the newer API without deprecated Food
     await _player.startPlayerFromStream(
       codec: Codec.pcm16,
       sampleRate: _sampleRate,
@@ -99,10 +94,6 @@ class AudioPlayerService {
     logService.info(_tag, 'Stopping playback');
     
     _isPlaying = false;
-    
-    // Close stream controller
-    await _streamController?.close();
-    _streamController = null;
     
     // Stop the player
     if (_isInitialized) {

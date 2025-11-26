@@ -1,59 +1,24 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'log_service.dart';
 
-/// Service for storing settings as files in external storage
+/// Service for storing settings as files
+/// 
+/// Settings are stored in the app's documents directory which persists
+/// across app updates but is cleared when the app is uninstalled.
 class StorageService {
   static const _configFileName = 'vagina_config.json';
-  static const _appFolderName = 'VAGINA';
   static const _tag = 'Storage';
   
   File? _configFile;
-
-  /// Request storage permission
-  Future<bool> requestStoragePermission() async {
-    logService.info(_tag, 'Requesting storage permission');
-    
-    if (Platform.isAndroid) {
-      // Request standard storage permission
-      final status = await Permission.storage.request();
-      logService.info(_tag, 'Storage permission status: $status');
-      return status.isGranted;
-    }
-    
-    return true;
-  }
 
   /// Initialize the storage service by getting the config file path
   Future<File> _getConfigFile() async {
     if (_configFile != null) return _configFile!;
     
-    Directory? directory;
-    
-    if (Platform.isAndroid) {
-      // Try to use external storage Documents directory
-      try {
-        final externalDirs = await getExternalStorageDirectories(type: StorageDirectory.documents);
-        if (externalDirs != null && externalDirs.isNotEmpty) {
-          // Use the app-specific external storage (doesn't require special permission)
-          // Path: /storage/emulated/0/Android/data/<package>/files/Documents/VAGINA
-          directory = Directory('${externalDirs.first.path}/$_appFolderName');
-        }
-      } catch (e) {
-        logService.warn(_tag, 'Failed to get external storage: $e');
-      }
-    }
-    
-    // Fallback to app documents directory if external storage not available
-    directory ??= await getApplicationDocumentsDirectory();
-    
-    // Create directory if it doesn't exist
-    if (!await directory.exists()) {
-      await directory.create(recursive: true);
-      logService.info(_tag, 'Created directory: ${directory.path}');
-    }
+    // Use app documents directory (persists across updates, cleared on uninstall)
+    final directory = await getApplicationDocumentsDirectory();
     
     _configFile = File('${directory.path}/$_configFileName');
     logService.info(_tag, 'Config file path: ${_configFile!.path}');
