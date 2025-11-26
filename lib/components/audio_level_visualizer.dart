@@ -1,6 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
-import '../../theme/app_theme.dart';
+import '../theme/app_theme.dart';
 
 /// Audio level visualizer with bouncing bars
 class AudioLevelVisualizer extends StatelessWidget {
@@ -45,10 +45,10 @@ class AudioLevelVisualizer extends StatelessWidget {
             margin: const EdgeInsets.symmetric(horizontal: 2),
             decoration: BoxDecoration(
               color: isMuted 
-                  ? AppTheme.textSecondary.withOpacity(0.3)
+                  ? AppTheme.textSecondary.withValues(alpha: 0.3)
                   : (isConnected 
-                      ? AppTheme.primaryColor.withOpacity(0.8 + barLevel * 0.2)
-                      : AppTheme.textSecondary.withOpacity(0.5)),
+                      ? AppTheme.primaryColor.withValues(alpha: 0.8 + barLevel * 0.2)
+                      : AppTheme.textSecondary.withValues(alpha: 0.5)),
               borderRadius: BorderRadius.circular(3),
             ),
           );

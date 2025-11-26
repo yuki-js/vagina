@@ -98,7 +98,7 @@ class AppTheme {
         activeTrackColor: primaryColor,
         inactiveTrackColor: surfaceColor,
         thumbColor: primaryColor,
-        overlayColor: primaryColor.withOpacity(0.2),
+        overlayColor: primaryColor.withValues(alpha: 0.2),
       ),
       iconButtonTheme: IconButtonThemeData(
         style: IconButton.styleFrom(

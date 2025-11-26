@@ -5,10 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:record/record.dart';
 import '../theme/app_theme.dart';
 import '../providers/providers.dart';
-import '../widgets/call_button.dart';
-import '../widgets/circular_icon_button.dart';
+import '../components/components.dart';
 import 'settings_screen.dart';
-import 'components/components.dart';
 
 /// Error message provider for displaying errors to users
 final errorMessageProvider = NotifierProvider<ErrorMessageNotifier, String?>(ErrorMessageNotifier.new);
@@ -196,7 +194,7 @@ class _CallScreenState extends ConsumerState<CallScreen> with SingleTickerProvid
                 child: CircularIconButton(
                   icon: Icons.settings,
                   size: 48,
-                  backgroundColor: AppTheme.surfaceColor.withOpacity(0.6),
+                  backgroundColor: AppTheme.surfaceColor.withValues(alpha: 0.6),
                   onPressed: _openSettings,
                 ),
               ),
@@ -288,14 +286,14 @@ class _CallScreenState extends ConsumerState<CallScreen> with SingleTickerProvid
                     Icon(
                       Icons.security,
                       size: 16,
-                      color: AppTheme.textSecondary.withOpacity(0.5),
+                      color: AppTheme.textSecondary.withValues(alpha: 0.5),
                     ),
                     const SizedBox(width: 8),
                     Text(
                       'End-to-end encrypted',
                       style: TextStyle(
                         fontSize: 12,
-                        color: AppTheme.textSecondary.withOpacity(0.5),
+                        color: AppTheme.textSecondary.withValues(alpha: 0.5),
                       ),
                     ),
                   ],

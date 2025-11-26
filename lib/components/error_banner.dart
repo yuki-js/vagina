@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../theme/app_theme.dart';
+import '../theme/app_theme.dart';
 
 /// Error banner widget for displaying error messages
 class ErrorBanner extends StatelessWidget {
@@ -20,7 +20,7 @@ class ErrorBanner extends StatelessWidget {
         vertical: 12,
       ),
       decoration: BoxDecoration(
-        color: AppTheme.errorColor.withOpacity(0.9),
+        color: AppTheme.errorColor.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(

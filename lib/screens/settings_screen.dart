@@ -4,7 +4,7 @@ import '../theme/app_theme.dart';
 import '../providers/providers.dart';
 import '../services/secure_storage_service.dart';
 import '../models/assistant_config.dart';
-import 'components/components.dart';
+import '../components/components.dart';
 
 /// Settings screen for API configuration (2 inputs: Realtime URL + API Key)
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -306,7 +306,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             '例: https://your-resource.openai.azure.com/openai/realtime?api-version=2024-10-01-preview&deployment=gpt-realtime',
                             style: TextStyle(
                               fontSize: 11,
-                              color: AppTheme.textSecondary.withOpacity(0.7),
+                              color: AppTheme.textSecondary.withValues(alpha: 0.7),
                             ),
                           ),
 
@@ -387,7 +387,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             '認証情報はデバイス上に安全に保存され、サーバーには送信されません。',
                             style: TextStyle(
                               fontSize: 12,
-                              color: AppTheme.textSecondary.withOpacity(0.7),
+                              color: AppTheme.textSecondary.withValues(alpha: 0.7),
                             ),
                           ),
                         ],
@@ -412,22 +412,26 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             ),
                           ),
                           const SizedBox(height: 12),
-                          ...AssistantConfig.availableVoices.map(
-                            (voice) => RadioListTile<String>(
-                              value: voice,
-                              groupValue: assistantConfig.voice,
-                              onChanged: (value) {
-                                if (value != null) {
-                                  ref
-                                      .read(assistantConfigProvider.notifier)
-                                      .updateVoice(value);
-                                }
-                              },
-                              title: Text(
-                                voice[0].toUpperCase() + voice.substring(1),
-                                style: const TextStyle(color: AppTheme.textPrimary),
-                              ),
-                              activeColor: AppTheme.primaryColor,
+                          RadioGroup<String>(
+                            groupValue: assistantConfig.voice,
+                            onChanged: (value) {
+                              if (value != null) {
+                                ref
+                                    .read(assistantConfigProvider.notifier)
+                                    .updateVoice(value);
+                              }
+                            },
+                            child: Column(
+                              children: AssistantConfig.availableVoices.map(
+                                (voice) => RadioListTile<String>(
+                                  value: voice,
+                                  title: Text(
+                                    voice[0].toUpperCase() + voice.substring(1),
+                                    style: const TextStyle(color: AppTheme.textPrimary),
+                                  ),
+                                  activeColor: AppTheme.primaryColor,
+                                ),
+                              ).toList(),
                             ),
                           ),
                         ],
