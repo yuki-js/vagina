@@ -1,2 +1,101 @@
-# vagina
-VAGINA: Voice AGI as Native App
+# VAGINA
+
+**V**oice **AGI** as **N**ative **A**pp
+
+Azure OpenAI Realtime API を使用したリアルタイム音声 AI アシスタント Flutter アプリ。
+
+## 特徴
+
+- 🎤 リアルタイム音声会話
+- 🤖 Azure OpenAI GPT-4o Realtime API 連携
+- 📱 Android / iOS クロスプラットフォーム
+- 🔒 セキュアな API キー管理
+- 🎨 スタイリッシュな UI
+
+## スクリーンショット
+
+(準備中)
+
+## 必要条件
+
+- Flutter SDK 3.10.0 以上
+- Azure OpenAI API キー (Realtime API アクセス権限付き)
+
+## クイックスタート
+
+```bash
+# リポジトリをクローン
+git clone https://github.com/yuki-js/vagina.git
+cd vagina
+
+# 依存関係をインストール
+flutter pub get
+
+# アプリを実行
+flutter run
+```
+
+## API キーの設定
+
+1. アプリを起動
+2. 右上の設定アイコン (⚙️) をタップ
+3. Azure OpenAI Realtime URL と API キーを入力して保存
+
+> ⚠️ API キーは端末内のセキュアストレージに保存されます。GitHub にコミットしないでください。
+
+## プロジェクト構造
+
+```
+vagina/
+├── lib/
+│   ├── main.dart          # エントリーポイント
+│   ├── config/            # アプリ設定
+│   ├── models/            # データモデル
+│   ├── services/          # ビジネスロジック・API
+│   ├── providers/         # Riverpod プロバイダー
+│   ├── screens/           # 画面
+│   │   └── components/    # 画面コンポーネント
+│   ├── widgets/           # 再利用可能ウィジェット
+│   └── theme/             # テーマ定義
+└── docs/                  # ドキュメント
+```
+
+## ドキュメント
+
+- [開発者ガイド](docs/DEVELOPMENT.md)
+- [アーキテクチャ](docs/ARCHITECTURE.md)
+- [OpenAI Realtime API 仕様](docs/OPENAI_REALTIME_API.md)
+- [プライバシーポリシー](docs/PRIVACY.md)
+
+## 技術スタック
+
+| カテゴリ | 技術 |
+|---------|------|
+| フレームワーク | Flutter |
+| 状態管理 | Riverpod |
+| 音声入力 | record |
+| 音声再生 | just_audio |
+| 通信 | web_socket_channel |
+| セキュリティ | flutter_secure_storage |
+
+## 開発
+
+```bash
+# 静的解析
+flutter analyze
+
+# テスト
+flutter test
+
+# フォーマット
+dart format .
+```
+
+## ライセンス
+
+(TBD)
+
+## 参考
+
+- [Azure OpenAI Realtime API](https://learn.microsoft.com/en-us/azure/ai-services/openai/realtime-audio-quickstart)
+- [ANL-enpit (Web版サンプル)](https://github.com/yuki-js/ANL-enpit)

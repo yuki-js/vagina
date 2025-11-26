@@ -1,0 +1,30 @@
+version: 2
+updates:
+  - package-ecosystem: "pub"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "dart"
+    groups:
+      flutter-packages:
+        patterns:
+          - "flutter*"
+        update-types:
+          - "minor"
+          - "patch"
+      riverpod:
+        patterns:
+          - "*riverpod*"
+          - "*provider*"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "github-actions"
