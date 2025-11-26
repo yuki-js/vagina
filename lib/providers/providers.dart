@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../services/secure_storage_service.dart';
+import '../services/storage_service.dart';
 import '../services/audio_recorder_service.dart';
 import '../services/audio_player_service.dart';
 import '../services/websocket_service.dart';
@@ -9,20 +9,20 @@ import '../models/assistant_config.dart';
 
 // Core providers
 
-/// Provider for the secure storage service
-final secureStorageServiceProvider = Provider<SecureStorageService>((ref) {
-  return SecureStorageService();
+/// Provider for the storage service
+final storageServiceProvider = Provider<StorageService>((ref) {
+  return StorageService();
 });
 
 /// Provider for checking if API key exists
 final hasApiKeyProvider = FutureProvider<bool>((ref) async {
-  final storage = ref.read(secureStorageServiceProvider);
+  final storage = ref.read(storageServiceProvider);
   return await storage.hasApiKey();
 });
 
 /// Provider for the API key
 final apiKeyProvider = FutureProvider<String?>((ref) async {
-  final storage = ref.read(secureStorageServiceProvider);
+  final storage = ref.read(storageServiceProvider);
   return await storage.getApiKey();
 });
 
@@ -81,7 +81,7 @@ final callServiceProvider = Provider<CallService>((ref) {
     recorder: ref.read(audioRecorderServiceProvider),
     player: ref.read(audioPlayerServiceProvider),
     apiClient: ref.read(realtimeApiClientProvider),
-    storage: ref.read(secureStorageServiceProvider),
+    storage: ref.read(storageServiceProvider),
   );
   ref.onDispose(() => service.dispose());
   return service;

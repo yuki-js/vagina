@@ -1,32 +1,61 @@
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'dart:convert';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
 
-/// Service for securely storing sensitive data like API keys
-class SecureStorageService {
-  static const _storage = FlutterSecureStorage(
-    aOptions: AndroidOptions(
-      encryptedSharedPreferences: true,
-    ),
-    iOptions: IOSOptions(
-      accessibility: KeychainAccessibility.first_unlock,
-    ),
-  );
+/// Service for storing settings as files in app documents directory
+/// Data persists even when app is uninstalled (external storage on Android)
+class StorageService {
+  static const _configFileName = 'vagina_config.json';
+  
+  File? _configFile;
 
-  static const _apiKeyKey = 'azure_api_key';
-  static const _realtimeUrlKey = 'azure_realtime_url';
+  /// Initialize the storage service by getting the config file path
+  Future<File> _getConfigFile() async {
+    if (_configFile != null) return _configFile!;
+    
+    final directory = await getApplicationDocumentsDirectory();
+    _configFile = File('${directory.path}/$_configFileName');
+    return _configFile!;
+  }
+
+  /// Load all settings from file
+  Future<Map<String, dynamic>> _loadConfig() async {
+    try {
+      final file = await _getConfigFile();
+      if (await file.exists()) {
+        final contents = await file.readAsString();
+        return jsonDecode(contents) as Map<String, dynamic>;
+      }
+    } catch (e) {
+      // Return empty config on error
+    }
+    return {};
+  }
+
+  /// Save all settings to file
+  Future<void> _saveConfig(Map<String, dynamic> config) async {
+    final file = await _getConfigFile();
+    await file.writeAsString(jsonEncode(config));
+  }
 
   /// Save the Azure OpenAI API key
   Future<void> saveApiKey(String apiKey) async {
-    await _storage.write(key: _apiKeyKey, value: apiKey);
+    final config = await _loadConfig();
+    config['api_key'] = apiKey;
+    await _saveConfig(config);
   }
 
   /// Get the stored Azure OpenAI API key
   Future<String?> getApiKey() async {
-    return await _storage.read(key: _apiKeyKey);
+    final config = await _loadConfig();
+    return config['api_key'] as String?;
   }
 
   /// Delete the stored API key
   Future<void> deleteApiKey() async {
-    await _storage.delete(key: _apiKeyKey);
+    final config = await _loadConfig();
+    config.remove('api_key');
+    await _saveConfig(config);
   }
 
   /// Check if API key is stored
@@ -37,17 +66,22 @@ class SecureStorageService {
 
   /// Save Azure Realtime URL (contains endpoint, deployment, api-version)
   Future<void> saveRealtimeUrl(String url) async {
-    await _storage.write(key: _realtimeUrlKey, value: url);
+    final config = await _loadConfig();
+    config['realtime_url'] = url;
+    await _saveConfig(config);
   }
 
   /// Get Azure Realtime URL
   Future<String?> getRealtimeUrl() async {
-    return await _storage.read(key: _realtimeUrlKey);
+    final config = await _loadConfig();
+    return config['realtime_url'] as String?;
   }
 
   /// Delete Azure Realtime URL
   Future<void> deleteRealtimeUrl() async {
-    await _storage.delete(key: _realtimeUrlKey);
+    final config = await _loadConfig();
+    config.remove('realtime_url');
+    await _saveConfig(config);
   }
 
   /// Parse Realtime URL to extract components
@@ -96,7 +130,9 @@ class SecureStorageService {
 
   /// Clear all settings
   Future<void> clearAll() async {
-    await _storage.delete(key: _apiKeyKey);
-    await _storage.delete(key: _realtimeUrlKey);
+    final file = await _getConfigFile();
+    if (await file.exists()) {
+      await file.delete();
+    }
   }
 }

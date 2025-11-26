@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/app_theme.dart';
 import '../providers/providers.dart';
-import '../services/secure_storage_service.dart';
+import '../services/storage_service.dart';
+import '../services/realtime_api_client.dart';
 import '../models/assistant_config.dart';
 import '../components/components.dart';
 
@@ -30,7 +31,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Future<void> _loadSettings() async {
     try {
-      final storage = ref.read(secureStorageServiceProvider);
+      final storage = ref.read(storageServiceProvider);
       final realtimeUrl = await storage.getRealtimeUrl();
       final apiKey = await storage.getApiKey();
       
@@ -73,7 +74,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       return;
     }
     
-    final parsed = SecureStorageService.parseRealtimeUrl(_realtimeUrlController.text.trim());
+    final parsed = StorageService.parseRealtimeUrl(_realtimeUrlController.text.trim());
     if (parsed == null) {
       _showSnackBar('Realtime URLの形式が正しくありません', isError: true);
       return;
@@ -87,7 +88,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     setState(() => _isSaving = true);
 
     try {
-      final storage = ref.read(secureStorageServiceProvider);
+      final storage = ref.read(storageServiceProvider);
       await storage.saveRealtimeUrl(_realtimeUrlController.text.trim());
       await storage.saveApiKey(_apiKeyController.text.trim());
       _showSnackBar('設定を保存しました');
@@ -110,7 +111,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       return;
     }
 
-    final parsed = SecureStorageService.parseRealtimeUrl(_realtimeUrlController.text.trim());
+    final parsed = StorageService.parseRealtimeUrl(_realtimeUrlController.text.trim());
     if (parsed == null) {
       _showSnackBar('Realtime URLの形式が正しくありません', isError: true);
       return;
@@ -119,10 +120,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     setState(() => _isTesting = true);
 
     try {
-      // TODO: Implement actual WebSocket connection test
-      await Future.delayed(const Duration(seconds: 1));
+      // Create a temporary API client to test the connection
+      final apiClient = RealtimeApiClient();
       
-      final storage = ref.read(secureStorageServiceProvider);
+      await apiClient.connect(
+        _realtimeUrlController.text.trim(),
+        _apiKeyController.text.trim(),
+      );
+      
+      // If we get here without exception, connection was successful
+      await apiClient.disconnect();
+      await apiClient.dispose();
+      
+      // Save settings on success
+      final storage = ref.read(storageServiceProvider);
       await storage.saveRealtimeUrl(_realtimeUrlController.text.trim());
       await storage.saveApiKey(_apiKeyController.text.trim());
       _showSnackBar('接続テスト成功');
@@ -158,7 +169,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
     if (confirmed == true) {
       try {
-        final storage = ref.read(secureStorageServiceProvider);
+        final storage = ref.read(storageServiceProvider);
         await storage.clearAll();
         _realtimeUrlController.clear();
         _apiKeyController.clear();

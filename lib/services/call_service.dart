@@ -4,7 +4,7 @@ import 'package:record/record.dart';
 import 'audio_recorder_service.dart';
 import 'audio_player_service.dart';
 import 'realtime_api_client.dart';
-import 'secure_storage_service.dart';
+import 'storage_service.dart';
 
 /// Enum representing the current state of the call
 enum CallState {
@@ -26,7 +26,7 @@ class CallService {
   final AudioRecorderService _recorder;
   final AudioPlayerService _player;
   final RealtimeApiClient _apiClient;
-  final SecureStorageService _storage;
+  final StorageService _storage;
 
   StreamSubscription<Uint8List>? _audioStreamSubscription;
   StreamSubscription<Amplitude>? _amplitudeSubscription;
@@ -51,7 +51,7 @@ class CallService {
     required AudioRecorderService recorder,
     required AudioPlayerService player,
     required RealtimeApiClient apiClient,
-    required SecureStorageService storage,
+    required StorageService storage,
   })  : _recorder = recorder,
         _player = player,
         _apiClient = apiClient,
