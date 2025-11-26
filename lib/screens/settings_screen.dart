@@ -38,8 +38,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       // Request storage permission first (needed for external storage on Android)
       final hasPermission = await storage.requestStoragePermission();
       if (!hasPermission) {
-        _showSnackBar('ストレージの権限が必要です', isError: true);
-        // Continue anyway - will use fallback path
+        _showSnackBar('ストレージの権限がありません。アプリ内にデータを保存します', isWarning: true);
+        // Will use app-specific fallback directory
       }
       
       final realtimeUrl = await storage.getRealtimeUrl();

@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:device_info_plus/device_info_plus.dart';
+import 'package:path_provider/path_provider.dart';
 import 'log_service.dart';
 
 /// Service for storing settings as files in the user's Documents directory
@@ -13,18 +15,31 @@ class StorageService {
   static const _tag = 'Storage';
   
   File? _configFile;
+  int? _androidSdkVersion;
+
+  /// Get Android SDK version
+  Future<int> _getAndroidSdkVersion() async {
+    if (_androidSdkVersion != null) return _androidSdkVersion!;
+    
+    if (Platform.isAndroid) {
+      final deviceInfo = DeviceInfoPlugin();
+      final androidInfo = await deviceInfo.androidInfo;
+      _androidSdkVersion = androidInfo.version.sdkInt;
+      logService.info(_tag, 'Android SDK version: $_androidSdkVersion');
+      return _androidSdkVersion!;
+    }
+    return 0;
+  }
 
   /// Request storage permission for writing to user's Documents directory
   Future<bool> requestStoragePermission() async {
     logService.info(_tag, 'Requesting storage permission');
     
     if (Platform.isAndroid) {
-      // On Android 11+ (API 30+), we need MANAGE_EXTERNAL_STORAGE permission
-      // to write to user's Documents directory
-      final sdkInt = int.tryParse(Platform.version.split('.').first) ?? 0;
+      final sdkVersion = await _getAndroidSdkVersion();
       
-      if (sdkInt >= 30) {
-        // Android 11+: Request MANAGE_EXTERNAL_STORAGE
+      if (sdkVersion >= 30) {
+        // Android 11+ (API 30+): Request MANAGE_EXTERNAL_STORAGE
         final status = await Permission.manageExternalStorage.request();
         logService.info(_tag, 'Manage external storage permission status: $status');
         return status.isGranted;
@@ -42,11 +57,11 @@ class StorageService {
   /// Check if storage permission is granted
   Future<bool> hasStoragePermission() async {
     if (Platform.isAndroid) {
-      // Try manage external storage first (Android 11+)
-      if (await Permission.manageExternalStorage.isGranted) {
-        return true;
+      final sdkVersion = await _getAndroidSdkVersion();
+      
+      if (sdkVersion >= 30) {
+        return await Permission.manageExternalStorage.isGranted;
       }
-      // Fall back to standard storage permission
       return await Permission.storage.isGranted;
     }
     return true;
@@ -54,29 +69,54 @@ class StorageService {
 
   /// Initialize the storage service by getting the config file path
   /// Uses user's Documents directory: /storage/emulated/0/Documents/VAGINA/
+  /// Falls back to app documents directory if permission is not granted
   Future<File> _getConfigFile() async {
     if (_configFile != null) return _configFile!;
     
-    Directory directory;
+    Directory? directory;
     
     if (Platform.isAndroid) {
-      // Use user's Documents directory (persists after uninstall)
-      // Path: /storage/emulated/0/Documents/VAGINA/
-      directory = Directory('/storage/emulated/0/Documents/$_appFolderName');
+      // Check permission first
+      final hasPermission = await hasStoragePermission();
+      
+      if (hasPermission) {
+        // Try to use user's Documents directory (persists after uninstall)
+        // Path: /storage/emulated/0/Documents/VAGINA/
+        try {
+          directory = Directory('/storage/emulated/0/Documents/$_appFolderName');
+          if (!await directory.exists()) {
+            await directory.create(recursive: true);
+          }
+          logService.info(_tag, 'Using external Documents directory: ${directory.path}');
+        } catch (e) {
+          logService.warn(_tag, 'Failed to create external directory: $e');
+          directory = null;
+        }
+      }
+      
+      // Fallback to app-specific directory if permission not granted or directory creation failed
+      if (directory == null) {
+        final appDir = await getApplicationDocumentsDirectory();
+        directory = Directory('${appDir.path}/$_appFolderName');
+        if (!await directory.exists()) {
+          await directory.create(recursive: true);
+        }
+        logService.warn(_tag, 'Falling back to app documents directory: ${directory.path}');
+      }
     } else if (Platform.isIOS) {
-      // iOS doesn't have a persistent user Documents directory accessible after uninstall
-      // Use app's Documents directory as fallback
-      directory = Directory('/var/mobile/Documents/$_appFolderName');
+      // iOS: Use app's Documents directory
+      final appDir = await getApplicationDocumentsDirectory();
+      directory = Directory('${appDir.path}/$_appFolderName');
+      if (!await directory.exists()) {
+        await directory.create(recursive: true);
+      }
     } else {
       // Desktop platforms
       final home = Platform.environment['HOME'] ?? Platform.environment['USERPROFILE'] ?? '.';
       directory = Directory('$home/Documents/$_appFolderName');
-    }
-    
-    // Create directory if it doesn't exist
-    if (!await directory.exists()) {
-      await directory.create(recursive: true);
-      logService.info(_tag, 'Created directory: ${directory.path}');
+      if (!await directory.exists()) {
+        await directory.create(recursive: true);
+      }
     }
     
     _configFile = File('${directory.path}/$_configFileName');
