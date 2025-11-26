@@ -1,7 +1,8 @@
 import 'dart:async';
-import 'dart:math';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:record/record.dart';
 import '../theme/app_theme.dart';
 import '../providers/providers.dart';
 import '../widgets/call_button.dart';
@@ -10,10 +11,34 @@ import 'settings_screen.dart';
 import 'components/components.dart';
 
 /// Error message provider for displaying errors to users
-final errorMessageProvider = StateProvider<String?>((ref) => null);
+final errorMessageProvider = NotifierProvider<ErrorMessageNotifier, String?>(ErrorMessageNotifier.new);
+
+/// Notifier for error message state
+class ErrorMessageNotifier extends Notifier<String?> {
+  @override
+  String? build() => null;
+
+  void set(String? message) {
+    state = message;
+  }
+
+  void clear() {
+    state = null;
+  }
+}
 
 /// Input level provider (0.0 - 1.0)
-final inputLevelProvider = StateProvider<double>((ref) => 0.0);
+final inputLevelProvider = NotifierProvider<InputLevelNotifier, double>(InputLevelNotifier.new);
+
+/// Notifier for input level state
+class InputLevelNotifier extends Notifier<double> {
+  @override
+  double build() => 0.0;
+
+  void set(double value) {
+    state = value.clamp(0.0, 1.0);
+  }
+}
 
 /// Main call screen with mute, disconnect, and settings buttons
 class CallScreen extends ConsumerStatefulWidget {
@@ -25,20 +50,22 @@ class CallScreen extends ConsumerStatefulWidget {
 
 class _CallScreenState extends ConsumerState<CallScreen> with SingleTickerProviderStateMixin {
   Timer? _callTimer;
-  Timer? _levelSimTimer;
+  StreamSubscription<Uint8List>? _audioStreamSubscription;
+  StreamSubscription<Amplitude>? _amplitudeSubscription;
   int _callDuration = 0;
   bool _isCallActive = false;
 
   @override
   void dispose() {
     _callTimer?.cancel();
-    _levelSimTimer?.cancel();
+    _audioStreamSubscription?.cancel();
+    _amplitudeSubscription?.cancel();
     super.dispose();
   }
 
   Future<void> _startCall() async {
     // Clear any previous errors
-    ref.read(errorMessageProvider.notifier).state = null;
+    ref.read(errorMessageProvider.notifier).clear();
     
     // Check if Azure settings are configured
     final storage = ref.read(secureStorageServiceProvider);
@@ -49,35 +76,71 @@ class _CallScreenState extends ConsumerState<CallScreen> with SingleTickerProvid
       return;
     }
     
-    setState(() {
-      _isCallActive = true;
-      _callDuration = 0;
-    });
-    _callTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+    // Start audio recording
+    final recorder = ref.read(audioRecorderServiceProvider);
+    final hasPermission = await recorder.hasPermission();
+    if (!hasPermission) {
+      _showError('マイクの使用を許可してください');
+      return;
+    }
+
+    try {
+      // Start the actual microphone recording
+      final audioStream = await recorder.startRecording();
+      
       setState(() {
-        _callDuration++;
+        _isCallActive = true;
+        _callDuration = 0;
       });
-    });
-    
-    // Simulate mic input level for demo (will be replaced with real audio data)
-    // NOTE: This is simulated - actual microphone recording is not yet implemented.
-    // When real recording is enabled, Android/iOS will show the mic indicator.
-    _levelSimTimer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
-      final isMuted = ref.read(isMutedProvider);
-      if (!isMuted && _isCallActive) {
-        // Simulate varying input levels
-        ref.read(inputLevelProvider.notifier).state = 
-            0.1 + Random().nextDouble() * 0.7;
-      } else {
-        ref.read(inputLevelProvider.notifier).state = 0.0;
+      
+      _callTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+        setState(() {
+          _callDuration++;
+        });
+      });
+      
+      // Listen to audio stream (for potential future use with WebSocket)
+      _audioStreamSubscription = audioStream.listen(
+        (data) {
+          // Audio data available - can be sent to WebSocket for Realtime API
+        },
+        onError: (error) {
+          _showError('録音エラー: $error');
+          _endCall();
+        },
+      );
+      
+      // Listen to amplitude for visualization
+      final amplitudeStream = recorder.amplitudeStream;
+      if (amplitudeStream != null) {
+        _amplitudeSubscription = amplitudeStream.listen((amplitude) {
+          final isMuted = ref.read(isMutedProvider);
+          if (!isMuted && _isCallActive) {
+            // Convert dBFS to 0-1 range. dBFS is typically -160 to 0.
+            // -60 dB is quiet, 0 dB is maximum
+            final normalizedLevel = ((amplitude.current + 60) / 60).clamp(0.0, 1.0);
+            ref.read(inputLevelProvider.notifier).set(normalizedLevel);
+          } else {
+            ref.read(inputLevelProvider.notifier).set(0.0);
+          }
+        });
       }
-    });
+    } catch (e) {
+      _showError('録音の開始に失敗しました: $e');
+      return;
+    }
   }
 
   void _endCall() {
     _callTimer?.cancel();
-    _levelSimTimer?.cancel();
-    ref.read(inputLevelProvider.notifier).state = 0.0;
+    _audioStreamSubscription?.cancel();
+    _amplitudeSubscription?.cancel();
+    
+    // Stop recording
+    final recorder = ref.read(audioRecorderServiceProvider);
+    recorder.stopRecording();
+    
+    ref.read(inputLevelProvider.notifier).set(0.0);
     setState(() {
       _isCallActive = false;
       _callDuration = 0;
@@ -85,7 +148,7 @@ class _CallScreenState extends ConsumerState<CallScreen> with SingleTickerProvid
   }
 
   void _showError(String message) {
-    ref.read(errorMessageProvider.notifier).state = message;
+    ref.read(errorMessageProvider.notifier).set(message);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
@@ -147,7 +210,7 @@ class _CallScreenState extends ConsumerState<CallScreen> with SingleTickerProvid
                   child: ErrorBanner(
                     message: errorMessage,
                     onDismiss: () {
-                      ref.read(errorMessageProvider.notifier).state = null;
+                      ref.read(errorMessageProvider.notifier).clear();
                     },
                   ),
                 ),
@@ -190,7 +253,7 @@ class _CallScreenState extends ConsumerState<CallScreen> with SingleTickerProvid
                           isActive: isMuted,
                           activeBackgroundColor: AppTheme.errorColor,
                           onPressed: () {
-                            ref.read(isMutedProvider.notifier).state = !isMuted;
+                            ref.read(isMutedProvider.notifier).toggle();
                           },
                         ),
 

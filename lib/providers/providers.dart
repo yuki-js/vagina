@@ -42,7 +42,21 @@ final audioPlayerServiceProvider = Provider<AudioPlayerService>((ref) {
 });
 
 /// Provider for mute state
-final isMutedProvider = StateProvider<bool>((ref) => false);
+final isMutedProvider = NotifierProvider<IsMutedNotifier, bool>(IsMutedNotifier.new);
+
+/// Notifier for mute state
+class IsMutedNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void toggle() {
+    state = !state;
+  }
+
+  void set(bool value) {
+    state = value;
+  }
+}
 
 // Realtime providers
 
@@ -61,22 +75,45 @@ final realtimeApiClientProvider = Provider<RealtimeApiClient>((ref) {
 });
 
 /// Provider for connection state
-final isConnectedProvider = StateProvider<bool>((ref) => false);
+final isConnectedProvider = NotifierProvider<IsConnectedNotifier, bool>(IsConnectedNotifier.new);
+
+/// Notifier for connection state
+class IsConnectedNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void set(bool value) {
+    state = value;
+  }
+}
 
 /// Provider for call duration in seconds
-final callDurationProvider = StateProvider<int>((ref) => 0);
+final callDurationProvider = NotifierProvider<CallDurationNotifier, int>(CallDurationNotifier.new);
+
+/// Notifier for call duration
+class CallDurationNotifier extends Notifier<int> {
+  @override
+  int build() => 0;
+
+  void increment() {
+    state++;
+  }
+
+  void reset() {
+    state = 0;
+  }
+}
 
 // Assistant providers
 
 /// Provider for the assistant configuration
 final assistantConfigProvider =
-    StateNotifierProvider<AssistantConfigNotifier, AssistantConfig>((ref) {
-  return AssistantConfigNotifier();
-});
+    NotifierProvider<AssistantConfigNotifier, AssistantConfig>(AssistantConfigNotifier.new);
 
 /// Notifier for assistant configuration state
-class AssistantConfigNotifier extends StateNotifier<AssistantConfig> {
-  AssistantConfigNotifier() : super(const AssistantConfig());
+class AssistantConfigNotifier extends Notifier<AssistantConfig> {
+  @override
+  AssistantConfig build() => const AssistantConfig();
 
   /// Update the assistant name
   void updateName(String name) {
