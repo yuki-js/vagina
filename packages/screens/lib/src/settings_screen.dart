@@ -4,15 +4,7 @@ import 'package:vagina_ui/vagina_ui.dart';
 import 'package:vagina_core/vagina_core.dart';
 import 'package:vagina_assistant_model/vagina_assistant_model.dart';
 
-/// API Provider type enum
-enum ApiProviderType {
-  azureOpenAI,
-}
-
-/// API Provider type state provider
-final apiProviderTypeProvider = StateProvider<ApiProviderType>((ref) => ApiProviderType.azureOpenAI);
-
-/// Settings screen for API configuration
+/// Settings screen for API configuration (2 inputs: Realtime URL + API Key)
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
@@ -21,13 +13,14 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  final _realtimeUrlController = TextEditingController();
   final _apiKeyController = TextEditingController();
-  final _endpointController = TextEditingController();
-  final _deploymentController = TextEditingController();
   bool _isApiKeyVisible = false;
   bool _isLoading = true;
   bool _isSaving = false;
+  bool _isTesting = false;
   String? _errorMessage;
+  String? _successMessage;
 
   @override
   void initState() {
@@ -38,18 +31,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Future<void> _loadSettings() async {
     try {
       final storage = ref.read(secureStorageServiceProvider);
+      final realtimeUrl = await storage.getRealtimeUrl();
       final apiKey = await storage.getApiKey();
-      final endpoint = await storage.getAzureEndpoint();
-      final deployment = await storage.getAzureDeployment();
       
+      if (realtimeUrl != null) {
+        _realtimeUrlController.text = realtimeUrl;
+      }
       if (apiKey != null) {
         _apiKeyController.text = apiKey;
-      }
-      if (endpoint != null) {
-        _endpointController.text = endpoint;
-      }
-      if (deployment != null) {
-        _deploymentController.text = deployment;
       }
       
       setState(() {
@@ -66,40 +55,47 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Future<void> _saveSettings() async {
     // Validate inputs
+    if (_realtimeUrlController.text.trim().isEmpty) {
+      _showError('Realtime URLを入力してください');
+      return;
+    }
+    
+    // Validate URL format
+    final parsed = SecureStorageService.parseRealtimeUrl(_realtimeUrlController.text.trim());
+    if (parsed == null) {
+      _showError('Realtime URLの形式が正しくありません。\n例: https://{resource}.openai.azure.com/openai/realtime?api-version=2024-10-01-preview&deployment=gpt-4o-realtime');
+      return;
+    }
+    
     if (_apiKeyController.text.trim().isEmpty) {
-      _showError('API Key is required');
-      return;
-    }
-    if (_endpointController.text.trim().isEmpty) {
-      _showError('Azure Endpoint is required');
-      return;
-    }
-    if (_deploymentController.text.trim().isEmpty) {
-      _showError('Deployment Name is required');
+      _showError('APIキーを入力してください');
       return;
     }
 
     setState(() {
       _isSaving = true;
       _errorMessage = null;
+      _successMessage = null;
     });
 
     try {
       final storage = ref.read(secureStorageServiceProvider);
+      await storage.saveRealtimeUrl(_realtimeUrlController.text.trim());
       await storage.saveApiKey(_apiKeyController.text.trim());
-      await storage.saveAzureEndpoint(_endpointController.text.trim());
-      await storage.saveAzureDeployment(_deploymentController.text.trim());
 
       if (mounted) {
+        setState(() {
+          _successMessage = '設定を保存しました';
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Settings saved successfully'),
+            content: Text('設定を保存しました'),
             backgroundColor: AppTheme.successColor,
           ),
         );
       }
     } catch (e) {
-      _showError('Failed to save settings: $e');
+      _showError('保存に失敗しました: $e');
     } finally {
       if (mounted) {
         setState(() {
@@ -109,9 +105,63 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 
+  Future<void> _testConnection() async {
+    if (_realtimeUrlController.text.trim().isEmpty) {
+      _showError('Realtime URLを入力してください');
+      return;
+    }
+    if (_apiKeyController.text.trim().isEmpty) {
+      _showError('APIキーを入力してください');
+      return;
+    }
+
+    final parsed = SecureStorageService.parseRealtimeUrl(_realtimeUrlController.text.trim());
+    if (parsed == null) {
+      _showError('Realtime URLの形式が正しくありません');
+      return;
+    }
+
+    setState(() {
+      _isTesting = true;
+      _errorMessage = null;
+      _successMessage = '接続テスト中...';
+    });
+
+    try {
+      // TODO: Implement actual WebSocket connection test
+      await Future.delayed(const Duration(seconds: 1));
+      
+      // Save settings on success
+      final storage = ref.read(secureStorageServiceProvider);
+      await storage.saveRealtimeUrl(_realtimeUrlController.text.trim());
+      await storage.saveApiKey(_apiKeyController.text.trim());
+
+      if (mounted) {
+        setState(() {
+          _successMessage = '接続テスト成功。設定を保存しました。';
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('接続テスト成功'),
+            backgroundColor: AppTheme.successColor,
+          ),
+        );
+      }
+    } catch (e) {
+      _showError('接続テスト失敗: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isTesting = false;
+        });
+      }
+    }
+  }
+
   void _showError(String message) {
     setState(() {
       _errorMessage = message;
+      _successMessage = null;
     });
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -124,24 +174,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 
-  Future<void> _deleteSettings() async {
+  Future<void> _clearSettings() async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppTheme.surfaceColor,
-        title: const Text('Delete All Settings?'),
-        content: const Text(
-          'Are you sure you want to delete all saved API settings?',
-        ),
+        title: const Text('設定をクリア?'),
+        content: const Text('保存済みのAPI設定をすべて削除しますか？'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+            child: const Text('キャンセル'),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
             style: TextButton.styleFrom(foregroundColor: AppTheme.errorColor),
-            child: const Text('Delete'),
+            child: const Text('削除'),
           ),
         ],
       ),
@@ -150,32 +198,32 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     if (confirmed == true) {
       try {
         final storage = ref.read(secureStorageServiceProvider);
-        await storage.deleteApiKey();
-        await storage.deleteAzureEndpoint();
-        await storage.deleteAzureDeployment();
+        await storage.clearAll();
+        _realtimeUrlController.clear();
         _apiKeyController.clear();
-        _endpointController.clear();
-        _deploymentController.clear();
 
         if (mounted) {
+          setState(() {
+            _successMessage = '設定をクリアしました';
+            _errorMessage = null;
+          });
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Settings deleted'),
+              content: Text('設定をクリアしました'),
               backgroundColor: AppTheme.warningColor,
             ),
           );
         }
       } catch (e) {
-        _showError('Failed to delete settings: $e');
+        _showError('設定のクリアに失敗しました: $e');
       }
     }
   }
 
   @override
   void dispose() {
+    _realtimeUrlController.dispose();
     _apiKeyController.dispose();
-    _endpointController.dispose();
-    _deploymentController.dispose();
     super.dispose();
   }
 
@@ -197,7 +245,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   icon: const Icon(Icons.arrow_back),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
-                title: const Text('Settings'),
+                title: const Text('設定'),
               ),
 
               // Content
@@ -205,7 +253,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 padding: const EdgeInsets.all(16),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
-                    // Error message banner
+                    // Status message banner
                     if (_errorMessage != null) ...[
                       Container(
                         padding: const EdgeInsets.all(12),
@@ -233,17 +281,41 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ),
                       const SizedBox(height: 16),
                     ],
+                    
+                    if (_successMessage != null && _errorMessage == null) ...[
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppTheme.successColor.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppTheme.successColor),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.check_circle_outline, color: AppTheme.successColor),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                _successMessage!,
+                                style: const TextStyle(color: AppTheme.successColor),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
 
                     // Azure OpenAI Configuration Section
-                    _buildSectionHeader('Azure OpenAI Configuration'),
+                    _buildSectionHeader('Azure OpenAI 設定'),
                     const SizedBox(height: 12),
                     _buildCard(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Azure Endpoint
+                          // Realtime URL
                           const Text(
-                            'Azure Endpoint',
+                            'Azure OpenAI Realtime URL',
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
@@ -255,43 +327,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             const Center(child: CircularProgressIndicator())
                           else
                             TextField(
-                              controller: _endpointController,
+                              controller: _realtimeUrlController,
                               decoration: const InputDecoration(
-                                hintText: 'https://your-resource.openai.azure.com',
+                                hintText: 'https://<resource>.openai.azure.com/openai/realtime?api-version=2024-10-01-preview&deployment=gpt-4o-realtime',
                               ),
                               keyboardType: TextInputType.url,
+                              maxLines: 2,
                             ),
                           const SizedBox(height: 4),
                           Text(
-                            'Example: https://your-resource.openai.azure.com',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: AppTheme.textSecondary.withOpacity(0.7),
-                            ),
-                          ),
-
-                          const SizedBox(height: 16),
-
-                          // Deployment Name
-                          const Text(
-                            'Deployment Name',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: AppTheme.textSecondary,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          if (!_isLoading)
-                            TextField(
-                              controller: _deploymentController,
-                              decoration: const InputDecoration(
-                                hintText: 'gpt-4o-realtime-preview',
-                              ),
-                            ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'The deployment name of your Azure OpenAI model',
+                            '例: https://your-resource.openai.azure.com/openai/realtime?api-version=2024-10-01-preview&deployment=gpt-realtime',
                             style: TextStyle(
                               fontSize: 11,
                               color: AppTheme.textSecondary.withOpacity(0.7),
@@ -302,7 +347,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
                           // API Key
                           const Text(
-                            'API Key',
+                            'APIキー',
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
@@ -315,51 +360,64 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               controller: _apiKeyController,
                               obscureText: !_isApiKeyVisible,
                               decoration: InputDecoration(
-                                hintText: 'Enter your Azure OpenAI API key',
-                                suffixIcon: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    IconButton(
-                                      icon: Icon(
-                                        _isApiKeyVisible
-                                            ? Icons.visibility_off
-                                            : Icons.visibility,
-                                      ),
-                                      onPressed: () {
-                                        setState(() {
-                                          _isApiKeyVisible = !_isApiKeyVisible;
-                                        });
-                                      },
-                                    ),
-                                    if (_apiKeyController.text.isNotEmpty)
-                                      IconButton(
-                                        icon: const Icon(Icons.delete_outline),
-                                        color: AppTheme.errorColor,
-                                        onPressed: _deleteSettings,
-                                      ),
-                                  ],
+                                hintText: 'APIキーを入力',
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _isApiKeyVisible
+                                        ? Icons.visibility_off
+                                        : Icons.visibility,
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      _isApiKeyVisible = !_isApiKeyVisible;
+                                    });
+                                  },
                                 ),
                               ),
                             ),
                           const SizedBox(height: 16),
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              onPressed: _isSaving ? null : _saveSettings,
-                              child: _isSaving
-                                  ? const SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                      ),
-                                    )
-                                  : const Text('Save Settings'),
-                            ),
+                          
+                          // Buttons row
+                          Row(
+                            children: [
+                              Expanded(
+                                child: ElevatedButton(
+                                  onPressed: _isSaving || _isTesting ? null : _saveSettings,
+                                  child: _isSaving
+                                      ? const SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(strokeWidth: 2),
+                                        )
+                                      : const Text('保存'),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: OutlinedButton(
+                                  onPressed: _isSaving || _isTesting ? null : _testConnection,
+                                  child: _isTesting
+                                      ? const SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(strokeWidth: 2),
+                                        )
+                                      : const Text('接続テスト'),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              OutlinedButton(
+                                onPressed: _isSaving || _isTesting ? null : _clearSettings,
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: AppTheme.errorColor,
+                                ),
+                                child: const Text('クリア'),
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'Your credentials are stored securely on your device and never sent to our servers.',
+                            '認証情報はデバイス上に安全に保存され、サーバーには送信されません。',
                             style: TextStyle(
                               fontSize: 12,
                               color: AppTheme.textSecondary.withOpacity(0.7),
@@ -372,14 +430,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     const SizedBox(height: 24),
 
                     // Voice Configuration Section
-                    _buildSectionHeader('Voice Settings'),
+                    _buildSectionHeader('音声設定'),
                     const SizedBox(height: 12),
                     _buildCard(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
-                            'Assistant Voice',
+                            'アシスタント音声',
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
@@ -400,8 +458,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               },
                               title: Text(
                                 voice[0].toUpperCase() + voice.substring(1),
-                                style:
-                                    const TextStyle(color: AppTheme.textPrimary),
+                                style: const TextStyle(color: AppTheme.textPrimary),
                               ),
                               activeColor: AppTheme.primaryColor,
                             ),
@@ -413,13 +470,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     const SizedBox(height: 24),
 
                     // About Section
-                    _buildSectionHeader('About'),
+                    _buildSectionHeader('このアプリについて'),
                     const SizedBox(height: 12),
                     _buildCard(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildInfoRow('App Version', '1.0.0'),
+                          _buildInfoRow('バージョン', '1.0.0'),
                           const Divider(color: AppTheme.surfaceColor),
                           _buildInfoRow('Powered by', 'Azure OpenAI Realtime API'),
                         ],

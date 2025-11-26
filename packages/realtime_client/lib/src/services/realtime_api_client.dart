@@ -57,32 +57,6 @@ enum ServerEventType {
   const ServerEventType(this.value);
 }
 
-/// Configuration for Azure OpenAI connection
-class AzureOpenAIConfig {
-  final String endpoint;
-  final String deployment;
-  final String apiKey;
-
-  const AzureOpenAIConfig({
-    required this.endpoint,
-    required this.deployment,
-    required this.apiKey,
-  });
-
-  /// Build the WebSocket URL for Azure OpenAI Realtime API
-  String get webSocketUrl {
-    // Remove trailing slash from endpoint if present
-    final cleanEndpoint = endpoint.endsWith('/') 
-        ? endpoint.substring(0, endpoint.length - 1) 
-        : endpoint;
-    
-    // Convert https:// to wss://
-    final wsEndpoint = cleanEndpoint.replaceFirst('https://', 'wss://');
-    
-    return '$wsEndpoint/openai/realtime?api-version=2024-10-01-preview&deployment=$deployment';
-  }
-}
-
 /// Client for the Azure OpenAI Realtime API
 class RealtimeApiClient {
   final WebSocketService _webSocket = WebSocketService();
@@ -102,26 +76,29 @@ class RealtimeApiClient {
   Stream<String> get errorStream => _errorController.stream;
   String? get lastError => _lastError;
 
-  /// Connect to the Azure OpenAI Realtime API
-  Future<void> connectAzure(AzureOpenAIConfig config) async {
+  /// Connect to Azure OpenAI using a full Realtime URL and API key
+  /// URL format: https://{resource}.openai.azure.com/openai/realtime?api-version=YYYY-MM-DD&deployment=...
+  Future<void> connect(String realtimeUrl, String apiKey) async {
     try {
-      // Validate config
-      if (config.endpoint.isEmpty) {
-        throw Exception('Azure endpoint is required');
+      if (realtimeUrl.isEmpty) {
+        throw Exception('Realtime URL is required');
       }
-      if (config.deployment.isEmpty) {
-        throw Exception('Deployment name is required');
-      }
-      if (config.apiKey.isEmpty) {
+      if (apiKey.isEmpty) {
         throw Exception('API key is required');
       }
 
-      // Build WebSocket URL with API key
-      final uri = Uri.parse(config.webSocketUrl);
+      // Convert https:// to wss:// for WebSocket connection
+      var wsUrl = realtimeUrl;
+      if (wsUrl.startsWith('https://')) {
+        wsUrl = wsUrl.replaceFirst('https://', 'wss://');
+      }
+
+      // Add api-key to query parameters
+      final uri = Uri.parse(wsUrl);
       final authenticatedUri = uri.replace(
         queryParameters: {
           ...uri.queryParameters,
-          'api-key': config.apiKey,
+          'api-key': apiKey,
         },
       );
       

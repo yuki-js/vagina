@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vagina_ui/vagina_ui.dart';
@@ -9,6 +10,9 @@ import 'settings_screen.dart';
 /// Error message provider for displaying errors to users
 final errorMessageProvider = StateProvider<String?>((ref) => null);
 
+/// Input level provider (0.0 - 1.0)
+final inputLevelProvider = StateProvider<double>((ref) => 0.0);
+
 /// Main call screen with mute, disconnect, and settings buttons
 class CallScreen extends ConsumerStatefulWidget {
   const CallScreen({super.key});
@@ -17,14 +21,16 @@ class CallScreen extends ConsumerStatefulWidget {
   ConsumerState<CallScreen> createState() => _CallScreenState();
 }
 
-class _CallScreenState extends ConsumerState<CallScreen> {
+class _CallScreenState extends ConsumerState<CallScreen> with SingleTickerProviderStateMixin {
   Timer? _callTimer;
+  Timer? _levelSimTimer;
   int _callDuration = 0;
   bool _isCallActive = false;
 
   @override
   void dispose() {
     _callTimer?.cancel();
+    _levelSimTimer?.cancel();
     super.dispose();
   }
 
@@ -37,7 +43,7 @@ class _CallScreenState extends ConsumerState<CallScreen> {
     final hasConfig = await storage.hasAzureConfig();
     
     if (!hasConfig) {
-      _showError('Please configure Azure OpenAI settings first');
+      _showError('Azure OpenAI設定を先に行ってください');
       return;
     }
     
@@ -50,10 +56,24 @@ class _CallScreenState extends ConsumerState<CallScreen> {
         _callDuration++;
       });
     });
+    
+    // Simulate mic input level for demo (will be replaced with real audio data)
+    _levelSimTimer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
+      final isMuted = ref.read(isMutedProvider);
+      if (!isMuted && _isCallActive) {
+        // Simulate varying input levels
+        ref.read(inputLevelProvider.notifier).state = 
+            0.1 + Random().nextDouble() * 0.7;
+      } else {
+        ref.read(inputLevelProvider.notifier).state = 0.0;
+      }
+    });
   }
 
   void _endCall() {
     _callTimer?.cancel();
+    _levelSimTimer?.cancel();
+    ref.read(inputLevelProvider.notifier).state = 0.0;
     setState(() {
       _isCallActive = false;
       _callDuration = 0;
@@ -68,7 +88,7 @@ class _CallScreenState extends ConsumerState<CallScreen> {
         backgroundColor: AppTheme.errorColor,
         duration: const Duration(seconds: 5),
         action: SnackBarAction(
-          label: 'Dismiss',
+          label: '閉じる',
           textColor: Colors.white,
           onPressed: () {
             ScaffoldMessenger.of(context).hideCurrentSnackBar();
@@ -94,6 +114,7 @@ class _CallScreenState extends ConsumerState<CallScreen> {
   Widget build(BuildContext context) {
     final isMuted = ref.watch(isMutedProvider);
     final errorMessage = ref.watch(errorMessageProvider);
+    final inputLevel = ref.watch(inputLevelProvider);
 
     return Scaffold(
       body: Container(
@@ -180,10 +201,16 @@ class _CallScreenState extends ConsumerState<CallScreen> {
                       ),
                     ),
 
-                    const SizedBox(height: 48),
+                    const SizedBox(height: 32),
 
-                    // Call status
+                    // Audio level visualizer (bouncing bars)
                     if (_isCallActive) ...[
+                      _AudioLevelVisualizer(
+                        level: inputLevel,
+                        isMuted: isMuted,
+                        isConnected: _isCallActive,
+                      ),
+                      const SizedBox(height: 16),
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 24,
@@ -199,14 +226,16 @@ class _CallScreenState extends ConsumerState<CallScreen> {
                             Container(
                               width: 12,
                               height: 12,
-                              decoration: const BoxDecoration(
-                                color: AppTheme.successColor,
+                              decoration: BoxDecoration(
+                                color: isMuted ? AppTheme.errorColor : AppTheme.successColor,
                                 shape: BoxShape.circle,
                               ),
                             ),
                             const SizedBox(width: 12),
                             Text(
-                              'Connected • ${_formatDuration(_callDuration)}',
+                              isMuted 
+                                  ? 'ミュート中 • ${_formatDuration(_callDuration)}'
+                                  : '録音中 • ${_formatDuration(_callDuration)}',
                               style: const TextStyle(
                                 fontSize: 16,
                                 color: AppTheme.textPrimary,
@@ -283,6 +312,59 @@ class _CallScreenState extends ConsumerState<CallScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Audio level visualizer with bouncing bars
+class _AudioLevelVisualizer extends StatelessWidget {
+  final double level;
+  final bool isMuted;
+  final bool isConnected;
+  
+  const _AudioLevelVisualizer({
+    required this.level,
+    required this.isMuted,
+    required this.isConnected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const barCount = 12;
+    
+    return Container(
+      height: 80,
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: List.generate(barCount, (i) {
+          // Create a wave-like pattern with falloff from center
+          final centerOffset = (i - barCount / 2).abs() / (barCount / 2);
+          final falloff = 1 - centerOffset * 0.5;
+          final barLevel = isMuted ? 0.0 : (pow(level, 0.9) * falloff).clamp(0.0, 1.0);
+          
+          // Minimum height percentage
+          const minPct = 0.15;
+          final pct = max(minPct, barLevel);
+          
+          return AnimatedContainer(
+            duration: const Duration(milliseconds: 50),
+            curve: Curves.easeOut,
+            width: 6,
+            height: 80 * pct,
+            margin: const EdgeInsets.symmetric(horizontal: 2),
+            decoration: BoxDecoration(
+              color: isMuted 
+                  ? AppTheme.textSecondary.withOpacity(0.3)
+                  : (isConnected 
+                      ? AppTheme.primaryColor.withOpacity(0.8 + barLevel * 0.2)
+                      : AppTheme.textSecondary.withOpacity(0.5)),
+              borderRadius: BorderRadius.circular(3),
+            ),
+          );
+        }),
       ),
     );
   }

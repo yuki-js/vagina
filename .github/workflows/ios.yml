@@ -90,7 +90,7 @@ jobs:
       - name: Create Debug IPA
         run: |
           mkdir -p build/ios/ipa
-          cd build/ios/iphonesimulator
+          cd build/ios/iphoneos
           mkdir Payload
           cp -r Runner.app Payload/
           zip -r ../ipa/app-debug.ipa Payload

@@ -12,8 +12,7 @@ class SecureStorageService {
   );
 
   static const _apiKeyKey = 'azure_api_key';
-  static const _azureEndpointKey = 'azure_endpoint';
-  static const _azureDeploymentKey = 'azure_deployment';
+  static const _realtimeUrlKey = 'azure_realtime_url';
 
   /// Save the Azure OpenAI API key
   Future<void> saveApiKey(String apiKey) async {
@@ -36,46 +35,68 @@ class SecureStorageService {
     return key != null && key.isNotEmpty;
   }
 
-  /// Save Azure endpoint URL
-  Future<void> saveAzureEndpoint(String endpoint) async {
-    await _storage.write(key: _azureEndpointKey, value: endpoint);
+  /// Save Azure Realtime URL (contains endpoint, deployment, api-version)
+  Future<void> saveRealtimeUrl(String url) async {
+    await _storage.write(key: _realtimeUrlKey, value: url);
   }
 
-  /// Get Azure endpoint URL
-  Future<String?> getAzureEndpoint() async {
-    return await _storage.read(key: _azureEndpointKey);
+  /// Get Azure Realtime URL
+  Future<String?> getRealtimeUrl() async {
+    return await _storage.read(key: _realtimeUrlKey);
   }
 
-  /// Delete Azure endpoint
-  Future<void> deleteAzureEndpoint() async {
-    await _storage.delete(key: _azureEndpointKey);
+  /// Delete Azure Realtime URL
+  Future<void> deleteRealtimeUrl() async {
+    await _storage.delete(key: _realtimeUrlKey);
   }
 
-  /// Save Azure deployment name
-  Future<void> saveAzureDeployment(String deployment) async {
-    await _storage.write(key: _azureDeploymentKey, value: deployment);
-  }
-
-  /// Get Azure deployment name
-  Future<String?> getAzureDeployment() async {
-    return await _storage.read(key: _azureDeploymentKey);
-  }
-
-  /// Delete Azure deployment name
-  Future<void> deleteAzureDeployment() async {
-    await _storage.delete(key: _azureDeploymentKey);
+  /// Parse Realtime URL to extract components
+  /// Returns null if URL is invalid
+  static Map<String, String>? parseRealtimeUrl(String url) {
+    try {
+      final uri = Uri.parse(url);
+      
+      // Expected format: https://{resource}.openai.azure.com/openai/realtime?api-version=YYYY-MM-DD&deployment=...
+      if (!uri.host.endsWith('.openai.azure.com')) {
+        return null;
+      }
+      
+      final deployment = uri.queryParameters['deployment'];
+      final apiVersion = uri.queryParameters['api-version'];
+      
+      if (deployment == null || deployment.isEmpty) {
+        return null;
+      }
+      
+      // Build the endpoint (base URL without path/query)
+      final endpoint = '${uri.scheme}://${uri.host}';
+      
+      return {
+        'endpoint': endpoint,
+        'deployment': deployment,
+        'apiVersion': apiVersion ?? '2024-10-01-preview',
+      };
+    } catch (e) {
+      return null;
+    }
   }
 
   /// Check if all Azure settings are configured
   Future<bool> hasAzureConfig() async {
     final apiKey = await getApiKey();
-    final endpoint = await getAzureEndpoint();
-    final deployment = await getAzureDeployment();
-    return apiKey != null && 
-           apiKey.isNotEmpty && 
-           endpoint != null && 
-           endpoint.isNotEmpty &&
-           deployment != null &&
-           deployment.isNotEmpty;
+    final realtimeUrl = await getRealtimeUrl();
+    
+    if (apiKey == null || apiKey.isEmpty) return false;
+    if (realtimeUrl == null || realtimeUrl.isEmpty) return false;
+    
+    // Validate URL format
+    final parsed = parseRealtimeUrl(realtimeUrl);
+    return parsed != null;
+  }
+
+  /// Clear all settings
+  Future<void> clearAll() async {
+    await _storage.delete(key: _apiKeyKey);
+    await _storage.delete(key: _realtimeUrlKey);
   }
 }
