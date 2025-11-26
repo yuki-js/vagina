@@ -62,6 +62,9 @@ enum ServerEventType {
 class RealtimeApiClient {
   static const _tag = 'RealtimeAPI';
   
+  /// Log audio chunks sent every N chunks to avoid log explosion
+  static const int _logAudioChunkInterval = 50;
+  
   final WebSocketService _webSocket = WebSocketService();
   final StreamController<Uint8List> _audioController =
       StreamController<Uint8List>.broadcast();
@@ -242,8 +245,7 @@ class RealtimeApiClient {
     }
 
     _audioChunksSent++;
-    if (_audioChunksSent % 50 == 0) {
-      // Log every 50 chunks to avoid log explosion
+    if (_audioChunksSent % _logAudioChunkInterval == 0) {
       logService.debug(_tag, 'Sent $_audioChunksSent audio chunks');
     }
 

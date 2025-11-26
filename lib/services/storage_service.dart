@@ -7,6 +7,7 @@ import 'log_service.dart';
 /// Service for storing settings as files in external storage
 class StorageService {
   static const _configFileName = 'vagina_config.json';
+  static const _appFolderName = 'VAGINA';
   static const _tag = 'Storage';
   
   File? _configFile;
@@ -15,20 +16,11 @@ class StorageService {
   Future<bool> requestStoragePermission() async {
     logService.info(_tag, 'Requesting storage permission');
     
-    // On Android 11+ (API 30+), we need to use MANAGE_EXTERNAL_STORAGE for external access
-    // But for Documents directory, we can use the standard storage permission
     if (Platform.isAndroid) {
+      // Request standard storage permission
       final status = await Permission.storage.request();
       logService.info(_tag, 'Storage permission status: $status');
-      
-      if (status.isGranted) {
-        return true;
-      }
-      
-      // Try manage external storage for Android 11+
-      final manageStatus = await Permission.manageExternalStorage.request();
-      logService.info(_tag, 'Manage external storage permission status: $manageStatus');
-      return manageStatus.isGranted;
+      return status.isGranted;
     }
     
     return true;
@@ -42,14 +34,15 @@ class StorageService {
     
     if (Platform.isAndroid) {
       // Try to use external storage Documents directory
-      final externalDirs = await getExternalStorageDirectories(type: StorageDirectory.documents);
-      if (externalDirs != null && externalDirs.isNotEmpty) {
-        // Get the root external storage path (remove Android/data/package part)
-        final externalPath = externalDirs.first.path;
-        final parts = externalPath.split('/Android/');
-        if (parts.isNotEmpty) {
-          directory = Directory('${parts[0]}/Documents/VAGINA');
+      try {
+        final externalDirs = await getExternalStorageDirectories(type: StorageDirectory.documents);
+        if (externalDirs != null && externalDirs.isNotEmpty) {
+          // Use the app-specific external storage (doesn't require special permission)
+          // Path: /storage/emulated/0/Android/data/<package>/files/Documents/VAGINA
+          directory = Directory('${externalDirs.first.path}/$_appFolderName');
         }
+      } catch (e) {
+        logService.warn(_tag, 'Failed to get external storage: $e');
       }
     }
     

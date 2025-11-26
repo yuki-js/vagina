@@ -157,9 +157,9 @@ class CallService {
 
       // Listen to response audio
       logService.debug(_tag, 'Setting up audio stream listener');
-      _responseAudioSubscription = _apiClient.audioStream.listen((audioData) {
+      _responseAudioSubscription = _apiClient.audioStream.listen((audioData) async {
         logService.debug(_tag, 'Received audio from API: ${audioData.length} bytes');
-        _player.addAudioData(audioData);
+        await _player.addAudioData(audioData);
       });
       
       // Listen for audio done events
