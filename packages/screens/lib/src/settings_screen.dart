@@ -4,6 +4,14 @@ import 'package:vagina_ui/vagina_ui.dart';
 import 'package:vagina_core/vagina_core.dart';
 import 'package:vagina_assistant_model/vagina_assistant_model.dart';
 
+/// API Provider type enum
+enum ApiProviderType {
+  azureOpenAI,
+}
+
+/// API Provider type state provider
+final apiProviderTypeProvider = StateProvider<ApiProviderType>((ref) => ApiProviderType.azureOpenAI);
+
 /// Settings screen for API configuration
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -14,53 +22,84 @@ class SettingsScreen extends ConsumerStatefulWidget {
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   final _apiKeyController = TextEditingController();
+  final _endpointController = TextEditingController();
+  final _deploymentController = TextEditingController();
   bool _isApiKeyVisible = false;
   bool _isLoading = true;
   bool _isSaving = false;
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    _loadApiKey();
+    _loadSettings();
   }
 
-  Future<void> _loadApiKey() async {
-    final storage = ref.read(secureStorageServiceProvider);
-    final apiKey = await storage.getApiKey();
-    if (apiKey != null) {
-      _apiKeyController.text = apiKey;
+  Future<void> _loadSettings() async {
+    try {
+      final storage = ref.read(secureStorageServiceProvider);
+      final apiKey = await storage.getApiKey();
+      final endpoint = await storage.getAzureEndpoint();
+      final deployment = await storage.getAzureDeployment();
+      
+      if (apiKey != null) {
+        _apiKeyController.text = apiKey;
+      }
+      if (endpoint != null) {
+        _endpointController.text = endpoint;
+      }
+      if (deployment != null) {
+        _deploymentController.text = deployment;
+      }
+      
+      setState(() {
+        _isLoading = false;
+        _errorMessage = null;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Failed to load settings: $e';
+      });
     }
-    setState(() {
-      _isLoading = false;
-    });
   }
 
-  Future<void> _saveApiKey() async {
+  Future<void> _saveSettings() async {
+    // Validate inputs
+    if (_apiKeyController.text.trim().isEmpty) {
+      _showError('API Key is required');
+      return;
+    }
+    if (_endpointController.text.trim().isEmpty) {
+      _showError('Azure Endpoint is required');
+      return;
+    }
+    if (_deploymentController.text.trim().isEmpty) {
+      _showError('Deployment Name is required');
+      return;
+    }
+
     setState(() {
       _isSaving = true;
+      _errorMessage = null;
     });
 
     try {
       final storage = ref.read(secureStorageServiceProvider);
       await storage.saveApiKey(_apiKeyController.text.trim());
+      await storage.saveAzureEndpoint(_endpointController.text.trim());
+      await storage.saveAzureDeployment(_deploymentController.text.trim());
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('API key saved successfully'),
+            content: Text('Settings saved successfully'),
             backgroundColor: AppTheme.successColor,
           ),
         );
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to save API key: $e'),
-            backgroundColor: AppTheme.errorColor,
-          ),
-        );
-      }
+      _showError('Failed to save settings: $e');
     } finally {
       if (mounted) {
         setState(() {
@@ -70,14 +109,29 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 
-  Future<void> _deleteApiKey() async {
+  void _showError(String message) {
+    setState(() {
+      _errorMessage = message;
+    });
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: AppTheme.errorColor,
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    }
+  }
+
+  Future<void> _deleteSettings() async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppTheme.surfaceColor,
-        title: const Text('Delete API Key?'),
+        title: const Text('Delete All Settings?'),
         content: const Text(
-          'Are you sure you want to delete your saved API key?',
+          'Are you sure you want to delete all saved API settings?',
         ),
         actions: [
           TextButton(
@@ -94,17 +148,25 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
 
     if (confirmed == true) {
-      final storage = ref.read(secureStorageServiceProvider);
-      await storage.deleteApiKey();
-      _apiKeyController.clear();
+      try {
+        final storage = ref.read(secureStorageServiceProvider);
+        await storage.deleteApiKey();
+        await storage.deleteAzureEndpoint();
+        await storage.deleteAzureDeployment();
+        _apiKeyController.clear();
+        _endpointController.clear();
+        _deploymentController.clear();
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('API key deleted'),
-            backgroundColor: AppTheme.warningColor,
-          ),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Settings deleted'),
+              backgroundColor: AppTheme.warningColor,
+            ),
+          );
+        }
+      } catch (e) {
+        _showError('Failed to delete settings: $e');
       }
     }
   }
@@ -112,6 +174,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   void dispose() {
     _apiKeyController.dispose();
+    _endpointController.dispose();
+    _deploymentController.dispose();
     super.dispose();
   }
 
@@ -141,15 +205,45 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 padding: const EdgeInsets.all(16),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
-                    // API Configuration Section
-                    _buildSectionHeader('API Configuration'),
+                    // Error message banner
+                    if (_errorMessage != null) ...[
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppTheme.errorColor.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppTheme.errorColor),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.error_outline, color: AppTheme.errorColor),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                _errorMessage!,
+                                style: const TextStyle(color: AppTheme.errorColor),
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap: () => setState(() => _errorMessage = null),
+                              child: const Icon(Icons.close, color: AppTheme.errorColor, size: 20),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+
+                    // Azure OpenAI Configuration Section
+                    _buildSectionHeader('Azure OpenAI Configuration'),
                     const SizedBox(height: 12),
                     _buildCard(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          // Azure Endpoint
                           const Text(
-                            'OpenAI API Key',
+                            'Azure Endpoint',
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
@@ -161,10 +255,67 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             const Center(child: CircularProgressIndicator())
                           else
                             TextField(
+                              controller: _endpointController,
+                              decoration: const InputDecoration(
+                                hintText: 'https://your-resource.openai.azure.com',
+                              ),
+                              keyboardType: TextInputType.url,
+                            ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Example: https://your-resource.openai.azure.com',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: AppTheme.textSecondary.withOpacity(0.7),
+                            ),
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          // Deployment Name
+                          const Text(
+                            'Deployment Name',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: AppTheme.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          if (!_isLoading)
+                            TextField(
+                              controller: _deploymentController,
+                              decoration: const InputDecoration(
+                                hintText: 'gpt-4o-realtime-preview',
+                              ),
+                            ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'The deployment name of your Azure OpenAI model',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: AppTheme.textSecondary.withOpacity(0.7),
+                            ),
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          // API Key
+                          const Text(
+                            'API Key',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: AppTheme.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          if (!_isLoading)
+                            TextField(
                               controller: _apiKeyController,
                               obscureText: !_isApiKeyVisible,
                               decoration: InputDecoration(
-                                hintText: 'sk-...',
+                                hintText: 'Enter your Azure OpenAI API key',
                                 suffixIcon: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
@@ -184,7 +335,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                       IconButton(
                                         icon: const Icon(Icons.delete_outline),
                                         color: AppTheme.errorColor,
-                                        onPressed: _deleteApiKey,
+                                        onPressed: _deleteSettings,
                                       ),
                                   ],
                                 ),
@@ -194,7 +345,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton(
-                              onPressed: _isSaving ? null : _saveApiKey,
+                              onPressed: _isSaving ? null : _saveSettings,
                               child: _isSaving
                                   ? const SizedBox(
                                       width: 20,
@@ -203,12 +354,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                         strokeWidth: 2,
                                       ),
                                     )
-                                  : const Text('Save API Key'),
+                                  : const Text('Save Settings'),
                             ),
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'Your API key is stored securely on your device and never sent to our servers.',
+                            'Your credentials are stored securely on your device and never sent to our servers.',
                             style: TextStyle(
                               fontSize: 12,
                               color: AppTheme.textSecondary.withOpacity(0.7),
@@ -270,7 +421,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         children: [
                           _buildInfoRow('App Version', '1.0.0'),
                           const Divider(color: AppTheme.surfaceColor),
-                          _buildInfoRow('Powered by', 'OpenAI Realtime API'),
+                          _buildInfoRow('Powered by', 'Azure OpenAI Realtime API'),
                         ],
                       ),
                     ),

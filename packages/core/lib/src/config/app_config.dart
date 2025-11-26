@@ -2,15 +2,11 @@
 class AppConfig {
   const AppConfig._();
 
-  /// OpenAI Realtime API WebSocket URL
-  static const String realtimeApiUrl =
-      'wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01';
+  /// Azure OpenAI API version
+  static const String azureApiVersion = '2024-10-01-preview';
 
   /// Default assistant voice
   static const String defaultVoice = 'alloy';
-
-  /// Default microphone gain (0.0 to 1.0)
-  static const double defaultMicGain = 0.8;
 
   /// Audio sample rate
   static const int sampleRate = 24000;

@@ -1,4 +1,4 @@
-name: Android CI
+name: iOS CI
 
 on:
   push:
@@ -13,7 +13,7 @@ permissions:
 jobs:
   analyze:
     name: Analyze
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     permissions:
       contents: read
     steps:
@@ -42,9 +42,10 @@ jobs:
       - name: Analyze project source
         run: flutter analyze --no-fatal-infos
 
-  test:
-    name: Test
-    runs-on: ubuntu-latest
+  build-ios-debug:
+    name: Build iOS (Debug)
+    runs-on: macos-latest
+    needs: [analyze]
     permissions:
       contents: read
     steps:
@@ -67,81 +68,48 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pub-
       
-      - name: Install dependencies
-        run: flutter pub get
-      
-      - name: Run tests
-        run: flutter test
-
-  build-android-debug:
-    name: Build Android (Debug)
-    runs-on: ubuntu-latest
-    needs: [analyze, test]
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-      
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.38.3'
-          channel: 'stable'
-          cache: true
-      
-      - name: Cache pub dependencies
+      - name: Cache CocoaPods
         uses: actions/cache@v4
         with:
-          path: |
-            ~/.pub-cache
-            .dart_tool
-          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          path: ios/Pods
+          key: ${{ runner.os }}-pods-${{ hashFiles('ios/Podfile.lock') }}
           restore-keys: |
-            ${{ runner.os }}-pub-
-      
-      - name: Cache Gradle
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
+            ${{ runner.os }}-pods-
       
       - name: Install dependencies
         run: flutter pub get
       
-      - name: Build Android APK (debug)
-        run: flutter build apk --debug
+      - name: Install CocoaPods
+        run: |
+          cd ios
+          pod install --repo-update
       
-      - name: Upload Debug APK
+      - name: Build iOS (debug, no codesign)
+        run: flutter build ios --debug --no-codesign
+      
+      - name: Create Debug IPA
+        run: |
+          mkdir -p build/ios/ipa
+          cd build/ios/iphonesimulator
+          mkdir Payload
+          cp -r Runner.app Payload/
+          zip -r ../ipa/app-debug.ipa Payload
+      
+      - name: Upload Debug IPA
         uses: actions/upload-artifact@v4
         with:
-          name: android-debug-apk
-          path: build/app/outputs/flutter-apk/app-debug.apk
+          name: ios-debug-ipa
+          path: build/ios/ipa/app-debug.ipa
           retention-days: 14
 
-  build-android-release:
-    name: Build Android (Release)
-    runs-on: ubuntu-latest
-    needs: [analyze, test]
+  build-ios-release:
+    name: Build iOS (Release)
+    runs-on: macos-latest
+    needs: [analyze]
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
       
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -160,25 +128,36 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pub-
       
-      - name: Cache Gradle
+      - name: Cache CocoaPods
         uses: actions/cache@v4
         with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          path: ios/Pods
+          key: ${{ runner.os }}-pods-${{ hashFiles('ios/Podfile.lock') }}
           restore-keys: |
-            ${{ runner.os }}-gradle-
+            ${{ runner.os }}-pods-
       
       - name: Install dependencies
         run: flutter pub get
       
-      - name: Build Android APK (release)
-        run: flutter build apk --release
+      - name: Install CocoaPods
+        run: |
+          cd ios
+          pod install --repo-update
       
-      - name: Upload Release APK
+      - name: Build iOS (release, no codesign)
+        run: flutter build ios --release --no-codesign
+      
+      - name: Create Release IPA
+        run: |
+          mkdir -p build/ios/ipa
+          cd build/ios/iphoneos
+          mkdir Payload
+          cp -r Runner.app Payload/
+          zip -r ../ipa/app-release.ipa Payload
+      
+      - name: Upload Release IPA
         uses: actions/upload-artifact@v4
         with:
-          name: android-release-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          name: ios-release-ipa
+          path: build/ios/ipa/app-release.ipa
           retention-days: 30

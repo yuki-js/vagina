@@ -1,23 +1,23 @@
-# OpenAI Realtime API 仕様書
+# Azure OpenAI Realtime API 仕様書
 
-本ドキュメントは、VAGINA アプリで使用する OpenAI Realtime API の仕様をまとめたものです。
+本ドキュメントは、VAGINA アプリで使用する Azure OpenAI Realtime API の仕様をまとめたものです。
 
 ## 概要
 
-OpenAI Realtime API は、WebSocket を使用した双方向リアルタイム音声通信 API です。音声入力をストリーミングで送信し、AI からの音声応答をリアルタイムで受信できます。
+Azure OpenAI Realtime API は、WebSocket を使用した双方向リアルタイム音声通信 API です。音声入力をストリーミングで送信し、AI からの音声応答をリアルタイムで受信できます。
 
 ## 接続情報
 
 ### エンドポイント
 
-**OpenAI 直接接続:**
-```
-wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01
-```
-
 **Azure OpenAI:**
 ```
 wss://{resource-name}.openai.azure.com/openai/realtime?api-version=2024-10-01-preview&deployment={deployment-name}
+```
+
+例:
+```
+wss://my-resource.openai.azure.com/openai/realtime?api-version=2024-10-01-preview&deployment=gpt-4o-realtime-preview
 ```
 
 ### 認証
@@ -25,10 +25,10 @@ wss://{resource-name}.openai.azure.com/openai/realtime?api-version=2024-10-01-pr
 WebSocket 接続時に `api-key` クエリパラメータで API キーを渡します：
 
 ```
-wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01&api-key={YOUR_API_KEY}
+wss://{resource}.openai.azure.com/openai/realtime?api-version=2024-10-01-preview&deployment={deployment}&api-key={YOUR_API_KEY}
 ```
 
-> ⚠️ **セキュリティ注意**: ブラウザ/モバイルアプリから直接接続する場合、API キーがクライアント側に露出します。本番環境では中間サーバー経由での接続を推奨します。
+> ⚠️ **セキュリティ注意**: API キーはデバイスの Secure Storage に安全に保存されます。
 
 ## 音声フォーマット
 

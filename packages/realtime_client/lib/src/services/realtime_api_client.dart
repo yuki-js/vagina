@@ -4,7 +4,7 @@ import 'dart:typed_data';
 import 'package:vagina_core/vagina_core.dart';
 import 'websocket_service.dart';
 
-/// Events sent by the client to the OpenAI Realtime API
+/// Events sent by the client to the Azure OpenAI Realtime API
 enum ClientEventType {
   sessionUpdate('session.update'),
   inputAudioBufferAppend('input_audio_buffer.append'),
@@ -20,7 +20,7 @@ enum ClientEventType {
   const ClientEventType(this.value);
 }
 
-/// Events received from the OpenAI Realtime API
+/// Events received from the Azure OpenAI Realtime API
 enum ServerEventType {
   error('error'),
   sessionCreated('session.created'),
@@ -57,7 +57,33 @@ enum ServerEventType {
   const ServerEventType(this.value);
 }
 
-/// Client for the OpenAI Realtime API
+/// Configuration for Azure OpenAI connection
+class AzureOpenAIConfig {
+  final String endpoint;
+  final String deployment;
+  final String apiKey;
+
+  const AzureOpenAIConfig({
+    required this.endpoint,
+    required this.deployment,
+    required this.apiKey,
+  });
+
+  /// Build the WebSocket URL for Azure OpenAI Realtime API
+  String get webSocketUrl {
+    // Remove trailing slash from endpoint if present
+    final cleanEndpoint = endpoint.endsWith('/') 
+        ? endpoint.substring(0, endpoint.length - 1) 
+        : endpoint;
+    
+    // Convert https:// to wss://
+    final wsEndpoint = cleanEndpoint.replaceFirst('https://', 'wss://');
+    
+    return '$wsEndpoint/openai/realtime?api-version=2024-10-01-preview&deployment=$deployment';
+  }
+}
+
+/// Client for the Azure OpenAI Realtime API
 class RealtimeApiClient {
   final WebSocketService _webSocket = WebSocketService();
   final StreamController<Uint8List> _audioController =
@@ -68,29 +94,55 @@ class RealtimeApiClient {
       StreamController<String>.broadcast();
 
   StreamSubscription? _messageSubscription;
+  String? _lastError;
 
   bool get isConnected => _webSocket.isConnected;
   Stream<Uint8List> get audioStream => _audioController.stream;
   Stream<String> get transcriptStream => _transcriptController.stream;
   Stream<String> get errorStream => _errorController.stream;
+  String? get lastError => _lastError;
 
-  /// Connect to the OpenAI Realtime API
-  Future<void> connect(String apiKey) async {
-    // Build URL with API key as query parameter for authentication
-    final uri = Uri.parse(AppConfig.realtimeApiUrl);
-    final authenticatedUri = uri.replace(
-      queryParameters: {
-        ...uri.queryParameters,
-        'api-key': apiKey,
-      },
-    );
-    
-    await _webSocket.connect(authenticatedUri.toString());
+  /// Connect to the Azure OpenAI Realtime API
+  Future<void> connectAzure(AzureOpenAIConfig config) async {
+    try {
+      // Validate config
+      if (config.endpoint.isEmpty) {
+        throw Exception('Azure endpoint is required');
+      }
+      if (config.deployment.isEmpty) {
+        throw Exception('Deployment name is required');
+      }
+      if (config.apiKey.isEmpty) {
+        throw Exception('API key is required');
+      }
 
-    _messageSubscription = _webSocket.messages.listen(_handleMessage);
+      // Build WebSocket URL with API key
+      final uri = Uri.parse(config.webSocketUrl);
+      final authenticatedUri = uri.replace(
+        queryParameters: {
+          ...uri.queryParameters,
+          'api-key': config.apiKey,
+        },
+      );
+      
+      await _webSocket.connect(authenticatedUri.toString());
 
-    // Configure session after connection
-    await _configureSession();
+      _messageSubscription = _webSocket.messages.listen(
+        _handleMessage,
+        onError: (error) {
+          _lastError = error.toString();
+          _errorController.add(_lastError!);
+        },
+      );
+
+      // Configure session after connection
+      await _configureSession();
+      _lastError = null;
+    } catch (e) {
+      _lastError = e.toString();
+      _errorController.add(_lastError!);
+      rethrow;
+    }
   }
 
   Future<void> _configureSession() async {
@@ -138,14 +190,22 @@ class RealtimeApiClient {
       case 'error':
         final error = message['error'] as Map<String, dynamic>?;
         final errorMessage = error?['message'] as String? ?? 'Unknown error';
-        _errorController.add(errorMessage);
+        final errorCode = error?['code'] as String?;
+        final fullError = errorCode != null 
+            ? '[$errorCode] $errorMessage' 
+            : errorMessage;
+        _lastError = fullError;
+        _errorController.add(fullError);
         break;
     }
   }
 
   /// Send audio data to the API
   void sendAudio(Uint8List audioData) {
-    if (!isConnected) return;
+    if (!isConnected) {
+      _errorController.add('Cannot send audio: not connected');
+      return;
+    }
 
     final base64Audio = base64Encode(audioData);
     _webSocket.send({
@@ -156,7 +216,10 @@ class RealtimeApiClient {
 
   /// Commit the current audio buffer
   void commitAudioBuffer() {
-    if (!isConnected) return;
+    if (!isConnected) {
+      _errorController.add('Cannot commit audio buffer: not connected');
+      return;
+    }
 
     _webSocket.send({
       'type': ClientEventType.inputAudioBufferCommit.value,
@@ -174,7 +237,10 @@ class RealtimeApiClient {
 
   /// Send a text message
   void sendTextMessage(String text) {
-    if (!isConnected) return;
+    if (!isConnected) {
+      _errorController.add('Cannot send message: not connected');
+      return;
+    }
 
     _webSocket.send({
       'type': ClientEventType.conversationItemCreate.value,

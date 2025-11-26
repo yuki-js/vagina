@@ -5,7 +5,10 @@ import 'package:vagina_ui/vagina_ui.dart';
 import 'package:vagina_audio/vagina_audio.dart';
 import 'settings_screen.dart';
 
-/// Main call screen with mute, mic gain, disconnect, and settings buttons
+/// Error message provider for displaying errors to users
+final errorMessageProvider = StateProvider<String?>((ref) => null);
+
+/// Main call screen with mute, disconnect, and settings buttons
 class CallScreen extends ConsumerStatefulWidget {
   const CallScreen({super.key});
 
@@ -25,6 +28,9 @@ class _CallScreenState extends ConsumerState<CallScreen> {
   }
 
   void _startCall() {
+    // Clear any previous errors
+    ref.read(errorMessageProvider.notifier).state = null;
+    
     setState(() {
       _isCallActive = true;
       _callDuration = 0;
@@ -44,6 +50,24 @@ class _CallScreenState extends ConsumerState<CallScreen> {
     });
   }
 
+  void _showError(String message) {
+    ref.read(errorMessageProvider.notifier).state = message;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: AppTheme.errorColor,
+        duration: const Duration(seconds: 5),
+        action: SnackBarAction(
+          label: 'Dismiss',
+          textColor: Colors.white,
+          onPressed: () {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          },
+        ),
+      ),
+    );
+  }
+
   String _formatDuration(int seconds) {
     final minutes = seconds ~/ 60;
     final secs = seconds % 60;
@@ -59,7 +83,7 @@ class _CallScreenState extends ConsumerState<CallScreen> {
   @override
   Widget build(BuildContext context) {
     final isMuted = ref.watch(isMutedProvider);
-    final micGain = ref.watch(micGainProvider);
+    final errorMessage = ref.watch(errorMessageProvider);
 
     return Scaffold(
       body: Container(
@@ -78,6 +102,42 @@ class _CallScreenState extends ConsumerState<CallScreen> {
                   onPressed: _openSettings,
                 ),
               ),
+
+              // Error banner (top)
+              if (errorMessage != null)
+                Positioned(
+                  top: 16,
+                  left: 16,
+                  right: 80,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppTheme.errorColor.withOpacity(0.9),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.error_outline, color: Colors.white, size: 20),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            errorMessage,
+                            style: const TextStyle(color: Colors.white, fontSize: 14),
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () {
+                            ref.read(errorMessageProvider.notifier).state = null;
+                          },
+                          child: const Icon(Icons.close, color: Colors.white, size: 20),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
 
               // Main content
               Center(
@@ -149,18 +209,6 @@ class _CallScreenState extends ConsumerState<CallScreen> {
                       const SizedBox(height: 32),
                     ],
 
-                    // Mic gain slider
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 32),
-                      child: MicGainSlider(
-                        value: micGain,
-                        isMuted: isMuted,
-                        onChanged: (value) {
-                          ref.read(micGainProvider.notifier).state = value;
-                        },
-                      ),
-                    ),
-
                     const SizedBox(height: 48),
 
                     // Control buttons
@@ -178,9 +226,9 @@ class _CallScreenState extends ConsumerState<CallScreen> {
                           },
                         ),
 
-                        const SizedBox(width: 24),
+                        const SizedBox(width: 32),
 
-                        // Call button
+                        // Call button (start/end call)
                         CallButton(
                           isCallActive: _isCallActive,
                           size: 80,
@@ -191,18 +239,6 @@ class _CallScreenState extends ConsumerState<CallScreen> {
                               _startCall();
                             }
                           },
-                        ),
-
-                        const SizedBox(width: 24),
-
-                        // End call / placeholder button
-                        CircularIconButton(
-                          icon:
-                              _isCallActive ? Icons.call_end : Icons.volume_up,
-                          size: 64,
-                          activeBackgroundColor: AppTheme.errorColor,
-                          isActive: _isCallActive,
-                          onPressed: _isCallActive ? _endCall : null,
                         ),
                       ],
                     ),
