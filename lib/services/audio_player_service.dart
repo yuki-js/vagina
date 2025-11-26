@@ -8,61 +8,91 @@ class AudioPlayerService {
   static const _tag = 'AudioPlayer';
   
   final AudioPlayer _player = AudioPlayer();
-  final List<Uint8List> _audioQueue = [];
+  final List<int> _audioBuffer = [];
   bool _isPlaying = false;
   bool _isProcessing = false;
+  Timer? _bufferTimer;
+  bool _responseComplete = false;
   
   // Audio format settings (must match API output format)
   static const int _sampleRate = 24000;
   static const int _channels = 1;
   static const int _bitsPerSample = 16;
   
-  // Maximum batch size to prevent memory issues (100KB)
-  static const int _maxBatchSize = 100 * 1024;
+  // Minimum buffer size before playing (0.5 seconds of audio)
+  // 24000 samples/sec * 2 bytes/sample * 0.5 sec = 24000 bytes
+  static const int _minBufferSize = 24000;
+  
+  // Maximum buffer size to prevent memory issues (5 seconds of audio)
+  static const int _maxBufferSize = 24000 * 2 * 5;
+  
+  // Buffer timeout - start playing after this time even if buffer is small
+  static const Duration _bufferTimeout = Duration(milliseconds: 500);
   
   // Playback timeout to prevent hanging
-  static const Duration _playbackTimeout = Duration(seconds: 30);
+  static const Duration _playbackTimeout = Duration(seconds: 60);
 
   bool get isPlaying => _isPlaying;
 
-  /// Add PCM audio data to the playback queue
+  /// Add PCM audio data to the playback buffer
   void addAudioData(Uint8List pcmData) {
-    logService.debug(_tag, 'Adding audio data to queue: ${pcmData.length} bytes');
-    _audioQueue.add(pcmData);
-    if (!_isProcessing) {
-      logService.info(_tag, 'Starting queue processing');
-      _processQueue();
+    logService.debug(_tag, 'Adding audio data to buffer: ${pcmData.length} bytes (total: ${_audioBuffer.length + pcmData.length})');
+    _audioBuffer.addAll(pcmData);
+    
+    // Reset the buffer timer
+    _bufferTimer?.cancel();
+    
+    // If buffer is large enough, start playing immediately
+    if (_audioBuffer.length >= _minBufferSize) {
+      logService.info(_tag, 'Buffer reached minimum size (${_audioBuffer.length} bytes), starting playback');
+      _startPlayback();
+    } else {
+      // Otherwise, wait a bit for more data
+      _bufferTimer = Timer(_bufferTimeout, () {
+        if (_audioBuffer.isNotEmpty && !_isProcessing) {
+          logService.info(_tag, 'Buffer timeout, starting playback with ${_audioBuffer.length} bytes');
+          _startPlayback();
+        }
+      });
     }
   }
 
-  Future<void> _processQueue() async {
+  /// Mark that the response is complete (audio.done received)
+  void markResponseComplete() {
+    logService.info(_tag, 'Response marked complete');
+    _responseComplete = true;
+    _bufferTimer?.cancel();
+    
+    // If we have remaining audio in buffer, play it
+    if (_audioBuffer.isNotEmpty && !_isProcessing) {
+      _startPlayback();
+    }
+  }
+
+  void _startPlayback() {
+    if (_isProcessing) return;
+    _processBuffer();
+  }
+
+  Future<void> _processBuffer() async {
     if (_isProcessing) return;
     
     _isProcessing = true;
     _isPlaying = true;
-    logService.info(_tag, 'Processing audio queue');
+    logService.info(_tag, 'Processing audio buffer');
 
-    while (_audioQueue.isNotEmpty) {
-      // Collect audio data up to max batch size
-      final allData = <int>[];
-      while (_audioQueue.isNotEmpty && allData.length < _maxBatchSize) {
-        final chunk = _audioQueue.removeAt(0);
-        // Only add if it won't exceed max batch size
-        if (allData.length + chunk.length <= _maxBatchSize) {
-          allData.addAll(chunk);
-        } else {
-          // Put the chunk back and process what we have
-          _audioQueue.insert(0, chunk);
-          break;
-        }
-      }
+    while (_audioBuffer.isNotEmpty) {
+      // Take up to max buffer size worth of audio
+      final chunkSize = _audioBuffer.length.clamp(0, _maxBufferSize);
+      final chunk = _audioBuffer.sublist(0, chunkSize);
+      _audioBuffer.removeRange(0, chunkSize);
       
-      if (allData.isEmpty) continue;
+      if (chunk.isEmpty) continue;
       
-      logService.info(_tag, 'Playing audio batch: ${allData.length} bytes');
+      logService.info(_tag, 'Playing audio chunk: ${chunk.length} bytes (remaining in buffer: ${_audioBuffer.length})');
       
       // Convert PCM16 to WAV format
-      final wavData = _pcmToWav(Uint8List.fromList(allData));
+      final wavData = _pcmToWav(Uint8List.fromList(chunk));
       logService.debug(_tag, 'Converted to WAV: ${wavData.length} bytes');
       
       // Play the audio with timeout
@@ -73,6 +103,7 @@ class AudioPlayerService {
         logService.debug(_tag, 'Audio source set, starting playback');
         await _player.play();
         logService.debug(_tag, 'Play started, waiting for completion');
+        
         // Wait for playback to complete with timeout
         await _player.processingStateStream
             .firstWhere((state) => state == ProcessingState.completed)
@@ -80,16 +111,23 @@ class AudioPlayerService {
               logService.warn(_tag, 'Playback timeout');
               return ProcessingState.completed;
             });
-        logService.debug(_tag, 'Playback completed');
+        logService.info(_tag, 'Chunk playback completed');
       } catch (e) {
         logService.error(_tag, 'Playback error: $e');
         // Continue processing even if playback fails
+      }
+      
+      // If more data arrived while playing, continue
+      if (_audioBuffer.isEmpty && !_responseComplete) {
+        // Wait a bit for more data
+        await Future.delayed(const Duration(milliseconds: 100));
       }
     }
 
     _isPlaying = false;
     _isProcessing = false;
-    logService.info(_tag, 'Queue processing complete');
+    _responseComplete = false;
+    logService.info(_tag, 'Buffer processing complete');
   }
 
   /// Convert raw PCM16 data to WAV format
@@ -140,11 +178,14 @@ class AudioPlayerService {
     return wavData;
   }
 
-  /// Stop all playback and clear queue
+  /// Stop all playback and clear buffer
   Future<void> stop() async {
-    _audioQueue.clear();
+    logService.info(_tag, 'Stopping playback');
+    _bufferTimer?.cancel();
+    _audioBuffer.clear();
     _isPlaying = false;
     _isProcessing = false;
+    _responseComplete = false;
     await _player.stop();
   }
 

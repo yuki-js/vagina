@@ -34,6 +34,7 @@ class CallService {
   StreamSubscription<Uint8List>? _audioStreamSubscription;
   StreamSubscription<Amplitude>? _amplitudeSubscription;
   StreamSubscription<Uint8List>? _responseAudioSubscription;
+  StreamSubscription<void>? _audioDoneSubscription;
   StreamSubscription<String>? _errorSubscription;
   Timer? _callTimer;
 
@@ -160,6 +161,12 @@ class CallService {
         logService.debug(_tag, 'Received audio from API: ${audioData.length} bytes');
         _player.addAudioData(audioData);
       });
+      
+      // Listen for audio done events
+      _audioDoneSubscription = _apiClient.audioDoneStream.listen((_) {
+        logService.info(_tag, 'Audio done event received, marking response complete');
+        _player.markResponseComplete();
+      });
 
       // Start microphone recording
       logService.info(_tag, 'Starting microphone recording');
@@ -238,6 +245,9 @@ class CallService {
 
     await _responseAudioSubscription?.cancel();
     _responseAudioSubscription = null;
+    
+    await _audioDoneSubscription?.cancel();
+    _audioDoneSubscription = null;
 
     await _errorSubscription?.cancel();
     _errorSubscription = null;

@@ -69,6 +69,8 @@ class RealtimeApiClient {
       StreamController<String>.broadcast();
   final StreamController<String> _errorController =
       StreamController<String>.broadcast();
+  final StreamController<void> _audioDoneController =
+      StreamController<void>.broadcast();
 
   StreamSubscription? _messageSubscription;
   String? _lastError;
@@ -79,6 +81,7 @@ class RealtimeApiClient {
   Stream<Uint8List> get audioStream => _audioController.stream;
   Stream<String> get transcriptStream => _transcriptController.stream;
   Stream<String> get errorStream => _errorController.stream;
+  Stream<void> get audioDoneStream => _audioDoneController.stream;
   String? get lastError => _lastError;
 
   /// Connect to Azure OpenAI using a full Realtime URL and API key
@@ -198,6 +201,7 @@ class RealtimeApiClient {
         
       case 'response.audio.done':
         logService.info(_tag, 'Audio response complete. Total chunks received: $_audioChunksReceived');
+        _audioDoneController.add(null);
         break;
 
       case 'response.audio_transcript.delta':
@@ -318,6 +322,7 @@ class RealtimeApiClient {
     await _audioController.close();
     await _transcriptController.close();
     await _errorController.close();
+    await _audioDoneController.close();
     await _webSocket.dispose();
   }
 }
