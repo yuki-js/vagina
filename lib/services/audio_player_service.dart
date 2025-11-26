@@ -13,6 +13,12 @@ class AudioPlayerService {
   static const int _sampleRate = 24000;
   static const int _channels = 1;
   static const int _bitsPerSample = 16;
+  
+  // Maximum batch size to prevent memory issues (100KB)
+  static const int _maxBatchSize = 100 * 1024;
+  
+  // Playback timeout to prevent hanging
+  static const Duration _playbackTimeout = Duration(seconds: 30);
 
   bool get isPlaying => _isPlaying;
 
@@ -31,10 +37,18 @@ class AudioPlayerService {
     _isPlaying = true;
 
     while (_audioQueue.isNotEmpty) {
-      // Collect all available audio data
+      // Collect audio data up to max batch size
       final allData = <int>[];
-      while (_audioQueue.isNotEmpty) {
-        allData.addAll(_audioQueue.removeAt(0));
+      while (_audioQueue.isNotEmpty && allData.length < _maxBatchSize) {
+        final chunk = _audioQueue.removeAt(0);
+        // Only add if it won't exceed max batch size
+        if (allData.length + chunk.length <= _maxBatchSize) {
+          allData.addAll(chunk);
+        } else {
+          // Put the chunk back and process what we have
+          _audioQueue.insert(0, chunk);
+          break;
+        }
       }
       
       if (allData.isEmpty) continue;
@@ -42,16 +56,18 @@ class AudioPlayerService {
       // Convert PCM16 to WAV format
       final wavData = _pcmToWav(Uint8List.fromList(allData));
       
-      // Play the audio
+      // Play the audio with timeout
       try {
         await _player.setAudioSource(
           BytesAudioSource(wavData),
         );
         await _player.play();
-        // Wait for playback to complete
-        await _player.processingStateStream.firstWhere(
-          (state) => state == ProcessingState.completed,
-        );
+        // Wait for playback to complete with timeout
+        await _player.processingStateStream
+            .firstWhere((state) => state == ProcessingState.completed)
+            .timeout(_playbackTimeout, onTimeout: () {
+              return ProcessingState.completed;
+            });
       } catch (e) {
         // Continue processing even if playback fails
       }

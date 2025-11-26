@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 
 /// Service for storing settings as files in app documents directory
-/// Data persists even when app is uninstalled (external storage on Android)
 class StorageService {
   static const _configFileName = 'vagina_config.json';
   

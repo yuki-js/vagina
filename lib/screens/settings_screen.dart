@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/app_theme.dart';
@@ -119,18 +120,26 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
     setState(() => _isTesting = true);
 
+    RealtimeApiClient? apiClient;
     try {
       // Create a temporary API client to test the connection
-      final apiClient = RealtimeApiClient();
+      apiClient = RealtimeApiClient();
       
+      // Add timeout to prevent UI from hanging on network issues
       await apiClient.connect(
         _realtimeUrlController.text.trim(),
         _apiKeyController.text.trim(),
+      ).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          throw TimeoutException('接続がタイムアウトしました');
+        },
       );
       
       // If we get here without exception, connection was successful
       await apiClient.disconnect();
       await apiClient.dispose();
+      apiClient = null;
       
       // Save settings on success
       final storage = ref.read(storageServiceProvider);
@@ -139,6 +148,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       _showSnackBar('接続テスト成功');
     } catch (e) {
       _showSnackBar('接続テスト失敗: $e', isError: true);
+      // Clean up the API client on failure
+      await apiClient?.disconnect();
+      await apiClient?.dispose();
     } finally {
       if (mounted) {
         setState(() => _isTesting = false);
