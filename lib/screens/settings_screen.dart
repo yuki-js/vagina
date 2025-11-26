@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:vagina_ui/vagina_ui.dart';
-import 'package:vagina_core/vagina_core.dart';
-import 'package:vagina_assistant_model/vagina_assistant_model.dart';
+import '../theme/app_theme.dart';
+import '../providers/providers.dart';
+import '../services/secure_storage_service.dart';
+import '../models/assistant_config.dart';
 import 'components/components.dart';
 
 /// Settings screen for API configuration (2 inputs: Realtime URL + API Key)

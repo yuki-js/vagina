@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:vagina_ui/vagina_ui.dart';
+import '../../theme/app_theme.dart';
 
 /// Reusable card widget for settings sections
 class SettingsCard extends StatelessWidget {

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:vagina_screens/vagina_screens.dart';
-import 'package:vagina_ui/vagina_ui.dart';
+import 'screens/call_screen.dart';
+import 'theme/app_theme.dart';
 
 void main() {
   runApp(

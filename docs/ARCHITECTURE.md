@@ -2,52 +2,71 @@
 
 ## 概要
 
-VAGINA は、Flutter を使用したクロスプラットフォーム (Android/iOS) の音声 AI アシスタントアプリです。OpenAI Realtime API を使用してリアルタイム音声会話を実現します。
+VAGINA は、Flutter を使用したクロスプラットフォーム (Android/iOS) の音声 AI アシスタントアプリです。Azure OpenAI Realtime API を使用してリアルタイム音声会話を実現します。
 
-## モジュール構成
+## ディレクトリ構成
 
 ```
 vagina/
-├── lib/                    # メインアプリケーション
-│   └── main.dart          # エントリーポイント
-├── packages/              # 機能モジュール
-│   ├── core/              # 共通ロジック・設定
-│   ├── audio/             # マイク入力・音声再生
-│   ├── realtime_client/   # WebSocket/API 通信
-│   ├── assistant_model/   # パーソナリティ・プロンプト管理
-│   ├── screens/           # 画面コンポーネント
-│   └── ui/                # 再利用可能 UI ウィジェット
-└── docs/                  # ドキュメント
+├── lib/                        # メインアプリケーション
+│   ├── main.dart              # エントリーポイント
+│   ├── config/                # アプリ設定
+│   │   └── app_config.dart    # 定数・設定値
+│   ├── models/                # データモデル
+│   │   └── assistant_config.dart
+│   ├── services/              # ビジネスロジック・API
+│   │   ├── secure_storage_service.dart
+│   │   ├── audio_recorder_service.dart
+│   │   ├── audio_player_service.dart
+│   │   ├── websocket_service.dart
+│   │   └── realtime_api_client.dart
+│   ├── providers/             # Riverpod プロバイダー
+│   │   └── providers.dart
+│   ├── screens/               # 画面
+│   │   ├── call_screen.dart
+│   │   ├── settings_screen.dart
+│   │   └── components/        # 画面コンポーネント
+│   ├── widgets/               # 再利用可能ウィジェット
+│   │   ├── call_button.dart
+│   │   └── circular_icon_button.dart
+│   └── theme/                 # テーマ定義
+│       └── app_theme.dart
+└── docs/                      # ドキュメント
 ```
 
-### 各モジュールの責務
+### 設計方針
 
-#### `core`
-- アプリ設定の管理
+**シンプルな構造**: このアプリのスコープでは、複数のパッケージに分割するオーバーエンジニアリングを避け、`lib/` ディレクトリ内でサブディレクトリによる論理的な分離を行っています。
+
+### 各ディレクトリの責務
+
+#### `config/`
+- アプリ設定の管理 (API バージョン、音声設定など)
+
+#### `models/`
+- データクラス定義 (AssistantConfig など)
+
+#### `services/`
 - セキュアストレージサービス (API キー保存)
-- 共通プロバイダー
-
-#### `audio`
 - マイク入力のキャプチャ (`record` パッケージ)
 - 音声再生 (`just_audio` パッケージ)
-- ミュート・マイクゲインの制御
-
-#### `realtime_client`
 - WebSocket 接続管理
-- OpenAI Realtime API との通信
-- イベントハンドリング
+- Azure OpenAI Realtime API との通信
 
-#### `assistant_model`
-- アシスタントの設定 (名前、指示、音声)
-- プロンプト管理
+#### `providers/`
+- Riverpod の全プロバイダー定義
+- 依存性注入
 
-#### `screens`
+#### `screens/`
 - 通話メイン画面
 - 設定画面
+- 画面固有のコンポーネント
 
-#### `ui`
-- 共通 UI ウィジェット (ボタン、スライダー等)
-- テーマ定義
+#### `widgets/`
+- 複数画面で再利用可能な UI ウィジェット
+
+#### `theme/`
+- アプリのテーマ定義
 
 ## 状態管理
 

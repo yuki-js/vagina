@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
-import 'package:vagina_core/vagina_core.dart';
+import '../config/app_config.dart';
 import 'websocket_service.dart';
 
 /// Events sent by the client to the Azure OpenAI Realtime API

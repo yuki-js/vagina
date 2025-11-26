@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:vagina_ui/vagina_ui.dart';
+import '../../theme/app_theme.dart';
 
 /// App header with logo and title
 class AppHeader extends StatelessWidget {

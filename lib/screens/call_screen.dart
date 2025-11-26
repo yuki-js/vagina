@@ -2,9 +2,10 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:vagina_ui/vagina_ui.dart';
-import 'package:vagina_audio/vagina_audio.dart';
-import 'package:vagina_core/vagina_core.dart';
+import '../theme/app_theme.dart';
+import '../providers/providers.dart';
+import '../widgets/call_button.dart';
+import '../widgets/circular_icon_button.dart';
 import 'settings_screen.dart';
 import 'components/components.dart';
 
@@ -59,6 +60,8 @@ class _CallScreenState extends ConsumerState<CallScreen> with SingleTickerProvid
     });
     
     // Simulate mic input level for demo (will be replaced with real audio data)
+    // NOTE: This is simulated - actual microphone recording is not yet implemented.
+    // When real recording is enabled, Android/iOS will show the mic indicator.
     _levelSimTimer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
       final isMuted = ref.read(isMutedProvider);
       if (!isMuted && _isCallActive) {

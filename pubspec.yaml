@@ -30,20 +30,6 @@ dependencies:
   
   # Secure storage
   flutter_secure_storage: ^9.2.4
-  
-  # Local packages
-  vagina_core:
-    path: packages/core
-  vagina_audio:
-    path: packages/audio
-  vagina_realtime_client:
-    path: packages/realtime_client
-  vagina_assistant_model:
-    path: packages/assistant_model
-  vagina_screens:
-    path: packages/screens
-  vagina_ui:
-    path: packages/ui
 
 dev_dependencies:
   flutter_test:
