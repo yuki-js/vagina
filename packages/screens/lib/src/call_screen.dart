@@ -28,26 +28,34 @@ class _CallScreenState extends ConsumerState<CallScreen> {
   }
 
   void _startCall() {
-    // Clear any previous errors
-    ref.read(errorMessageProvider.notifier).state = null;
-    
-    setState(() {
-      _isCallActive = true;
-      _callDuration = 0;
-    });
-    _callTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+    try {
+      // Clear any previous errors
+      ref.read(errorMessageProvider.notifier).state = null;
+      
       setState(() {
-        _callDuration++;
+        _isCallActive = true;
+        _callDuration = 0;
       });
-    });
+      _callTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+        setState(() {
+          _callDuration++;
+        });
+      });
+    } catch (e) {
+      _showError('Failed to start call: $e');
+    }
   }
 
   void _endCall() {
-    _callTimer?.cancel();
-    setState(() {
-      _isCallActive = false;
-      _callDuration = 0;
-    });
+    try {
+      _callTimer?.cancel();
+      setState(() {
+        _isCallActive = false;
+        _callDuration = 0;
+      });
+    } catch (e) {
+      _showError('Failed to end call: $e');
+    }
   }
 
   void _showError(String message) {
