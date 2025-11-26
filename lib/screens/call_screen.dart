@@ -24,14 +24,21 @@ class _CallScreenState extends ConsumerState<CallScreen> {
   CallState _callState = CallState.idle;
   double _inputLevel = 0.0;
   int _callDuration = 0;
+  bool _subscriptionsInitialized = false;
 
   @override
-  void initState() {
-    super.initState();
-    _setupSubscriptions();
+  void dispose() {
+    _stateSubscription?.cancel();
+    _amplitudeSubscription?.cancel();
+    _durationSubscription?.cancel();
+    _errorSubscription?.cancel();
+    super.dispose();
   }
 
   void _setupSubscriptions() {
+    if (_subscriptionsInitialized) return;
+    _subscriptionsInitialized = true;
+
     final callService = ref.read(callServiceProvider);
 
     _stateSubscription = callService.stateStream.listen((state) {
@@ -63,15 +70,6 @@ class _CallScreenState extends ConsumerState<CallScreen> {
         _showSnackBar(error, isError: true);
       }
     });
-  }
-
-  @override
-  void dispose() {
-    _stateSubscription?.cancel();
-    _amplitudeSubscription?.cancel();
-    _durationSubscription?.cancel();
-    _errorSubscription?.cancel();
-    super.dispose();
   }
 
   void _showSnackBar(String message, {bool isError = false}) {
@@ -118,6 +116,9 @@ class _CallScreenState extends ConsumerState<CallScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Setup subscriptions on first build (safe to use ref here)
+    _setupSubscriptions();
+    
     final isMuted = ref.watch(isMutedProvider);
 
     return Scaffold(

@@ -14,6 +14,12 @@ enum CallState {
   error,
 }
 
+/// Audio level normalization constants
+/// dBFS (decibels Full Scale) typically ranges from -160 to 0
+/// -60 dB is considered quiet ambient noise, 0 dB is maximum
+const double _dbfsQuietThreshold = -60.0;
+const double _dbfsRange = 60.0;
+
 /// Service that manages the entire call lifecycle including
 /// microphone recording, Azure OpenAI Realtime API connection, and audio playback
 class CallService {
@@ -159,9 +165,9 @@ class CallService {
       if (amplitudeStream != null) {
         _amplitudeSubscription = amplitudeStream.listen((amplitude) {
           if (!_isMuted && isCallActive) {
-            // Convert dBFS to 0-1 range
+            // Convert dBFS to 0-1 range using constants
             final normalizedLevel =
-                ((amplitude.current + 60) / 60).clamp(0.0, 1.0);
+                ((amplitude.current - _dbfsQuietThreshold) / _dbfsRange).clamp(0.0, 1.0);
             _amplitudeController.add(normalizedLevel);
           } else {
             _amplitudeController.add(0.0);
