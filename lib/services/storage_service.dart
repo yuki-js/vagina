@@ -1,24 +1,83 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'log_service.dart';
 
-/// Service for storing settings as files
+/// Service for storing settings as files in the user's Documents directory
 /// 
-/// Settings are stored in the app's documents directory which persists
-/// across app updates but is cleared when the app is uninstalled.
+/// Settings are stored in /storage/emulated/0/Documents/VAGINA/ which persists
+/// even after the app is uninstalled, allowing users to keep their configuration.
 class StorageService {
   static const _configFileName = 'vagina_config.json';
+  static const _appFolderName = 'VAGINA';
   static const _tag = 'Storage';
   
   File? _configFile;
 
+  /// Request storage permission for writing to user's Documents directory
+  Future<bool> requestStoragePermission() async {
+    logService.info(_tag, 'Requesting storage permission');
+    
+    if (Platform.isAndroid) {
+      // On Android 11+ (API 30+), we need MANAGE_EXTERNAL_STORAGE permission
+      // to write to user's Documents directory
+      final sdkInt = int.tryParse(Platform.version.split('.').first) ?? 0;
+      
+      if (sdkInt >= 30) {
+        // Android 11+: Request MANAGE_EXTERNAL_STORAGE
+        final status = await Permission.manageExternalStorage.request();
+        logService.info(_tag, 'Manage external storage permission status: $status');
+        return status.isGranted;
+      } else {
+        // Android 10 and below: Request standard storage permission
+        final status = await Permission.storage.request();
+        logService.info(_tag, 'Storage permission status: $status');
+        return status.isGranted;
+      }
+    }
+    
+    return true;
+  }
+
+  /// Check if storage permission is granted
+  Future<bool> hasStoragePermission() async {
+    if (Platform.isAndroid) {
+      // Try manage external storage first (Android 11+)
+      if (await Permission.manageExternalStorage.isGranted) {
+        return true;
+      }
+      // Fall back to standard storage permission
+      return await Permission.storage.isGranted;
+    }
+    return true;
+  }
+
   /// Initialize the storage service by getting the config file path
+  /// Uses user's Documents directory: /storage/emulated/0/Documents/VAGINA/
   Future<File> _getConfigFile() async {
     if (_configFile != null) return _configFile!;
     
-    // Use app documents directory (persists across updates, cleared on uninstall)
-    final directory = await getApplicationDocumentsDirectory();
+    Directory directory;
+    
+    if (Platform.isAndroid) {
+      // Use user's Documents directory (persists after uninstall)
+      // Path: /storage/emulated/0/Documents/VAGINA/
+      directory = Directory('/storage/emulated/0/Documents/$_appFolderName');
+    } else if (Platform.isIOS) {
+      // iOS doesn't have a persistent user Documents directory accessible after uninstall
+      // Use app's Documents directory as fallback
+      directory = Directory('/var/mobile/Documents/$_appFolderName');
+    } else {
+      // Desktop platforms
+      final home = Platform.environment['HOME'] ?? Platform.environment['USERPROFILE'] ?? '.';
+      directory = Directory('$home/Documents/$_appFolderName');
+    }
+    
+    // Create directory if it doesn't exist
+    if (!await directory.exists()) {
+      await directory.create(recursive: true);
+      logService.info(_tag, 'Created directory: ${directory.path}');
+    }
     
     _configFile = File('${directory.path}/$_configFileName');
     logService.info(_tag, 'Config file path: ${_configFile!.path}');

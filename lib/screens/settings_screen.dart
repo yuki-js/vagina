@@ -34,6 +34,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Future<void> _loadSettings() async {
     try {
       final storage = ref.read(storageServiceProvider);
+      
+      // Request storage permission first (needed for external storage on Android)
+      final hasPermission = await storage.requestStoragePermission();
+      if (!hasPermission) {
+        _showSnackBar('ストレージの権限が必要です', isError: true);
+        // Continue anyway - will use fallback path
+      }
+      
       final realtimeUrl = await storage.getRealtimeUrl();
       final apiKey = await storage.getApiKey();
       
