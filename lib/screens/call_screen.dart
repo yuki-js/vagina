@@ -1,42 +1,11 @@
 import 'dart:async';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:record/record.dart';
 import '../theme/app_theme.dart';
 import '../providers/providers.dart';
+import '../services/call_service.dart';
 import '../components/components.dart';
 import 'settings_screen.dart';
-
-/// Error message provider for displaying errors to users
-final errorMessageProvider = NotifierProvider<ErrorMessageNotifier, String?>(ErrorMessageNotifier.new);
-
-/// Notifier for error message state
-class ErrorMessageNotifier extends Notifier<String?> {
-  @override
-  String? build() => null;
-
-  void set(String? message) {
-    state = message;
-  }
-
-  void clear() {
-    state = null;
-  }
-}
-
-/// Input level provider (0.0 - 1.0)
-final inputLevelProvider = NotifierProvider<InputLevelNotifier, double>(InputLevelNotifier.new);
-
-/// Notifier for input level state
-class InputLevelNotifier extends Notifier<double> {
-  @override
-  double build() => 0.0;
-
-  void set(double value) {
-    state = value.clamp(0.0, 1.0);
-  }
-}
 
 /// Main call screen with mute, disconnect, and settings buttons
 class CallScreen extends ConsumerStatefulWidget {
@@ -46,121 +15,90 @@ class CallScreen extends ConsumerStatefulWidget {
   ConsumerState<CallScreen> createState() => _CallScreenState();
 }
 
-class _CallScreenState extends ConsumerState<CallScreen> with SingleTickerProviderStateMixin {
-  Timer? _callTimer;
-  StreamSubscription<Uint8List>? _audioStreamSubscription;
-  StreamSubscription<Amplitude>? _amplitudeSubscription;
+class _CallScreenState extends ConsumerState<CallScreen> {
+  StreamSubscription<CallState>? _stateSubscription;
+  StreamSubscription<double>? _amplitudeSubscription;
+  StreamSubscription<int>? _durationSubscription;
+  StreamSubscription<String>? _errorSubscription;
+
+  CallState _callState = CallState.idle;
+  double _inputLevel = 0.0;
   int _callDuration = 0;
-  bool _isCallActive = false;
 
   @override
-  void dispose() {
-    _callTimer?.cancel();
-    _audioStreamSubscription?.cancel();
-    _amplitudeSubscription?.cancel();
-    super.dispose();
+  void initState() {
+    super.initState();
+    _setupSubscriptions();
   }
 
-  Future<void> _startCall() async {
-    // Clear any previous errors
-    ref.read(errorMessageProvider.notifier).clear();
-    
-    // Check if Azure settings are configured
-    final storage = ref.read(secureStorageServiceProvider);
-    final hasConfig = await storage.hasAzureConfig();
-    
-    if (!hasConfig) {
-      _showError('Azure OpenAI設定を先に行ってください');
-      return;
-    }
-    
-    // Start audio recording
-    final recorder = ref.read(audioRecorderServiceProvider);
-    final hasPermission = await recorder.hasPermission();
-    if (!hasPermission) {
-      _showError('マイクの使用を許可してください');
-      return;
-    }
+  void _setupSubscriptions() {
+    final callService = ref.read(callServiceProvider);
 
-    try {
-      // Start the actual microphone recording
-      final audioStream = await recorder.startRecording();
-      
-      setState(() {
-        _isCallActive = true;
-        _callDuration = 0;
-      });
-      
-      _callTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+    _stateSubscription = callService.stateStream.listen((state) {
+      if (mounted) {
         setState(() {
-          _callDuration++;
-        });
-      });
-      
-      // Listen to audio stream (for potential future use with WebSocket)
-      _audioStreamSubscription = audioStream.listen(
-        (data) {
-          // Audio data available - can be sent to WebSocket for Realtime API
-        },
-        onError: (error) {
-          _showError('録音エラー: $error');
-          _endCall();
-        },
-      );
-      
-      // Listen to amplitude for visualization
-      final amplitudeStream = recorder.amplitudeStream;
-      if (amplitudeStream != null) {
-        _amplitudeSubscription = amplitudeStream.listen((amplitude) {
-          final isMuted = ref.read(isMutedProvider);
-          if (!isMuted && _isCallActive) {
-            // Convert dBFS to 0-1 range. dBFS is typically -160 to 0.
-            // -60 dB is quiet, 0 dB is maximum
-            final normalizedLevel = ((amplitude.current + 60) / 60).clamp(0.0, 1.0);
-            ref.read(inputLevelProvider.notifier).set(normalizedLevel);
-          } else {
-            ref.read(inputLevelProvider.notifier).set(0.0);
-          }
+          _callState = state;
         });
       }
-    } catch (e) {
-      _showError('録音の開始に失敗しました: $e');
-      return;
-    }
-  }
+    });
 
-  void _endCall() {
-    _callTimer?.cancel();
-    _audioStreamSubscription?.cancel();
-    _amplitudeSubscription?.cancel();
-    
-    // Stop recording
-    final recorder = ref.read(audioRecorderServiceProvider);
-    recorder.stopRecording();
-    
-    ref.read(inputLevelProvider.notifier).set(0.0);
-    setState(() {
-      _isCallActive = false;
-      _callDuration = 0;
+    _amplitudeSubscription = callService.amplitudeStream.listen((level) {
+      if (mounted) {
+        setState(() {
+          _inputLevel = level;
+        });
+      }
+    });
+
+    _durationSubscription = callService.durationStream.listen((duration) {
+      if (mounted) {
+        setState(() {
+          _callDuration = duration;
+        });
+      }
+    });
+
+    _errorSubscription = callService.errorStream.listen((error) {
+      if (mounted) {
+        _showSnackBar(error, isError: true);
+      }
     });
   }
 
-  void _showError(String message) {
-    ref.read(errorMessageProvider.notifier).set(message);
+  @override
+  void dispose() {
+    _stateSubscription?.cancel();
+    _amplitudeSubscription?.cancel();
+    _durationSubscription?.cancel();
+    _errorSubscription?.cancel();
+    super.dispose();
+  }
+
+  void _showSnackBar(String message, {bool isError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: AppTheme.errorColor,
-        duration: const Duration(seconds: 5),
-        action: SnackBarAction(
-          label: '閉じる',
-          textColor: Colors.white,
-          onPressed: () {
-            ScaffoldMessenger.of(context).hideCurrentSnackBar();
-          },
-        ),
+        backgroundColor: isError ? AppTheme.errorColor : AppTheme.successColor,
+        duration: const Duration(seconds: 3),
       ),
     );
+  }
+
+  Future<void> _handleCallButton() async {
+    final callService = ref.read(callServiceProvider);
+    
+    if (_callState == CallState.idle || _callState == CallState.error) {
+      await callService.startCall();
+    } else {
+      await callService.endCall();
+    }
+  }
+
+  void _handleMuteButton() {
+    final callService = ref.read(callServiceProvider);
+    ref.read(isMutedProvider.notifier).toggle();
+    final isMuted = ref.read(isMutedProvider);
+    callService.setMuted(isMuted);
   }
 
   String _formatDuration(int seconds) {
@@ -175,11 +113,12 @@ class _CallScreenState extends ConsumerState<CallScreen> with SingleTickerProvid
     );
   }
 
+  bool get _isCallActive =>
+      _callState == CallState.connecting || _callState == CallState.connected;
+
   @override
   Widget build(BuildContext context) {
     final isMuted = ref.watch(isMutedProvider);
-    final errorMessage = ref.watch(errorMessageProvider);
-    final inputLevel = ref.watch(inputLevelProvider);
 
     return Scaffold(
       body: Container(
@@ -199,20 +138,6 @@ class _CallScreenState extends ConsumerState<CallScreen> with SingleTickerProvid
                 ),
               ),
 
-              // Error banner (top)
-              if (errorMessage != null)
-                Positioned(
-                  top: 16,
-                  left: 16,
-                  right: 80,
-                  child: ErrorBanner(
-                    message: errorMessage,
-                    onDismiss: () {
-                      ref.read(errorMessageProvider.notifier).clear();
-                    },
-                  ),
-                ),
-
               // Main content
               Center(
                 child: Column(
@@ -223,17 +148,34 @@ class _CallScreenState extends ConsumerState<CallScreen> with SingleTickerProvid
 
                     const SizedBox(height: 32),
 
-                    // Audio level visualizer (bouncing bars)
+                    // Audio level visualizer and status (when call active)
                     if (_isCallActive) ...[
                       AudioLevelVisualizer(
-                        level: inputLevel,
+                        level: _inputLevel,
                         isMuted: isMuted,
-                        isConnected: _isCallActive,
+                        isConnected: _callState == CallState.connected,
                       ),
                       const SizedBox(height: 16),
                       StatusIndicator(
                         isMuted: isMuted,
                         duration: _formatDuration(_callDuration),
+                      ),
+                      const SizedBox(height: 32),
+                    ],
+
+                    // Connection status (when connecting)
+                    if (_callState == CallState.connecting) ...[
+                      const SizedBox(height: 16),
+                      const CircularProgressIndicator(
+                        color: AppTheme.primaryColor,
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        '接続中...',
+                        style: TextStyle(
+                          color: AppTheme.textSecondary,
+                          fontSize: 14,
+                        ),
                       ),
                       const SizedBox(height: 32),
                     ],
@@ -250,9 +192,7 @@ class _CallScreenState extends ConsumerState<CallScreen> with SingleTickerProvid
                           size: 64,
                           isActive: isMuted,
                           activeBackgroundColor: AppTheme.errorColor,
-                          onPressed: () {
-                            ref.read(isMutedProvider.notifier).toggle();
-                          },
+                          onPressed: _handleMuteButton,
                         ),
 
                         const SizedBox(width: 32),
@@ -261,40 +201,9 @@ class _CallScreenState extends ConsumerState<CallScreen> with SingleTickerProvid
                         CallButton(
                           isCallActive: _isCallActive,
                           size: 80,
-                          onPressed: () {
-                            if (_isCallActive) {
-                              _endCall();
-                            } else {
-                              _startCall();
-                            }
-                          },
+                          onPressed: _handleCallButton,
                         ),
                       ],
-                    ),
-                  ],
-                ),
-              ),
-
-              // Bottom status bar
-              Positioned(
-                bottom: 16,
-                left: 16,
-                right: 16,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.security,
-                      size: 16,
-                      color: AppTheme.textSecondary.withValues(alpha: 0.5),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'End-to-end encrypted',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppTheme.textSecondary.withValues(alpha: 0.5),
-                      ),
                     ),
                   ],
                 ),

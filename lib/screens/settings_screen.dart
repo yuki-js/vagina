@@ -21,8 +21,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _isLoading = true;
   bool _isSaving = false;
   bool _isTesting = false;
-  String? _errorMessage;
-  String? _successMessage;
 
   @override
   void initState() {
@@ -45,134 +43,95 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       
       setState(() {
         _isLoading = false;
-        _errorMessage = null;
       });
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _errorMessage = 'Failed to load settings: $e';
       });
+      _showSnackBar('設定の読み込みに失敗しました', isError: true);
     }
   }
 
+  void _showSnackBar(String message, {bool isError = false, bool isWarning = false}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError 
+            ? AppTheme.errorColor 
+            : isWarning 
+                ? AppTheme.warningColor 
+                : AppTheme.successColor,
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
   Future<void> _saveSettings() async {
-    // Validate inputs
     if (_realtimeUrlController.text.trim().isEmpty) {
-      _showError('Realtime URLを入力してください');
+      _showSnackBar('Realtime URLを入力してください', isError: true);
       return;
     }
     
-    // Validate URL format
     final parsed = SecureStorageService.parseRealtimeUrl(_realtimeUrlController.text.trim());
     if (parsed == null) {
-      _showError('Realtime URLの形式が正しくありません。\n例: https://{resource}.openai.azure.com/openai/realtime?api-version=2024-10-01-preview&deployment=gpt-4o-realtime');
+      _showSnackBar('Realtime URLの形式が正しくありません', isError: true);
       return;
     }
     
     if (_apiKeyController.text.trim().isEmpty) {
-      _showError('APIキーを入力してください');
+      _showSnackBar('APIキーを入力してください', isError: true);
       return;
     }
 
-    setState(() {
-      _isSaving = true;
-      _errorMessage = null;
-      _successMessage = null;
-    });
+    setState(() => _isSaving = true);
 
     try {
       final storage = ref.read(secureStorageServiceProvider);
       await storage.saveRealtimeUrl(_realtimeUrlController.text.trim());
       await storage.saveApiKey(_apiKeyController.text.trim());
-
-      if (mounted) {
-        setState(() {
-          _successMessage = '設定を保存しました';
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('設定を保存しました'),
-            backgroundColor: AppTheme.successColor,
-          ),
-        );
-      }
+      _showSnackBar('設定を保存しました');
     } catch (e) {
-      _showError('保存に失敗しました: $e');
+      _showSnackBar('保存に失敗しました: $e', isError: true);
     } finally {
       if (mounted) {
-        setState(() {
-          _isSaving = false;
-        });
+        setState(() => _isSaving = false);
       }
     }
   }
 
   Future<void> _testConnection() async {
     if (_realtimeUrlController.text.trim().isEmpty) {
-      _showError('Realtime URLを入力してください');
+      _showSnackBar('Realtime URLを入力してください', isError: true);
       return;
     }
     if (_apiKeyController.text.trim().isEmpty) {
-      _showError('APIキーを入力してください');
+      _showSnackBar('APIキーを入力してください', isError: true);
       return;
     }
 
     final parsed = SecureStorageService.parseRealtimeUrl(_realtimeUrlController.text.trim());
     if (parsed == null) {
-      _showError('Realtime URLの形式が正しくありません');
+      _showSnackBar('Realtime URLの形式が正しくありません', isError: true);
       return;
     }
 
-    setState(() {
-      _isTesting = true;
-      _errorMessage = null;
-      _successMessage = '接続テスト中...';
-    });
+    setState(() => _isTesting = true);
 
     try {
       // TODO: Implement actual WebSocket connection test
       await Future.delayed(const Duration(seconds: 1));
       
-      // Save settings on success
       final storage = ref.read(secureStorageServiceProvider);
       await storage.saveRealtimeUrl(_realtimeUrlController.text.trim());
       await storage.saveApiKey(_apiKeyController.text.trim());
-
-      if (mounted) {
-        setState(() {
-          _successMessage = '接続テスト成功。設定を保存しました。';
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('接続テスト成功'),
-            backgroundColor: AppTheme.successColor,
-          ),
-        );
-      }
+      _showSnackBar('接続テスト成功');
     } catch (e) {
-      _showError('接続テスト失敗: $e');
+      _showSnackBar('接続テスト失敗: $e', isError: true);
     } finally {
       if (mounted) {
-        setState(() {
-          _isTesting = false;
-        });
+        setState(() => _isTesting = false);
       }
-    }
-  }
-
-  void _showError(String message) {
-    setState(() {
-      _errorMessage = message;
-      _successMessage = null;
-    });
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: AppTheme.errorColor,
-          duration: const Duration(seconds: 5),
-        ),
-      );
     }
   }
 
@@ -203,21 +162,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         await storage.clearAll();
         _realtimeUrlController.clear();
         _apiKeyController.clear();
-
-        if (mounted) {
-          setState(() {
-            _successMessage = '設定をクリアしました';
-            _errorMessage = null;
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('設定をクリアしました'),
-              backgroundColor: AppTheme.warningColor,
-            ),
-          );
-        }
+        _showSnackBar('設定をクリアしました', isWarning: true);
       } catch (e) {
-        _showError('設定のクリアに失敗しました: $e');
+        _showSnackBar('設定のクリアに失敗しました: $e', isError: true);
       }
     }
   }
@@ -239,7 +186,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         child: SafeArea(
           child: CustomScrollView(
             slivers: [
-              // App bar
               SliverAppBar(
                 backgroundColor: Colors.transparent,
                 floating: true,
@@ -249,30 +195,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
                 title: const Text('設定'),
               ),
-
-              // Content
               SliverPadding(
                 padding: const EdgeInsets.all(16),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
-                    // Status message banner
-                    if (_errorMessage != null) ...[
-                      StatusBanner(
-                        message: _errorMessage!,
-                        isError: true,
-                        onDismiss: () => setState(() => _errorMessage = null),
-                      ),
-                      const SizedBox(height: 16),
-                    ],
-                    
-                    if (_successMessage != null && _errorMessage == null) ...[
-                      StatusBanner(
-                        message: _successMessage!,
-                        isError: false,
-                      ),
-                      const SizedBox(height: 16),
-                    ],
-
                     // Azure OpenAI Configuration Section
                     const SectionHeader(title: 'Azure OpenAI 設定'),
                     const SizedBox(height: 12),
@@ -280,7 +206,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Realtime URL
                           const Text(
                             'Azure OpenAI Realtime URL',
                             style: TextStyle(
@@ -309,10 +234,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               color: AppTheme.textSecondary.withValues(alpha: 0.7),
                             ),
                           ),
-
                           const SizedBox(height: 16),
-
-                          // API Key
                           const Text(
                             'APIキー',
                             style: TextStyle(
@@ -343,8 +265,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               ),
                             ),
                           const SizedBox(height: 16),
-                          
-                          // Buttons row
                           Row(
                             children: [
                               Expanded(
@@ -384,7 +304,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            '認証情報はデバイス上に安全に保存され、サーバーには送信されません。',
+                            '認証情報はデバイス上に安全に保存されます。',
                             style: TextStyle(
                               fontSize: 12,
                               color: AppTheme.textSecondary.withValues(alpha: 0.7),
@@ -393,10 +313,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         ],
                       ),
                     ),
-
                     const SizedBox(height: 24),
-
-                    // Voice Configuration Section
                     const SectionHeader(title: '音声設定'),
                     const SizedBox(height: 12),
                     SettingsCard(
@@ -437,10 +354,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         ],
                       ),
                     ),
-
                     const SizedBox(height: 24),
-
-                    // About Section
                     const SectionHeader(title: 'このアプリについて'),
                     const SizedBox(height: 12),
                     SettingsCard(
@@ -453,7 +367,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         ],
                       ),
                     ),
-
                     const SizedBox(height: 32),
                   ]),
                 ),

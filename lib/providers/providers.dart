@@ -4,6 +4,7 @@ import '../services/audio_recorder_service.dart';
 import '../services/audio_player_service.dart';
 import '../services/websocket_service.dart';
 import '../services/realtime_api_client.dart';
+import '../services/call_service.dart';
 import '../models/assistant_config.dart';
 
 // Core providers
@@ -72,6 +73,18 @@ final realtimeApiClientProvider = Provider<RealtimeApiClient>((ref) {
   final client = RealtimeApiClient();
   ref.onDispose(() => client.dispose());
   return client;
+});
+
+/// Provider for the call service
+final callServiceProvider = Provider<CallService>((ref) {
+  final service = CallService(
+    recorder: ref.read(audioRecorderServiceProvider),
+    player: ref.read(audioPlayerServiceProvider),
+    apiClient: ref.read(realtimeApiClientProvider),
+    storage: ref.read(secureStorageServiceProvider),
+  );
+  ref.onDispose(() => service.dispose());
+  return service;
 });
 
 /// Provider for connection state
