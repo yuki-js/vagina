@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vagina_ui/vagina_ui.dart';
 import 'package:vagina_core/vagina_core.dart';
 import 'package:vagina_assistant_model/vagina_assistant_model.dart';
+import 'components/components.dart';
 
 /// Settings screen for API configuration (2 inputs: Realtime URL + API Key)
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -255,61 +256,26 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   delegate: SliverChildListDelegate([
                     // Status message banner
                     if (_errorMessage != null) ...[
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: AppTheme.errorColor.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppTheme.errorColor),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.error_outline, color: AppTheme.errorColor),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                _errorMessage!,
-                                style: const TextStyle(color: AppTheme.errorColor),
-                              ),
-                            ),
-                            GestureDetector(
-                              onTap: () => setState(() => _errorMessage = null),
-                              child: const Icon(Icons.close, color: AppTheme.errorColor, size: 20),
-                            ),
-                          ],
-                        ),
+                      StatusBanner(
+                        message: _errorMessage!,
+                        isError: true,
+                        onDismiss: () => setState(() => _errorMessage = null),
                       ),
                       const SizedBox(height: 16),
                     ],
                     
                     if (_successMessage != null && _errorMessage == null) ...[
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: AppTheme.successColor.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppTheme.successColor),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.check_circle_outline, color: AppTheme.successColor),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                _successMessage!,
-                                style: const TextStyle(color: AppTheme.successColor),
-                              ),
-                            ),
-                          ],
-                        ),
+                      StatusBanner(
+                        message: _successMessage!,
+                        isError: false,
                       ),
                       const SizedBox(height: 16),
                     ],
 
                     // Azure OpenAI Configuration Section
-                    _buildSectionHeader('Azure OpenAI 設定'),
+                    const SectionHeader(title: 'Azure OpenAI 設定'),
                     const SizedBox(height: 12),
-                    _buildCard(
+                    SettingsCard(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -430,9 +396,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     const SizedBox(height: 24),
 
                     // Voice Configuration Section
-                    _buildSectionHeader('音声設定'),
+                    const SectionHeader(title: '音声設定'),
                     const SizedBox(height: 12),
-                    _buildCard(
+                    SettingsCard(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -470,15 +436,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     const SizedBox(height: 24),
 
                     // About Section
-                    _buildSectionHeader('このアプリについて'),
+                    const SectionHeader(title: 'このアプリについて'),
                     const SizedBox(height: 12),
-                    _buildCard(
+                    SettingsCard(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildInfoRow('バージョン', '1.0.0'),
+                          const InfoRow(label: 'バージョン', value: '1.0.0'),
                           const Divider(color: AppTheme.surfaceColor),
-                          _buildInfoRow('Powered by', 'Azure OpenAI Realtime API'),
+                          const InfoRow(label: 'Powered by', value: 'Azure OpenAI Realtime API'),
                         ],
                       ),
                     ),
@@ -490,54 +456,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildSectionHeader(String title) {
-    return Text(
-      title,
-      style: const TextStyle(
-        fontSize: 18,
-        fontWeight: FontWeight.w600,
-        color: AppTheme.textPrimary,
-      ),
-    );
-  }
-
-  Widget _buildCard({required Widget child}) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceColor.withOpacity(0.6),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: child,
-    );
-  }
-
-  Widget _buildInfoRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              color: AppTheme.textSecondary,
-              fontSize: 14,
-            ),
-          ),
-          Text(
-            value,
-            style: const TextStyle(
-              color: AppTheme.textPrimary,
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
       ),
     );
   }

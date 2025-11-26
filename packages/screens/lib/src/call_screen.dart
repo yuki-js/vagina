@@ -6,6 +6,7 @@ import 'package:vagina_ui/vagina_ui.dart';
 import 'package:vagina_audio/vagina_audio.dart';
 import 'package:vagina_core/vagina_core.dart';
 import 'settings_screen.dart';
+import 'components/components.dart';
 
 /// Error message provider for displaying errors to users
 final errorMessageProvider = StateProvider<String?>((ref) => null);
@@ -140,33 +141,11 @@ class _CallScreenState extends ConsumerState<CallScreen> with SingleTickerProvid
                   top: 16,
                   left: 16,
                   right: 80,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppTheme.errorColor.withOpacity(0.9),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.error_outline, color: Colors.white, size: 20),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            errorMessage,
-                            style: const TextStyle(color: Colors.white, fontSize: 14),
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: () {
-                            ref.read(errorMessageProvider.notifier).state = null;
-                          },
-                          child: const Icon(Icons.close, color: Colors.white, size: 20),
-                        ),
-                      ],
-                    ),
+                  child: ErrorBanner(
+                    message: errorMessage,
+                    onDismiss: () {
+                      ref.read(errorMessageProvider.notifier).state = null;
+                    },
                   ),
                 ),
 
@@ -176,74 +155,21 @@ class _CallScreenState extends ConsumerState<CallScreen> with SingleTickerProvid
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     // App logo/title
-                    const Icon(
-                      Icons.headset_mic,
-                      size: 80,
-                      color: AppTheme.primaryColor,
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'VAGINA',
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.textPrimary,
-                        letterSpacing: 4,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Voice AGI Native App',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: AppTheme.textSecondary,
-                        letterSpacing: 1,
-                      ),
-                    ),
+                    const AppHeader(),
 
                     const SizedBox(height: 32),
 
                     // Audio level visualizer (bouncing bars)
                     if (_isCallActive) ...[
-                      _AudioLevelVisualizer(
+                      AudioLevelVisualizer(
                         level: inputLevel,
                         isMuted: isMuted,
                         isConnected: _isCallActive,
                       ),
                       const SizedBox(height: 16),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 12,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppTheme.surfaceColor.withOpacity(0.5),
-                          borderRadius: BorderRadius.circular(24),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              width: 12,
-                              height: 12,
-                              decoration: BoxDecoration(
-                                color: isMuted ? AppTheme.errorColor : AppTheme.successColor,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Text(
-                              isMuted 
-                                  ? 'ミュート中 • ${_formatDuration(_callDuration)}'
-                                  : '録音中 • ${_formatDuration(_callDuration)}',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                color: AppTheme.textPrimary,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
+                      StatusIndicator(
+                        isMuted: isMuted,
+                        duration: _formatDuration(_callDuration),
                       ),
                       const SizedBox(height: 32),
                     ],
@@ -312,59 +238,6 @@ class _CallScreenState extends ConsumerState<CallScreen> with SingleTickerProvid
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-/// Audio level visualizer with bouncing bars
-class _AudioLevelVisualizer extends StatelessWidget {
-  final double level;
-  final bool isMuted;
-  final bool isConnected;
-  
-  const _AudioLevelVisualizer({
-    required this.level,
-    required this.isMuted,
-    required this.isConnected,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    const barCount = 12;
-    
-    return Container(
-      height: 80,
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: List.generate(barCount, (i) {
-          // Create a wave-like pattern with falloff from center
-          final centerOffset = (i - barCount / 2).abs() / (barCount / 2);
-          final falloff = 1 - centerOffset * 0.5;
-          final barLevel = isMuted ? 0.0 : (pow(level, 0.9) * falloff).clamp(0.0, 1.0);
-          
-          // Minimum height percentage
-          const minPct = 0.15;
-          final pct = max(minPct, barLevel);
-          
-          return AnimatedContainer(
-            duration: const Duration(milliseconds: 50),
-            curve: Curves.easeOut,
-            width: 6,
-            height: 80 * pct,
-            margin: const EdgeInsets.symmetric(horizontal: 2),
-            decoration: BoxDecoration(
-              color: isMuted 
-                  ? AppTheme.textSecondary.withOpacity(0.3)
-                  : (isConnected 
-                      ? AppTheme.primaryColor.withOpacity(0.8 + barLevel * 0.2)
-                      : AppTheme.textSecondary.withOpacity(0.5)),
-              borderRadius: BorderRadius.circular(3),
-            ),
-          );
-        }),
       ),
     );
   }
