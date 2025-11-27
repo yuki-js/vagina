@@ -267,6 +267,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     _textController.clear();
     _focusNode.requestFocus();
   }
+  
+  Future<void> _exitApp() async {
+    // Clean up resources before exiting
+    if (_isCallActive) {
+      final callService = ref.read(callServiceProvider);
+      await callService.endCall();
+    }
+    SystemNavigator.pop();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -289,7 +298,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
           );
         } else {
-          SystemNavigator.pop();
+          _exitApp();
         }
       },
       child: Scaffold(

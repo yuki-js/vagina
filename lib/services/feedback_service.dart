@@ -28,15 +28,15 @@ class FeedbackService {
   }
   
   /// Play a single knock (when user starts speaking, when AI audio arrives)
+  /// Only haptic feedback - sound is intentionally disabled to avoid distraction
   Future<void> knockSingle() async {
     await _vibrate([50]);
-    // await _playSound('knock_single.wav');
   }
   
   /// Play a double knock (when AI response ends and it's user's turn)
+  /// Only haptic feedback - sound is intentionally disabled to avoid distraction
   Future<void> knockDouble() async {
     await _vibrate([50, 100, 50]);
-    // await _playSound('knock_double.wav');
   }
   
   /// Play call start sound
