@@ -33,11 +33,16 @@ class AudioRecorderService {
         encoder: AudioEncoder.pcm16bits,
         sampleRate: AppConfig.sampleRate,
         numChannels: AppConfig.channels,
-        // Enable echo cancellation to prevent AI voice from being picked up
+        // Enable echo cancellation to prevent AI voice from being picked up.
+        // This is applied on all platforms that support it (Android, iOS, etc.)
         echoCancel: true,
-        // Enable noise suppression for clearer audio
+        // Enable noise suppression for clearer audio.
+        // This is applied on all platforms that support it.
         noiseSuppress: true,
-        // Android-specific configuration for voice communication
+        // Android-specific configuration for voice communication.
+        // iOS uses the default IosRecordConfig which is suitable for this use case
+        // as echo cancellation and noise suppression are handled by the
+        // platform-level echoCancel and noiseSuppress flags above.
         androidConfig: AndroidRecordConfig(
           // Use voiceCommunication audio source which includes built-in
           // echo cancellation and noise suppression optimized for voice calls
