@@ -40,8 +40,8 @@ ENV ANDROID_NDK_HOME=/opt/android-sdk/ndk/28.2.13676358
 ENV CMAKE_HOME=/opt/android-sdk/cmake/3.22.1
 
 # Copy hoisted files from download stage
-COPY --from=download /opt/android-sdk/cmdline-tools/latest /opt/android-sdk/cmdline-tools/latest
-COPY --from=download /opt/flutter /opt/flutter
+COPY --from=download --chown=user:user /opt/android-sdk/cmdline-tools/latest /opt/android-sdk/cmdline-tools/latest
+COPY --from=download --chown=user:user /opt/flutter /opt/flutter
 
 # Latest cmdline-tools revision (discovered externally)
 ARG CMDLINE_TOOLS_REV=13114758
@@ -52,12 +52,11 @@ RUN set -eux; \
     sdkmanager "platform-tools" "platforms;android-36" "build-tools;35.0.0" "cmake;3.22.1" "ndk;28.2.13676358"
 
 # Switch back to user
-RUN chown -R user:user /opt/flutter
 USER user
 
 # Copy codex config file
-# RUN mkdir -p ~/.codex
-# COPY --chown=user:user .devcontainer/codex-config/config.toml /home/user/.codex/config.toml
+RUN mkdir -p ~/.codex
+COPY --chown=user:user .devcontainer/codex-config/config.toml /home/user/.codex/config.toml
 RUN set -eux; \
     git config --global --add safe.directory /opt/flutter; \
     flutter config --android-sdk "$ANDROID_SDK_ROOT"; 
