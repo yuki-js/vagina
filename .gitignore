@@ -60,3 +60,5 @@ app.*.map.json
 .metadata
 vagina.iml
 _codeql_detected_source_root
+
+!.devcontainer/

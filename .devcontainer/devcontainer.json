@@ -1,0 +1,35 @@
+{
+  "name": "vagina",
+  //"image": "ghcr.io/aokiapp/vagina/devcontainer:latest",
+  "build": {
+    "dockerfile": "./Dockerfile",
+    "context": ".."
+  },
+  "remoteUser": "user",
+  "runArgs": ["--env-file", ".devcontainer/.env"],
+  "workspaceFolder": "/home/user/codes/vagina",
+  "workspaceMount": "type=bind,source=${localWorkspaceFolder},target=/home/user/codes/vagina",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dart-code.dart-code",
+        "dart-code.flutter",
+        "esbenp.prettier-vscode",
+        "ms-vsliveshare.vsliveshare",
+        "redhat.java",
+        "GitHub.copilot-chat",
+        "GitHub.copilot",
+        "dbaeumer.vscode-eslint",
+        "mathiasfrohlich.Kotlin",
+        "ms-vscode.hexeditor",
+        "RooVeterinaryInc.roo-cline"
+      ],
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "zsh",
+        "dart.flutterSdkPath": "/opt/flutter"
+      }
+    }
+  },
+  "features": {}
+}
