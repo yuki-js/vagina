@@ -4,6 +4,7 @@ import 'package:record/record.dart';
 import '../config/app_config.dart';
 
 /// Service for recording audio from the microphone
+/// Enables device noise cancellation and echo cancellation features
 class AudioRecorderService {
   final AudioRecorder _recorder = AudioRecorder();
   StreamSubscription<RecordState>? _stateSubscription;
@@ -21,7 +22,7 @@ class AudioRecorderService {
     return await _recorder.hasPermission();
   }
 
-  /// Start recording audio
+  /// Start recording audio with echo cancellation and noise suppression enabled
   Future<Stream<Uint8List>> startRecording() async {
     final hasPermission = await _recorder.hasPermission();
     if (!hasPermission) {
@@ -33,6 +34,10 @@ class AudioRecorderService {
         encoder: AudioEncoder.pcm16bits,
         sampleRate: AppConfig.sampleRate,
         numChannels: AppConfig.channels,
+        // Enable device audio processing features
+        echoCancel: true,      // Echo cancellation to prevent AI voice from being picked up
+        autoGain: true,        // Auto gain control for consistent volume
+        noiseSuppress: true,   // Noise suppression for cleaner audio
       ),
     );
 

@@ -7,6 +7,7 @@ import 'realtime_api_client.dart';
 import 'storage_service.dart';
 import 'tool_service.dart';
 import 'log_service.dart';
+import 'feedback_service.dart';
 import '../models/chat_message.dart';
 import '../models/realtime_events.dart';
 
@@ -203,8 +204,14 @@ class CallService {
 
       // Listen to response audio
       logService.debug(_tag, 'Setting up audio stream listener');
+      var firstAudioChunk = true;
       _responseAudioSubscription = _apiClient.audioStream.listen((audioData) async {
         logService.debug(_tag, 'Received audio from API: ${audioData.length} bytes');
+        // Single knock when first AI audio arrives
+        if (firstAudioChunk) {
+          firstAudioChunk = false;
+          feedbackService.knockSingle();
+        }
         await _player.addAudioData(audioData);
       });
       
@@ -214,6 +221,9 @@ class CallService {
         await _player.markResponseComplete();
         // Mark current assistant message as complete
         _completeCurrentAssistantMessage();
+        // Double knock when AI response ends (user's turn)
+        await feedbackService.knockDouble();
+        firstAudioChunk = true; // Reset for next response
       });
       
       // Listen to assistant transcript (AI response)
@@ -224,6 +234,8 @@ class CallService {
       // Listen to user speech started (VAD) - create placeholder for correct ordering
       _speechStartedSubscription = _apiClient.speechStartedStream.listen((_) {
         _createUserMessagePlaceholder();
+        // Single knock when user starts speaking
+        feedbackService.knockSingle();
       });
       
       // Listen to user transcript (speech-to-text) - update the placeholder
@@ -304,10 +316,16 @@ class CallService {
 
       _setState(CallState.connected);
       logService.info(_tag, 'Call connected successfully');
+      
+      // Play call start feedback
+      await feedbackService.init();
+      await feedbackService.playCallStart();
     } catch (e) {
       logService.error(_tag, 'Failed to start call: $e');
       _emitError('接続に失敗しました: $e');
       _setState(CallState.error);
+      await feedbackService.init();
+      await feedbackService.playCallError();
       await _cleanup();
     }
   }
@@ -319,8 +337,16 @@ class CallService {
       return;
     }
 
+    final wasError = _currentState == CallState.error;
     await _cleanup();
     _setState(CallState.idle);
+    
+    // Play appropriate feedback
+    if (wasError) {
+      await feedbackService.playCallError();
+    } else {
+      await feedbackService.playCallEnd();
+    }
     
     // Don't clear chat on end - it will be cleared when starting a new call
     logService.info(_tag, 'Call ended');

@@ -61,6 +61,23 @@ class IsMutedNotifier extends Notifier<bool> {
   }
 }
 
+/// Provider for push to talk mode
+final pushToTalkModeProvider = NotifierProvider<PushToTalkModeNotifier, bool>(PushToTalkModeNotifier.new);
+
+/// Notifier for push to talk mode
+class PushToTalkModeNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void toggle() {
+    state = !state;
+  }
+
+  void set(bool value) {
+    state = value;
+  }
+}
+
 // Realtime providers
 
 /// Provider for the WebSocket service

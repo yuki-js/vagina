@@ -214,6 +214,14 @@ class AudioPlayerService {
     }
   }
 
+  /// Set playback speed (1.0 = normal, 2.0 = double speed)
+  Future<void> setSpeed(double speed) async {
+    if (_isInitialized && _player != null) {
+      await _player!.setSpeed(speed);
+      logService.info(_tag, 'Playback speed set to ${speed}x');
+    }
+  }
+
   /// Dispose the player and release resources
   Future<void> dispose() async {
     if (_isDisposed) return;

@@ -384,6 +384,41 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ),
                     ),
                     const SizedBox(height: 24),
+                    const SectionHeader(title: '入力モード'),
+                    const SizedBox(height: 12),
+                    SettingsCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Consumer(
+                            builder: (context, ref, child) {
+                              final pushToTalkMode = ref.watch(pushToTalkModeProvider);
+                              return SwitchListTile(
+                                title: const Text(
+                                  'Push to Talk モード',
+                                  style: TextStyle(color: AppTheme.textPrimary),
+                                ),
+                                subtitle: Text(
+                                  pushToTalkMode 
+                                      ? 'ボタンを押している間だけ音声を送信' 
+                                      : 'VAD（音声検出）で自動送信',
+                                  style: TextStyle(
+                                    color: AppTheme.textSecondary.withValues(alpha: 0.7),
+                                    fontSize: 12,
+                                  ),
+                                ),
+                                value: pushToTalkMode,
+                                onChanged: (value) {
+                                  ref.read(pushToTalkModeProvider.notifier).set(value);
+                                },
+                                activeTrackColor: AppTheme.primaryColor,
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
                     
                     // Developer Section
                     const SectionHeader(title: '開発者向け'),

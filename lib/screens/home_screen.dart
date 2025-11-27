@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/app_theme.dart';
 import '../providers/providers.dart';
@@ -33,8 +34,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   /// Noise reduction type: 'near' (default) or 'far'
   String _noiseReduction = 'near';
   
-  /// Speaker mute state
-  bool _speakerMuted = false;
+  /// Double speed playback state
+  bool _doubleSpeed = false;
+  
+  /// Back button double-tap tracking
+  DateTime? _lastBackPressTime;
+  
+  /// Push to talk button pressed state
+  bool _isPushToTalkPressed = false;
   
   // Chat state
   final TextEditingController _textController = TextEditingController();
@@ -154,14 +161,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     callService.setMuted(isMuted);
   }
 
-  void _handleSpeakerMuteToggle() {
+  void _handleDoubleSpeedToggle() {
     setState(() {
-      _speakerMuted = !_speakerMuted;
+      _doubleSpeed = !_doubleSpeed;
     });
     
-    // Set speaker volume
+    // Set playback speed
     final audioPlayer = ref.read(audioPlayerServiceProvider);
-    audioPlayer.setVolume(_speakerMuted ? 0.0 : 1.0);
+    audioPlayer.setSpeed(_doubleSpeed ? 2.0 : 1.0);
   }
 
   void _handleInterruptButton() {
@@ -173,6 +180,36 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     
     audioPlayer.stop();
     apiClient.cancelResponse();
+  }
+  
+  void _handlePushToTalkDown() {
+    if (!_isCallActive) return;
+    
+    setState(() {
+      _isPushToTalkPressed = true;
+    });
+    
+    // Unmute when button is pressed
+    final callService = ref.read(callServiceProvider);
+    callService.setMuted(false);
+    ref.read(isMutedProvider.notifier).set(false);
+  }
+  
+  void _handlePushToTalkUp() {
+    if (!_isCallActive) return;
+    
+    setState(() {
+      _isPushToTalkPressed = false;
+    });
+    
+    // Mute when button is released and commit audio buffer
+    final callService = ref.read(callServiceProvider);
+    callService.setMuted(true);
+    ref.read(isMutedProvider.notifier).set(true);
+    
+    // Commit the audio buffer to trigger response
+    final apiClient = ref.read(realtimeApiClientProvider);
+    apiClient.commitAudioBuffer();
   }
 
   void _handleNoiseReductionToggle() {
@@ -236,18 +273,38 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     _setupSubscriptions();
     final isMuted = ref.watch(isMutedProvider);
 
-    return Scaffold(
-      body: Container(
-        decoration: AppTheme.backgroundGradient,
-        child: SafeArea(
-          child: PageView(
-            controller: _pageController,
-            children: [
-              // Page 0: Call Screen
-              _buildCallPage(isMuted),
-              // Page 1: Chat Screen
-              _buildChatPage(),
-            ],
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        
+        final now = DateTime.now();
+        if (_lastBackPressTime == null || 
+            now.difference(_lastBackPressTime!) > const Duration(seconds: 2)) {
+          _lastBackPressTime = now;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('もう一度押すと終了します'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        } else {
+          SystemNavigator.pop();
+        }
+      },
+      child: Scaffold(
+        body: Container(
+          decoration: AppTheme.backgroundGradient,
+          child: SafeArea(
+            child: PageView(
+              controller: _pageController,
+              children: [
+                // Page 0: Call Screen
+                _buildCallPage(isMuted),
+                // Page 1: Chat Screen
+                _buildChatPage(),
+              ],
+            ),
           ),
         ),
       ),
@@ -334,6 +391,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget _buildControlPanel(bool isMuted) {
     // Calculate button width for consistent grid layout
     final buttonWidth = (MediaQuery.of(context).size.width - 32 - 40 - 32) / 3;
+    final pushToTalkMode = ref.watch(pushToTalkModeProvider);
     
     return Container(
       margin: const EdgeInsets.all(16),
@@ -356,12 +414,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 onTap: _goToChat,
                 width: buttonWidth,
               ),
-              // Speaker mute button
+              // Double speed button
               _buildControlButton(
-                icon: _speakerMuted ? Icons.volume_off : Icons.volume_up,
-                label: 'スピーカー',
-                onTap: _handleSpeakerMuteToggle,
-                isActive: _speakerMuted,
+                icon: _doubleSpeed ? Icons.fast_forward : Icons.play_arrow,
+                label: _doubleSpeed ? '2倍速ON' : '2倍速',
+                onTap: _handleDoubleSpeedToggle,
+                isActive: _doubleSpeed,
                 activeColor: AppTheme.warningColor,
                 width: buttonWidth,
               ),
@@ -381,21 +439,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               // Noise reduction toggle (far/near)
               _buildControlButton(
                 icon: _noiseReduction == 'far' ? Icons.noise_aware : Icons.noise_control_off,
-                label: 'ノイズ軽減',
+                label: _noiseReduction == 'far' ? 'ノイズ軽減:遠' : 'ノイズ軽減:近',
                 onTap: _handleNoiseReductionToggle,
                 isActive: _noiseReduction == 'far',
                 activeColor: AppTheme.secondaryColor,
                 width: buttonWidth,
               ),
-              // Mute button
-              _buildControlButton(
-                icon: isMuted ? Icons.mic_off : Icons.mic,
-                label: '消音',
-                onTap: _handleMuteButton,
-                isActive: isMuted,
-                activeColor: AppTheme.errorColor,
-                width: buttonWidth,
-              ),
+              // Mute button (hidden in push to talk mode)
+              if (!pushToTalkMode)
+                _buildControlButton(
+                  icon: isMuted ? Icons.mic_off : Icons.mic,
+                  label: '消音',
+                  onTap: _handleMuteButton,
+                  isActive: isMuted,
+                  activeColor: AppTheme.errorColor,
+                  width: buttonWidth,
+                )
+              else
+                SizedBox(width: buttonWidth),
               // Interrupt button (stop current response)
               _buildControlButton(
                 icon: Icons.front_hand,
@@ -407,13 +468,77 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ],
           ),
           const SizedBox(height: 24),
-          // Main call button
-          CallButton(
-            isCallActive: _isCallActive,
-            size: 72,
-            onPressed: _handleCallButton,
-          ),
+          // Push to talk button (replaces call button in push to talk mode when connected)
+          if (pushToTalkMode && _isCallActive)
+            _buildPushToTalkButton()
+          else
+            // Main call button
+            CallButton(
+              isCallActive: _isCallActive,
+              size: 72,
+              onPressed: _handleCallButton,
+            ),
+          if (pushToTalkMode && _isCallActive)
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: TextButton.icon(
+                onPressed: _handleCallButton,
+                icon: const Icon(Icons.call_end, color: AppTheme.errorColor),
+                label: const Text('終了', style: TextStyle(color: AppTheme.errorColor)),
+              ),
+            ),
         ],
+      ),
+    );
+  }
+  
+  Widget _buildPushToTalkButton() {
+    return GestureDetector(
+      onTapDown: (_) => _handlePushToTalkDown(),
+      onTapUp: (_) => _handlePushToTalkUp(),
+      onTapCancel: () => _handlePushToTalkUp(),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 100),
+        width: _isPushToTalkPressed ? 140 : 120,
+        height: _isPushToTalkPressed ? 140 : 120,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: _isPushToTalkPressed 
+              ? AppTheme.primaryColor 
+              : AppTheme.primaryColor.withValues(alpha: 0.3),
+          border: Border.all(
+            color: AppTheme.primaryColor,
+            width: 3,
+          ),
+          boxShadow: _isPushToTalkPressed
+              ? [
+                  BoxShadow(
+                    color: AppTheme.primaryColor.withValues(alpha: 0.4),
+                    blurRadius: 20,
+                    spreadRadius: 5,
+                  ),
+                ]
+              : [],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.mic,
+              size: 40,
+              color: _isPushToTalkPressed ? Colors.white : AppTheme.primaryColor,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              _isPushToTalkPressed ? '録音中' : '押して話す',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: _isPushToTalkPressed ? Colors.white : AppTheme.primaryColor,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -806,20 +931,14 @@ class _ChatBubble extends StatelessWidget {
     final isUser = message.role == 'user';
     final isTool = message.role == 'tool';
     
-    // Tool message style - inline badge with reduced padding
+    // Tool message style - inline badge merged into assistant bubble style (no separate avatar)
     if (isTool) {
       return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 2),
+        padding: const EdgeInsets.only(left: 40, top: 2, bottom: 2),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            CircleAvatar(
-              radius: 16,
-              backgroundColor: AppTheme.primaryColor,
-              child: const Icon(Icons.smart_toy, size: 18, color: Colors.white),
-            ),
-            const SizedBox(width: 8),
             Flexible(
               child: GestureDetector(
                 onTap: () => _showToolDetails(context),
@@ -861,32 +980,88 @@ class _ChatBubble extends StatelessWidget {
       );
     }
     
+    // User message style - no background color (transparent), positioned on right
+    if (isUser) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Flexible(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.transparent,
+                  border: Border.all(
+                    color: AppTheme.textSecondary.withValues(alpha: 0.3),
+                  ),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(18),
+                    topRight: Radius.circular(18),
+                    bottomLeft: Radius.circular(18),
+                    bottomRight: Radius.circular(4),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    SelectableText(
+                      message.content,
+                      style: const TextStyle(
+                        color: AppTheme.textPrimary,
+                        fontSize: 15,
+                      ),
+                    ),
+                    if (!message.isComplete)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            SizedBox(
+                              width: 12,
+                              height: 12,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: AppTheme.textSecondary.withValues(alpha: 0.5),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    
+    // Assistant message style
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
-        mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          if (!isUser) ...[
-            CircleAvatar(
-              radius: 16,
-              backgroundColor: AppTheme.primaryColor,
-              child: const Icon(Icons.smart_toy, size: 18, color: Colors.white),
-            ),
-            const SizedBox(width: 8),
-          ],
+          CircleAvatar(
+            radius: 16,
+            backgroundColor: AppTheme.primaryColor,
+            child: const Icon(Icons.smart_toy, size: 18, color: Colors.white),
+          ),
+          const SizedBox(width: 8),
           Flexible(
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               decoration: BoxDecoration(
-                color: isUser 
-                    ? AppTheme.primaryColor 
-                    : AppTheme.surfaceColor,
-                borderRadius: BorderRadius.only(
-                  topLeft: const Radius.circular(18),
-                  topRight: const Radius.circular(18),
-                  bottomLeft: Radius.circular(isUser ? 18 : 4),
-                  bottomRight: Radius.circular(isUser ? 4 : 18),
+                color: AppTheme.surfaceColor,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(18),
+                  topRight: Radius.circular(18),
+                  bottomLeft: Radius.circular(4),
+                  bottomRight: Radius.circular(18),
                 ),
               ),
               child: Column(
@@ -920,14 +1095,6 @@ class _ChatBubble extends StatelessWidget {
               ),
             ),
           ),
-          if (isUser) ...[
-            const SizedBox(width: 8),
-            CircleAvatar(
-              radius: 16,
-              backgroundColor: AppTheme.successColor,
-              child: const Icon(Icons.person, size: 18, color: Colors.white),
-            ),
-          ],
         ],
       ),
     );
