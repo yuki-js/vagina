@@ -40,11 +40,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final FocusNode _focusNode = FocusNode();
+  bool _isAtBottom = true; // Track if user is at bottom for smart auto-scroll
+  bool _showScrollToBottom = false;
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: 0);
+    _scrollController.addListener(_onScrollChanged);
   }
 
   @override
@@ -55,9 +58,35 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     _durationSubscription?.cancel();
     _errorSubscription?.cancel();
     _textController.dispose();
+    _scrollController.removeListener(_onScrollChanged);
     _scrollController.dispose();
     _focusNode.dispose();
     super.dispose();
+  }
+  
+  void _onScrollChanged() {
+    if (!_scrollController.hasClients) return;
+    
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    final currentScroll = _scrollController.offset;
+    final isAtBottom = currentScroll >= maxScroll - 50; // 50px threshold
+    
+    if (isAtBottom != _isAtBottom || !isAtBottom != _showScrollToBottom) {
+      setState(() {
+        _isAtBottom = isAtBottom;
+        _showScrollToBottom = !isAtBottom;
+      });
+    }
+  }
+  
+  void _scrollToBottom() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
+      );
+    }
   }
 
   void _setupSubscriptions() {
@@ -523,15 +552,69 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 );
               }
               
-              // No auto-scroll - let user control the scroll position
-              return ListView.builder(
-                controller: _scrollController,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                itemCount: messages.length,
-                itemBuilder: (context, index) {
-                  final message = messages[index];
-                  return _ChatBubble(message: message);
-                },
+              // Smart auto-scroll: only scroll if user is already at bottom
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (_isAtBottom && _scrollController.hasClients) {
+                  _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+                }
+              });
+              
+              return Stack(
+                children: [
+                  ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    itemCount: messages.length,
+                    itemBuilder: (context, index) {
+                      final message = messages[index];
+                      return _ChatBubble(message: message);
+                    },
+                  ),
+                  // Floating "scroll to bottom" bar
+                  if (_showScrollToBottom)
+                    Positioned(
+                      bottom: 8,
+                      left: 0,
+                      right: 0,
+                      child: Center(
+                        child: GestureDetector(
+                          onTap: _scrollToBottom,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: AppTheme.surfaceColor.withValues(alpha: 0.9),
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.2),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.keyboard_arrow_down,
+                                  size: 16,
+                                  color: AppTheme.textSecondary.withValues(alpha: 0.7),
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '下に戻る',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: AppTheme.textSecondary.withValues(alpha: 0.7),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               );
             },
             loading: () => Center(
@@ -722,41 +805,57 @@ class _ChatBubble extends StatelessWidget {
     final isUser = message.role == 'user';
     final isTool = message.role == 'tool';
     
-    // Tool message style
+    // Tool message style - inline badge with reduced padding
     if (isTool) {
       return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Center(
-          child: GestureDetector(
-            onTap: () => _showToolDetails(context),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: AppTheme.secondaryColor.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: AppTheme.secondaryColor.withValues(alpha: 0.3),
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.build, size: 14, color: AppTheme.secondaryColor),
-                  const SizedBox(width: 6),
-                  Text(
-                    message.toolCall?.name ?? 'ツール',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppTheme.secondaryColor,
-                      fontWeight: FontWeight.w500,
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            CircleAvatar(
+              radius: 16,
+              backgroundColor: AppTheme.primaryColor,
+              child: const Icon(Icons.smart_toy, size: 18, color: Colors.white),
+            ),
+            const SizedBox(width: 8),
+            Flexible(
+              child: GestureDetector(
+                onTap: () => _showToolDetails(context),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppTheme.secondaryColor.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: AppTheme.secondaryColor.withValues(alpha: 0.25),
                     ),
                   ),
-                  const SizedBox(width: 4),
-                  const Icon(Icons.chevron_right, size: 14, color: AppTheme.secondaryColor),
-                ],
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.build, size: 12, color: AppTheme.secondaryColor),
+                      const SizedBox(width: 4),
+                      Text(
+                        message.toolCall?.name ?? 'ツール',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppTheme.secondaryColor,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(width: 2),
+                      Icon(
+                        Icons.chevron_right, 
+                        size: 12, 
+                        color: AppTheme.secondaryColor.withValues(alpha: 0.7),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
-          ),
+          ],
         ),
       );
     }

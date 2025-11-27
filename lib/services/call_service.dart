@@ -44,6 +44,7 @@ class CallService {
   StreamSubscription<String>? _userTranscriptSubscription;
   StreamSubscription<FunctionCall>? _functionCallSubscription;
   StreamSubscription<void>? _responseStartedSubscription;
+  StreamSubscription<void>? _speechStartedSubscription;
   Timer? _callTimer;
 
   final StreamController<CallState> _stateController =
@@ -66,6 +67,7 @@ class CallService {
   int _messageIdCounter = 0;
   StringBuffer _currentAssistantTranscript = StringBuffer();
   String? _currentAssistantMessageId;
+  String? _pendingUserMessageId; // Placeholder for user message waiting for transcript
 
   CallService({
     required AudioRecorderService recorder,
@@ -219,9 +221,14 @@ class CallService {
         _appendAssistantTranscript(delta);
       });
       
-      // Listen to user transcript (speech-to-text)
+      // Listen to user speech started (VAD) - create placeholder for correct ordering
+      _speechStartedSubscription = _apiClient.speechStartedStream.listen((_) {
+        _createUserMessagePlaceholder();
+      });
+      
+      // Listen to user transcript (speech-to-text) - update the placeholder
       _userTranscriptSubscription = _apiClient.userTranscriptStream.listen((transcript) {
-        _addChatMessage('user', transcript);
+        _updateUserMessagePlaceholder(transcript);
       });
       
       // Listen to function calls
@@ -315,9 +322,7 @@ class CallService {
     await _cleanup();
     _setState(CallState.idle);
     
-    // Clear chat history when call ends
-    clearChat();
-    
+    // Don't clear chat on end - it will be cleared when starting a new call
     logService.info(_tag, 'Call ended');
   }
 
@@ -347,6 +352,9 @@ class CallService {
     
     await _userTranscriptSubscription?.cancel();
     _userTranscriptSubscription = null;
+    
+    await _speechStartedSubscription?.cancel();
+    _speechStartedSubscription = null;
     
     await _functionCallSubscription?.cancel();
     _functionCallSubscription = null;
@@ -404,12 +412,53 @@ class CallService {
     _chatController.add(List.unmodifiable(_chatMessages));
   }
   
+  /// Create a placeholder for user message (called on speech_started)
+  /// This ensures the user message appears BEFORE the AI response
+  void _createUserMessagePlaceholder() {
+    // Don't create another placeholder if one already exists
+    if (_pendingUserMessageId != null) return;
+    
+    _pendingUserMessageId = 'msg_${_messageIdCounter++}';
+    final message = ChatMessage(
+      id: _pendingUserMessageId!,
+      role: 'user',
+      content: '...',  // Placeholder text while waiting for transcription
+      timestamp: DateTime.now(),
+      isComplete: false,
+    );
+    _chatMessages.add(message);
+    _chatController.add(List.unmodifiable(_chatMessages));
+    logService.debug(_tag, 'Created user message placeholder: $_pendingUserMessageId');
+  }
+  
+  /// Update the user message placeholder with actual transcript
+  void _updateUserMessagePlaceholder(String transcript) {
+    if (_pendingUserMessageId != null) {
+      // Update existing placeholder
+      final index = _chatMessages.indexWhere((m) => m.id == _pendingUserMessageId);
+      if (index >= 0) {
+        _chatMessages[index] = _chatMessages[index].copyWith(
+          content: transcript,
+          isComplete: true,
+        );
+        _chatController.add(List.unmodifiable(_chatMessages));
+        logService.debug(_tag, 'Updated user message placeholder with transcript');
+      }
+      _pendingUserMessageId = null;
+    } else {
+      // No placeholder exists - create new message directly
+      // This can happen if transcription arrives without speech_started (e.g., text input)
+      _addChatMessage('user', transcript);
+    }
+  }
+  
   /// Clear chat history
   void clearChat() {
     _chatMessages.clear();
     _messageIdCounter = 0;
     _currentAssistantTranscript = StringBuffer();
     _currentAssistantMessageId = null;
+    _pendingUserMessageId = null;
     _chatController.add(List.unmodifiable(_chatMessages));
   }
   

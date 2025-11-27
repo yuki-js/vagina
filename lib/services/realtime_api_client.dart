@@ -29,6 +29,8 @@ class RealtimeApiClient {
       StreamController<FunctionCall>.broadcast();
   final StreamController<void> _responseStartedController =
       StreamController<void>.broadcast();
+  final StreamController<void> _speechStartedController =
+      StreamController<void>.broadcast();
 
   StreamSubscription? _messageSubscription;
   String? _lastError;
@@ -50,6 +52,7 @@ class RealtimeApiClient {
   Stream<void> get audioDoneStream => _audioDoneController.stream;
   Stream<FunctionCall> get functionCallStream => _functionCallController.stream;
   Stream<void> get responseStartedStream => _responseStartedController.stream;
+  Stream<void> get speechStartedStream => _speechStartedController.stream;
   String? get lastError => _lastError;
 
   /// Set tools to be registered with the session
@@ -171,6 +174,8 @@ class RealtimeApiClient {
         
       case 'input_audio_buffer.speech_started':
         logService.info(_tag, 'Speech started (VAD detected)');
+        // Notify that user speech started (for creating placeholder message)
+        _speechStartedController.add(null);
         // Stop current audio playback when user starts speaking (interrupt)
         _responseStartedController.add(null);
         break;
@@ -411,6 +416,7 @@ class RealtimeApiClient {
     await _audioDoneController.close();
     await _functionCallController.close();
     await _responseStartedController.close();
+    await _speechStartedController.close();
     await _webSocket.dispose();
   }
 }
