@@ -17,6 +17,10 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
+  /// Page indices for navigation
+  static const int _callPageIndex = 0;
+  static const int _chatPageIndex = 1;
+  
   late final PageController _pageController;
   
   // Call state
@@ -44,19 +48,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   bool _showScrollToBottom = false;
   
   /// Current page index (0 = call, 1 = chat)
-  int _currentPageIndex = 0;
+  int _currentPageIndex = _callPageIndex;
 
   @override
   void initState() {
     super.initState();
-    _pageController = PageController(initialPage: 0);
+    _pageController = PageController(initialPage: _callPageIndex);
     _pageController.addListener(_onPageChanged);
     _scrollController.addListener(_onScrollChanged);
   }
   
   void _onPageChanged() {
     if (_pageController.hasClients) {
-      final page = _pageController.page?.round() ?? 0;
+      final page = _pageController.page?.round() ?? _callPageIndex;
       if (page != _currentPageIndex) {
         setState(() {
           _currentPageIndex = page;
@@ -220,7 +224,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   void _goToChat() {
     _pageController.animateToPage(
-      1,
+      _chatPageIndex,
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
     );
@@ -228,7 +232,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   void _goToCall() {
     _pageController.animateToPage(
-      0,
+      _callPageIndex,
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
     );
@@ -242,7 +246,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   /// - From call page with active call: block exit (don't allow app exit during call)
   /// - From call page without active call: allow exit
   void _handleBackButton() {
-    if (_currentPageIndex == 1) {
+    if (_currentPageIndex == _chatPageIndex) {
       // On chat page - go back to call page
       _goToCall();
     }
@@ -254,7 +258,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   /// - On chat page (should navigate to call page instead)
   /// - On call page with active call (prevent accidental exit during call)
   bool get _canPop {
-    if (_currentPageIndex == 1) {
+    if (_currentPageIndex == _chatPageIndex) {
       // On chat page - prevent pop, will navigate to call page
       return false;
     }
