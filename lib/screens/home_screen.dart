@@ -243,14 +243,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   /// Handles back button press
   /// - From chat page: go back to call page
-  /// - From call page with active call: block exit (don't allow app exit during call)
+  /// - From call page with active call: show snackbar prompting to end call
   /// - From call page without active call: allow exit
   void _handleBackButton() {
     if (_currentPageIndex == _chatPageIndex) {
       // On chat page - go back to call page
       _goToCall();
+    } else if (_isCallActive) {
+      // On call page with active call - show snackbar prompting to end call
+      _showSnackBar('通話を終了してからアプリを閉じてください', isError: true);
     }
-    // On call page - do nothing (handled by canPop)
+    // On call page without active call - do nothing (handled by canPop)
   }
 
   /// Determines if the current route can be popped (app can exit)
