@@ -33,6 +33,18 @@ class AudioRecorderService {
         encoder: AudioEncoder.pcm16bits,
         sampleRate: AppConfig.sampleRate,
         numChannels: AppConfig.channels,
+        // Enable echo cancellation to prevent AI voice from being picked up
+        echoCancel: true,
+        // Enable noise suppression for clearer audio
+        noiseSuppress: true,
+        // Android-specific configuration for voice communication
+        androidConfig: AndroidRecordConfig(
+          // Use voiceCommunication audio source which includes built-in
+          // echo cancellation and noise suppression optimized for voice calls
+          audioSource: AndroidAudioSource.voiceCommunication,
+          // Set audio mode to communication mode for better echo cancellation
+          audioManagerMode: AudioManagerMode.modeInCommunication,
+        ),
       ),
     );
 
