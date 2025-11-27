@@ -72,6 +72,7 @@ class _FlutterSoundBugReproScreenState extends State<FlutterSoundBugReproScreen>
       sampleRate: 24000,
       numChannels: 1,
       bufferSize: 8192,
+      interleaved: true,
     );
     _log('Player started');
   }
