@@ -49,7 +49,7 @@ ARG CMDLINE_TOOLS_REV=13114758
 # Install Android cmdline-tools and MINIMAL packages only
 RUN set -eux; \
     yes | sdkmanager --licenses > /dev/null || true; \
-    sdkmanager "platform-tools" "platforms;android-36" "build-tools;35.0.0" "cmake;3.22.1" "ndk;28.2.13676358"
+    sdkmanager "platform-tools" "platforms;android-36" "platforms;android-35" "build-tools;35.0.0" "cmake;3.22.1" "ndk;28.2.13676358"
 
 # Switch back to user
 USER user
