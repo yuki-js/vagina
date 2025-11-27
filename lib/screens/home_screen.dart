@@ -9,6 +9,9 @@ import '../models/chat_message.dart';
 import '../components/components.dart';
 import 'settings_screen.dart';
 
+/// Duration within which back key must be pressed twice to exit
+const Duration _backKeyExitTimeout = Duration(seconds: 2);
+
 /// Main home screen with PageView for swipe navigation between call and chat
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -285,7 +288,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         
         final now = DateTime.now();
         if (_lastBackPressTime == null || 
-            now.difference(_lastBackPressTime!) > const Duration(seconds: 2)) {
+            now.difference(_lastBackPressTime!) > _backKeyExitTimeout) {
           _lastBackPressTime = now;
           _showSnackBar('もう一度押すとアプリを終了します');
         } else {
@@ -525,14 +528,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
   
   /// Group messages: associate tool messages with their preceding assistant message
+  /// Tool messages that follow an assistant message are grouped with it.
+  /// Standalone tool messages (at the start or after user messages) are kept as separate groups.
   List<_MessageGroup> _groupMessages(List<ChatMessage> messages) {
     final List<_MessageGroup> groups = [];
+    final Set<int> processedToolIndices = {};
     
     for (int i = 0; i < messages.length; i++) {
       final message = messages[i];
       
-      // Skip tool messages - they will be attached to the preceding assistant message
-      if (message.role == 'tool') continue;
+      // Skip tool messages that have been processed
+      if (processedToolIndices.contains(i)) continue;
+      
+      if (message.role == 'tool') {
+        // Standalone tool message (not following an assistant message)
+        // Keep it as a separate group with its own tool call
+        if (message.toolCall != null) {
+          groups.add(_MessageGroup(
+            message: message,
+            toolCalls: [message.toolCall!],
+          ));
+        }
+        continue;
+      }
       
       // Collect any following tool messages for assistant messages
       final List<ToolCallInfo> toolCalls = [];
@@ -543,6 +561,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           if (messages[j].toolCall != null) {
             toolCalls.add(messages[j].toolCall!);
           }
+          processedToolIndices.add(j);
           j++;
         }
       }
@@ -896,21 +915,24 @@ class _ChatBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isUser = message.role == 'user';
-    // Tool messages are now grouped with assistant messages, so we skip standalone tool messages
     final isTool = message.role == 'tool';
     
-    // Tool messages should not be displayed separately anymore
-    if (isTool) {
+    // For standalone tool messages that have toolCalls, display them like assistant messages with tool badges
+    // Tool messages without toolCalls in the group are hidden (they've been merged elsewhere)
+    if (isTool && toolCalls.isEmpty) {
       return const SizedBox.shrink();
     }
+    
+    // Treat standalone tool messages like assistant messages (left-aligned with avatar)
+    final isLeftAligned = !isUser;
     
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
-        mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment: isLeftAligned ? MainAxisAlignment.start : MainAxisAlignment.end,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          if (!isUser) ...[
+          if (isLeftAligned) ...[
             CircleAvatar(
               radius: 16,
               backgroundColor: AppTheme.primaryColor,
