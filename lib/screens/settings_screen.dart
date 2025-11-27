@@ -362,26 +362,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             ),
                           ),
                           const SizedBox(height: 12),
-                          RadioGroup<String>(
-                            groupValue: assistantConfig.voice,
-                            onChanged: (value) {
-                              if (value != null) {
-                                ref
-                                    .read(assistantConfigProvider.notifier)
-                                    .updateVoice(value);
-                              }
-                            },
-                            child: Column(
-                              children: AssistantConfig.availableVoices.map(
-                                (voice) => RadioListTile<String>(
-                                  value: voice,
-                                  title: Text(
-                                    voice[0].toUpperCase() + voice.substring(1),
-                                    style: const TextStyle(color: AppTheme.textPrimary),
-                                  ),
-                                  activeColor: AppTheme.primaryColor,
-                                ),
-                              ).toList(),
+                          ...AssistantConfig.availableVoices.map(
+                            (voice) => RadioListTile<String>(
+                              value: voice,
+                              groupValue: assistantConfig.voice,
+                              onChanged: (value) {
+                                if (value != null) {
+                                  ref
+                                      .read(assistantConfigProvider.notifier)
+                                      .updateVoice(value);
+                                }
+                              },
+                              title: Text(
+                                voice[0].toUpperCase() + voice.substring(1),
+                                style: const TextStyle(color: AppTheme.textPrimary),
+                              ),
+                              activeColor: AppTheme.primaryColor,
                             ),
                           ),
                         ],

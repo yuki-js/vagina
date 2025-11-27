@@ -264,4 +264,58 @@ class StorageService {
     final file = await _getConfigFile();
     return file.path;
   }
+
+  // Memory functions for tool service
+  
+  /// Save a memory item (for AI long-term memory feature)
+  Future<void> saveMemory(String key, String value) async {
+    logService.info(_tag, 'Saving memory: $key');
+    final config = await _loadConfig();
+    final memories = (config['memories'] as Map<String, dynamic>?) ?? {};
+    memories[key] = {
+      'value': value,
+      'timestamp': DateTime.now().toIso8601String(),
+    };
+    config['memories'] = memories;
+    await _saveConfig(config);
+  }
+
+  /// Get a memory item
+  Future<String?> getMemory(String key) async {
+    final config = await _loadConfig();
+    final memories = (config['memories'] as Map<String, dynamic>?) ?? {};
+    final memory = memories[key] as Map<String, dynamic>?;
+    if (memory == null) return null;
+    return memory['value'] as String?;
+  }
+
+  /// Get all memories
+  Future<Map<String, dynamic>> getAllMemories() async {
+    final config = await _loadConfig();
+    final memories = (config['memories'] as Map<String, dynamic>?) ?? {};
+    return Map<String, dynamic>.from(memories);
+  }
+
+  /// Delete a memory item
+  /// Returns true if the memory existed and was deleted, false if it didn't exist
+  Future<bool> deleteMemory(String key) async {
+    logService.info(_tag, 'Deleting memory: $key');
+    final config = await _loadConfig();
+    final memories = (config['memories'] as Map<String, dynamic>?) ?? {};
+    final existed = memories.containsKey(key);
+    if (existed) {
+      memories.remove(key);
+      config['memories'] = memories;
+      await _saveConfig(config);
+    }
+    return existed;
+  }
+
+  /// Delete all memories
+  Future<void> deleteAllMemories() async {
+    logService.info(_tag, 'Deleting all memories');
+    final config = await _loadConfig();
+    config['memories'] = <String, dynamic>{};
+    await _saveConfig(config);
+  }
 }
