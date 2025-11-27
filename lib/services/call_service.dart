@@ -213,8 +213,8 @@ class CallService {
     });
     
     _speechStartedSubscription = _apiClient.speechStartedStream.listen((_) {
-      final messageId = _chatManager.createUserMessagePlaceholder();
-      logService.debug(_tag, 'Created user message placeholder: $messageId');
+      _chatManager.createUserMessagePlaceholder();
+      logService.debug(_tag, 'Created user message placeholder');
     });
     
     _userTranscriptSubscription = _apiClient.userTranscriptStream.listen((transcript) {

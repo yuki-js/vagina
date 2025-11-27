@@ -150,7 +150,7 @@ class ChatBubble extends StatelessWidget {
   }
 
   void _showToolDetails(BuildContext context) {
-    if (message.toolCall == null) return;
+    assert(message.toolCall != null, 'Tool details shown for non-tool message');
     ToolDetailsSheet.show(context, message.toolCall!);
   }
 }

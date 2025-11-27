@@ -56,9 +56,16 @@ class ExpressionEvaluator {
       end++;
     }
     
-    var value = double.parse(expr.substring(pos, end));
-    if (negative) value = -value;
+    if (end == pos) {
+      throw FormatException('Expected number at position $pos');
+    }
     
-    return (value, end);
+    final numberStr = expr.substring(pos, end);
+    final value = double.tryParse(numberStr);
+    if (value == null) {
+      throw FormatException('Invalid number format: $numberStr');
+    }
+    
+    return (negative ? -value : value, end);
   }
 }
