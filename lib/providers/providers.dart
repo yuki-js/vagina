@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:record/record.dart';
 import '../services/storage_service.dart';
 import '../services/audio_recorder_service.dart';
 import '../services/audio_player_service.dart';
@@ -8,6 +9,7 @@ import '../services/call_service.dart';
 import '../services/tool_service.dart';
 import '../models/assistant_config.dart';
 import '../models/chat_message.dart';
+import '../models/android_audio_config.dart';
 
 // Core providers
 
@@ -161,5 +163,52 @@ class AssistantConfigNotifier extends Notifier<AssistantConfig> {
   /// Reset to default configuration
   void reset() {
     state = const AssistantConfig();
+  }
+}
+
+// Android Audio providers
+
+/// Provider for Android audio configuration
+final androidAudioConfigProvider =
+    AsyncNotifierProvider<AndroidAudioConfigNotifier, AndroidAudioConfig>(
+        AndroidAudioConfigNotifier.new);
+
+/// Notifier for Android audio configuration state
+class AndroidAudioConfigNotifier extends AsyncNotifier<AndroidAudioConfig> {
+  @override
+  Future<AndroidAudioConfig> build() async {
+    final storage = ref.read(storageServiceProvider);
+    final config = await storage.getAndroidAudioConfig();
+    // Apply config to recorder service
+    ref.read(audioRecorderServiceProvider).setAndroidAudioConfig(config);
+    return config;
+  }
+
+  /// Update the audio source
+  Future<void> updateAudioSource(AndroidAudioSource source) async {
+    final current = state.value ?? const AndroidAudioConfig();
+    final newConfig = current.copyWith(audioSource: source);
+    await _saveAndApply(newConfig);
+  }
+
+  /// Update the audio manager mode
+  Future<void> updateAudioManagerMode(AudioManagerMode mode) async {
+    final current = state.value ?? const AndroidAudioConfig();
+    final newConfig = current.copyWith(audioManagerMode: mode);
+    await _saveAndApply(newConfig);
+  }
+
+  /// Save and apply the configuration
+  Future<void> _saveAndApply(AndroidAudioConfig config) async {
+    final storage = ref.read(storageServiceProvider);
+    await storage.saveAndroidAudioConfig(config);
+    ref.read(audioRecorderServiceProvider).setAndroidAudioConfig(config);
+    state = AsyncData(config);
+  }
+
+  /// Reset to default configuration
+  Future<void> reset() async {
+    const defaultConfig = AndroidAudioConfig();
+    await _saveAndApply(defaultConfig);
   }
 }
