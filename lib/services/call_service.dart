@@ -8,6 +8,7 @@ import 'storage_service.dart';
 import 'tool_service.dart';
 import 'log_service.dart';
 import '../models/chat_message.dart';
+import '../models/realtime_events.dart';
 
 /// Enum representing the current state of the call
 enum CallState {

@@ -264,7 +264,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             '例: https://your-resource.openai.azure.com/openai/realtime?api-version=2024-10-01-preview&deployment=gpt-realtime',
                             style: TextStyle(
                               fontSize: 11,
-                              color: AppTheme.textSecondary.withOpacity(0.7),
+                              color: AppTheme.textSecondary.withValues(alpha: 0.7),
                             ),
                           ),
                           const SizedBox(height: 16),
@@ -340,7 +340,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             '認証情報はデバイス上に安全に保存されます。',
                             style: TextStyle(
                               fontSize: 12,
-                              color: AppTheme.textSecondary.withOpacity(0.7),
+                              color: AppTheme.textSecondary.withValues(alpha: 0.7),
                             ),
                           ),
                         ],
@@ -401,7 +401,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             subtitle: Text(
                               'トレースログとWebSocketイベントを確認',
                               style: TextStyle(
-                                color: AppTheme.textSecondary.withOpacity(0.7),
+                                color: AppTheme.textSecondary.withValues(alpha: 0.7),
                                 fontSize: 12,
                               ),
                             ),
@@ -422,7 +422,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             subtitle: Text(
                               'Race condition bug reproduction screen',
                               style: TextStyle(
-                                color: AppTheme.textSecondary.withOpacity(0.7),
+                                color: AppTheme.textSecondary.withValues(alpha: 0.7),
                                 fontSize: 12,
                               ),
                             ),

@@ -27,6 +27,9 @@ class _CallScreenState extends ConsumerState<CallScreen> {
   double _inputLevel = 0.0;
   int _callDuration = 0;
   bool _subscriptionsInitialized = false;
+  
+  /// Noise reduction type: 'near' (default) or 'far'
+  String _noiseReduction = 'near';
 
   @override
   void dispose() {
@@ -99,6 +102,21 @@ class _CallScreenState extends ConsumerState<CallScreen> {
     ref.read(isMutedProvider.notifier).toggle();
     final isMuted = ref.read(isMutedProvider);
     callService.setMuted(isMuted);
+  }
+
+  void _handleNoiseReductionToggle() {
+    setState(() {
+      _noiseReduction = _noiseReduction == 'near' ? 'far' : 'near';
+    });
+    
+    // Update the API client's noise reduction setting
+    final apiClient = ref.read(realtimeApiClientProvider);
+    apiClient.setNoiseReduction(_noiseReduction);
+    
+    // If connected, update session config
+    if (_isCallActive) {
+      apiClient.updateSessionConfig();
+    }
   }
 
   String _formatDuration(int seconds) {
@@ -183,7 +201,7 @@ class _CallScreenState extends ConsumerState<CallScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: AppTheme.surfaceColor.withOpacity(0.6),
+              color: AppTheme.surfaceColor.withValues(alpha: 0.6),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Row(
@@ -283,7 +301,7 @@ class _CallScreenState extends ConsumerState<CallScreen> {
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppTheme.surfaceColor.withOpacity(0.8),
+        color: AppTheme.surfaceColor.withValues(alpha: 0.8),
         borderRadius: BorderRadius.circular(24),
       ),
       child: Column(
@@ -318,12 +336,13 @@ class _CallScreenState extends ConsumerState<CallScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              // Speaker (placeholder)
+              // Noise reduction toggle (far/near)
               _buildControlButton(
-                icon: Icons.volume_up,
-                label: 'スピーカー',
-                onTap: () {},
-                enabled: false,
+                icon: _noiseReduction == 'far' ? Icons.noise_aware : Icons.noise_control_off,
+                label: _noiseReduction == 'far' ? 'ノイズ軽減:遠' : 'ノイズ軽減:近',
+                onTap: _handleNoiseReductionToggle,
+                isActive: _noiseReduction == 'far',
+                activeColor: AppTheme.secondaryColor,
               ),
               // Mute button
               _buildControlButton(
@@ -363,7 +382,7 @@ class _CallScreenState extends ConsumerState<CallScreen> {
     Color? activeColor,
   }) {
     final color = !enabled 
-        ? AppTheme.textSecondary.withOpacity(0.3)
+        ? AppTheme.textSecondary.withValues(alpha: 0.3)
         : isActive 
             ? (activeColor ?? AppTheme.primaryColor)
             : AppTheme.textSecondary;
@@ -378,7 +397,7 @@ class _CallScreenState extends ConsumerState<CallScreen> {
             height: 56,
             decoration: BoxDecoration(
               color: isActive 
-                  ? (activeColor ?? AppTheme.primaryColor).withOpacity(0.2)
+                  ? (activeColor ?? AppTheme.primaryColor).withValues(alpha: 0.2)
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(16),
             ),

@@ -121,7 +121,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppTheme.surfaceColor.withOpacity(0.8),
+                  color: AppTheme.surfaceColor.withValues(alpha: 0.8),
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
                 ),
                 child: Row(
@@ -226,7 +226,7 @@ class _ChatBubble extends StatelessWidget {
                             height: 12,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: AppTheme.textSecondary.withOpacity(0.5),
+                              color: AppTheme.textSecondary.withValues(alpha: 0.5),
                             ),
                           ),
                         ],

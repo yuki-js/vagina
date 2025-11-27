@@ -2,74 +2,10 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 import '../config/app_config.dart';
+import '../models/realtime_events.dart';
+import '../models/realtime_session_config.dart';
 import 'websocket_service.dart';
 import 'log_service.dart';
-
-/// Events sent by the client to the Azure OpenAI Realtime API
-enum ClientEventType {
-  sessionUpdate('session.update'),
-  inputAudioBufferAppend('input_audio_buffer.append'),
-  inputAudioBufferCommit('input_audio_buffer.commit'),
-  inputAudioBufferClear('input_audio_buffer.clear'),
-  conversationItemCreate('conversation.item.create'),
-  conversationItemTruncate('conversation.item.truncate'),
-  conversationItemDelete('conversation.item.delete'),
-  responseCreate('response.create'),
-  responseCancel('response.cancel');
-
-  final String value;
-  const ClientEventType(this.value);
-}
-
-/// Events received from the Azure OpenAI Realtime API
-enum ServerEventType {
-  error('error'),
-  sessionCreated('session.created'),
-  sessionUpdated('session.updated'),
-  conversationCreated('conversation.created'),
-  inputAudioBufferCommitted('input_audio_buffer.committed'),
-  inputAudioBufferCleared('input_audio_buffer.cleared'),
-  inputAudioBufferSpeechStarted('input_audio_buffer.speech_started'),
-  inputAudioBufferSpeechStopped('input_audio_buffer.speech_stopped'),
-  conversationItemCreated('conversation.item.created'),
-  conversationItemInputAudioTranscriptionCompleted(
-      'conversation.item.input_audio_transcription.completed'),
-  conversationItemInputAudioTranscriptionFailed(
-      'conversation.item.input_audio_transcription.failed'),
-  conversationItemTruncated('conversation.item.truncated'),
-  conversationItemDeleted('conversation.item.deleted'),
-  responseCreated('response.created'),
-  responseDone('response.done'),
-  responseOutputItemAdded('response.output_item.added'),
-  responseOutputItemDone('response.output_item.done'),
-  responseContentPartAdded('response.content_part.added'),
-  responseContentPartDone('response.content_part.done'),
-  responseTextDelta('response.text.delta'),
-  responseTextDone('response.text.done'),
-  responseAudioTranscriptDelta('response.audio_transcript.delta'),
-  responseAudioTranscriptDone('response.audio_transcript.done'),
-  responseAudioDelta('response.audio.delta'),
-  responseAudioDone('response.audio.done'),
-  responseFunctionCallArgumentsDelta('response.function_call_arguments.delta'),
-  responseFunctionCallArgumentsDone('response.function_call_arguments.done'),
-  rateLimitsUpdated('rate_limits.updated');
-
-  final String value;
-  const ServerEventType(this.value);
-}
-
-/// Represents a function call from the AI
-class FunctionCall {
-  final String callId;
-  final String name;
-  final String arguments;
-
-  FunctionCall({
-    required this.callId,
-    required this.name,
-    required this.arguments,
-  });
-}
 
 /// Client for the Azure OpenAI Realtime API
 class RealtimeApiClient {
@@ -173,37 +109,41 @@ class RealtimeApiClient {
     }
   }
 
-  Future<void> _configureSession() async {
-    logService.info(_tag, 'Configuring session with voice: ${AppConfig.defaultVoice}, tools: ${_tools.length}');
-    
-    final sessionConfig = {
-      'modalities': ['text', 'audio'],
-      'instructions': 'You are a helpful assistant. You have access to tools that can help you answer questions. Use them when appropriate.',
-      'voice': AppConfig.defaultVoice,
-      'input_audio_format': 'pcm16',
-      'output_audio_format': 'pcm16',
-      'input_audio_transcription': {
-        'model': 'whisper-1',
-      },
-      'turn_detection': {
-        'type': 'server_vad',
-        'threshold': 0.5,
-        'prefix_padding_ms': 300,
-        'silence_duration_ms': 500,
-      },
-    };
-    
-    // Add tools if any are configured
-    if (_tools.isNotEmpty) {
-      sessionConfig['tools'] = _tools;
-      sessionConfig['tool_choice'] = 'auto';
+  /// Session configuration
+  RealtimeSessionConfig _sessionConfig = const RealtimeSessionConfig();
+  
+  /// Set noise reduction type ('far' or 'near')
+  void setNoiseReduction(String type) {
+    if (type == 'far' || type == 'near') {
+      _sessionConfig = _sessionConfig.copyWith(noiseReduction: type);
     }
+  }
+  
+  /// Get current noise reduction type
+  String get noiseReduction => _sessionConfig.noiseReduction;
+
+  Future<void> _configureSession() async {
+    // Update session config with current tools
+    _sessionConfig = _sessionConfig.copyWith(
+      voice: AppConfig.defaultVoice,
+      tools: _tools,
+    );
+    
+    logService.info(_tag, 'Configuring session with voice: ${_sessionConfig.voice}, tools: ${_sessionConfig.tools.length}, noise_reduction: ${_sessionConfig.noiseReduction}');
+    
+    const instructions = 'You are a helpful assistant. You have access to tools that can help you answer questions. Use them when appropriate.';
     
     // Send session update with configuration
     _webSocket.send({
       'type': ClientEventType.sessionUpdate.value,
-      'session': sessionConfig,
+      'session': _sessionConfig.toSessionPayload(instructions),
     });
+  }
+  
+  /// Update session configuration (can be called after connection)
+  void updateSessionConfig() {
+    if (!isConnected) return;
+    _configureSession();
   }
 
   void _handleMessage(Map<String, dynamic> message) {
