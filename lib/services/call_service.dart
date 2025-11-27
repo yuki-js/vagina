@@ -163,9 +163,9 @@ class CallService {
       });
       
       // Listen for audio done events
-      _audioDoneSubscription = _apiClient.audioDoneStream.listen((_) {
+      _audioDoneSubscription = _apiClient.audioDoneStream.listen((_) async {
         logService.info(_tag, 'Audio done event received, marking response complete');
-        _player.markResponseComplete();
+        await _player.markResponseComplete();
       });
 
       // Start microphone recording
