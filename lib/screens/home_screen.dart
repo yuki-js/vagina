@@ -191,19 +191,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   bool get _isCallActive =>
       _callState == CallState.connecting || _callState == CallState.connected;
 
-  // Chat methods
-  void _scrollToBottom() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOut,
-        );
-      }
-    });
-  }
-
   void _sendMessage() {
     final text = _textController.text.trim();
     if (text.isEmpty) return;
@@ -315,6 +302,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildControlPanel(bool isMuted) {
+    // Calculate button width for consistent grid layout
+    final buttonWidth = (MediaQuery.of(context).size.width - 32 - 40 - 32) / 3;
+    
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(20),
@@ -325,7 +315,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // 2x3 button grid (Galaxy style)
+          // 2x3 button grid (Galaxy style) with fixed widths
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
@@ -334,20 +324,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 icon: Icons.chat_bubble_outline,
                 label: 'チャット',
                 onTap: _goToChat,
+                width: buttonWidth,
               ),
               // Speaker mute button
               _buildControlButton(
                 icon: _speakerMuted ? Icons.volume_off : Icons.volume_up,
-                label: _speakerMuted ? 'スピーカーOFF' : 'スピーカー',
+                label: 'スピーカー',
                 onTap: _handleSpeakerMuteToggle,
                 isActive: _speakerMuted,
                 activeColor: AppTheme.warningColor,
+                width: buttonWidth,
               ),
               // Settings
               _buildControlButton(
                 icon: Icons.settings,
                 label: '設定',
                 onTap: _openSettings,
+                width: buttonWidth,
               ),
             ],
           ),
@@ -358,25 +351,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               // Noise reduction toggle (far/near)
               _buildControlButton(
                 icon: _noiseReduction == 'far' ? Icons.noise_aware : Icons.noise_control_off,
-                label: _noiseReduction == 'far' ? 'ノイズ軽減:遠' : 'ノイズ軽減:近',
+                label: 'ノイズ軽減',
                 onTap: _handleNoiseReductionToggle,
                 isActive: _noiseReduction == 'far',
                 activeColor: AppTheme.secondaryColor,
+                width: buttonWidth,
               ),
               // Mute button
               _buildControlButton(
                 icon: isMuted ? Icons.mic_off : Icons.mic,
-                label: isMuted ? 'ミュート中' : '消音',
+                label: '消音',
                 onTap: _handleMuteButton,
                 isActive: isMuted,
                 activeColor: AppTheme.errorColor,
+                width: buttonWidth,
               ),
               // Interrupt button (stop current response)
               _buildControlButton(
                 icon: Icons.front_hand,
-                label: '会話に割込み',
+                label: '割込み',
                 onTap: _handleInterruptButton,
                 enabled: _isCallActive,
+                width: buttonWidth,
               ),
             ],
           ),
@@ -396,6 +392,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     required IconData icon,
     required String label,
     required VoidCallback onTap,
+    required double width,
     bool enabled = true,
     bool isActive = false,
     Color? activeColor,
@@ -408,29 +405,33 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     return GestureDetector(
       onTap: enabled ? onTap : null,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: isActive 
-                  ? (activeColor ?? AppTheme.primaryColor).withValues(alpha: 0.2)
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(16),
+      child: SizedBox(
+        width: width,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: isActive 
+                    ? (activeColor ?? AppTheme.primaryColor).withValues(alpha: 0.2)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(icon, color: color, size: 28),
             ),
-            child: Icon(icon, color: color, size: 28),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              color: color,
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                color: color,
+              ),
+              textAlign: TextAlign.center,
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -484,17 +485,45 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           child: chatMessagesAsync.when(
             data: (messages) {
               if (messages.isEmpty) {
-                return const Center(
-                  child: Text(
-                    '通話を開始すると会話がここに表示されます',
-                    style: TextStyle(color: AppTheme.textSecondary),
+                // Friendly empty state message
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(32.0),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.chat_bubble_outline,
+                          size: 64,
+                          color: AppTheme.textSecondary.withValues(alpha: 0.5),
+                        ),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'まだ会話がありません',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w500,
+                            color: AppTheme.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          isConnected 
+                              ? '話しかけるか、下のテキストボックスからメッセージを送信してください'
+                              : '通話を開始すると、ここに会話が表示されます',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: AppTheme.textSecondary.withValues(alpha: 0.7),
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
                   ),
                 );
               }
               
-              // Auto-scroll when new messages arrive
-              _scrollToBottom();
-              
+              // No auto-scroll - let user control the scroll position
               return ListView.builder(
                 controller: _scrollController,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -505,7 +534,30 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 },
               );
             },
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => Center(
+              child: Padding(
+                padding: const EdgeInsets.all(32.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.chat_bubble_outline,
+                      size: 64,
+                      color: AppTheme.textSecondary.withValues(alpha: 0.5),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'まだ会話がありません',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w500,
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
             error: (_, __) => const Center(
               child: Text(
                 'チャットの読み込みに失敗しました',
@@ -568,9 +620,146 @@ class _ChatBubble extends StatelessWidget {
 
   const _ChatBubble({required this.message});
 
+  void _showToolDetails(BuildContext context) {
+    if (message.toolCall == null) return;
+    
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppTheme.surfaceColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppTheme.secondaryColor.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.build, color: AppTheme.secondaryColor, size: 20),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    message.toolCall!.name,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              '引数:',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: AppTheme.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppTheme.backgroundStart,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: SelectableText(
+                message.toolCall!.arguments,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontFamily: 'monospace',
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              '結果:',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: AppTheme.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppTheme.backgroundStart,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: SelectableText(
+                message.toolCall!.result,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontFamily: 'monospace',
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isUser = message.role == 'user';
+    final isTool = message.role == 'tool';
+    
+    // Tool message style
+    if (isTool) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Center(
+          child: GestureDetector(
+            onTap: () => _showToolDetails(context),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppTheme.secondaryColor.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: AppTheme.secondaryColor.withValues(alpha: 0.3),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.build, size: 14, color: AppTheme.secondaryColor),
+                  const SizedBox(width: 6),
+                  Text(
+                    message.toolCall?.name ?? 'ツール',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppTheme.secondaryColor,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  const Icon(Icons.chevron_right, size: 14, color: AppTheme.secondaryColor),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
     
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -603,7 +792,7 @@ class _ChatBubble extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  SelectableText(
                     message.content,
                     style: const TextStyle(
                       color: AppTheme.textPrimary,

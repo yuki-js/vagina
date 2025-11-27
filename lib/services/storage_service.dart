@@ -297,12 +297,25 @@ class StorageService {
   }
 
   /// Delete a memory item
-  Future<void> deleteMemory(String key) async {
+  /// Returns true if the memory existed and was deleted, false if it didn't exist
+  Future<bool> deleteMemory(String key) async {
     logService.info(_tag, 'Deleting memory: $key');
     final config = await _loadConfig();
     final memories = (config['memories'] as Map<String, dynamic>?) ?? {};
-    memories.remove(key);
-    config['memories'] = memories;
+    final existed = memories.containsKey(key);
+    if (existed) {
+      memories.remove(key);
+      config['memories'] = memories;
+      await _saveConfig(config);
+    }
+    return existed;
+  }
+
+  /// Delete all memories
+  Future<void> deleteAllMemories() async {
+    logService.info(_tag, 'Deleting all memories');
+    final config = await _loadConfig();
+    config['memories'] = <String, dynamic>{};
     await _saveConfig(config);
   }
 }

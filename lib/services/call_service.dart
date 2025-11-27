@@ -232,12 +232,16 @@ class CallService {
           functionCall.name,
           functionCall.arguments,
         );
+        
+        // Add tool call to chat history
+        _addToolMessage(functionCall.name, functionCall.arguments, result.output);
+        
         _apiClient.sendFunctionCallResult(result.callId, result.output);
       });
       
-      // Listen to response started events to stop previous audio and enable interrupts
+      // Listen to speech started events to stop audio when user starts speaking (interrupt)
       _responseStartedSubscription = _apiClient.responseStartedStream.listen((_) async {
-        logService.info(_tag, 'New response started, stopping previous audio');
+        logService.info(_tag, 'User speech detected, stopping audio for interrupt');
         await _player.stop();
         // Complete previous assistant message if any
         _completeCurrentAssistantMessage();
@@ -310,6 +314,10 @@ class CallService {
 
     await _cleanup();
     _setState(CallState.idle);
+    
+    // Clear chat history when call ends
+    clearChat();
+    
     logService.info(_tag, 'Call ended');
   }
 
@@ -376,6 +384,32 @@ class CallService {
       timestamp: DateTime.now(),
     );
     _chatMessages.add(message);
+    _chatController.add(List.unmodifiable(_chatMessages));
+  }
+  
+  /// Add a tool call message to chat
+  void _addToolMessage(String toolName, String arguments, String result) {
+    final message = ChatMessage(
+      id: 'msg_${_messageIdCounter++}',
+      role: 'tool',
+      content: 'ツールを使用しました: $toolName',
+      timestamp: DateTime.now(),
+      toolCall: ToolCallInfo(
+        name: toolName,
+        arguments: arguments,
+        result: result,
+      ),
+    );
+    _chatMessages.add(message);
+    _chatController.add(List.unmodifiable(_chatMessages));
+  }
+  
+  /// Clear chat history
+  void clearChat() {
+    _chatMessages.clear();
+    _messageIdCounter = 0;
+    _currentAssistantTranscript = StringBuffer();
+    _currentAssistantMessageId = null;
     _chatController.add(List.unmodifiable(_chatMessages));
   }
   

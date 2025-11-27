@@ -8,6 +8,14 @@ class RealtimeSessionConfig {
   
   /// Tools registered with the session
   final List<Map<String, dynamic>> tools;
+  
+  /// System instructions
+  static const String systemInstructions = '''
+あなたの名前はVaginaです。Voice AGI Native Appの略です。
+ユーザーとの音声会話を通じて、役立つアシスタントとして振る舞ってください。
+日本語で応答し、親しみやすく自然な会話を心がけてください。
+ツールを使って時刻を確認したり、情報を記憶したり、計算を行うことができます。
+''';
 
   const RealtimeSessionConfig({
     this.voice = 'alloy',
@@ -30,10 +38,10 @@ class RealtimeSessionConfig {
   /// Convert to session.update payload format for OpenAI Realtime API
   /// Reference: https://platform.openai.com/docs/api-reference/realtime-client-events/session/update
   /// Reference: https://platform.openai.com/docs/guides/realtime-transcription
-  Map<String, dynamic> toSessionPayload(String instructions) {
+  Map<String, dynamic> toSessionPayload() {
     final config = <String, dynamic>{
       'modalities': ['text', 'audio'],
-      'instructions': instructions,
+      'instructions': systemInstructions,
       'voice': voice,
       'input_audio_format': 'pcm16',
       'output_audio_format': 'pcm16',

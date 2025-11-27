@@ -133,12 +133,10 @@ class RealtimeApiClient {
     
     logService.info(_tag, 'Configuring session with voice: ${_sessionConfig.voice}, tools: ${_sessionConfig.tools.length}, noise_reduction: ${_sessionConfig.noiseReduction}');
     
-    const instructions = 'You are a helpful assistant. You have access to tools that can help you answer questions. Use them when appropriate.';
-    
     // Send session update with configuration
     _webSocket.send({
       'type': ClientEventType.sessionUpdate.value,
-      'session': _sessionConfig.toSessionPayload(instructions),
+      'session': _sessionConfig.toSessionPayload(),
     });
   }
   
@@ -173,6 +171,8 @@ class RealtimeApiClient {
         
       case 'input_audio_buffer.speech_started':
         logService.info(_tag, 'Speech started (VAD detected)');
+        // Stop current audio playback when user starts speaking (interrupt)
+        _responseStartedController.add(null);
         break;
         
       case 'input_audio_buffer.speech_stopped':
@@ -203,7 +203,7 @@ class RealtimeApiClient {
       case 'response.created':
         logService.info(_tag, 'Response created - AI is generating response');
         _audioChunksReceived = 0; // Reset audio chunk counter for new response
-        _responseStartedController.add(null); // Notify that new response started
+        // Don't stop audio here - let it play until speech_started interrupts
         break;
         
       case 'response.output_item.added':
