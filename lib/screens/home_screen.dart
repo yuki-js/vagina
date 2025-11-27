@@ -70,11 +70,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final maxScroll = _scrollController.position.maxScrollExtent;
     final currentScroll = _scrollController.offset;
     final isAtBottom = currentScroll >= maxScroll - 50; // 50px threshold
+    final shouldShowScrollButton = !isAtBottom;
     
-    if (isAtBottom != _isAtBottom || !isAtBottom != _showScrollToBottom) {
+    if (isAtBottom != _isAtBottom || shouldShowScrollButton != _showScrollToBottom) {
       setState(() {
         _isAtBottom = isAtBottom;
-        _showScrollToBottom = !isAtBottom;
+        _showScrollToBottom = shouldShowScrollButton;
       });
     }
   }
