@@ -42,16 +42,32 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   final FocusNode _focusNode = FocusNode();
   bool _isAtBottom = true; // Track if user is at bottom for smart auto-scroll
   bool _showScrollToBottom = false;
+  
+  /// Current page index (0 = call, 1 = chat)
+  int _currentPageIndex = 0;
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: 0);
+    _pageController.addListener(_onPageChanged);
     _scrollController.addListener(_onScrollChanged);
+  }
+  
+  void _onPageChanged() {
+    if (_pageController.hasClients) {
+      final page = _pageController.page?.round() ?? 0;
+      if (page != _currentPageIndex) {
+        setState(() {
+          _currentPageIndex = page;
+        });
+      }
+    }
   }
 
   @override
   void dispose() {
+    _pageController.removeListener(_onPageChanged);
     _pageController.dispose();
     _stateSubscription?.cancel();
     _amplitudeSubscription?.cancel();
@@ -221,6 +237,31 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   bool get _isCallActive =>
       _callState == CallState.connecting || _callState == CallState.connected;
 
+  /// Handles back button press
+  /// - From chat page: go back to call page
+  /// - From call page with active call: block exit (don't allow app exit during call)
+  /// - From call page without active call: allow exit
+  void _handleBackButton() {
+    if (_currentPageIndex == 1) {
+      // On chat page - go back to call page
+      _goToCall();
+    }
+    // On call page - do nothing (handled by canPop)
+  }
+
+  /// Determines if the current route can be popped (app can exit)
+  /// Returns false to prevent pop when:
+  /// - On chat page (should navigate to call page instead)
+  /// - On call page with active call (prevent accidental exit during call)
+  bool get _canPop {
+    if (_currentPageIndex == 1) {
+      // On chat page - prevent pop, will navigate to call page
+      return false;
+    }
+    // On call page - allow pop only if call is not active
+    return !_isCallActive;
+  }
+
   void _sendMessage() {
     final text = _textController.text.trim();
     if (text.isEmpty) return;
@@ -236,18 +277,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     _setupSubscriptions();
     final isMuted = ref.watch(isMutedProvider);
 
-    return Scaffold(
-      body: Container(
-        decoration: AppTheme.backgroundGradient,
-        child: SafeArea(
-          child: PageView(
-            controller: _pageController,
-            children: [
-              // Page 0: Call Screen
-              _buildCallPage(isMuted),
-              // Page 1: Chat Screen
-              _buildChatPage(),
+    return PopScope(
+      canPop: _canPop,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          _handleBackButton();
+        }
+      },
+      child: Scaffold(
+        body: Container(
+          decoration: AppTheme.backgroundGradient,
+          child: SafeArea(
+            child: PageView(
+              controller: _pageController,
+              children: [
+                // Page 0: Call Screen
+                _buildCallPage(isMuted),
+                // Page 1: Chat Screen
+                _buildChatPage(),
             ],
+            ),
           ),
         ),
       ),
