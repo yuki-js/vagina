@@ -1,0 +1,33 @@
+model = "gpt-5.1-codex"
+model_provider = "azure"
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
+disable_response_storage = true
+file_opener = "vscode"
+hide_agent_reasoning = false
+show_raw_agent_reasoning = false
+model_reasoning_effort = "high"
+
+[model_providers.azure]
+name = "Azure"
+base_url = "https://oas-playground-swe.openai.azure.com/openai"
+env_key = "AZURE_OPENAI_API_KEY"
+query_params = { api-version = "2025-04-01-preview" }
+wire_api = "responses"
+request_max_retries = 4
+stream_max_retries = 10
+stream_idle_timeout_ms = 300000
+
+[shell_environment_policy]
+inherit = "core"
+ignore_default_excludes = false
+exclude = []
+set = {}
+include_only = ["PATH", "HOME", "USER"]
+
+[history]
+persistence = "save-all"
+
+[notice]
+"hide_gpt-5.1-codex-max_migration_prompt" = true
+hide_full_access_warning = true
