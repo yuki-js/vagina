@@ -177,7 +177,7 @@ class _LogScreenState extends State<LogScreen> {
                       '${logs.length} エントリ',
                       style: TextStyle(
                         fontSize: 12,
-                        color: AppTheme.textSecondary.withValues(alpha: 0.7),
+                        color: AppTheme.textSecondary.withOpacity(0.7),
                       ),
                     ),
                     const Spacer(),
@@ -254,7 +254,7 @@ class _LogScreenState extends State<LogScreen> {
             label,
             style: TextStyle(
               fontSize: 10,
-              color: AppTheme.textSecondary.withValues(alpha: 0.7),
+              color: AppTheme.textSecondary.withOpacity(0.7),
             ),
           ),
         ],

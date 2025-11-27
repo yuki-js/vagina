@@ -20,7 +20,7 @@ class StatusIndicator extends StatelessWidget {
         vertical: 12,
       ),
       decoration: BoxDecoration(
-        color: AppTheme.surfaceColor.withValues(alpha: 0.5),
+        color: AppTheme.surfaceColor.withOpacity(0.5),
         borderRadius: BorderRadius.circular(24),
       ),
       child: Row(

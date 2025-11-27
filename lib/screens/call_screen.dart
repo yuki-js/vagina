@@ -134,7 +134,7 @@ class _CallScreenState extends ConsumerState<CallScreen> {
                 child: CircularIconButton(
                   icon: Icons.settings,
                   size: 48,
-                  backgroundColor: AppTheme.surfaceColor.withValues(alpha: 0.6),
+                  backgroundColor: AppTheme.surfaceColor.withOpacity(0.6),
                   onPressed: _openSettings,
                 ),
               ),

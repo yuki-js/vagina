@@ -43,12 +43,11 @@ final audioPlayerServiceProvider = Provider<AudioPlayerService>((ref) {
 });
 
 /// Provider for mute state
-final isMutedProvider = NotifierProvider<IsMutedNotifier, bool>(IsMutedNotifier.new);
+final isMutedProvider = StateNotifierProvider<IsMutedNotifier, bool>((ref) => IsMutedNotifier());
 
 /// Notifier for mute state
-class IsMutedNotifier extends Notifier<bool> {
-  @override
-  bool build() => false;
+class IsMutedNotifier extends StateNotifier<bool> {
+  IsMutedNotifier() : super(false);
 
   void toggle() {
     state = !state;
@@ -88,12 +87,11 @@ final callServiceProvider = Provider<CallService>((ref) {
 });
 
 /// Provider for connection state
-final isConnectedProvider = NotifierProvider<IsConnectedNotifier, bool>(IsConnectedNotifier.new);
+final isConnectedProvider = StateNotifierProvider<IsConnectedNotifier, bool>((ref) => IsConnectedNotifier());
 
 /// Notifier for connection state
-class IsConnectedNotifier extends Notifier<bool> {
-  @override
-  bool build() => false;
+class IsConnectedNotifier extends StateNotifier<bool> {
+  IsConnectedNotifier() : super(false);
 
   void set(bool value) {
     state = value;
@@ -101,12 +99,11 @@ class IsConnectedNotifier extends Notifier<bool> {
 }
 
 /// Provider for call duration in seconds
-final callDurationProvider = NotifierProvider<CallDurationNotifier, int>(CallDurationNotifier.new);
+final callDurationProvider = StateNotifierProvider<CallDurationNotifier, int>((ref) => CallDurationNotifier());
 
 /// Notifier for call duration
-class CallDurationNotifier extends Notifier<int> {
-  @override
-  int build() => 0;
+class CallDurationNotifier extends StateNotifier<int> {
+  CallDurationNotifier() : super(0);
 
   void increment() {
     state++;
@@ -121,12 +118,11 @@ class CallDurationNotifier extends Notifier<int> {
 
 /// Provider for the assistant configuration
 final assistantConfigProvider =
-    NotifierProvider<AssistantConfigNotifier, AssistantConfig>(AssistantConfigNotifier.new);
+    StateNotifierProvider<AssistantConfigNotifier, AssistantConfig>((ref) => AssistantConfigNotifier());
 
 /// Notifier for assistant configuration state
-class AssistantConfigNotifier extends Notifier<AssistantConfig> {
-  @override
-  AssistantConfig build() => const AssistantConfig();
+class AssistantConfigNotifier extends StateNotifier<AssistantConfig> {
+  AssistantConfigNotifier() : super(const AssistantConfig());
 
   /// Update the assistant name
   void updateName(String name) {
