@@ -9,6 +9,7 @@ import 'tool_service.dart';
 import 'log_service.dart';
 import '../models/chat_message.dart';
 import '../models/realtime_events.dart';
+import '../models/conversation_models.dart';
 
 /// Enum representing the current state of the call
 enum CallState {
@@ -39,11 +40,10 @@ class CallService {
   StreamSubscription<Amplitude>? _amplitudeSubscription;
   StreamSubscription<Uint8List>? _responseAudioSubscription;
   StreamSubscription<void>? _audioDoneSubscription;
-  StreamSubscription<String>? _errorSubscription;
+  StreamSubscription<RealtimeError>? _errorSubscription;
   StreamSubscription<String>? _transcriptSubscription;
   StreamSubscription<String>? _userTranscriptSubscription;
   StreamSubscription<FunctionCall>? _functionCallSubscription;
-  StreamSubscription<void>? _responseStartedSubscription;
   StreamSubscription<void>? _speechStartedSubscription;
   Timer? _callTimer;
 
@@ -198,7 +198,7 @@ class CallService {
       // Listen to API errors
       _errorSubscription = _apiClient.errorStream.listen((error) {
         logService.error(_tag, 'API error received: $error');
-        _emitError('API エラー: $error');
+        _emitError('API エラー: ${error.toString()}');
       });
 
       // Listen to response audio
@@ -224,6 +224,10 @@ class CallService {
       // Listen to user speech started (VAD) - create placeholder for correct ordering
       _speechStartedSubscription = _apiClient.speechStartedStream.listen((_) {
         _createUserMessagePlaceholder();
+        // Stop current audio playback when user starts speaking (interrupt)
+        _player.stop();
+        // Complete previous assistant message if any
+        _completeCurrentAssistantMessage();
       });
       
       // Listen to user transcript (speech-to-text) - update the placeholder
@@ -244,14 +248,6 @@ class CallService {
         _addToolMessage(functionCall.name, functionCall.arguments, result.output);
         
         _apiClient.sendFunctionCallResult(result.callId, result.output);
-      });
-      
-      // Listen to speech started events to stop audio when user starts speaking (interrupt)
-      _responseStartedSubscription = _apiClient.responseStartedStream.listen((_) async {
-        logService.info(_tag, 'User speech detected, stopping audio for interrupt');
-        await _player.stop();
-        // Complete previous assistant message if any
-        _completeCurrentAssistantMessage();
       });
 
       // Start microphone recording
@@ -358,9 +354,6 @@ class CallService {
     
     await _functionCallSubscription?.cancel();
     _functionCallSubscription = null;
-    
-    await _responseStartedSubscription?.cancel();
-    _responseStartedSubscription = null;
 
     await _recorder.stopRecording();
     await _player.stop();

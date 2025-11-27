@@ -167,17 +167,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   void _showSnackBar(String message, {bool isError = false, bool isNeutral = false}) {
     Color backgroundColor;
+    Color textColor = AppTheme.textPrimary;
+    
     if (isError) {
       backgroundColor = AppTheme.errorColor;
     } else if (isNeutral) {
-      backgroundColor = AppTheme.surfaceColor;
+      backgroundColor = AppTheme.textSecondary;
+      textColor = AppTheme.backgroundStart;
     } else {
       backgroundColor = AppTheme.successColor;
     }
     
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
+        content: Text(
+          message,
+          style: TextStyle(color: textColor),
+        ),
         backgroundColor: backgroundColor,
         duration: const Duration(seconds: 3),
       ),
