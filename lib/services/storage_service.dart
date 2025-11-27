@@ -264,4 +264,45 @@ class StorageService {
     final file = await _getConfigFile();
     return file.path;
   }
+
+  // Memory functions for tool service
+  
+  /// Save a memory item (for AI long-term memory feature)
+  Future<void> saveMemory(String key, String value) async {
+    logService.info(_tag, 'Saving memory: $key');
+    final config = await _loadConfig();
+    final memories = (config['memories'] as Map<String, dynamic>?) ?? {};
+    memories[key] = {
+      'value': value,
+      'timestamp': DateTime.now().toIso8601String(),
+    };
+    config['memories'] = memories;
+    await _saveConfig(config);
+  }
+
+  /// Get a memory item
+  Future<String?> getMemory(String key) async {
+    final config = await _loadConfig();
+    final memories = (config['memories'] as Map<String, dynamic>?) ?? {};
+    final memory = memories[key] as Map<String, dynamic>?;
+    if (memory == null) return null;
+    return memory['value'] as String?;
+  }
+
+  /// Get all memories
+  Future<Map<String, dynamic>> getAllMemories() async {
+    final config = await _loadConfig();
+    final memories = (config['memories'] as Map<String, dynamic>?) ?? {};
+    return Map<String, dynamic>.from(memories);
+  }
+
+  /// Delete a memory item
+  Future<void> deleteMemory(String key) async {
+    logService.info(_tag, 'Deleting memory: $key');
+    final config = await _loadConfig();
+    final memories = (config['memories'] as Map<String, dynamic>?) ?? {};
+    memories.remove(key);
+    config['memories'] = memories;
+    await _saveConfig(config);
+  }
 }

@@ -5,7 +5,9 @@ import '../services/audio_player_service.dart';
 import '../services/websocket_service.dart';
 import '../services/realtime_api_client.dart';
 import '../services/call_service.dart';
+import '../services/tool_service.dart';
 import '../models/assistant_config.dart';
+import '../models/chat_message.dart';
 
 // Core providers
 
@@ -74,6 +76,12 @@ final realtimeApiClientProvider = Provider<RealtimeApiClient>((ref) {
   return client;
 });
 
+/// Provider for the tool service
+final toolServiceProvider = Provider<ToolService>((ref) {
+  final storage = ref.read(storageServiceProvider);
+  return ToolService(storage: storage);
+});
+
 /// Provider for the call service
 final callServiceProvider = Provider<CallService>((ref) {
   final service = CallService(
@@ -81,9 +89,16 @@ final callServiceProvider = Provider<CallService>((ref) {
     player: ref.read(audioPlayerServiceProvider),
     apiClient: ref.read(realtimeApiClientProvider),
     storage: ref.read(storageServiceProvider),
+    toolService: ref.read(toolServiceProvider),
   );
   ref.onDispose(() => service.dispose());
   return service;
+});
+
+/// Provider for chat messages
+final chatMessagesProvider = StreamProvider<List<ChatMessage>>((ref) {
+  final callService = ref.read(callServiceProvider);
+  return callService.chatStream;
 });
 
 /// Provider for connection state

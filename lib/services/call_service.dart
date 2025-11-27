@@ -5,7 +5,9 @@ import 'audio_recorder_service.dart';
 import 'audio_player_service.dart';
 import 'realtime_api_client.dart';
 import 'storage_service.dart';
+import 'tool_service.dart';
 import 'log_service.dart';
+import '../models/chat_message.dart';
 
 /// Enum representing the current state of the call
 enum CallState {
@@ -30,12 +32,16 @@ class CallService {
   final AudioPlayerService _player;
   final RealtimeApiClient _apiClient;
   final StorageService _storage;
+  final ToolService _toolService;
 
   StreamSubscription<Uint8List>? _audioStreamSubscription;
   StreamSubscription<Amplitude>? _amplitudeSubscription;
   StreamSubscription<Uint8List>? _responseAudioSubscription;
   StreamSubscription<void>? _audioDoneSubscription;
   StreamSubscription<String>? _errorSubscription;
+  StreamSubscription<String>? _transcriptSubscription;
+  StreamSubscription<String>? _userTranscriptSubscription;
+  StreamSubscription<FunctionCall>? _functionCallSubscription;
   Timer? _callTimer;
 
   final StreamController<CallState> _stateController =
@@ -46,20 +52,30 @@ class CallService {
       StreamController<int>.broadcast();
   final StreamController<String> _errorController =
       StreamController<String>.broadcast();
+  final StreamController<List<ChatMessage>> _chatController =
+      StreamController<List<ChatMessage>>.broadcast();
 
   CallState _currentState = CallState.idle;
   int _callDuration = 0;
   bool _isMuted = false;
+  
+  // Chat history
+  final List<ChatMessage> _chatMessages = [];
+  int _messageIdCounter = 0;
+  StringBuffer _currentAssistantTranscript = StringBuffer();
+  String? _currentAssistantMessageId;
 
   CallService({
     required AudioRecorderService recorder,
     required AudioPlayerService player,
     required RealtimeApiClient apiClient,
     required StorageService storage,
+    required ToolService toolService,
   })  : _recorder = recorder,
         _player = player,
         _apiClient = apiClient,
-        _storage = storage;
+        _storage = storage,
+        _toolService = toolService;
 
   /// Current call state
   CallState get currentState => _currentState;
@@ -75,6 +91,12 @@ class CallService {
 
   /// Stream of error messages
   Stream<String> get errorStream => _errorController.stream;
+  
+  /// Stream of chat messages
+  Stream<List<ChatMessage>> get chatStream => _chatController.stream;
+  
+  /// Get current chat messages
+  List<ChatMessage> get chatMessages => List.unmodifiable(_chatMessages);
 
   /// Current call duration in seconds
   int get callDuration => _callDuration;
@@ -101,6 +123,17 @@ class CallService {
   Future<bool> hasMicrophonePermission() async {
     return await _recorder.hasPermission();
   }
+  
+  /// Send a text message (for chat input)
+  void sendTextMessage(String text) {
+    if (!isCallActive || text.trim().isEmpty) return;
+    
+    // Add user message to chat
+    _addChatMessage('user', text);
+    
+    // Send to API
+    _apiClient.sendTextMessage(text);
+  }
 
   /// Start a call
   Future<void> startCall() async {
@@ -110,6 +143,12 @@ class CallService {
     }
 
     logService.info(_tag, 'Starting call');
+    
+    // Clear chat history for new call
+    _chatMessages.clear();
+    _messageIdCounter = 0;
+    _currentAssistantTranscript = StringBuffer();
+    _currentAssistantMessageId = null;
 
     try {
       _setState(CallState.connecting);
@@ -145,6 +184,9 @@ class CallService {
         return;
       }
 
+      // Configure tools before connecting
+      _apiClient.setTools(_toolService.toolDefinitions);
+
       // Connect to Azure OpenAI Realtime API
       logService.info(_tag, 'Connecting to Azure OpenAI');
       await _apiClient.connect(realtimeUrl, apiKey);
@@ -166,6 +208,29 @@ class CallService {
       _audioDoneSubscription = _apiClient.audioDoneStream.listen((_) async {
         logService.info(_tag, 'Audio done event received, marking response complete');
         await _player.markResponseComplete();
+        // Mark current assistant message as complete
+        _completeCurrentAssistantMessage();
+      });
+      
+      // Listen to assistant transcript (AI response)
+      _transcriptSubscription = _apiClient.transcriptStream.listen((delta) {
+        _appendAssistantTranscript(delta);
+      });
+      
+      // Listen to user transcript (speech-to-text)
+      _userTranscriptSubscription = _apiClient.userTranscriptStream.listen((transcript) {
+        _addChatMessage('user', transcript);
+      });
+      
+      // Listen to function calls
+      _functionCallSubscription = _apiClient.functionCallStream.listen((functionCall) async {
+        logService.info(_tag, 'Handling function call: ${functionCall.name}');
+        final result = await _toolService.executeTool(
+          functionCall.callId,
+          functionCall.name,
+          functionCall.arguments,
+        );
+        _apiClient.sendFunctionCallResult(result.callId, result.output);
       });
 
       // Start microphone recording
@@ -173,10 +238,17 @@ class CallService {
       final audioStream = await _recorder.startRecording();
 
       // Listen to audio stream and send to API
+      // When muted, send silence instead of stopping the stream
       _audioStreamSubscription = audioStream.listen(
         (audioData) {
-          if (!_isMuted && _currentState == CallState.connected) {
-            _apiClient.sendAudio(audioData);
+          if (_currentState == CallState.connected) {
+            if (_isMuted) {
+              // Send silence (zero-filled buffer) with same size as original audio
+              final silenceData = Uint8List(audioData.length);
+              _apiClient.sendAudio(silenceData);
+            } else {
+              _apiClient.sendAudio(audioData);
+            }
           }
         },
         onError: (error) {
@@ -251,6 +323,15 @@ class CallService {
 
     await _errorSubscription?.cancel();
     _errorSubscription = null;
+    
+    await _transcriptSubscription?.cancel();
+    _transcriptSubscription = null;
+    
+    await _userTranscriptSubscription?.cancel();
+    _userTranscriptSubscription = null;
+    
+    await _functionCallSubscription?.cancel();
+    _functionCallSubscription = null;
 
     await _recorder.stopRecording();
     await _player.stop();
@@ -272,6 +353,62 @@ class CallService {
   void _emitError(String message) {
     _errorController.add(message);
   }
+  
+  /// Add a chat message
+  void _addChatMessage(String role, String content) {
+    final message = ChatMessage(
+      id: 'msg_${_messageIdCounter++}',
+      role: role,
+      content: content,
+      timestamp: DateTime.now(),
+    );
+    _chatMessages.add(message);
+    _chatController.add(List.unmodifiable(_chatMessages));
+  }
+  
+  /// Append to the current assistant transcript (streaming)
+  void _appendAssistantTranscript(String delta) {
+    if (_currentAssistantMessageId == null) {
+      // Start a new assistant message
+      _currentAssistantMessageId = 'msg_${_messageIdCounter++}';
+      _currentAssistantTranscript = StringBuffer();
+      _currentAssistantTranscript.write(delta);
+      
+      final message = ChatMessage(
+        id: _currentAssistantMessageId!,
+        role: 'assistant',
+        content: _currentAssistantTranscript.toString(),
+        timestamp: DateTime.now(),
+        isComplete: false,
+      );
+      _chatMessages.add(message);
+    } else {
+      // Append to existing message
+      _currentAssistantTranscript.write(delta);
+      
+      // Update the message
+      final index = _chatMessages.indexWhere((m) => m.id == _currentAssistantMessageId);
+      if (index >= 0) {
+        _chatMessages[index] = _chatMessages[index].copyWith(
+          content: _currentAssistantTranscript.toString(),
+        );
+      }
+    }
+    _chatController.add(List.unmodifiable(_chatMessages));
+  }
+  
+  /// Mark the current assistant message as complete
+  void _completeCurrentAssistantMessage() {
+    if (_currentAssistantMessageId != null) {
+      final index = _chatMessages.indexWhere((m) => m.id == _currentAssistantMessageId);
+      if (index >= 0) {
+        _chatMessages[index] = _chatMessages[index].copyWith(isComplete: true);
+        _chatController.add(List.unmodifiable(_chatMessages));
+      }
+      _currentAssistantMessageId = null;
+      _currentAssistantTranscript = StringBuffer();
+    }
+  }
 
   /// Dispose the service
   Future<void> dispose() async {
@@ -280,5 +417,6 @@ class CallService {
     await _amplitudeController.close();
     await _durationController.close();
     await _errorController.close();
+    await _chatController.close();
   }
 }
