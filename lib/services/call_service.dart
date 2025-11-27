@@ -400,7 +400,7 @@ class CallService {
     final message = ChatMessage(
       id: 'msg_${_messageIdCounter++}',
       role: 'tool',
-      content: 'ツールを使用しました: $toolName',
+      content: '',  // Content is empty - tool info is shown as badge in UI
       timestamp: DateTime.now(),
       toolCall: ToolCallInfo(
         name: toolName,

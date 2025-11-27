@@ -32,7 +32,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   // Haptic feedback stream subscriptions
   StreamSubscription<void>? _audioDoneSubscription;
   StreamSubscription<void>? _speechStartedSubscription;
-  StreamSubscription<void>? _responseStartedSubscription;
+  StreamSubscription<void>? _speechStoppedSubscription;
 
   CallState _callState = CallState.idle;
   double _inputLevel = 0.0;
@@ -71,7 +71,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     _errorSubscription?.cancel();
     _audioDoneSubscription?.cancel();
     _speechStartedSubscription?.cancel();
-    _responseStartedSubscription?.cancel();
+    _speechStoppedSubscription?.cancel();
     _textController.dispose();
     _scrollController.removeListener(_onScrollChanged);
     _scrollController.dispose();
@@ -143,40 +143,42 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     });
     
     // Haptic feedback subscriptions
-    // AI response turn ended (audio done) -> User's turn: 2 knocks
+    // AI response turn ended (audio done) -> User's turn: heavyImpact
     _audioDoneSubscription = apiClient.audioDoneStream.listen((_) {
       if (mounted) {
-        _doDoubleHaptic();
+        HapticFeedback.heavyImpact();
       }
     });
     
-    // User speech started (VAD detected) -> Recording started: 1 knock
+    // User speech started (VAD detected) -> Recording started: lightImpact
     _speechStartedSubscription = apiClient.speechStartedStream.listen((_) {
       if (mounted) {
         HapticFeedback.lightImpact();
       }
     });
     
-    // Response started (AI received user input) -> AI's turn: 1 knock
-    _responseStartedSubscription = apiClient.responseStartedStream.listen((_) {
+    // User speech stopped (VAD detected) -> User input ended: lightImpact
+    _speechStoppedSubscription = apiClient.speechStoppedStream.listen((_) {
       if (mounted) {
         HapticFeedback.lightImpact();
       }
     });
   }
-  
-  /// Perform double haptic feedback (like two knocks)
-  Future<void> _doDoubleHaptic() async {
-    HapticFeedback.lightImpact();
-    await Future.delayed(const Duration(milliseconds: 100));
-    HapticFeedback.lightImpact();
-  }
 
-  void _showSnackBar(String message, {bool isError = false}) {
+  void _showSnackBar(String message, {bool isError = false, bool isNeutral = false}) {
+    Color backgroundColor;
+    if (isError) {
+      backgroundColor = AppTheme.errorColor;
+    } else if (isNeutral) {
+      backgroundColor = AppTheme.surfaceColor;
+    } else {
+      backgroundColor = AppTheme.successColor;
+    }
+    
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isError ? AppTheme.errorColor : AppTheme.successColor,
+        backgroundColor: backgroundColor,
         duration: const Duration(seconds: 3),
       ),
     );
@@ -290,7 +292,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         if (_lastBackPressTime == null || 
             now.difference(_lastBackPressTime!) > _backKeyExitTimeout) {
           _lastBackPressTime = now;
-          _showSnackBar('もう一度押すとアプリを終了します');
+          _showSnackBar('もう一度押すとアプリを終了します', isNeutral: true);
         } else {
           // Exit the app
           SystemNavigator.pop();
@@ -532,41 +534,76 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   /// Standalone tool messages (at the start or after user messages) are kept as separate groups.
   List<_MessageGroup> _groupMessages(List<ChatMessage> messages) {
     final List<_MessageGroup> groups = [];
-    final Set<int> processedToolIndices = {};
+    final Set<int> processedIndices = {};
     
     for (int i = 0; i < messages.length; i++) {
+      if (processedIndices.contains(i)) continue;
+      
       final message = messages[i];
       
-      // Skip tool messages that have been processed
-      if (processedToolIndices.contains(i)) continue;
+      // For user messages, just add them as-is
+      if (message.role == 'user') {
+        groups.add(_MessageGroup(message: message, toolCalls: const []));
+        continue;
+      }
       
-      if (message.role == 'tool') {
-        // Standalone tool message (not following an assistant message)
-        // Keep it as a separate group with its own tool call
-        if (message.toolCall != null) {
+      // For assistant or tool messages, group consecutive assistant/tool messages together
+      // This creates one bubble per AI "turn" that may include multiple tool calls and text
+      if (message.role == 'assistant' || message.role == 'tool') {
+        final List<ToolCallInfo> toolCalls = [];
+        ChatMessage? primaryMessage;
+        String combinedContent = '';
+        bool isComplete = true;
+        
+        int j = i;
+        while (j < messages.length && 
+               (messages[j].role == 'assistant' || messages[j].role == 'tool')) {
+          final current = messages[j];
+          processedIndices.add(j);
+          
+          if (current.role == 'tool' && current.toolCall != null) {
+            toolCalls.add(current.toolCall!);
+          } else if (current.role == 'assistant') {
+            // Use the first assistant message as primary, append content from others
+            if (primaryMessage == null) {
+              primaryMessage = current;
+              combinedContent = current.content;
+              isComplete = current.isComplete;
+            } else {
+              if (current.content.isNotEmpty) {
+                combinedContent += current.content;
+              }
+              isComplete = isComplete && current.isComplete;
+            }
+          }
+          j++;
+        }
+        
+        // If no assistant message found, create one from the tool messages
+        if (primaryMessage == null && toolCalls.isNotEmpty) {
+          primaryMessage = ChatMessage(
+            id: message.id,
+            role: 'assistant',
+            content: '',
+            timestamp: message.timestamp,
+            isComplete: true,
+          );
+        }
+        
+        if (primaryMessage != null) {
           groups.add(_MessageGroup(
-            message: message,
-            toolCalls: [message.toolCall!],
+            message: primaryMessage.copyWith(
+              content: combinedContent,
+              isComplete: isComplete,
+            ),
+            toolCalls: toolCalls,
           ));
         }
         continue;
       }
       
-      // Collect any following tool messages for assistant messages
-      final List<ToolCallInfo> toolCalls = [];
-      if (message.role == 'assistant') {
-        // Look ahead for consecutive tool messages
-        int j = i + 1;
-        while (j < messages.length && messages[j].role == 'tool') {
-          if (messages[j].toolCall != null) {
-            toolCalls.add(messages[j].toolCall!);
-          }
-          processedToolIndices.add(j);
-          j++;
-        }
-      }
-      
-      groups.add(_MessageGroup(message: message, toolCalls: toolCalls));
+      // For any other message type, add as-is
+      groups.add(_MessageGroup(message: message, toolCalls: const []));
     }
     
     return groups;
@@ -993,15 +1030,19 @@ class _ChatBubble extends StatelessWidget {
                         ),
                       ).toList(),
                     ),
-                    const SizedBox(height: 6),
+                    // Only add spacing if there's content to follow
+                    if (message.content.isNotEmpty)
+                      const SizedBox(height: 6),
                   ],
-                  SelectableText(
-                    message.content,
-                    style: const TextStyle(
-                      color: AppTheme.textPrimary,
-                      fontSize: 15,
+                  // Only show text content if non-empty
+                  if (message.content.isNotEmpty)
+                    SelectableText(
+                      message.content,
+                      style: const TextStyle(
+                        color: AppTheme.textPrimary,
+                        fontSize: 15,
+                      ),
                     ),
-                  ),
                   if (!message.isComplete)
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
