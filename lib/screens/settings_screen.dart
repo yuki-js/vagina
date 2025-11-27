@@ -1,10 +1,14 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/app_theme.dart';
 import '../providers/providers.dart';
-import '../services/secure_storage_service.dart';
+import '../services/storage_service.dart';
+import '../services/realtime_api_client.dart';
 import '../models/assistant_config.dart';
-import 'components/components.dart';
+import '../components/components.dart';
+import 'log_screen.dart';
+import 'flutter_sound_bug_repro_screen.dart';
 
 /// Settings screen for API configuration (2 inputs: Realtime URL + API Key)
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -21,8 +25,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _isLoading = true;
   bool _isSaving = false;
   bool _isTesting = false;
-  String? _errorMessage;
-  String? _successMessage;
 
   @override
   void initState() {
@@ -32,7 +34,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Future<void> _loadSettings() async {
     try {
-      final storage = ref.read(secureStorageServiceProvider);
+      final storage = ref.read(storageServiceProvider);
+      
+      // Request storage permission first (needed for external storage on Android)
+      final hasPermission = await storage.requestStoragePermission();
+      if (!hasPermission) {
+        _showSnackBar('ストレージの権限がありません。アプリ内にデータを保存します', isWarning: true);
+        // Will use app-specific fallback directory
+      }
+      
       final realtimeUrl = await storage.getRealtimeUrl();
       final apiKey = await storage.getApiKey();
       
@@ -45,134 +55,116 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       
       setState(() {
         _isLoading = false;
-        _errorMessage = null;
       });
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _errorMessage = 'Failed to load settings: $e';
       });
+      _showSnackBar('設定の読み込みに失敗しました', isError: true);
     }
   }
 
+  void _showSnackBar(String message, {bool isError = false, bool isWarning = false}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError 
+            ? AppTheme.errorColor 
+            : isWarning 
+                ? AppTheme.warningColor 
+                : AppTheme.successColor,
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
   Future<void> _saveSettings() async {
-    // Validate inputs
     if (_realtimeUrlController.text.trim().isEmpty) {
-      _showError('Realtime URLを入力してください');
+      _showSnackBar('Realtime URLを入力してください', isError: true);
       return;
     }
     
-    // Validate URL format
-    final parsed = SecureStorageService.parseRealtimeUrl(_realtimeUrlController.text.trim());
+    final parsed = StorageService.parseRealtimeUrl(_realtimeUrlController.text.trim());
     if (parsed == null) {
-      _showError('Realtime URLの形式が正しくありません。\n例: https://{resource}.openai.azure.com/openai/realtime?api-version=2024-10-01-preview&deployment=gpt-4o-realtime');
+      _showSnackBar('Realtime URLの形式が正しくありません', isError: true);
       return;
     }
     
     if (_apiKeyController.text.trim().isEmpty) {
-      _showError('APIキーを入力してください');
+      _showSnackBar('APIキーを入力してください', isError: true);
       return;
     }
 
-    setState(() {
-      _isSaving = true;
-      _errorMessage = null;
-      _successMessage = null;
-    });
+    setState(() => _isSaving = true);
 
     try {
-      final storage = ref.read(secureStorageServiceProvider);
+      final storage = ref.read(storageServiceProvider);
       await storage.saveRealtimeUrl(_realtimeUrlController.text.trim());
       await storage.saveApiKey(_apiKeyController.text.trim());
-
-      if (mounted) {
-        setState(() {
-          _successMessage = '設定を保存しました';
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('設定を保存しました'),
-            backgroundColor: AppTheme.successColor,
-          ),
-        );
-      }
+      _showSnackBar('設定を保存しました');
     } catch (e) {
-      _showError('保存に失敗しました: $e');
+      _showSnackBar('保存に失敗しました: $e', isError: true);
     } finally {
       if (mounted) {
-        setState(() {
-          _isSaving = false;
-        });
+        setState(() => _isSaving = false);
       }
     }
   }
 
   Future<void> _testConnection() async {
     if (_realtimeUrlController.text.trim().isEmpty) {
-      _showError('Realtime URLを入力してください');
+      _showSnackBar('Realtime URLを入力してください', isError: true);
       return;
     }
     if (_apiKeyController.text.trim().isEmpty) {
-      _showError('APIキーを入力してください');
+      _showSnackBar('APIキーを入力してください', isError: true);
       return;
     }
 
-    final parsed = SecureStorageService.parseRealtimeUrl(_realtimeUrlController.text.trim());
+    final parsed = StorageService.parseRealtimeUrl(_realtimeUrlController.text.trim());
     if (parsed == null) {
-      _showError('Realtime URLの形式が正しくありません');
+      _showSnackBar('Realtime URLの形式が正しくありません', isError: true);
       return;
     }
 
-    setState(() {
-      _isTesting = true;
-      _errorMessage = null;
-      _successMessage = '接続テスト中...';
-    });
+    setState(() => _isTesting = true);
 
+    RealtimeApiClient? apiClient;
     try {
-      // TODO: Implement actual WebSocket connection test
-      await Future.delayed(const Duration(seconds: 1));
+      // Create a temporary API client to test the connection
+      apiClient = RealtimeApiClient();
+      
+      // Add timeout to prevent UI from hanging on network issues
+      await apiClient.connect(
+        _realtimeUrlController.text.trim(),
+        _apiKeyController.text.trim(),
+      ).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          throw TimeoutException('接続がタイムアウトしました');
+        },
+      );
+      
+      // If we get here without exception, connection was successful
+      await apiClient.disconnect();
+      await apiClient.dispose();
+      apiClient = null;
       
       // Save settings on success
-      final storage = ref.read(secureStorageServiceProvider);
+      final storage = ref.read(storageServiceProvider);
       await storage.saveRealtimeUrl(_realtimeUrlController.text.trim());
       await storage.saveApiKey(_apiKeyController.text.trim());
-
-      if (mounted) {
-        setState(() {
-          _successMessage = '接続テスト成功。設定を保存しました。';
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('接続テスト成功'),
-            backgroundColor: AppTheme.successColor,
-          ),
-        );
-      }
+      _showSnackBar('接続テスト成功');
     } catch (e) {
-      _showError('接続テスト失敗: $e');
+      _showSnackBar('接続テスト失敗: $e', isError: true);
+      // Clean up the API client on failure
+      await apiClient?.disconnect();
+      await apiClient?.dispose();
     } finally {
       if (mounted) {
-        setState(() {
-          _isTesting = false;
-        });
+        setState(() => _isTesting = false);
       }
-    }
-  }
-
-  void _showError(String message) {
-    setState(() {
-      _errorMessage = message;
-      _successMessage = null;
-    });
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: AppTheme.errorColor,
-          duration: const Duration(seconds: 5),
-        ),
-      );
     }
   }
 
@@ -199,25 +191,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
     if (confirmed == true) {
       try {
-        final storage = ref.read(secureStorageServiceProvider);
+        final storage = ref.read(storageServiceProvider);
         await storage.clearAll();
         _realtimeUrlController.clear();
         _apiKeyController.clear();
-
-        if (mounted) {
-          setState(() {
-            _successMessage = '設定をクリアしました';
-            _errorMessage = null;
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('設定をクリアしました'),
-              backgroundColor: AppTheme.warningColor,
-            ),
-          );
-        }
+        _showSnackBar('設定をクリアしました', isWarning: true);
       } catch (e) {
-        _showError('設定のクリアに失敗しました: $e');
+        _showSnackBar('設定のクリアに失敗しました: $e', isError: true);
       }
     }
   }
@@ -239,7 +219,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         child: SafeArea(
           child: CustomScrollView(
             slivers: [
-              // App bar
               SliverAppBar(
                 backgroundColor: Colors.transparent,
                 floating: true,
@@ -249,30 +228,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
                 title: const Text('設定'),
               ),
-
-              // Content
               SliverPadding(
                 padding: const EdgeInsets.all(16),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
-                    // Status message banner
-                    if (_errorMessage != null) ...[
-                      StatusBanner(
-                        message: _errorMessage!,
-                        isError: true,
-                        onDismiss: () => setState(() => _errorMessage = null),
-                      ),
-                      const SizedBox(height: 16),
-                    ],
-                    
-                    if (_successMessage != null && _errorMessage == null) ...[
-                      StatusBanner(
-                        message: _successMessage!,
-                        isError: false,
-                      ),
-                      const SizedBox(height: 16),
-                    ],
-
                     // Azure OpenAI Configuration Section
                     const SectionHeader(title: 'Azure OpenAI 設定'),
                     const SizedBox(height: 12),
@@ -280,7 +239,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Realtime URL
                           const Text(
                             'Azure OpenAI Realtime URL',
                             style: TextStyle(
@@ -306,13 +264,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             '例: https://your-resource.openai.azure.com/openai/realtime?api-version=2024-10-01-preview&deployment=gpt-realtime',
                             style: TextStyle(
                               fontSize: 11,
-                              color: AppTheme.textSecondary.withOpacity(0.7),
+                              color: AppTheme.textSecondary.withValues(alpha: 0.7),
                             ),
                           ),
-
                           const SizedBox(height: 16),
-
-                          // API Key
                           const Text(
                             'APIキー',
                             style: TextStyle(
@@ -343,8 +298,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               ),
                             ),
                           const SizedBox(height: 16),
-                          
-                          // Buttons row
                           Row(
                             children: [
                               Expanded(
@@ -384,19 +337,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            '認証情報はデバイス上に安全に保存され、サーバーには送信されません。',
+                            '認証情報はデバイス上に安全に保存されます。',
                             style: TextStyle(
                               fontSize: 12,
-                              color: AppTheme.textSecondary.withOpacity(0.7),
+                              color: AppTheme.textSecondary.withValues(alpha: 0.7),
                             ),
                           ),
                         ],
                       ),
                     ),
-
                     const SizedBox(height: 24),
-
-                    // Voice Configuration Section
                     const SectionHeader(title: '音声設定'),
                     const SizedBox(height: 12),
                     SettingsCard(
@@ -412,31 +362,86 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             ),
                           ),
                           const SizedBox(height: 12),
-                          ...AssistantConfig.availableVoices.map(
-                            (voice) => RadioListTile<String>(
-                              value: voice,
-                              groupValue: assistantConfig.voice,
-                              onChanged: (value) {
-                                if (value != null) {
-                                  ref
-                                      .read(assistantConfigProvider.notifier)
-                                      .updateVoice(value);
-                                }
-                              },
-                              title: Text(
-                                voice[0].toUpperCase() + voice.substring(1),
-                                style: const TextStyle(color: AppTheme.textPrimary),
-                              ),
-                              activeColor: AppTheme.primaryColor,
+                          RadioGroup<String>(
+                            groupValue: assistantConfig.voice,
+                            onChanged: (value) {
+                              if (value != null) {
+                                ref
+                                    .read(assistantConfigProvider.notifier)
+                                    .updateVoice(value);
+                              }
+                            },
+                            child: Column(
+                              children: AssistantConfig.availableVoices.map(
+                                (voice) => RadioListTile<String>(
+                                  value: voice,
+                                  title: Text(
+                                    voice[0].toUpperCase() + voice.substring(1),
+                                    style: const TextStyle(color: AppTheme.textPrimary),
+                                  ),
+                                  activeColor: AppTheme.primaryColor,
+                                ),
+                              ).toList(),
                             ),
                           ),
                         ],
                       ),
                     ),
-
                     const SizedBox(height: 24),
-
-                    // About Section
+                    
+                    // Developer Section
+                    const SectionHeader(title: '開発者向け'),
+                    const SizedBox(height: 12),
+                    SettingsCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ListTile(
+                            leading: const Icon(Icons.article_outlined, color: AppTheme.textSecondary),
+                            title: const Text(
+                              'ログを表示',
+                              style: TextStyle(color: AppTheme.textPrimary),
+                            ),
+                            subtitle: Text(
+                              'トレースログとWebSocketイベントを確認',
+                              style: TextStyle(
+                                color: AppTheme.textSecondary.withValues(alpha: 0.7),
+                                fontSize: 12,
+                              ),
+                            ),
+                            trailing: const Icon(Icons.chevron_right, color: AppTheme.textSecondary),
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(builder: (context) => const LogScreen()),
+                              );
+                            },
+                          ),
+                          const Divider(color: AppTheme.surfaceColor),
+                          ListTile(
+                            leading: const Icon(Icons.bug_report_outlined, color: AppTheme.warningColor),
+                            title: const Text(
+                              'flutter_sound バグ再現',
+                              style: TextStyle(color: AppTheme.textPrimary),
+                            ),
+                            subtitle: Text(
+                              'Race condition bug reproduction screen',
+                              style: TextStyle(
+                                color: AppTheme.textSecondary.withValues(alpha: 0.7),
+                                fontSize: 12,
+                              ),
+                            ),
+                            trailing: const Icon(Icons.chevron_right, color: AppTheme.textSecondary),
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(builder: (context) => const FlutterSoundBugReproScreen()),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    
                     const SectionHeader(title: 'このアプリについて'),
                     const SizedBox(height: 12),
                     SettingsCard(
@@ -449,7 +454,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         ],
                       ),
                     ),
-
                     const SizedBox(height: 32),
                   ]),
                 ),

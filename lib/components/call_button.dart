@@ -84,7 +84,7 @@ class _CallButtonState extends State<CallButton>
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: buttonColor.withOpacity(0.4),
+                color: buttonColor.withValues(alpha: 0.4),
                 blurRadius: 16,
                 offset: const Offset(0, 8),
               ),

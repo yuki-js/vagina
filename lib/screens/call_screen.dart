@@ -1,19 +1,11 @@
 import 'dart:async';
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/app_theme.dart';
 import '../providers/providers.dart';
-import '../widgets/call_button.dart';
-import '../widgets/circular_icon_button.dart';
+import '../services/call_service.dart';
+import '../components/components.dart';
 import 'settings_screen.dart';
-import 'components/components.dart';
-
-/// Error message provider for displaying errors to users
-final errorMessageProvider = StateProvider<String?>((ref) => null);
-
-/// Input level provider (0.0 - 1.0)
-final inputLevelProvider = StateProvider<double>((ref) => 0.0);
 
 /// Main call screen with mute, disconnect, and settings buttons
 class CallScreen extends ConsumerStatefulWidget {
@@ -23,83 +15,88 @@ class CallScreen extends ConsumerStatefulWidget {
   ConsumerState<CallScreen> createState() => _CallScreenState();
 }
 
-class _CallScreenState extends ConsumerState<CallScreen> with SingleTickerProviderStateMixin {
-  Timer? _callTimer;
-  Timer? _levelSimTimer;
+class _CallScreenState extends ConsumerState<CallScreen> {
+  StreamSubscription<CallState>? _stateSubscription;
+  StreamSubscription<double>? _amplitudeSubscription;
+  StreamSubscription<int>? _durationSubscription;
+  StreamSubscription<String>? _errorSubscription;
+
+  CallState _callState = CallState.idle;
+  double _inputLevel = 0.0;
   int _callDuration = 0;
-  bool _isCallActive = false;
+  bool _subscriptionsInitialized = false;
 
   @override
   void dispose() {
-    _callTimer?.cancel();
-    _levelSimTimer?.cancel();
+    _stateSubscription?.cancel();
+    _amplitudeSubscription?.cancel();
+    _durationSubscription?.cancel();
+    _errorSubscription?.cancel();
     super.dispose();
   }
 
-  Future<void> _startCall() async {
-    // Clear any previous errors
-    ref.read(errorMessageProvider.notifier).state = null;
-    
-    // Check if Azure settings are configured
-    final storage = ref.read(secureStorageServiceProvider);
-    final hasConfig = await storage.hasAzureConfig();
-    
-    if (!hasConfig) {
-      _showError('Azure OpenAI設定を先に行ってください');
-      return;
-    }
-    
-    setState(() {
-      _isCallActive = true;
-      _callDuration = 0;
+  void _setupSubscriptions() {
+    if (_subscriptionsInitialized) return;
+    _subscriptionsInitialized = true;
+
+    final callService = ref.read(callServiceProvider);
+
+    _stateSubscription = callService.stateStream.listen((state) {
+      if (mounted) {
+        setState(() {
+          _callState = state;
+        });
+      }
     });
-    _callTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      setState(() {
-        _callDuration++;
-      });
+
+    _amplitudeSubscription = callService.amplitudeStream.listen((level) {
+      if (mounted) {
+        setState(() {
+          _inputLevel = level;
+        });
+      }
     });
-    
-    // Simulate mic input level for demo (will be replaced with real audio data)
-    // NOTE: This is simulated - actual microphone recording is not yet implemented.
-    // When real recording is enabled, Android/iOS will show the mic indicator.
-    _levelSimTimer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
-      final isMuted = ref.read(isMutedProvider);
-      if (!isMuted && _isCallActive) {
-        // Simulate varying input levels
-        ref.read(inputLevelProvider.notifier).state = 
-            0.1 + Random().nextDouble() * 0.7;
-      } else {
-        ref.read(inputLevelProvider.notifier).state = 0.0;
+
+    _durationSubscription = callService.durationStream.listen((duration) {
+      if (mounted) {
+        setState(() {
+          _callDuration = duration;
+        });
+      }
+    });
+
+    _errorSubscription = callService.errorStream.listen((error) {
+      if (mounted) {
+        _showSnackBar(error, isError: true);
       }
     });
   }
 
-  void _endCall() {
-    _callTimer?.cancel();
-    _levelSimTimer?.cancel();
-    ref.read(inputLevelProvider.notifier).state = 0.0;
-    setState(() {
-      _isCallActive = false;
-      _callDuration = 0;
-    });
-  }
-
-  void _showError(String message) {
-    ref.read(errorMessageProvider.notifier).state = message;
+  void _showSnackBar(String message, {bool isError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: AppTheme.errorColor,
-        duration: const Duration(seconds: 5),
-        action: SnackBarAction(
-          label: '閉じる',
-          textColor: Colors.white,
-          onPressed: () {
-            ScaffoldMessenger.of(context).hideCurrentSnackBar();
-          },
-        ),
+        backgroundColor: isError ? AppTheme.errorColor : AppTheme.successColor,
+        duration: const Duration(seconds: 3),
       ),
     );
+  }
+
+  Future<void> _handleCallButton() async {
+    final callService = ref.read(callServiceProvider);
+    
+    if (_callState == CallState.idle || _callState == CallState.error) {
+      await callService.startCall();
+    } else {
+      await callService.endCall();
+    }
+  }
+
+  void _handleMuteButton() {
+    final callService = ref.read(callServiceProvider);
+    ref.read(isMutedProvider.notifier).toggle();
+    final isMuted = ref.read(isMutedProvider);
+    callService.setMuted(isMuted);
   }
 
   String _formatDuration(int seconds) {
@@ -114,11 +111,15 @@ class _CallScreenState extends ConsumerState<CallScreen> with SingleTickerProvid
     );
   }
 
+  bool get _isCallActive =>
+      _callState == CallState.connecting || _callState == CallState.connected;
+
   @override
   Widget build(BuildContext context) {
+    // Setup subscriptions on first build (safe to use ref here)
+    _setupSubscriptions();
+    
     final isMuted = ref.watch(isMutedProvider);
-    final errorMessage = ref.watch(errorMessageProvider);
-    final inputLevel = ref.watch(inputLevelProvider);
 
     return Scaffold(
       body: Container(
@@ -133,24 +134,10 @@ class _CallScreenState extends ConsumerState<CallScreen> with SingleTickerProvid
                 child: CircularIconButton(
                   icon: Icons.settings,
                   size: 48,
-                  backgroundColor: AppTheme.surfaceColor.withOpacity(0.6),
+                  backgroundColor: AppTheme.surfaceColor.withValues(alpha: 0.6),
                   onPressed: _openSettings,
                 ),
               ),
-
-              // Error banner (top)
-              if (errorMessage != null)
-                Positioned(
-                  top: 16,
-                  left: 16,
-                  right: 80,
-                  child: ErrorBanner(
-                    message: errorMessage,
-                    onDismiss: () {
-                      ref.read(errorMessageProvider.notifier).state = null;
-                    },
-                  ),
-                ),
 
               // Main content
               Center(
@@ -162,17 +149,34 @@ class _CallScreenState extends ConsumerState<CallScreen> with SingleTickerProvid
 
                     const SizedBox(height: 32),
 
-                    // Audio level visualizer (bouncing bars)
+                    // Audio level visualizer and status (when call active)
                     if (_isCallActive) ...[
                       AudioLevelVisualizer(
-                        level: inputLevel,
+                        level: _inputLevel,
                         isMuted: isMuted,
-                        isConnected: _isCallActive,
+                        isConnected: _callState == CallState.connected,
                       ),
                       const SizedBox(height: 16),
                       StatusIndicator(
                         isMuted: isMuted,
                         duration: _formatDuration(_callDuration),
+                      ),
+                      const SizedBox(height: 32),
+                    ],
+
+                    // Connection status (when connecting)
+                    if (_callState == CallState.connecting) ...[
+                      const SizedBox(height: 16),
+                      const CircularProgressIndicator(
+                        color: AppTheme.primaryColor,
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        '接続中...',
+                        style: TextStyle(
+                          color: AppTheme.textSecondary,
+                          fontSize: 14,
+                        ),
                       ),
                       const SizedBox(height: 32),
                     ],
@@ -189,9 +193,7 @@ class _CallScreenState extends ConsumerState<CallScreen> with SingleTickerProvid
                           size: 64,
                           isActive: isMuted,
                           activeBackgroundColor: AppTheme.errorColor,
-                          onPressed: () {
-                            ref.read(isMutedProvider.notifier).state = !isMuted;
-                          },
+                          onPressed: _handleMuteButton,
                         ),
 
                         const SizedBox(width: 32),
@@ -200,40 +202,9 @@ class _CallScreenState extends ConsumerState<CallScreen> with SingleTickerProvid
                         CallButton(
                           isCallActive: _isCallActive,
                           size: 80,
-                          onPressed: () {
-                            if (_isCallActive) {
-                              _endCall();
-                            } else {
-                              _startCall();
-                            }
-                          },
+                          onPressed: _handleCallButton,
                         ),
                       ],
-                    ),
-                  ],
-                ),
-              ),
-
-              // Bottom status bar
-              Positioned(
-                bottom: 16,
-                left: 16,
-                right: 16,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.security,
-                      size: 16,
-                      color: AppTheme.textSecondary.withOpacity(0.5),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'End-to-end encrypted',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppTheme.textSecondary.withOpacity(0.5),
-                      ),
                     ),
                   ],
                 ),

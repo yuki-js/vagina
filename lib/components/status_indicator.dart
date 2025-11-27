@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../theme/app_theme.dart';
+import '../theme/app_theme.dart';
 
 /// Status indicator showing recording/mute state and call duration
 class StatusIndicator extends StatelessWidget {
@@ -20,7 +20,7 @@ class StatusIndicator extends StatelessWidget {
         vertical: 12,
       ),
       decoration: BoxDecoration(
-        color: AppTheme.surfaceColor.withOpacity(0.5),
+        color: AppTheme.surfaceColor.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(24),
       ),
       child: Row(

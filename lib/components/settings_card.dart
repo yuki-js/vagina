@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../theme/app_theme.dart';
+import '../theme/app_theme.dart';
 
 /// Reusable card widget for settings sections
 class SettingsCard extends StatelessWidget {
@@ -15,7 +15,7 @@ class SettingsCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.surfaceColor.withOpacity(0.6),
+        color: AppTheme.surfaceColor.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(16),
       ),
       child: child,
@@ -78,52 +78,6 @@ class InfoRow extends StatelessWidget {
               fontWeight: FontWeight.w500,
             ),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Status banner for success/error messages
-class StatusBanner extends StatelessWidget {
-  final String message;
-  final bool isError;
-  final VoidCallback? onDismiss;
-
-  const StatusBanner({
-    super.key,
-    required this.message,
-    this.isError = false,
-    this.onDismiss,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final color = isError ? AppTheme.errorColor : AppTheme.successColor;
-    final icon = isError ? Icons.error_outline : Icons.check_circle_outline;
-
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: color),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              message,
-              style: TextStyle(color: color),
-            ),
-          ),
-          if (onDismiss != null)
-            GestureDetector(
-              onTap: onDismiss,
-              child: Icon(Icons.close, color: color, size: 20),
-            ),
         ],
       ),
     );

@@ -1,27 +1,28 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../services/secure_storage_service.dart';
+import '../services/storage_service.dart';
 import '../services/audio_recorder_service.dart';
 import '../services/audio_player_service.dart';
 import '../services/websocket_service.dart';
 import '../services/realtime_api_client.dart';
+import '../services/call_service.dart';
 import '../models/assistant_config.dart';
 
 // Core providers
 
-/// Provider for the secure storage service
-final secureStorageServiceProvider = Provider<SecureStorageService>((ref) {
-  return SecureStorageService();
+/// Provider for the storage service
+final storageServiceProvider = Provider<StorageService>((ref) {
+  return StorageService();
 });
 
 /// Provider for checking if API key exists
 final hasApiKeyProvider = FutureProvider<bool>((ref) async {
-  final storage = ref.read(secureStorageServiceProvider);
+  final storage = ref.read(storageServiceProvider);
   return await storage.hasApiKey();
 });
 
 /// Provider for the API key
 final apiKeyProvider = FutureProvider<String?>((ref) async {
-  final storage = ref.read(secureStorageServiceProvider);
+  final storage = ref.read(storageServiceProvider);
   return await storage.getApiKey();
 });
 
@@ -42,7 +43,21 @@ final audioPlayerServiceProvider = Provider<AudioPlayerService>((ref) {
 });
 
 /// Provider for mute state
-final isMutedProvider = StateProvider<bool>((ref) => false);
+final isMutedProvider = NotifierProvider<IsMutedNotifier, bool>(IsMutedNotifier.new);
+
+/// Notifier for mute state
+class IsMutedNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void toggle() {
+    state = !state;
+  }
+
+  void set(bool value) {
+    state = value;
+  }
+}
 
 // Realtime providers
 
@@ -60,23 +75,58 @@ final realtimeApiClientProvider = Provider<RealtimeApiClient>((ref) {
   return client;
 });
 
+/// Provider for the call service
+final callServiceProvider = Provider<CallService>((ref) {
+  final service = CallService(
+    recorder: ref.read(audioRecorderServiceProvider),
+    player: ref.read(audioPlayerServiceProvider),
+    apiClient: ref.read(realtimeApiClientProvider),
+    storage: ref.read(storageServiceProvider),
+  );
+  ref.onDispose(() => service.dispose());
+  return service;
+});
+
 /// Provider for connection state
-final isConnectedProvider = StateProvider<bool>((ref) => false);
+final isConnectedProvider = NotifierProvider<IsConnectedNotifier, bool>(IsConnectedNotifier.new);
+
+/// Notifier for connection state
+class IsConnectedNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void set(bool value) {
+    state = value;
+  }
+}
 
 /// Provider for call duration in seconds
-final callDurationProvider = StateProvider<int>((ref) => 0);
+final callDurationProvider = NotifierProvider<CallDurationNotifier, int>(CallDurationNotifier.new);
+
+/// Notifier for call duration
+class CallDurationNotifier extends Notifier<int> {
+  @override
+  int build() => 0;
+
+  void increment() {
+    state++;
+  }
+
+  void reset() {
+    state = 0;
+  }
+}
 
 // Assistant providers
 
 /// Provider for the assistant configuration
 final assistantConfigProvider =
-    StateNotifierProvider<AssistantConfigNotifier, AssistantConfig>((ref) {
-  return AssistantConfigNotifier();
-});
+    NotifierProvider<AssistantConfigNotifier, AssistantConfig>(AssistantConfigNotifier.new);
 
 /// Notifier for assistant configuration state
-class AssistantConfigNotifier extends StateNotifier<AssistantConfig> {
-  AssistantConfigNotifier() : super(const AssistantConfig());
+class AssistantConfigNotifier extends Notifier<AssistantConfig> {
+  @override
+  AssistantConfig build() => const AssistantConfig();
 
   /// Update the assistant name
   void updateName(String name) {

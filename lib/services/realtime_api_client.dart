@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import '../config/app_config.dart';
 import 'websocket_service.dart';
+import 'log_service.dart';
 
 /// Events sent by the client to the Azure OpenAI Realtime API
 enum ClientEventType {
@@ -59,6 +60,11 @@ enum ServerEventType {
 
 /// Client for the Azure OpenAI Realtime API
 class RealtimeApiClient {
+  static const _tag = 'RealtimeAPI';
+  
+  /// Log audio chunks sent every N chunks to avoid log explosion
+  static const int _logAudioChunkInterval = 50;
+  
   final WebSocketService _webSocket = WebSocketService();
   final StreamController<Uint8List> _audioController =
       StreamController<Uint8List>.broadcast();
@@ -66,19 +72,28 @@ class RealtimeApiClient {
       StreamController<String>.broadcast();
   final StreamController<String> _errorController =
       StreamController<String>.broadcast();
+  final StreamController<void> _audioDoneController =
+      StreamController<void>.broadcast();
 
   StreamSubscription? _messageSubscription;
   String? _lastError;
+  int _audioChunksReceived = 0;
+  int _audioChunksSent = 0;
 
   bool get isConnected => _webSocket.isConnected;
   Stream<Uint8List> get audioStream => _audioController.stream;
   Stream<String> get transcriptStream => _transcriptController.stream;
   Stream<String> get errorStream => _errorController.stream;
+  Stream<void> get audioDoneStream => _audioDoneController.stream;
   String? get lastError => _lastError;
 
   /// Connect to Azure OpenAI using a full Realtime URL and API key
   /// URL format: https://{resource}.openai.azure.com/openai/realtime?api-version=YYYY-MM-DD&deployment=...
   Future<void> connect(String realtimeUrl, String apiKey) async {
+    logService.info(_tag, 'Connecting to Azure OpenAI Realtime API');
+    _audioChunksReceived = 0;
+    _audioChunksSent = 0;
+    
     try {
       if (realtimeUrl.isEmpty) {
         throw Exception('Realtime URL is required');
@@ -107,6 +122,7 @@ class RealtimeApiClient {
       _messageSubscription = _webSocket.messages.listen(
         _handleMessage,
         onError: (error) {
+          logService.error(_tag, 'WebSocket error: $error');
           _lastError = error.toString();
           _errorController.add(_lastError!);
         },
@@ -115,7 +131,9 @@ class RealtimeApiClient {
       // Configure session after connection
       await _configureSession();
       _lastError = null;
+      logService.info(_tag, 'Connected and session configured');
     } catch (e) {
+      logService.error(_tag, 'Connection failed: $e');
       _lastError = e.toString();
       _errorController.add(_lastError!);
       rethrow;
@@ -123,6 +141,7 @@ class RealtimeApiClient {
   }
 
   Future<void> _configureSession() async {
+    logService.info(_tag, 'Configuring session with voice: ${AppConfig.defaultVoice}');
     // Send session update with configuration
     _webSocket.send({
       'type': ClientEventType.sessionUpdate.value,
@@ -149,19 +168,55 @@ class RealtimeApiClient {
     final type = message['type'] as String?;
 
     switch (type) {
+      case 'session.created':
+        logService.info(_tag, 'Session created');
+        break;
+        
+      case 'session.updated':
+        logService.info(_tag, 'Session updated');
+        break;
+        
+      case 'input_audio_buffer.speech_started':
+        logService.info(_tag, 'Speech started (VAD detected)');
+        break;
+        
+      case 'input_audio_buffer.speech_stopped':
+        logService.info(_tag, 'Speech stopped (VAD detected)');
+        break;
+        
+      case 'input_audio_buffer.committed':
+        logService.info(_tag, 'Audio buffer committed');
+        break;
+        
+      case 'response.created':
+        logService.info(_tag, 'Response created - AI is generating response');
+        break;
+        
       case 'response.audio.delta':
         final delta = message['delta'] as String?;
         if (delta != null) {
+          _audioChunksReceived++;
           final audioData = base64Decode(delta);
+          logService.debug(_tag, 'Audio delta received (chunk #$_audioChunksReceived, ${audioData.length} bytes)');
           _audioController.add(Uint8List.fromList(audioData));
         }
+        break;
+        
+      case 'response.audio.done':
+        logService.info(_tag, 'Audio response complete. Total chunks received: $_audioChunksReceived');
+        _audioDoneController.add(null);
         break;
 
       case 'response.audio_transcript.delta':
         final delta = message['delta'] as String?;
         if (delta != null) {
+          logService.debug(_tag, 'Transcript delta: $delta');
           _transcriptController.add(delta);
         }
+        break;
+        
+      case 'response.done':
+        logService.info(_tag, 'Response complete');
         break;
 
       case 'error':
@@ -171,17 +226,27 @@ class RealtimeApiClient {
         final fullError = errorCode != null 
             ? '[$errorCode] $errorMessage' 
             : errorMessage;
+        logService.error(_tag, 'API error: $fullError');
         _lastError = fullError;
         _errorController.add(fullError);
         break;
+        
+      default:
+        logService.debug(_tag, 'Received event: $type');
     }
   }
 
   /// Send audio data to the API
   void sendAudio(Uint8List audioData) {
     if (!isConnected) {
+      logService.warn(_tag, 'Cannot send audio: not connected');
       _errorController.add('Cannot send audio: not connected');
       return;
+    }
+
+    _audioChunksSent++;
+    if (_audioChunksSent % _logAudioChunkInterval == 0) {
+      logService.debug(_tag, 'Sent $_audioChunksSent audio chunks');
     }
 
     final base64Audio = base64Encode(audioData);
@@ -259,6 +324,7 @@ class RealtimeApiClient {
     await _audioController.close();
     await _transcriptController.close();
     await _errorController.close();
+    await _audioDoneController.close();
     await _webSocket.dispose();
   }
 }
