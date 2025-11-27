@@ -43,7 +43,9 @@ class RealtimeSessionConfig {
       'turn_detection': {
         'type': 'semantic_vad',
         'eagerness': 'low',
+        // create_response: Automatically create a response when VAD detects end of speech
         'create_response': true,
+        // interrupt_response: Allow user speech to interrupt an ongoing response
         'interrupt_response': true,
       },
     };

@@ -267,7 +267,7 @@ class RealtimeApiClient {
       case 'response.audio_transcript.delta':
         final delta = message['delta'] as String?;
         if (delta != null) {
-          // Don't log transcript deltas to reduce noise, they will appear in chat UI
+          // Don't log transcript deltas to reduce noise; they will appear in chat UI
           _transcriptController.add(delta);
         }
         break;
