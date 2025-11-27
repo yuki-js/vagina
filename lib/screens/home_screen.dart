@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/app_theme.dart';
 import '../providers/providers.dart';
@@ -24,6 +25,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   StreamSubscription<double>? _amplitudeSubscription;
   StreamSubscription<int>? _durationSubscription;
   StreamSubscription<String>? _errorSubscription;
+  
+  // Haptic feedback stream subscriptions
+  StreamSubscription<void>? _audioDoneSubscription;
+  StreamSubscription<void>? _speechStartedSubscription;
+  StreamSubscription<void>? _responseStartedSubscription;
 
   CallState _callState = CallState.idle;
   double _inputLevel = 0.0;
@@ -42,6 +48,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   final FocusNode _focusNode = FocusNode();
   bool _isAtBottom = true; // Track if user is at bottom for smart auto-scroll
   bool _showScrollToBottom = false;
+  
+  // Back key double-tap state
+  DateTime? _lastBackPressTime;
 
   @override
   void initState() {
@@ -57,6 +66,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     _amplitudeSubscription?.cancel();
     _durationSubscription?.cancel();
     _errorSubscription?.cancel();
+    _audioDoneSubscription?.cancel();
+    _speechStartedSubscription?.cancel();
+    _responseStartedSubscription?.cancel();
     _textController.dispose();
     _scrollController.removeListener(_onScrollChanged);
     _scrollController.dispose();
@@ -95,6 +107,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     _subscriptionsInitialized = true;
 
     final callService = ref.read(callServiceProvider);
+    final apiClient = ref.read(realtimeApiClientProvider);
 
     _stateSubscription = callService.stateStream.listen((state) {
       if (mounted) {
@@ -125,6 +138,35 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         _showSnackBar(error, isError: true);
       }
     });
+    
+    // Haptic feedback subscriptions
+    // AI response turn ended (audio done) -> User's turn: 2 knocks
+    _audioDoneSubscription = apiClient.audioDoneStream.listen((_) {
+      if (mounted) {
+        _doDoubleHaptic();
+      }
+    });
+    
+    // User speech started (VAD detected) -> Recording started: 1 knock
+    _speechStartedSubscription = apiClient.speechStartedStream.listen((_) {
+      if (mounted) {
+        HapticFeedback.lightImpact();
+      }
+    });
+    
+    // Response started (AI received user input) -> AI's turn: 1 knock
+    _responseStartedSubscription = apiClient.responseStartedStream.listen((_) {
+      if (mounted) {
+        HapticFeedback.lightImpact();
+      }
+    });
+  }
+  
+  /// Perform double haptic feedback (like two knocks)
+  Future<void> _doDoubleHaptic() async {
+    HapticFeedback.lightImpact();
+    await Future.delayed(const Duration(milliseconds: 100));
+    HapticFeedback.lightImpact();
   }
 
   void _showSnackBar(String message, {bool isError = false}) {
@@ -236,18 +278,34 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     _setupSubscriptions();
     final isMuted = ref.watch(isMutedProvider);
 
-    return Scaffold(
-      body: Container(
-        decoration: AppTheme.backgroundGradient,
-        child: SafeArea(
-          child: PageView(
-            controller: _pageController,
-            children: [
-              // Page 0: Call Screen
-              _buildCallPage(isMuted),
-              // Page 1: Chat Screen
-              _buildChatPage(),
-            ],
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        
+        final now = DateTime.now();
+        if (_lastBackPressTime == null || 
+            now.difference(_lastBackPressTime!) > const Duration(seconds: 2)) {
+          _lastBackPressTime = now;
+          _showSnackBar('もう一度押すとアプリを終了します');
+        } else {
+          // Exit the app
+          SystemNavigator.pop();
+        }
+      },
+      child: Scaffold(
+        body: Container(
+          decoration: AppTheme.backgroundGradient,
+          child: SafeArea(
+            child: PageView(
+              controller: _pageController,
+              children: [
+                // Page 0: Call Screen
+                _buildCallPage(isMuted),
+                // Page 1: Chat Screen
+                _buildChatPage(),
+              ],
+            ),
           ),
         ),
       ),
@@ -381,7 +439,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               // Noise reduction toggle (far/near)
               _buildControlButton(
                 icon: _noiseReduction == 'far' ? Icons.noise_aware : Icons.noise_control_off,
-                label: 'ノイズ軽減',
+                label: _noiseReduction == 'far' ? 'ノイズ軽減:遠' : 'ノイズ軽減:近',
                 onTap: _handleNoiseReductionToggle,
                 isActive: _noiseReduction == 'far',
                 activeColor: AppTheme.secondaryColor,
@@ -464,6 +522,35 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
       ),
     );
+  }
+  
+  /// Group messages: associate tool messages with their preceding assistant message
+  List<_MessageGroup> _groupMessages(List<ChatMessage> messages) {
+    final List<_MessageGroup> groups = [];
+    
+    for (int i = 0; i < messages.length; i++) {
+      final message = messages[i];
+      
+      // Skip tool messages - they will be attached to the preceding assistant message
+      if (message.role == 'tool') continue;
+      
+      // Collect any following tool messages for assistant messages
+      final List<ToolCallInfo> toolCalls = [];
+      if (message.role == 'assistant') {
+        // Look ahead for consecutive tool messages
+        int j = i + 1;
+        while (j < messages.length && messages[j].role == 'tool') {
+          if (messages[j].toolCall != null) {
+            toolCalls.add(messages[j].toolCall!);
+          }
+          j++;
+        }
+      }
+      
+      groups.add(_MessageGroup(message: message, toolCalls: toolCalls));
+    }
+    
+    return groups;
   }
 
   Widget _buildChatPage() {
@@ -560,15 +647,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 }
               });
               
+              // Group messages: associate tool messages with their preceding assistant message
+              final groupedMessages = _groupMessages(messages);
+              
               return Stack(
                 children: [
                   ListView.builder(
                     controller: _scrollController,
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    itemCount: messages.length,
+                    itemCount: groupedMessages.length,
                     itemBuilder: (context, index) {
-                      final message = messages[index];
-                      return _ChatBubble(message: message);
+                      final group = groupedMessages[index];
+                      return _ChatBubble(
+                        message: group.message,
+                        toolCalls: group.toolCalls,
+                      );
                     },
                   ),
                   // Floating "scroll to bottom" bar
@@ -701,12 +794,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 /// Individual chat bubble widget
 class _ChatBubble extends StatelessWidget {
   final ChatMessage message;
+  final List<ToolCallInfo> toolCalls;
 
-  const _ChatBubble({required this.message});
+  const _ChatBubble({required this.message, this.toolCalls = const []});
 
-  void _showToolDetails(BuildContext context) {
-    if (message.toolCall == null) return;
-    
+  void _showToolDetails(BuildContext context, ToolCallInfo toolCall) {
     showModalBottomSheet(
       context: context,
       backgroundColor: AppTheme.surfaceColor,
@@ -732,7 +824,7 @@ class _ChatBubble extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    message.toolCall!.name,
+                    toolCall.name,
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -760,7 +852,7 @@ class _ChatBubble extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: SelectableText(
-                message.toolCall!.arguments,
+                toolCall.arguments,
                 style: const TextStyle(
                   fontSize: 13,
                   fontFamily: 'monospace',
@@ -786,7 +878,7 @@ class _ChatBubble extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: SelectableText(
-                message.toolCall!.result,
+                toolCall.result,
                 style: const TextStyle(
                   fontSize: 13,
                   fontFamily: 'monospace',
@@ -804,61 +896,12 @@ class _ChatBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isUser = message.role == 'user';
+    // Tool messages are now grouped with assistant messages, so we skip standalone tool messages
     final isTool = message.role == 'tool';
     
-    // Tool message style - inline badge with reduced padding
+    // Tool messages should not be displayed separately anymore
     if (isTool) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 2),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            CircleAvatar(
-              radius: 16,
-              backgroundColor: AppTheme.primaryColor,
-              child: const Icon(Icons.smart_toy, size: 18, color: Colors.white),
-            ),
-            const SizedBox(width: 8),
-            Flexible(
-              child: GestureDetector(
-                onTap: () => _showToolDetails(context),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: AppTheme.secondaryColor.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: AppTheme.secondaryColor.withValues(alpha: 0.25),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.build, size: 12, color: AppTheme.secondaryColor),
-                      const SizedBox(width: 4),
-                      Text(
-                        message.toolCall?.name ?? 'ツール',
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: AppTheme.secondaryColor,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(width: 2),
-                      Icon(
-                        Icons.chevron_right, 
-                        size: 12, 
-                        color: AppTheme.secondaryColor.withValues(alpha: 0.7),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
+      return const SizedBox.shrink();
     }
     
     return Padding(
@@ -892,6 +935,44 @@ class _ChatBubble extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Tool call badges (shown in assistant bubble)
+                  if (toolCalls.isNotEmpty) ...[
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
+                      children: toolCalls.map((toolCall) => 
+                        GestureDetector(
+                          onTap: () => _showToolDetails(context, toolCall),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: AppTheme.secondaryColor.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: AppTheme.secondaryColor.withValues(alpha: 0.25),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.build, size: 10, color: AppTheme.secondaryColor),
+                                const SizedBox(width: 3),
+                                Text(
+                                  toolCall.name,
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    color: AppTheme.secondaryColor,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ).toList(),
+                    ),
+                    const SizedBox(height: 6),
+                  ],
                   SelectableText(
                     message.content,
                     style: const TextStyle(
@@ -920,16 +1001,16 @@ class _ChatBubble extends StatelessWidget {
               ),
             ),
           ),
-          if (isUser) ...[
-            const SizedBox(width: 8),
-            CircleAvatar(
-              radius: 16,
-              backgroundColor: AppTheme.successColor,
-              child: const Icon(Icons.person, size: 18, color: Colors.white),
-            ),
-          ],
         ],
       ),
     );
   }
+}
+
+/// Helper class to group messages with their associated tool calls
+class _MessageGroup {
+  final ChatMessage message;
+  final List<ToolCallInfo> toolCalls;
+  
+  const _MessageGroup({required this.message, this.toolCalls = const []});
 }
