@@ -280,7 +280,7 @@ class ToolService {
     
     // Parse number
     var end = pos;
-    while (end < expr.length && (expr[end].contains(RegExp(r'[0-9.]')))) {
+    while (end < expr.length && '0123456789.'.contains(expr[end])) {
       end++;
     }
     
