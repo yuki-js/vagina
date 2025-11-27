@@ -437,7 +437,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               // Noise reduction toggle (far/near)
               _buildControlButton(
                 icon: _noiseReduction == 'far' ? Icons.noise_aware : Icons.noise_control_off,
-                label: 'ノイズ軽減',
+                label: _noiseReduction == 'far' ? 'ノイズ軽減:遠' : 'ノイズ軽減:近',
                 onTap: _handleNoiseReductionToggle,
                 isActive: _noiseReduction == 'far',
                 activeColor: AppTheme.secondaryColor,
