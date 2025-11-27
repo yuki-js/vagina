@@ -4,6 +4,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'log_service.dart';
+import '../models/android_audio_config.dart';
 
 /// Service for storing settings as files in the user's Documents directory
 /// 
@@ -317,5 +318,25 @@ class StorageService {
     final config = await _loadConfig();
     config['memories'] = <String, dynamic>{};
     await _saveConfig(config);
+  }
+
+  // Android Audio Configuration
+  
+  /// Save Android audio configuration
+  Future<void> saveAndroidAudioConfig(AndroidAudioConfig audioConfig) async {
+    logService.info(_tag, 'Saving Android audio config');
+    final config = await _loadConfig();
+    config['android_audio_config'] = audioConfig.toJson();
+    await _saveConfig(config);
+  }
+
+  /// Get Android audio configuration
+  Future<AndroidAudioConfig> getAndroidAudioConfig() async {
+    final config = await _loadConfig();
+    final audioConfigJson = config['android_audio_config'] as Map<String, dynamic>?;
+    if (audioConfigJson != null) {
+      return AndroidAudioConfig.fromJson(audioConfigJson);
+    }
+    return const AndroidAudioConfig();
   }
 }

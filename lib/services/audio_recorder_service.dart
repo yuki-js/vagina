@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:typed_data';
 import 'package:record/record.dart';
 import '../config/app_config.dart';
+import '../models/android_audio_config.dart';
 
 /// Service for recording audio from the microphone
 class AudioRecorderService {
@@ -13,8 +14,19 @@ class AudioRecorderService {
   Stream<Amplitude>? _amplitudeStream;
 
   bool _isRecording = false;
+  
+  /// Current Android audio configuration
+  AndroidAudioConfig _androidAudioConfig = const AndroidAudioConfig();
 
   bool get isRecording => _isRecording;
+  
+  /// Get current Android audio configuration
+  AndroidAudioConfig get androidAudioConfig => _androidAudioConfig;
+  
+  /// Update Android audio configuration
+  void setAndroidAudioConfig(AndroidAudioConfig config) {
+    _androidAudioConfig = config;
+  }
 
   /// Check if microphone permission is granted
   Future<bool> hasPermission() async {
@@ -29,7 +41,7 @@ class AudioRecorderService {
     }
 
     final stream = await _recorder.startStream(
-      const RecordConfig(
+      RecordConfig(
         encoder: AudioEncoder.pcm16bits,
         sampleRate: AppConfig.sampleRate,
         numChannels: AppConfig.channels,
@@ -44,11 +56,10 @@ class AudioRecorderService {
         // as echo cancellation and noise suppression are handled by the
         // platform-level echoCancel and noiseSuppress flags above.
         androidConfig: AndroidRecordConfig(
-          // Use voiceCommunication audio source which includes built-in
-          // echo cancellation and noise suppression optimized for voice calls
-          audioSource: AndroidAudioSource.voiceCommunication,
-          // Set audio mode to communication mode for better echo cancellation
-          audioManagerMode: AudioManagerMode.modeInCommunication,
+          // Use configurable audio source (default: voiceCommunication)
+          audioSource: _androidAudioConfig.audioSource,
+          // Use configurable audio manager mode (default: modeInCommunication)
+          audioManagerMode: _androidAudioConfig.audioManagerMode,
         ),
       ),
     );
