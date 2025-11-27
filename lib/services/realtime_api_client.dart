@@ -27,6 +27,8 @@ class RealtimeApiClient {
       StreamController<void>.broadcast();
   final StreamController<FunctionCall> _functionCallController =
       StreamController<FunctionCall>.broadcast();
+  final StreamController<void> _responseStartedController =
+      StreamController<void>.broadcast();
 
   StreamSubscription? _messageSubscription;
   String? _lastError;
@@ -47,6 +49,7 @@ class RealtimeApiClient {
   Stream<String> get errorStream => _errorController.stream;
   Stream<void> get audioDoneStream => _audioDoneController.stream;
   Stream<FunctionCall> get functionCallStream => _functionCallController.stream;
+  Stream<void> get responseStartedStream => _responseStartedController.stream;
   String? get lastError => _lastError;
 
   /// Set tools to be registered with the session
@@ -97,10 +100,9 @@ class RealtimeApiClient {
         },
       );
 
-      // Configure session after connection
-      await _configureSession();
+      // Session will be configured when session.created event is received
       _lastError = null;
-      logService.info(_tag, 'Connected and session configured');
+      logService.info(_tag, 'Connected, waiting for session.created event');
     } catch (e) {
       logService.error(_tag, 'Connection failed: $e');
       _lastError = e.toString();
@@ -151,11 +153,22 @@ class RealtimeApiClient {
 
     switch (type) {
       case 'session.created':
-        logService.info(_tag, 'Session created');
+        logService.info(_tag, 'Session created, sending session.update');
+        // Send session.update after session is created
+        _configureSession();
         break;
         
       case 'session.updated':
-        logService.info(_tag, 'Session updated');
+        // Log session details to verify our configuration was applied
+        final session = message['session'] as Map<String, dynamic>?;
+        if (session != null) {
+          final turnDetection = session['turn_detection'] as Map<String, dynamic>?;
+          final transcription = session['input_audio_transcription'] as Map<String, dynamic>?;
+          final tools = session['tools'] as List?;
+          logService.info(_tag, 'Session updated - turn_detection: ${turnDetection?['type']}, transcription: ${transcription?['model']}, tools: ${tools?.length ?? 0}');
+        } else {
+          logService.info(_tag, 'Session updated');
+        }
         break;
         
       case 'input_audio_buffer.speech_started':
@@ -176,11 +189,21 @@ class RealtimeApiClient {
         if (transcript != null && transcript.isNotEmpty) {
           logService.info(_tag, 'User transcript: $transcript');
           _userTranscriptController.add(transcript);
+        } else {
+          logService.warn(_tag, 'User transcript received but empty');
         }
+        break;
+        
+      case 'conversation.item.input_audio_transcription.failed':
+        // Transcription failed
+        final error = message['error'] as Map<String, dynamic>?;
+        logService.error(_tag, 'User transcription failed: ${error?['message'] ?? 'unknown error'}');
         break;
         
       case 'response.created':
         logService.info(_tag, 'Response created - AI is generating response');
+        _audioChunksReceived = 0; // Reset audio chunk counter for new response
+        _responseStartedController.add(null); // Notify that new response started
         break;
         
       case 'response.output_item.added':
@@ -228,7 +251,10 @@ class RealtimeApiClient {
         if (delta != null) {
           _audioChunksReceived++;
           final audioData = base64Decode(delta);
-          logService.debug(_tag, 'Audio delta received (chunk #$_audioChunksReceived, ${audioData.length} bytes)');
+          // Only log every 50th chunk to reduce log noise
+          if (_audioChunksReceived % _logAudioChunkInterval == 0) {
+            logService.debug(_tag, 'Audio delta received (chunk #$_audioChunksReceived, ${audioData.length} bytes)');
+          }
           _audioController.add(Uint8List.fromList(audioData));
         }
         break;
@@ -241,7 +267,7 @@ class RealtimeApiClient {
       case 'response.audio_transcript.delta':
         final delta = message['delta'] as String?;
         if (delta != null) {
-          logService.debug(_tag, 'Transcript delta: $delta');
+          // Don't log transcript deltas to reduce noise, they will appear in chat UI
           _transcriptController.add(delta);
         }
         break;
@@ -384,6 +410,7 @@ class RealtimeApiClient {
     await _errorController.close();
     await _audioDoneController.close();
     await _functionCallController.close();
+    await _responseStartedController.close();
     await _webSocket.dispose();
   }
 }

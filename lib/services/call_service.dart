@@ -43,6 +43,7 @@ class CallService {
   StreamSubscription<String>? _transcriptSubscription;
   StreamSubscription<String>? _userTranscriptSubscription;
   StreamSubscription<FunctionCall>? _functionCallSubscription;
+  StreamSubscription<void>? _responseStartedSubscription;
   Timer? _callTimer;
 
   final StreamController<CallState> _stateController =
@@ -233,6 +234,14 @@ class CallService {
         );
         _apiClient.sendFunctionCallResult(result.callId, result.output);
       });
+      
+      // Listen to response started events to stop previous audio and enable interrupts
+      _responseStartedSubscription = _apiClient.responseStartedStream.listen((_) async {
+        logService.info(_tag, 'New response started, stopping previous audio');
+        await _player.stop();
+        // Complete previous assistant message if any
+        _completeCurrentAssistantMessage();
+      });
 
       // Start microphone recording
       logService.info(_tag, 'Starting microphone recording');
@@ -333,6 +342,9 @@ class CallService {
     
     await _functionCallSubscription?.cancel();
     _functionCallSubscription = null;
+    
+    await _responseStartedSubscription?.cancel();
+    _responseStartedSubscription = null;
 
     await _recorder.stopRecording();
     await _player.stop();

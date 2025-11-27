@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'screens/call_screen.dart';
+import 'screens/home_screen.dart';
 import 'theme/app_theme.dart';
 
 void main() {
@@ -21,7 +21,7 @@ class VaginaApp extends StatelessWidget {
       title: 'VAGINA',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
-      home: const CallScreen(),
+      home: const HomeScreen(),
     );
   }
 }

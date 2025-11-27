@@ -29,6 +29,7 @@ class RealtimeSessionConfig {
 
   /// Convert to session.update payload format for OpenAI Realtime API
   /// Reference: https://platform.openai.com/docs/api-reference/realtime-client-events/session/update
+  /// Reference: https://platform.openai.com/docs/guides/realtime-transcription
   Map<String, dynamic> toSessionPayload(String instructions) {
     final config = <String, dynamic>{
       'modalities': ['text', 'audio'],
@@ -42,9 +43,8 @@ class RealtimeSessionConfig {
       'turn_detection': {
         'type': 'semantic_vad',
         'eagerness': 'low',
-      },
-      'input_audio_noise_reduction': {
-        'type': noiseReduction,
+        'create_response': true,
+        'interrupt_response': true,
       },
     };
     
