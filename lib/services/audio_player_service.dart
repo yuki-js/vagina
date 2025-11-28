@@ -32,6 +32,9 @@ class AudioPlayerService {
   
   // Buffer settings
   static const int _minBufferSizeBeforeStart = 4800; // ~100ms of audio at 24kHz mono 16-bit
+  
+  // Playback speed setting (stored to apply when playback starts)
+  double _playbackSpeed = 1.0;
 
   bool get isPlaying => _isPlaying;
 
@@ -76,6 +79,16 @@ class AudioPlayerService {
       
       _isPlaying = true;
       logService.info(_tag, 'Streaming playback started');
+      
+      // Apply stored playback speed if not default
+      if (_playbackSpeed != 1.0) {
+        try {
+          await _player!.setSpeed(_playbackSpeed);
+          logService.info(_tag, 'Applied stored playback speed: ${_playbackSpeed}x');
+        } catch (e) {
+          logService.warn(_tag, 'Error applying stored playback speed: $e');
+        }
+      }
     } catch (e) {
       logService.error(_tag, 'Error starting playback: $e');
       _isPlaying = false;
@@ -208,10 +221,18 @@ class AudioPlayerService {
   }
 
   /// Set playback speed (1.0 = normal, 2.0 = double speed)
+  /// The speed setting is stored and applied when playback starts if not currently playing.
   Future<void> setSpeed(double speed) async {
+    _playbackSpeed = speed;
+    logService.info(_tag, 'Playback speed setting stored: ${speed}x');
+    
     if (_isInitialized && _player != null && _isPlaying) {
-      await _player!.setSpeed(speed);
-      logService.info(_tag, 'Playback speed set to ${speed}x');
+      try {
+        await _player!.setSpeed(speed);
+        logService.info(_tag, 'Playback speed applied: ${speed}x');
+      } catch (e) {
+        logService.warn(_tag, 'Error setting playback speed: $e');
+      }
     }
   }
 
