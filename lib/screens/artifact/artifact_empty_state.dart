@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../theme/app_theme.dart';
+import '../../theme/app_theme.dart';
 
-/// Empty state when no artifacts exist
+/// Empty state widget for artifacts when there are no tabs
 class ArtifactEmptyState extends StatelessWidget {
   const ArtifactEmptyState({super.key});
 
