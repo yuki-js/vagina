@@ -396,8 +396,13 @@ class RealtimeApiClient {
         _handleError(message, eventId);
         
       case null:
-        // Unknown event type - log for debugging
-        logService.warn(_tag, 'Unknown event type received: $type');
+        // Unknown event type - could be a new event type added by OpenAI
+        // or a malformed message. Log for debugging but don't error.
+        if (type == null || type.isEmpty) {
+          logService.warn(_tag, 'Received message without event type');
+        } else {
+          logService.warn(_tag, 'Unknown/unhandled event type received: $type');
+        }
     }
   }
 

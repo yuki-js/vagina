@@ -170,14 +170,14 @@ enum ServerEventType {
   final String value;
   const ServerEventType(this.value);
   
-  /// Get ServerEventType from string value
+  /// Static map for O(1) lookup of event types by string value
+  static final Map<String, ServerEventType> _valueMap = {
+    for (final type in ServerEventType.values) type.value: type
+  };
+  
+  /// Get ServerEventType from string value (O(1) lookup)
   static ServerEventType? fromString(String value) {
-    for (final type in ServerEventType.values) {
-      if (type.value == value) {
-        return type;
-      }
-    }
-    return null;
+    return _valueMap[value];
   }
 }
 
