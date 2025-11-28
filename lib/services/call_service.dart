@@ -238,8 +238,8 @@ class CallService {
     _speechStartedSubscription = _apiClient.speechStartedStream.listen((_) {
       _chatManager.createUserMessagePlaceholder();
       logService.debug(_tag, 'Created user message placeholder');
-      // Haptic feedback: VAD detected user speech started
-      _hapticService.selectionClick();
+      // Haptic feedback: VAD detected user speech started (fire-and-forget)
+      unawaited(_hapticService.selectionClick());
     });
     
     _userTranscriptSubscription = _apiClient.userTranscriptStream.listen((transcript) {
@@ -269,8 +269,8 @@ class CallService {
     });
     
     _responseAudioStartedSubscription = _apiClient.responseAudioStartedStream.listen((_) {
-      // Haptic feedback: AI audio response started after user speech ended
-      _hapticService.selectionClick();
+      // Haptic feedback: AI audio response started after user speech ended (fire-and-forget)
+      unawaited(_hapticService.selectionClick());
     });
   }
 
