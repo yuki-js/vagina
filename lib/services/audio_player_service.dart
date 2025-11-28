@@ -207,6 +207,14 @@ class AudioPlayerService {
     logService.info(_tag, 'Playback stopped');
   }
 
+  /// Set playback speed (1.0 = normal, 2.0 = double speed)
+  Future<void> setSpeed(double speed) async {
+    if (_isInitialized && _player != null && _isPlaying) {
+      await _player!.setSpeed(speed);
+      logService.info(_tag, 'Playback speed set to ${speed}x');
+    }
+  }
+
   /// Set volume (0.0 to 1.0)
   Future<void> setVolume(double volume) async {
     if (_isInitialized && _player != null) {

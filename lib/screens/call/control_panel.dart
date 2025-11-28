@@ -19,7 +19,7 @@ class ControlPanel extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isMuted = ref.watch(isMutedProvider);
-    final speakerMuted = ref.watch(speakerMutedProvider);
+    final doubleSpeed = ref.watch(doubleSpeedProvider);
     final noiseReduction = ref.watch(noiseReductionProvider);
     final isCallActive = ref.watch(isCallActiveProvider);
 
@@ -36,7 +36,7 @@ class ControlPanel extends ConsumerWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // First row: Chat, Speaker, Settings
+          // First row: Chat, Double Speed, Settings
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
@@ -47,11 +47,11 @@ class ControlPanel extends ConsumerWidget {
                 width: buttonWidth,
               ),
               _ControlButton(
-                icon: speakerMuted ? Icons.volume_off : Icons.volume_up,
-                label: 'スピーカー',
-                onTap: () => _handleSpeakerToggle(ref),
-                isActive: speakerMuted,
-                activeColor: AppTheme.warningColor,
+                icon: Icons.speed,
+                label: doubleSpeed ? '2倍速' : '等速',
+                onTap: () => _handleDoubleSpeedToggle(ref),
+                isActive: doubleSpeed,
+                activeColor: AppTheme.secondaryColor,
                 width: buttonWidth,
               ),
               _ControlButton(
@@ -104,11 +104,11 @@ class ControlPanel extends ConsumerWidget {
     );
   }
 
-  void _handleSpeakerToggle(WidgetRef ref) {
-    ref.read(speakerMutedProvider.notifier).toggle();
-    final speakerMuted = ref.read(speakerMutedProvider);
+  void _handleDoubleSpeedToggle(WidgetRef ref) {
+    ref.read(doubleSpeedProvider.notifier).toggle();
+    final doubleSpeed = ref.read(doubleSpeedProvider);
     final audioPlayer = ref.read(audioPlayerServiceProvider);
-    audioPlayer.setVolume(speakerMuted ? 0.0 : 1.0);
+    audioPlayer.setSpeed(doubleSpeed ? 2.0 : 1.0);
   }
 
   void _handleNoiseReductionToggle(WidgetRef ref) {
