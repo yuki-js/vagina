@@ -8,13 +8,13 @@ import '../../services/call_service.dart';
 /// Galaxy-style control panel with 2x3 button grid and call button
 class ControlPanel extends ConsumerWidget {
   final VoidCallback onChatPressed;
-  final VoidCallback onArtifactPressed;
+  final VoidCallback onNotepadPressed;
   final VoidCallback onSettingsPressed;
 
   const ControlPanel({
     super.key,
     required this.onChatPressed,
-    required this.onArtifactPressed,
+    required this.onNotepadPressed,
     required this.onSettingsPressed,
   });
 
@@ -50,8 +50,8 @@ class ControlPanel extends ConsumerWidget {
               ),
               _ControlButton(
                 icon: Icons.article_outlined,
-                label: 'アーティファクト',
-                onTap: onArtifactPressed,
+                label: 'ノートパッド',
+                onTap: onNotepadPressed,
                 width: buttonWidth,
               ),
               _ControlButton(

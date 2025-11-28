@@ -1,13 +1,13 @@
 import 'package:diff_match_patch/diff_match_patch.dart';
 import '../base_tool.dart';
-import '../../artifact_service.dart';
+import '../../notepad_service.dart';
 
 /// Tool for patching a document using unified diff format
 class DocumentPatchTool extends BaseTool {
-  final ArtifactService _artifactService;
+  final NotepadService _notepadService;
   
-  DocumentPatchTool({required ArtifactService artifactService}) 
-      : _artifactService = artifactService;
+  DocumentPatchTool({required NotepadService notepadService}) 
+      : _notepadService = notepadService;
   
   @override
   String get name => 'document_patch';
@@ -37,7 +37,7 @@ class DocumentPatchTool extends BaseTool {
     final tabId = arguments['tabId'] as String;
     final patchText = arguments['patch'] as String;
     
-    final tab = _artifactService.getTab(tabId);
+    final tab = _notepadService.getTab(tabId);
     if (tab == null) {
       return {
         'success': false,
@@ -83,7 +83,7 @@ class DocumentPatchTool extends BaseTool {
     }
     
     // Update the document
-    final updateSuccess = _artifactService.updateTab(tabId, content: patchedContent);
+    final updateSuccess = _notepadService.updateTab(tabId, content: patchedContent);
     
     if (!updateSuccess) {
       return {

@@ -1,22 +1,22 @@
 import 'dart:async';
-import '../models/artifact_tab.dart';
+import '../models/notepad_tab.dart';
 import 'log_service.dart';
 
 /// Service for managing artifact tabs
 /// 
 /// Manages the state of artifact tabs that display tool outputs
 /// meant for human consumption (e.g., generated documents, images)
-class ArtifactService {
-  static const _tag = 'ArtifactService';
+class NotepadService {
+  static const _tag = 'NotepadService';
   
   /// Internal list of artifact tabs
-  final List<ArtifactTab> _tabs = [];
+  final List<NotepadTab> _tabs = [];
   
   /// ID of the currently selected tab
   String? _selectedTabId;
   
   /// Stream controller for tab state changes
-  final _tabsController = StreamController<List<ArtifactTab>>.broadcast();
+  final _tabsController = StreamController<List<NotepadTab>>.broadcast();
   
   /// Stream controller for selected tab changes
   final _selectedTabController = StreamController<String?>.broadcast();
@@ -25,13 +25,13 @@ class ArtifactService {
   int _idCounter = 0;
 
   /// Stream of artifact tabs
-  Stream<List<ArtifactTab>> get tabsStream => _tabsController.stream;
+  Stream<List<NotepadTab>> get tabsStream => _tabsController.stream;
   
   /// Stream of selected tab ID
   Stream<String?> get selectedTabStream => _selectedTabController.stream;
   
   /// Get current tabs (snapshot)
-  List<ArtifactTab> get tabs => List.unmodifiable(_tabs);
+  List<NotepadTab> get tabs => List.unmodifiable(_tabs);
   
   /// Get currently selected tab ID
   String? get selectedTabId => _selectedTabId;
@@ -52,7 +52,7 @@ class ArtifactService {
     final id = _generateId();
     final now = DateTime.now();
     
-    final tab = ArtifactTab(
+    final tab = NotepadTab(
       id: id,
       title: title ?? _generateTitleFromContent(content, mimeType),
       content: content,
@@ -135,7 +135,7 @@ class ArtifactService {
   }
 
   /// Get a tab by ID
-  ArtifactTab? getTab(String tabId) {
+  NotepadTab? getTab(String tabId) {
     try {
       return _tabs.firstWhere((t) => t.id == tabId);
     } catch (_) {
@@ -212,6 +212,6 @@ class ArtifactService {
   void dispose() {
     _tabsController.close();
     _selectedTabController.close();
-    logService.info(_tag, 'ArtifactService disposed');
+    logService.info(_tag, 'NotepadService disposed');
   }
 }

@@ -1,12 +1,12 @@
 import '../base_tool.dart';
-import '../../artifact_service.dart';
+import '../../notepad_service.dart';
 
 /// Tool for reading a document's content
 class DocumentReadTool extends BaseTool {
-  final ArtifactService _artifactService;
+  final NotepadService _notepadService;
   
-  DocumentReadTool({required ArtifactService artifactService}) 
-      : _artifactService = artifactService;
+  DocumentReadTool({required NotepadService notepadService}) 
+      : _notepadService = notepadService;
   
   @override
   String get name => 'document_read';
@@ -31,7 +31,7 @@ class DocumentReadTool extends BaseTool {
   Future<Map<String, dynamic>> execute(Map<String, dynamic> arguments) async {
     final tabId = arguments['tabId'] as String;
     
-    final tab = _artifactService.getTab(tabId);
+    final tab = _notepadService.getTab(tabId);
     if (tab == null) {
       return {
         'success': false,

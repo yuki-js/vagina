@@ -1,19 +1,19 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vagina/services/artifact_service.dart';
-import 'package:vagina/services/tools/builtin/artifact_tools.dart';
+import 'package:vagina/services/notepad_service.dart';
+import 'package:vagina/services/tools/builtin/notepad_tools.dart';
 
 void main() {
-  group('ArtifactListTabsTool', () {
-    late ArtifactService artifactService;
-    late ArtifactListTabsTool tool;
+  group('NotepadListTabsTool', () {
+    late NotepadService notepadService;
+    late NotepadListTabsTool tool;
 
     setUp(() {
-      artifactService = ArtifactService();
-      tool = ArtifactListTabsTool(artifactService: artifactService);
+      notepadService = NotepadService();
+      tool = NotepadListTabsTool(notepadService: notepadService);
     });
 
     tearDown(() {
-      artifactService.dispose();
+      notepadService.dispose();
     });
 
     test('returns empty list when no tabs exist', () async {
@@ -25,8 +25,8 @@ void main() {
     });
 
     test('returns all tabs', () async {
-      artifactService.createTab(content: 'Tab 1', mimeType: 'text/plain');
-      artifactService.createTab(content: 'Tab 2', mimeType: 'text/markdown');
+      notepadService.createTab(content: 'Tab 1', mimeType: 'text/plain');
+      notepadService.createTab(content: 'Tab 2', mimeType: 'text/markdown');
 
       final result = await tool.execute({});
 
@@ -36,21 +36,21 @@ void main() {
     });
   });
 
-  group('ArtifactGetMetadataTool', () {
-    late ArtifactService artifactService;
-    late ArtifactGetMetadataTool tool;
+  group('NotepadGetMetadataTool', () {
+    late NotepadService notepadService;
+    late NotepadGetMetadataTool tool;
 
     setUp(() {
-      artifactService = ArtifactService();
-      tool = ArtifactGetMetadataTool(artifactService: artifactService);
+      notepadService = NotepadService();
+      tool = NotepadGetMetadataTool(notepadService: notepadService);
     });
 
     tearDown(() {
-      artifactService.dispose();
+      notepadService.dispose();
     });
 
     test('returns metadata for existing tab', () async {
-      final tabId = artifactService.createTab(
+      final tabId = notepadService.createTab(
         content: '# Hello',
         mimeType: 'text/markdown',
         title: 'Test',
@@ -72,21 +72,21 @@ void main() {
     });
   });
 
-  group('ArtifactGetContentTool', () {
-    late ArtifactService artifactService;
-    late ArtifactGetContentTool tool;
+  group('NotepadGetContentTool', () {
+    late NotepadService notepadService;
+    late NotepadGetContentTool tool;
 
     setUp(() {
-      artifactService = ArtifactService();
-      tool = ArtifactGetContentTool(artifactService: artifactService);
+      notepadService = NotepadService();
+      tool = NotepadGetContentTool(notepadService: notepadService);
     });
 
     tearDown(() {
-      artifactService.dispose();
+      notepadService.dispose();
     });
 
     test('returns content for existing tab', () async {
-      final tabId = artifactService.createTab(
+      final tabId = notepadService.createTab(
         content: 'Hello World',
         mimeType: 'text/plain',
       );
@@ -106,21 +106,21 @@ void main() {
     });
   });
 
-  group('ArtifactCloseTabTool', () {
-    late ArtifactService artifactService;
-    late ArtifactCloseTabTool tool;
+  group('NotepadCloseTabTool', () {
+    late NotepadService notepadService;
+    late NotepadCloseTabTool tool;
 
     setUp(() {
-      artifactService = ArtifactService();
-      tool = ArtifactCloseTabTool(artifactService: artifactService);
+      notepadService = NotepadService();
+      tool = NotepadCloseTabTool(notepadService: notepadService);
     });
 
     tearDown(() {
-      artifactService.dispose();
+      notepadService.dispose();
     });
 
     test('closes existing tab', () async {
-      final tabId = artifactService.createTab(
+      final tabId = notepadService.createTab(
         content: 'Content',
         mimeType: 'text/plain',
       );
@@ -128,7 +128,7 @@ void main() {
       final result = await tool.execute({'tabId': tabId});
 
       expect(result['success'], isTrue);
-      expect(artifactService.tabs, isEmpty);
+      expect(notepadService.tabs, isEmpty);
     });
 
     test('returns error for non-existent tab', () async {

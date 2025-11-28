@@ -1,12 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vagina/services/artifact_service.dart';
+import 'package:vagina/services/notepad_service.dart';
 
 void main() {
-  group('ArtifactService', () {
-    late ArtifactService service;
+  group('NotepadService', () {
+    late NotepadService service;
 
     setUp(() {
-      service = ArtifactService();
+      service = NotepadService();
     });
 
     tearDown(() {

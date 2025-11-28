@@ -1,20 +1,20 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:diff_match_patch/diff_match_patch.dart';
-import 'package:vagina/services/artifact_service.dart';
+import 'package:vagina/services/notepad_service.dart';
 import 'package:vagina/services/tools/builtin/document_tools.dart';
 
 void main() {
   group('DocumentOverwriteTool', () {
-    late ArtifactService artifactService;
+    late NotepadService notepadService;
     late DocumentOverwriteTool tool;
 
     setUp(() {
-      artifactService = ArtifactService();
-      tool = DocumentOverwriteTool(artifactService: artifactService);
+      notepadService = NotepadService();
+      tool = DocumentOverwriteTool(notepadService: notepadService);
     });
 
     tearDown(() {
-      artifactService.dispose();
+      notepadService.dispose();
     });
 
     test('creates new tab when tabId not provided', () async {
@@ -25,7 +25,7 @@ void main() {
       expect(result['success'], isTrue);
       expect(result['tabId'], isNotNull);
       expect(result['message'], equals('Document created successfully'));
-      expect(artifactService.tabs, hasLength(1));
+      expect(notepadService.tabs, hasLength(1));
     });
 
     test('creates new tab with custom MIME type', () async {
@@ -35,7 +35,7 @@ void main() {
       });
 
       expect(result['success'], isTrue);
-      final tab = artifactService.getTab(result['tabId'] as String);
+      final tab = notepadService.getTab(result['tabId'] as String);
       expect(tab?.mimeType, equals('text/plain'));
     });
 
@@ -46,7 +46,7 @@ void main() {
       });
 
       expect(result['success'], isTrue);
-      final tab = artifactService.getTab(result['tabId'] as String);
+      final tab = notepadService.getTab(result['tabId'] as String);
       expect(tab?.title, equals('My Custom Title'));
     });
 
@@ -66,7 +66,7 @@ void main() {
       expect(updateResult['success'], isTrue);
       expect(updateResult['tabId'], equals(tabId));
       expect(updateResult['message'], equals('Document updated successfully'));
-      expect(artifactService.getTabContent(tabId), equals('Updated content'));
+      expect(notepadService.getTabContent(tabId), equals('Updated content'));
     });
 
     test('returns error for non-existent tabId', () async {
@@ -81,18 +81,18 @@ void main() {
   });
 
   group('DocumentPatchTool', () {
-    late ArtifactService artifactService;
+    late NotepadService notepadService;
     late DocumentPatchTool tool;
     late DocumentOverwriteTool overwriteTool;
 
     setUp(() {
-      artifactService = ArtifactService();
-      tool = DocumentPatchTool(artifactService: artifactService);
-      overwriteTool = DocumentOverwriteTool(artifactService: artifactService);
+      notepadService = NotepadService();
+      tool = DocumentPatchTool(notepadService: notepadService);
+      overwriteTool = DocumentOverwriteTool(notepadService: notepadService);
     });
 
     tearDown(() {
-      artifactService.dispose();
+      notepadService.dispose();
     });
 
     test('applies patch to existing document', () async {
@@ -115,7 +115,7 @@ void main() {
 
       expect(patchResult['success'], isTrue);
       expect(patchResult['appliedPatches'], equals(1));
-      expect(artifactService.getTabContent(tabId), equals('Hello Dart'));
+      expect(notepadService.getTabContent(tabId), equals('Hello Dart'));
     });
 
     test('applies multiple patches', () async {
@@ -138,7 +138,7 @@ void main() {
       });
 
       expect(patchResult['success'], isTrue);
-      expect(artifactService.getTabContent(tabId), equals('Hello Dart! Greetings to Dart!'));
+      expect(notepadService.getTabContent(tabId), equals('Hello Dart! Greetings to Dart!'));
     });
 
     test('returns error for non-existent tab', () async {
@@ -173,18 +173,18 @@ void main() {
   });
 
   group('DocumentReadTool', () {
-    late ArtifactService artifactService;
+    late NotepadService notepadService;
     late DocumentReadTool tool;
     late DocumentOverwriteTool overwriteTool;
 
     setUp(() {
-      artifactService = ArtifactService();
-      tool = DocumentReadTool(artifactService: artifactService);
-      overwriteTool = DocumentOverwriteTool(artifactService: artifactService);
+      notepadService = NotepadService();
+      tool = DocumentReadTool(notepadService: notepadService);
+      overwriteTool = DocumentOverwriteTool(notepadService: notepadService);
     });
 
     tearDown(() {
-      artifactService.dispose();
+      notepadService.dispose();
     });
 
     test('reads document content', () async {

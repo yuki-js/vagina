@@ -4,7 +4,7 @@ import '../theme/app_theme.dart';
 import '../providers/providers.dart';
 import 'call/call_page.dart';
 import 'chat/chat_page.dart';
-import 'artifact/artifact_page.dart';
+import 'notepad/notepad_page.dart';
 import 'settings_screen.dart';
 
 /// Main home screen with PageView for swipe navigation between chat, call, and artifacts
@@ -140,11 +140,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 // Call in center
                 CallPage(
                   onChatPressed: _goToChat,
-                  onArtifactPressed: _goToArtifact,
+                  onNotepadPressed: _goToArtifact,
                   onSettingsPressed: _openSettings,
                 ),
                 // Artifacts on right (swipe left to go to call)
-                ArtifactPage(
+                NotepadPage(
                   onBackPressed: _goToCall,
                 ),
               ],

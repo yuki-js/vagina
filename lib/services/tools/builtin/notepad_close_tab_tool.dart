@@ -1,15 +1,15 @@
 import '../base_tool.dart';
-import '../../artifact_service.dart';
+import '../../notepad_service.dart';
 
 /// Tool for closing an artifact tab
-class ArtifactCloseTabTool extends BaseTool {
-  final ArtifactService _artifactService;
+class NotepadCloseTabTool extends BaseTool {
+  final NotepadService _notepadService;
   
-  ArtifactCloseTabTool({required ArtifactService artifactService}) 
-      : _artifactService = artifactService;
+  NotepadCloseTabTool({required NotepadService notepadService}) 
+      : _notepadService = notepadService;
   
   @override
-  String get name => 'artifact_close_tab';
+  String get name => 'notepad_close_tab';
   
   @override
   String get description => 
@@ -30,7 +30,7 @@ class ArtifactCloseTabTool extends BaseTool {
   @override
   Future<Map<String, dynamic>> execute(Map<String, dynamic> arguments) async {
     final tabId = arguments['tabId'] as String;
-    final success = _artifactService.closeTab(tabId);
+    final success = _notepadService.closeTab(tabId);
     
     if (!success) {
       return {

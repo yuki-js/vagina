@@ -1,12 +1,12 @@
 import '../base_tool.dart';
-import '../../artifact_service.dart';
+import '../../notepad_service.dart';
 
 /// Tool for creating or overwriting a document
 class DocumentOverwriteTool extends BaseTool {
-  final ArtifactService _artifactService;
+  final NotepadService _notepadService;
   
-  DocumentOverwriteTool({required ArtifactService artifactService}) 
-      : _artifactService = artifactService;
+  DocumentOverwriteTool({required NotepadService notepadService}) 
+      : _notepadService = notepadService;
   
   @override
   String get name => 'document_overwrite';
@@ -49,7 +49,7 @@ class DocumentOverwriteTool extends BaseTool {
     try {
       if (tabId != null) {
         // Update existing tab
-        final success = _artifactService.updateTab(
+        final success = _notepadService.updateTab(
           tabId, 
           content: content, 
           title: title,
@@ -70,7 +70,7 @@ class DocumentOverwriteTool extends BaseTool {
         };
       } else {
         // Create new tab
-        final newTabId = _artifactService.createTab(
+        final newTabId = _notepadService.createTab(
           content: content,
           mimeType: mime,
           title: title,

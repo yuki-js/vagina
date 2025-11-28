@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 
 /// Empty state widget for artifacts when there are no tabs
-class ArtifactEmptyState extends StatelessWidget {
-  const ArtifactEmptyState({super.key});
+class NotepadEmptyState extends StatelessWidget {
+  const NotepadEmptyState({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -18,7 +18,7 @@ class ArtifactEmptyState extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'アーティファクトがありません',
+            'ノートパッドがありません',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,

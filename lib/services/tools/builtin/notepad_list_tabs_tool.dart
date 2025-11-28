@@ -1,15 +1,15 @@
 import '../base_tool.dart';
-import '../../artifact_service.dart';
+import '../../notepad_service.dart';
 
 /// Tool for listing all artifact tabs
-class ArtifactListTabsTool extends BaseTool {
-  final ArtifactService _artifactService;
+class NotepadListTabsTool extends BaseTool {
+  final NotepadService _notepadService;
   
-  ArtifactListTabsTool({required ArtifactService artifactService}) 
-      : _artifactService = artifactService;
+  NotepadListTabsTool({required NotepadService notepadService}) 
+      : _notepadService = notepadService;
   
   @override
-  String get name => 'artifact_list_tabs';
+  String get name => 'notepad_list_tabs';
   
   @override
   String get description => 
@@ -24,7 +24,7 @@ class ArtifactListTabsTool extends BaseTool {
 
   @override
   Future<Map<String, dynamic>> execute(Map<String, dynamic> arguments) async {
-    final tabs = _artifactService.listTabs();
+    final tabs = _notepadService.listTabs();
     return {
       'success': true,
       'tabs': tabs,

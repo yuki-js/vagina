@@ -1,15 +1,15 @@
 import '../base_tool.dart';
-import '../../artifact_service.dart';
+import '../../notepad_service.dart';
 
 /// Tool for getting metadata of a specific artifact tab
-class ArtifactGetMetadataTool extends BaseTool {
-  final ArtifactService _artifactService;
+class NotepadGetMetadataTool extends BaseTool {
+  final NotepadService _notepadService;
   
-  ArtifactGetMetadataTool({required ArtifactService artifactService}) 
-      : _artifactService = artifactService;
+  NotepadGetMetadataTool({required NotepadService notepadService}) 
+      : _notepadService = notepadService;
   
   @override
-  String get name => 'artifact_get_metadata';
+  String get name => 'notepad_get_metadata';
   
   @override
   String get description => 
@@ -30,7 +30,7 @@ class ArtifactGetMetadataTool extends BaseTool {
   @override
   Future<Map<String, dynamic>> execute(Map<String, dynamic> arguments) async {
     final tabId = arguments['tabId'] as String;
-    final metadata = _artifactService.getTabMetadata(tabId);
+    final metadata = _notepadService.getTabMetadata(tabId);
     
     if (metadata == null) {
       return {

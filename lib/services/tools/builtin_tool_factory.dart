@@ -1,17 +1,17 @@
 import 'base_tool.dart';
 import 'builtin/builtin_tools.dart';
 import '../storage_service.dart';
-import '../artifact_service.dart';
+import '../notepad_service.dart';
 
 /// Factory for creating built-in tools
 class BuiltinToolFactory {
   final StorageService _storage;
-  final ArtifactService _artifactService;
+  final NotepadService _notepadService;
   
   BuiltinToolFactory({
     required StorageService storage,
-    required ArtifactService artifactService,
-  }) : _storage = storage, _artifactService = artifactService;
+    required NotepadService notepadService,
+  }) : _storage = storage, _notepadService = notepadService;
   
   /// Create all built-in tools
   List<BaseTool> createBuiltinTools() {
@@ -22,14 +22,14 @@ class BuiltinToolFactory {
       MemoryDeleteTool(storage: _storage),
       CalculatorTool(),
       // Artifact management tools
-      ArtifactListTabsTool(artifactService: _artifactService),
-      ArtifactGetMetadataTool(artifactService: _artifactService),
-      ArtifactGetContentTool(artifactService: _artifactService),
-      ArtifactCloseTabTool(artifactService: _artifactService),
+      NotepadListTabsTool(notepadService: _notepadService),
+      NotepadGetMetadataTool(notepadService: _notepadService),
+      NotepadGetContentTool(notepadService: _notepadService),
+      NotepadCloseTabTool(notepadService: _notepadService),
       // Document creation tools
-      DocumentOverwriteTool(artifactService: _artifactService),
-      DocumentPatchTool(artifactService: _artifactService),
-      DocumentReadTool(artifactService: _artifactService),
+      DocumentOverwriteTool(notepadService: _notepadService),
+      DocumentPatchTool(notepadService: _notepadService),
+      DocumentReadTool(notepadService: _notepadService),
     ];
   }
 }

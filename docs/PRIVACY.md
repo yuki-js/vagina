@@ -2,7 +2,7 @@
 
 ## 概要
 
-VAGINA (Voice AGI as Native App) は、ユーザーのプライバシーを尊重し、最小限のデータ収集でサービスを提供します。
+VAGINA (Voice AGI as Notepad App) は、ユーザーのプライバシーを尊重し、最小限のデータ収集でサービスを提供します。
 
 ## 収集するデータ
 

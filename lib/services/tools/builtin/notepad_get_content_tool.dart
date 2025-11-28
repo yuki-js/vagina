@@ -1,15 +1,15 @@
 import '../base_tool.dart';
-import '../../artifact_service.dart';
+import '../../notepad_service.dart';
 
 /// Tool for getting content of a specific artifact tab
-class ArtifactGetContentTool extends BaseTool {
-  final ArtifactService _artifactService;
+class NotepadGetContentTool extends BaseTool {
+  final NotepadService _notepadService;
   
-  ArtifactGetContentTool({required ArtifactService artifactService}) 
-      : _artifactService = artifactService;
+  NotepadGetContentTool({required NotepadService notepadService}) 
+      : _notepadService = notepadService;
   
   @override
-  String get name => 'artifact_get_content';
+  String get name => 'notepad_get_content';
   
   @override
   String get description => 
@@ -30,7 +30,7 @@ class ArtifactGetContentTool extends BaseTool {
   @override
   Future<Map<String, dynamic>> execute(Map<String, dynamic> arguments) async {
     final tabId = arguments['tabId'] as String;
-    final tab = _artifactService.getTab(tabId);
+    final tab = _notepadService.getTab(tabId);
     
     if (tab == null) {
       return {

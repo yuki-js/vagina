@@ -2,34 +2,34 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/app_theme.dart';
 import '../../providers/providers.dart';
-import '../../models/artifact_tab.dart';
-import 'artifact_content_renderer.dart';
-import 'artifact_empty_state.dart';
+import '../../models/notepad_tab.dart';
+import 'notepad_content_renderer.dart';
+import 'notepad_empty_state.dart';
 
 /// Artifact page widget - displays artifact tabs and their content
-class ArtifactPage extends ConsumerStatefulWidget {
+class NotepadPage extends ConsumerStatefulWidget {
   final VoidCallback onBackPressed;
 
-  const ArtifactPage({
+  const NotepadPage({
     super.key,
     required this.onBackPressed,
   });
 
   @override
-  ConsumerState<ArtifactPage> createState() => _ArtifactPageState();
+  ConsumerState<NotepadPage> createState() => _NotepadPageState();
 }
 
-class _ArtifactPageState extends ConsumerState<ArtifactPage> {
+class _NotepadPageState extends ConsumerState<NotepadPage> {
   @override
   Widget build(BuildContext context) {
-    final tabsAsync = ref.watch(artifactTabsProvider);
-    final selectedTabIdAsync = ref.watch(selectedArtifactTabIdProvider);
-    final artifactService = ref.read(artifactServiceProvider);
+    final tabsAsync = ref.watch(notepadTabsProvider);
+    final selectedTabIdAsync = ref.watch(selectedNotepadTabIdProvider);
+    final notepadService = ref.read(notepadServiceProvider);
 
     return Column(
       children: [
         // Header
-        _ArtifactHeader(onBackPressed: widget.onBackPressed),
+        _NotepadHeader(onBackPressed: widget.onBackPressed),
 
         // Tab bar (if tabs exist)
         tabsAsync.when(
@@ -39,14 +39,14 @@ class _ArtifactPageState extends ConsumerState<ArtifactPage> {
             }
             
             final selectedId = selectedTabIdAsync.value;
-            return _ArtifactTabBar(
+            return _NotepadTabBar(
               tabs: tabs,
               selectedTabId: selectedId,
               onTabSelected: (tabId) {
-                artifactService.selectTab(tabId);
+                notepadService.selectTab(tabId);
               },
               onTabClosed: (tabId) {
-                artifactService.closeTab(tabId);
+                notepadService.closeTab(tabId);
               },
             );
           },
@@ -59,7 +59,7 @@ class _ArtifactPageState extends ConsumerState<ArtifactPage> {
           child: tabsAsync.when(
             data: (tabs) {
               if (tabs.isEmpty) {
-                return const ArtifactEmptyState();
+                return const NotepadEmptyState();
               }
               
               final selectedId = selectedTabIdAsync.value;
@@ -68,13 +68,13 @@ class _ArtifactPageState extends ConsumerState<ArtifactPage> {
                   : null;
               
               if (selectedTab == null) {
-                return const ArtifactEmptyState();
+                return const NotepadEmptyState();
               }
               
-              return ArtifactContentRenderer(
+              return NotepadContentRenderer(
                 tab: selectedTab,
                 onContentChanged: (newContent) {
-                  artifactService.updateTab(selectedTab.id, content: newContent);
+                  notepadService.updateTab(selectedTab.id, content: newContent);
                 },
               );
             },
@@ -83,7 +83,7 @@ class _ArtifactPageState extends ConsumerState<ArtifactPage> {
             ),
             error: (_, __) => Center(
               child: Text(
-                'アーティファクトの読み込みに失敗しました',
+                'ノートパッドの読み込みに失敗しました',
                 style: TextStyle(color: AppTheme.errorColor),
               ),
             ),
@@ -95,10 +95,10 @@ class _ArtifactPageState extends ConsumerState<ArtifactPage> {
 }
 
 /// Artifact header with navigation to call
-class _ArtifactHeader extends StatelessWidget {
+class _NotepadHeader extends StatelessWidget {
   final VoidCallback onBackPressed;
 
-  const _ArtifactHeader({required this.onBackPressed});
+  const _NotepadHeader({required this.onBackPressed});
 
   @override
   Widget build(BuildContext context) {
@@ -124,7 +124,7 @@ class _ArtifactHeader extends StatelessWidget {
           const Expanded(
             child: Center(
               child: Text(
-                'アーティファクト',
+                'ノートパッド',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
@@ -141,13 +141,13 @@ class _ArtifactHeader extends StatelessWidget {
 }
 
 /// Tab bar showing artifact tabs
-class _ArtifactTabBar extends StatelessWidget {
-  final List<ArtifactTab> tabs;
+class _NotepadTabBar extends StatelessWidget {
+  final List<NotepadTab> tabs;
   final String? selectedTabId;
   final void Function(String) onTabSelected;
   final void Function(String) onTabClosed;
 
-  const _ArtifactTabBar({
+  const _NotepadTabBar({
     required this.tabs,
     required this.selectedTabId,
     required this.onTabSelected,
@@ -168,7 +168,7 @@ class _ArtifactTabBar extends StatelessWidget {
           
           return Padding(
             padding: const EdgeInsets.only(right: 4),
-            child: _ArtifactTabItem(
+            child: _NotepadTabItem(
               tab: tab,
               isSelected: isSelected,
               onTap: () => onTabSelected(tab.id),
@@ -182,13 +182,13 @@ class _ArtifactTabBar extends StatelessWidget {
 }
 
 /// Individual tab item
-class _ArtifactTabItem extends StatelessWidget {
-  final ArtifactTab tab;
+class _NotepadTabItem extends StatelessWidget {
+  final NotepadTab tab;
   final bool isSelected;
   final VoidCallback onTap;
   final VoidCallback onClose;
 
-  const _ArtifactTabItem({
+  const _NotepadTabItem({
     required this.tab,
     required this.isSelected,
     required this.onTap,

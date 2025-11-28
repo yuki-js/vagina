@@ -1,5 +1,5 @@
-/// Represents a single artifact tab
-class ArtifactTab {
+/// Represents a single notepad tab
+class NotepadTab {
   final String id;
   final String title;
   final String content;
@@ -7,7 +7,7 @@ class ArtifactTab {
   final DateTime createdAt;
   final DateTime updatedAt;
 
-  const ArtifactTab({
+  const NotepadTab({
     required this.id,
     required this.title,
     required this.content,
@@ -16,7 +16,7 @@ class ArtifactTab {
     required this.updatedAt,
   });
 
-  ArtifactTab copyWith({
+  NotepadTab copyWith({
     String? id,
     String? title,
     String? content,
@@ -24,7 +24,7 @@ class ArtifactTab {
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
-    return ArtifactTab(
+    return NotepadTab(
       id: id ?? this.id,
       title: title ?? this.title,
       content: content ?? this.content,
