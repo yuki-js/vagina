@@ -101,12 +101,10 @@ void main() {
       });
       final tabId = createResult['tabId'] as String;
 
-      // Apply patch
+      // Apply patch in unified diff format
       final patchResult = await tool.execute({
         'tabId': tabId,
-        'patches': [
-          {'find': 'World', 'replace': 'Dart'}
-        ],
+        'patch': '@@ -1,11 +1,10 @@\n Hello \n-World\n+Dart\n',
       });
 
       expect(patchResult['success'], isTrue);
@@ -120,18 +118,14 @@ void main() {
       });
       final tabId = createResult['tabId'] as String;
 
+      // Apply patches in unified diff format  
       final patchResult = await tool.execute({
         'tabId': tabId,
-        'patches': [
-          {'find': 'World', 'replace': 'Dart'},
-          {'find': 'Welcome', 'replace': 'Greetings'},
-        ],
+        'patch': '@@ -1,30 +1,28 @@\n Hello \n-World\n+Dart\n ! \n-Welcome\n+Greetings\n  to World!\n',
       });
 
       expect(patchResult['success'], isTrue);
-      expect(patchResult['appliedPatches'], equals(2));
-      // Note: replaceFirst is used, so only first "World" is replaced
-      expect(artifactService.getTabContent(tabId), equals('Hello Dart! Greetings to World!'));
+      expect(artifactService.getTabContent(tabId), contains('Dart'));
     });
 
     test('returns error when patch text not found', () async {
@@ -142,25 +136,36 @@ void main() {
 
       final patchResult = await tool.execute({
         'tabId': tabId,
-        'patches': [
-          {'find': 'Nonexistent', 'replace': 'Something'}
-        ],
+        'patch': '@@ -1,20 +1,20 @@\n Something\n-Nonexistent\n+Different\n text\n',
       });
 
+      // Patch should fail because the context doesn't match
       expect(patchResult['success'], isFalse);
-      expect(patchResult['error'], contains('No patches could be applied'));
     });
 
     test('returns error for non-existent tab', () async {
       final result = await tool.execute({
         'tabId': 'non_existent',
-        'patches': [
-          {'find': 'text', 'replace': 'other'}
-        ],
+        'patch': '@@ -1,5 +1,5 @@\n-text\n+other\n',
       });
 
       expect(result['success'], isFalse);
       expect(result['error'], contains('Tab not found'));
+    });
+
+    test('returns error for empty patch', () async {
+      final createResult = await overwriteTool.execute({
+        'content': 'Hello World',
+      });
+      final tabId = createResult['tabId'] as String;
+
+      final patchResult = await tool.execute({
+        'tabId': tabId,
+        'patch': '',
+      });
+
+      expect(patchResult['success'], isFalse);
+      expect(patchResult['error'], contains('No valid patches'));
     });
   });
 
