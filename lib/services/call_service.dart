@@ -34,6 +34,9 @@ class CallService {
   final StorageService _storage;
   final ToolService _toolService;
   final ChatMessageManager _chatManager = ChatMessageManager();
+  
+  /// Session-scoped tool manager (created on call start, disposed on call end)
+  ToolManager? _toolManager;
 
   StreamSubscription<Uint8List>? _audioStreamSubscription;
   StreamSubscription<Amplitude>? _amplitudeSubscription;
@@ -100,6 +103,9 @@ class CallService {
   bool get isCallActive =>
       _currentState == CallState.connecting ||
       _currentState == CallState.connected;
+  
+  /// Get the current session's tool manager (null if no active call)
+  ToolManager? get toolManager => _toolManager;
 
   /// Set mute state
   void setMuted(bool muted) {
@@ -167,7 +173,11 @@ class CallService {
         return;
       }
 
-      _apiClient.setTools(_toolService.toolDefinitions);
+      // Create session-scoped tool manager
+      _toolManager = _toolService.createToolManager(
+        onToolsChanged: _onToolsChanged,
+      );
+      _apiClient.setTools(_toolManager!.toolDefinitions);
 
       logService.info(_tag, 'Connecting to Azure OpenAI');
       await _apiClient.connect(realtimeUrl, apiKey);
@@ -188,6 +198,15 @@ class CallService {
       _emitError('接続に失敗しました: $e');
       _setState(CallState.error);
       await _cleanup();
+    }
+  }
+  
+  /// Called when tools change (via ToolManager)
+  void _onToolsChanged() {
+    if (_toolManager != null && _currentState == CallState.connected) {
+      _apiClient.setTools(_toolManager!.toolDefinitions);
+      _apiClient.updateSessionConfig();
+      logService.info(_tag, 'Tools updated, session config refreshed');
     }
   }
 
@@ -224,7 +243,11 @@ class CallService {
     
     _functionCallSubscription = _apiClient.functionCallStream.listen((functionCall) async {
       logService.info(_tag, 'Handling function call: ${functionCall.name}');
-      final result = await _toolService.executeTool(
+      if (_toolManager == null) {
+        logService.error(_tag, 'Tool manager not available');
+        return;
+      }
+      final result = await _toolManager!.executeTool(
         functionCall.callId,
         functionCall.name,
         functionCall.arguments,
@@ -335,6 +358,10 @@ class CallService {
     await _recorder.stopRecording();
     await _player.stop();
     await _apiClient.disconnect();
+    
+    // Dispose session-scoped tool manager
+    _toolManager?.dispose();
+    _toolManager = null;
 
     _callDuration = 0;
     _durationController.add(0);
