@@ -2,13 +2,18 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:record/record.dart';
 import '../theme/app_theme.dart';
 import '../providers/providers.dart';
 import '../services/storage_service.dart';
 import '../services/realtime_api_client.dart';
+import '../models/assistant_config.dart';
+import '../models/android_audio_config.dart';
 import '../components/components.dart';
+import 'log_screen.dart';
+import 'flutter_sound_bug_repro_screen.dart';
 
-/// Settings screen for API configuration
+/// Settings screen for API configuration (2 inputs: Realtime URL + API Key)
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
@@ -33,9 +38,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Future<void> _loadSettings() async {
     try {
       final storage = ref.read(storageServiceProvider);
+      
+      // Request storage permission first (needed for external storage on Android)
       final hasPermission = await storage.requestStoragePermission();
       if (!hasPermission) {
         _showSnackBar('ストレージの権限がありません。アプリ内にデータを保存します', isWarning: true);
+        // Will use app-specific fallback directory
       }
       
       final realtimeUrl = await storage.getRealtimeUrl();
@@ -48,9 +56,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         _apiKeyController.text = apiKey;
       }
       
-      setState(() => _isLoading = false);
+      setState(() {
+        _isLoading = false;
+      });
     } catch (e) {
-      setState(() => _isLoading = false);
+      setState(() {
+        _isLoading = false;
+      });
       _showSnackBar('設定の読み込みに失敗しました', isError: true);
     }
   }
@@ -97,7 +109,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     } catch (e) {
       _showSnackBar('保存に失敗しました: $e', isError: true);
     } finally {
-      if (mounted) setState(() => _isSaving = false);
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
     }
   }
 
@@ -121,29 +135,39 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
     RealtimeApiClient? apiClient;
     try {
+      // Create a temporary API client to test the connection
       apiClient = RealtimeApiClient();
+      
+      // Add timeout to prevent UI from hanging on network issues
       await apiClient.connect(
         _realtimeUrlController.text.trim(),
         _apiKeyController.text.trim(),
       ).timeout(
         const Duration(seconds: 10),
-        onTimeout: () => throw TimeoutException('接続がタイムアウトしました'),
+        onTimeout: () {
+          throw TimeoutException('接続がタイムアウトしました');
+        },
       );
       
+      // If we get here without exception, connection was successful
       await apiClient.disconnect();
       await apiClient.dispose();
       apiClient = null;
       
+      // Save settings on success
       final storage = ref.read(storageServiceProvider);
       await storage.saveRealtimeUrl(_realtimeUrlController.text.trim());
       await storage.saveApiKey(_apiKeyController.text.trim());
       _showSnackBar('接続テスト成功');
     } catch (e) {
       _showSnackBar('接続テスト失敗: $e', isError: true);
+      // Clean up the API client on failure
       await apiClient?.disconnect();
       await apiClient?.dispose();
     } finally {
-      if (mounted) setState(() => _isTesting = false);
+      if (mounted) {
+        setState(() => _isTesting = false);
+      }
     }
   }
 
@@ -190,6 +214,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final assistantConfig = ref.watch(assistantConfigProvider);
+
     return Scaffold(
       body: Container(
         decoration: AppTheme.backgroundGradient,
@@ -209,27 +235,232 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 padding: const EdgeInsets.all(16),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
+                    // Azure OpenAI Configuration Section
                     const SectionHeader(title: 'Azure OpenAI 設定'),
                     const SizedBox(height: 12),
-                    _buildAzureSettings(),
+                    SettingsCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Azure OpenAI Realtime URL',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: AppTheme.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          if (_isLoading)
+                            const Center(child: CircularProgressIndicator())
+                          else
+                            TextField(
+                              controller: _realtimeUrlController,
+                              decoration: const InputDecoration(
+                                hintText: 'https://<resource>.openai.azure.com/openai/realtime?api-version=2024-10-01-preview&deployment=gpt-4o-realtime',
+                              ),
+                              keyboardType: TextInputType.url,
+                              maxLines: 2,
+                            ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '例: https://your-resource.openai.azure.com/openai/realtime?api-version=2024-10-01-preview&deployment=gpt-realtime',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: AppTheme.textSecondary.withValues(alpha: 0.7),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'APIキー',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: AppTheme.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          if (!_isLoading)
+                            TextField(
+                              controller: _apiKeyController,
+                              obscureText: !_isApiKeyVisible,
+                              decoration: InputDecoration(
+                                hintText: 'APIキーを入力',
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _isApiKeyVisible
+                                        ? Icons.visibility_off
+                                        : Icons.visibility,
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      _isApiKeyVisible = !_isApiKeyVisible;
+                                    });
+                                  },
+                                ),
+                              ),
+                            ),
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: ElevatedButton(
+                                  onPressed: _isSaving || _isTesting ? null : _saveSettings,
+                                  child: _isSaving
+                                      ? const SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(strokeWidth: 2),
+                                        )
+                                      : const Text('保存'),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: OutlinedButton(
+                                  onPressed: _isSaving || _isTesting ? null : _testConnection,
+                                  child: _isTesting
+                                      ? const SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(strokeWidth: 2),
+                                        )
+                                      : const Text('接続テスト'),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              OutlinedButton(
+                                onPressed: _isSaving || _isTesting ? null : _clearSettings,
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: AppTheme.errorColor,
+                                ),
+                                child: const Text('クリア'),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '認証情報はデバイス上に安全に保存されます。',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppTheme.textSecondary.withValues(alpha: 0.7),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                     const SizedBox(height: 24),
                     const SectionHeader(title: '音声設定'),
                     const SizedBox(height: 12),
-                    const VoiceSettingsSection(),
+                    SettingsCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'アシスタント音声',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: AppTheme.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          ...AssistantConfig.availableVoices.map(
+                            (voice) => RadioListTile<String>(
+                              value: voice,
+                              groupValue: assistantConfig.voice,
+                              onChanged: (value) {
+                                if (value != null) {
+                                  ref
+                                      .read(assistantConfigProvider.notifier)
+                                      .updateVoice(value);
+                                }
+                              },
+                              title: Text(
+                                voice[0].toUpperCase() + voice.substring(1),
+                                style: const TextStyle(color: AppTheme.textPrimary),
+                              ),
+                              activeColor: AppTheme.primaryColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    
+                    // Android Audio Settings Section (Android only)
                     if (Platform.isAndroid) ...[
                       const SizedBox(height: 24),
                       const SectionHeader(title: 'Android 音声設定'),
                       const SizedBox(height: 12),
-                      const AndroidAudioSettingsSection(),
+                      _buildAndroidAudioSettings(),
                     ],
                     const SizedBox(height: 24),
+                    
+                    // Developer Section
                     const SectionHeader(title: '開発者向け'),
                     const SizedBox(height: 12),
-                    const DeveloperSettingsSection(),
+                    SettingsCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ListTile(
+                            leading: const Icon(Icons.article_outlined, color: AppTheme.textSecondary),
+                            title: const Text(
+                              'ログを表示',
+                              style: TextStyle(color: AppTheme.textPrimary),
+                            ),
+                            subtitle: Text(
+                              'トレースログとWebSocketイベントを確認',
+                              style: TextStyle(
+                                color: AppTheme.textSecondary.withValues(alpha: 0.7),
+                                fontSize: 12,
+                              ),
+                            ),
+                            trailing: const Icon(Icons.chevron_right, color: AppTheme.textSecondary),
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(builder: (context) => const LogScreen()),
+                              );
+                            },
+                          ),
+                          const Divider(color: AppTheme.surfaceColor),
+                          ListTile(
+                            leading: const Icon(Icons.bug_report_outlined, color: AppTheme.warningColor),
+                            title: const Text(
+                              'flutter_sound バグ再現',
+                              style: TextStyle(color: AppTheme.textPrimary),
+                            ),
+                            subtitle: Text(
+                              'Race condition bug reproduction screen',
+                              style: TextStyle(
+                                color: AppTheme.textSecondary.withValues(alpha: 0.7),
+                                fontSize: 12,
+                              ),
+                            ),
+                            trailing: const Icon(Icons.chevron_right, color: AppTheme.textSecondary),
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(builder: (context) => const FlutterSoundBugReproScreen()),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
                     const SizedBox(height: 24),
+                    
                     const SectionHeader(title: 'このアプリについて'),
                     const SizedBox(height: 12),
-                    const AboutSettingsSection(),
+                    SettingsCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const InfoRow(label: 'バージョン', value: '1.0.0'),
+                          const Divider(color: AppTheme.surfaceColor),
+                          const InfoRow(label: 'Powered by', value: 'Azure OpenAI Realtime API'),
+                        ],
+                      ),
+                    ),
                     const SizedBox(height: 32),
                   ]),
                 ),
@@ -241,100 +472,107 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  Widget _buildAzureSettings() {
-    return SettingsCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Azure OpenAI Realtime URL',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: AppTheme.textSecondary,
+  Widget _buildAndroidAudioSettings() {
+    final asyncConfig = ref.watch(androidAudioConfigProvider);
+    
+    return asyncConfig.when(
+      loading: () => const SettingsCard(
+        child: Center(child: CircularProgressIndicator()),
+      ),
+      error: (error, stack) => SettingsCard(
+        child: Text('エラー: $error', style: const TextStyle(color: AppTheme.errorColor)),
+      ),
+      data: (config) => SettingsCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'オーディオソース',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: AppTheme.textSecondary,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          if (_isLoading)
-            const Center(child: CircularProgressIndicator())
-          else
-            TextField(
-              controller: _realtimeUrlController,
+            const SizedBox(height: 4),
+            Text(
+              'マイク入力に使用するオーディオソースを選択します',
+              style: TextStyle(
+                fontSize: 12,
+                color: AppTheme.textSecondary.withValues(alpha: 0.7),
+              ),
+            ),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<AndroidAudioSource>(
+              initialValue: config.audioSource,
               decoration: const InputDecoration(
-                hintText: 'https://<resource>.openai.azure.com/openai/realtime?api-version=2024-10-01-preview&deployment=gpt-4o-realtime',
+                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               ),
-              keyboardType: TextInputType.url,
-              maxLines: 2,
-            ),
-          const SizedBox(height: 4),
-          Text(
-            '例: https://your-resource.openai.azure.com/openai/realtime?api-version=2024-10-01-preview&deployment=gpt-realtime',
-            style: TextStyle(
-              fontSize: 11,
-              color: AppTheme.textSecondary.withValues(alpha: 0.7),
-            ),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'APIキー',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: AppTheme.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          if (!_isLoading)
-            TextField(
-              controller: _apiKeyController,
-              obscureText: !_isApiKeyVisible,
-              decoration: InputDecoration(
-                hintText: 'APIキーを入力',
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _isApiKeyVisible ? Icons.visibility_off : Icons.visibility,
+              dropdownColor: AppTheme.surfaceColor,
+              items: AndroidAudioSource.values.map((source) {
+                return DropdownMenuItem(
+                  value: source,
+                  child: Text(
+                    AndroidAudioConfig.audioSourceDisplayNames[source] ?? source.name,
+                    style: const TextStyle(color: AppTheme.textPrimary),
                   ),
-                  onPressed: () => setState(() => _isApiKeyVisible = !_isApiKeyVisible),
-                ),
+                );
+              }).toList(),
+              onChanged: (value) {
+                if (value != null) {
+                  ref.read(androidAudioConfigProvider.notifier).updateAudioSource(value);
+                }
+              },
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'オーディオマネージャーモード',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: AppTheme.textSecondary,
               ),
             ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: _isSaving || _isTesting ? null : _saveSettings,
-                  child: _isSaving
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Text('保存'),
-                ),
+            const SizedBox(height: 4),
+            Text(
+              '音声処理モードを選択します（エコーキャンセルに影響）',
+              style: TextStyle(
+                fontSize: 12,
+                color: AppTheme.textSecondary.withValues(alpha: 0.7),
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: _isSaving || _isTesting ? null : _testConnection,
-                  child: _isTesting
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Text('接続テスト'),
-                ),
-              ),
-              const SizedBox(width: 8),
-              OutlinedButton(
-                onPressed: _isSaving || _isTesting ? null : _clearSettings,
-                style: OutlinedButton.styleFrom(foregroundColor: AppTheme.errorColor),
-                child: const Text('クリア'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '認証情報はデバイス上に安全に保存されます。',
-            style: TextStyle(
-              fontSize: 12,
-              color: AppTheme.textSecondary.withValues(alpha: 0.7),
             ),
-          ),
-        ],
+            const SizedBox(height: 8),
+            DropdownButtonFormField<AudioManagerMode>(
+              initialValue: config.audioManagerMode,
+              decoration: const InputDecoration(
+                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              ),
+              dropdownColor: AppTheme.surfaceColor,
+              items: AudioManagerMode.values.map((mode) {
+                return DropdownMenuItem(
+                  value: mode,
+                  child: Text(
+                    AndroidAudioConfig.audioModeDisplayNames[mode] ?? mode.name,
+                    style: const TextStyle(color: AppTheme.textPrimary),
+                  ),
+                );
+              }).toList(),
+              onChanged: (value) {
+                if (value != null) {
+                  ref.read(androidAudioConfigProvider.notifier).updateAudioManagerMode(value);
+                }
+              },
+            ),
+            const SizedBox(height: 12),
+            Text(
+              '推奨: Voice Communication + In Communication モードでエコーキャンセル効果が最大化されます',
+              style: TextStyle(
+                fontSize: 11,
+                color: AppTheme.textSecondary.withValues(alpha: 0.7),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
