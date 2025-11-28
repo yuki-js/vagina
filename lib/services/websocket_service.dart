@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'log_service.dart';
+import '../utils/url_utils.dart';
 
 /// Service for WebSocket communication
 class WebSocketService {
@@ -26,11 +27,7 @@ class WebSocketService {
     }
 
     // Log URL without API key for security
-    final uri = Uri.parse(url);
-    final safeUrl = uri.replace(queryParameters: {
-      ...uri.queryParameters,
-      'api-key': '[REDACTED]',
-    });
+    final safeUrl = UrlUtils.redactSensitiveParams(url);
     logService.info(_tag, 'Connecting to: $safeUrl');
 
     _channel = WebSocketChannel.connect(Uri.parse(url));

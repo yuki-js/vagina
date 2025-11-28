@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../utils/duration_formatter.dart';
 
 /// Log entry with timestamp and message
 class LogEntry {
@@ -18,10 +19,7 @@ class LogEntry {
 
   @override
   String toString() {
-    final time = '${timestamp.hour.toString().padLeft(2, '0')}:'
-        '${timestamp.minute.toString().padLeft(2, '0')}:'
-        '${timestamp.second.toString().padLeft(2, '0')}.'
-        '${timestamp.millisecond.toString().padLeft(3, '0')}';
+    final time = DurationFormatter.formatTimestamp(timestamp);
     if (repeatCount > 1) {
       return '[$time] [$level] [$tag] $message (x$repeatCount)';
     }

@@ -104,33 +104,62 @@ final chatMessagesProvider = StreamProvider<List<ChatMessage>>((ref) {
   return callService.chatStream;
 });
 
-/// Provider for connection state
-final isConnectedProvider = NotifierProvider<IsConnectedNotifier, bool>(IsConnectedNotifier.new);
+/// Provider for call state (stream-based)
+final callStateProvider = StreamProvider<CallState>((ref) {
+  final callService = ref.read(callServiceProvider);
+  return callService.stateStream;
+});
 
-/// Notifier for connection state
-class IsConnectedNotifier extends Notifier<bool> {
+/// Provider for audio amplitude level (stream-based)
+final amplitudeProvider = StreamProvider<double>((ref) {
+  final callService = ref.read(callServiceProvider);
+  return callService.amplitudeStream;
+});
+
+/// Provider for call duration (stream-based)
+final durationProvider = StreamProvider<int>((ref) {
+  final callService = ref.read(callServiceProvider);
+  return callService.durationStream;
+});
+
+/// Provider for call errors (stream-based)
+final callErrorProvider = StreamProvider<String>((ref) {
+  final callService = ref.read(callServiceProvider);
+  return callService.errorStream;
+});
+
+/// Provider for whether call is active
+final isCallActiveProvider = Provider<bool>((ref) {
+  final callState = ref.watch(callStateProvider);
+  return callState.maybeWhen(
+    data: (state) => state == CallState.connecting || state == CallState.connected,
+    orElse: () => false,
+  );
+});
+
+/// Provider for speaker mute state
+final speakerMutedProvider = NotifierProvider<SpeakerMutedNotifier, bool>(SpeakerMutedNotifier.new);
+
+/// Notifier for speaker mute state
+class SpeakerMutedNotifier extends Notifier<bool> {
   @override
   bool build() => false;
 
-  void set(bool value) {
-    state = value;
+  void toggle() {
+    state = !state;
   }
 }
 
-/// Provider for call duration in seconds
-final callDurationProvider = NotifierProvider<CallDurationNotifier, int>(CallDurationNotifier.new);
+/// Provider for noise reduction setting
+final noiseReductionProvider = NotifierProvider<NoiseReductionNotifier, String>(NoiseReductionNotifier.new);
 
-/// Notifier for call duration
-class CallDurationNotifier extends Notifier<int> {
+/// Notifier for noise reduction setting
+class NoiseReductionNotifier extends Notifier<String> {
   @override
-  int build() => 0;
+  String build() => 'near';
 
-  void increment() {
-    state++;
-  }
-
-  void reset() {
-    state = 0;
+  void toggle() {
+    state = state == 'near' ? 'far' : 'near';
   }
 }
 
