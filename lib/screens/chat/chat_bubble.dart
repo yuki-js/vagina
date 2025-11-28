@@ -12,82 +12,54 @@ class ChatBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isUser = message.role == 'user';
-    final isTool = message.role == 'tool';
     
-    // Tool message style - inline badge
-    if (isTool) {
-      return _ToolBubble(message: message);
-    }
-    
-    // Regular message bubble
+    // Regular message bubble (both user and assistant)
     return _MessageBubble(message: message, isUser: isUser);
   }
 }
 
-/// Tool call bubble widget
-class _ToolBubble extends StatelessWidget {
-  final ChatMessage message;
+/// Tool badge widget displayed inline
+class _ToolBadge extends StatelessWidget {
+  final ToolCallInfo toolCall;
 
-  const _ToolBubble({required this.message});
+  const _ToolBadge({required this.toolCall});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          const CircleAvatar(
-            radius: 16,
-            backgroundColor: AppTheme.primaryColor,
-            child: Icon(Icons.smart_toy, size: 18, color: Colors.white),
+    return GestureDetector(
+      onTap: () => showToolDetailsSheet(context, toolCall),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: AppTheme.secondaryColor.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: AppTheme.secondaryColor.withValues(alpha: 0.25),
           ),
-          const SizedBox(width: 8),
-          Flexible(
-            child: GestureDetector(
-              onTap: () => _showToolDetails(context),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: AppTheme.secondaryColor.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: AppTheme.secondaryColor.withValues(alpha: 0.25),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.build, size: 12, color: AppTheme.secondaryColor),
-                    const SizedBox(width: 4),
-                    Text(
-                      message.toolCall?.name ?? 'ツール',
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: AppTheme.secondaryColor,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(width: 2),
-                    Icon(
-                      Icons.chevron_right, 
-                      size: 12, 
-                      color: AppTheme.secondaryColor.withValues(alpha: 0.7),
-                    ),
-                  ],
-                ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.build, size: 12, color: AppTheme.secondaryColor),
+            const SizedBox(width: 4),
+            Text(
+              toolCall.name,
+              style: const TextStyle(
+                fontSize: 11,
+                color: AppTheme.secondaryColor,
+                fontWeight: FontWeight.w500,
               ),
             ),
-          ),
-        ],
+            const SizedBox(width: 2),
+            Icon(
+              Icons.chevron_right, 
+              size: 12, 
+              color: AppTheme.secondaryColor.withValues(alpha: 0.7),
+            ),
+          ],
+        ),
       ),
     );
-  }
-
-  void _showToolDetails(BuildContext context) {
-    if (message.toolCall == null) return;
-    showToolDetailsSheet(context, message.toolCall!);
   }
 }
 
@@ -97,9 +69,41 @@ class _MessageBubble extends StatelessWidget {
   final bool isUser;
 
   const _MessageBubble({required this.message, required this.isUser});
+  
+  /// Build content widgets from content parts in order
+  List<Widget> _buildContentWidgets() {
+    final widgets = <Widget>[];
+    
+    for (int i = 0; i < message.contentParts.length; i++) {
+      final part = message.contentParts[i];
+      
+      // Add spacing between parts
+      if (i > 0) {
+        widgets.add(const SizedBox(height: 8));
+      }
+      
+      if (part is TextPart && part.text.isNotEmpty) {
+        widgets.add(
+          SelectableText(
+            part.text,
+            style: const TextStyle(
+              color: AppTheme.textPrimary,
+              fontSize: 15,
+            ),
+          ),
+        );
+      } else if (part is ToolCallPart) {
+        widgets.add(_ToolBadge(toolCall: part.toolCall));
+      }
+    }
+    
+    return widgets;
+  }
 
   @override
   Widget build(BuildContext context) {
+    final hasContent = message.contentParts.isNotEmpty;
+    
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -131,13 +135,10 @@ class _MessageBubble extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SelectableText(
-                    message.content,
-                    style: const TextStyle(
-                      color: AppTheme.textPrimary,
-                      fontSize: 15,
-                    ),
-                  ),
+                  // Content parts in order (text and tool calls interleaved)
+                  if (hasContent)
+                    ..._buildContentWidgets(),
+                  // Typing indicator for incomplete messages
                   if (!message.isComplete)
                     const Padding(
                       padding: EdgeInsets.only(top: 4),
@@ -147,14 +148,7 @@ class _MessageBubble extends StatelessWidget {
               ),
             ),
           ),
-          if (isUser) ...[
-            const SizedBox(width: 8),
-            const CircleAvatar(
-              radius: 16,
-              backgroundColor: AppTheme.successColor,
-              child: Icon(Icons.person, size: 18, color: Colors.white),
-            ),
-          ],
+          // User avatar removed - position on right side is self-evident
         ],
       ),
     );

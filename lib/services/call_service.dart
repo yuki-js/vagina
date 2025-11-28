@@ -258,7 +258,7 @@ class CallService {
         functionCall.name,
         functionCall.arguments,
       );
-      _chatManager.addToolMessage(functionCall.name, functionCall.arguments, result.output);
+      _chatManager.addToolCall(functionCall.name, functionCall.arguments, result.output);
       _apiClient.sendFunctionCallResult(result.callId, result.output);
     });
     
