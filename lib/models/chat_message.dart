@@ -1,13 +1,14 @@
 /// Represents a chat message in the conversation
 class ChatMessage {
   final String id;
-  final String role; // 'user', 'assistant', or 'tool'
+  final String role; // 'user' or 'assistant'
   final String content;
   final DateTime timestamp;
   final bool isComplete;
   
-  /// Tool call information (for tool messages)
-  final ToolCallInfo? toolCall;
+  /// Tool calls associated with this message (for assistant messages)
+  /// Tool badges are displayed in order within the message balloon
+  final List<ToolCallInfo> toolCalls;
 
   ChatMessage({
     required this.id,
@@ -15,7 +16,7 @@ class ChatMessage {
     required this.content,
     required this.timestamp,
     this.isComplete = true,
-    this.toolCall,
+    this.toolCalls = const [],
   });
 
   ChatMessage copyWith({
@@ -24,7 +25,7 @@ class ChatMessage {
     String? content,
     DateTime? timestamp,
     bool? isComplete,
-    ToolCallInfo? toolCall,
+    List<ToolCallInfo>? toolCalls,
   }) {
     return ChatMessage(
       id: id ?? this.id,
@@ -32,7 +33,7 @@ class ChatMessage {
       content: content ?? this.content,
       timestamp: timestamp ?? this.timestamp,
       isComplete: isComplete ?? this.isComplete,
-      toolCall: toolCall ?? this.toolCall,
+      toolCalls: toolCalls ?? this.toolCalls,
     );
   }
 }

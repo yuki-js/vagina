@@ -11,6 +11,7 @@ class ChatMessageManager {
   StringBuffer _currentAssistantTranscript = StringBuffer();
   String? _currentAssistantMessageId;
   String? _pendingUserMessageId;
+  List<ToolCallInfo> _currentToolCalls = [];
 
   /// Stream of chat messages
   Stream<List<ChatMessage>> get chatStream => _chatController.stream;
@@ -30,21 +31,41 @@ class ChatMessageManager {
     _chatController.add(List.unmodifiable(_chatMessages));
   }
   
-  /// Add a tool call message to chat
-  void addToolMessage(String toolName, String arguments, String result) {
-    final message = ChatMessage(
-      id: 'msg_${_messageIdCounter++}',
-      role: 'tool',
-      content: 'ツールを使用しました: $toolName',
-      timestamp: DateTime.now(),
-      toolCall: ToolCallInfo(
-        name: toolName,
-        arguments: arguments,
-        result: result,
-      ),
+  /// Add a tool call to the current assistant turn
+  /// Tool calls are merged into the assistant message and displayed as badges
+  void addToolCall(String toolName, String arguments, String result) {
+    final toolCallInfo = ToolCallInfo(
+      name: toolName,
+      arguments: arguments,
+      result: result,
     );
-    _chatMessages.add(message);
-    _chatController.add(List.unmodifiable(_chatMessages));
+    _currentToolCalls.add(toolCallInfo);
+    
+    // If there's a current assistant message, add the tool call to it
+    if (_currentAssistantMessageId != null) {
+      final index = _chatMessages.indexWhere((m) => m.id == _currentAssistantMessageId);
+      if (index >= 0) {
+        _chatMessages[index] = _chatMessages[index].copyWith(
+          toolCalls: List.from(_currentToolCalls),
+        );
+        _chatController.add(List.unmodifiable(_chatMessages));
+      }
+    } else {
+      // Create a new assistant message with just the tool call
+      _currentAssistantMessageId = 'msg_${_messageIdCounter++}';
+      _currentAssistantTranscript = StringBuffer();
+      
+      final message = ChatMessage(
+        id: _currentAssistantMessageId!,
+        role: 'assistant',
+        content: '',
+        timestamp: DateTime.now(),
+        isComplete: false,
+        toolCalls: List.from(_currentToolCalls),
+      );
+      _chatMessages.add(message);
+      _chatController.add(List.unmodifiable(_chatMessages));
+    }
   }
   
   /// Create a placeholder for user message (called on speech_started)
@@ -95,6 +116,7 @@ class ChatMessageManager {
         content: _currentAssistantTranscript.toString(),
         timestamp: DateTime.now(),
         isComplete: false,
+        toolCalls: List.from(_currentToolCalls),
       );
       _chatMessages.add(message);
     } else {
@@ -104,6 +126,7 @@ class ChatMessageManager {
       if (index >= 0) {
         _chatMessages[index] = _chatMessages[index].copyWith(
           content: _currentAssistantTranscript.toString(),
+          toolCalls: List.from(_currentToolCalls),
         );
       }
     }
@@ -115,11 +138,15 @@ class ChatMessageManager {
     if (_currentAssistantMessageId != null) {
       final index = _chatMessages.indexWhere((m) => m.id == _currentAssistantMessageId);
       if (index >= 0) {
-        _chatMessages[index] = _chatMessages[index].copyWith(isComplete: true);
+        _chatMessages[index] = _chatMessages[index].copyWith(
+          isComplete: true,
+          toolCalls: List.from(_currentToolCalls),
+        );
         _chatController.add(List.unmodifiable(_chatMessages));
       }
       _currentAssistantMessageId = null;
       _currentAssistantTranscript = StringBuffer();
+      _currentToolCalls = [];
     }
   }
   
@@ -130,6 +157,7 @@ class ChatMessageManager {
     _currentAssistantTranscript = StringBuffer();
     _currentAssistantMessageId = null;
     _pendingUserMessageId = null;
+    _currentToolCalls = [];
     _chatController.add(List.unmodifiable(_chatMessages));
   }
 
