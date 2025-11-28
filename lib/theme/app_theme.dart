@@ -39,6 +39,8 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
+      // Explicitly specify sans-serif font to prevent Samsung devices from using Mincho (serif) font
+      fontFamily: 'Roboto',
       colorScheme: ColorScheme.dark(
         primary: primaryColor,
         secondary: secondaryColor,
