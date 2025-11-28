@@ -60,6 +60,9 @@ class AudioRecorderService {
           audioSource: _androidAudioConfig.audioSource,
           // Use configurable audio manager mode (default: modeInCommunication)
           audioManagerMode: _androidAudioConfig.audioManagerMode,
+          // Enable speakerphone to help with echo cancellation on some devices
+          // (especially Samsung). This may improve AEC effectiveness.
+          speakerphone: true,
         ),
       ),
     );
