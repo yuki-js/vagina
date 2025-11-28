@@ -10,6 +10,7 @@ import 'log_service.dart';
 import 'chat/chat_message_manager.dart';
 import '../models/chat_message.dart';
 import '../models/realtime_events.dart';
+import '../utils/audio_utils.dart';
 
 /// Enum representing the current state of the call
 enum CallState {
@@ -18,10 +19,6 @@ enum CallState {
   connected,
   error,
 }
-
-/// Audio level normalization constants
-const double _dbfsQuietThreshold = -60.0;
-const double _dbfsRange = 60.0;
 
 /// Service that manages the entire call lifecycle including
 /// microphone recording, Azure OpenAI Realtime API connection, and audio playback
@@ -288,8 +285,7 @@ class CallService {
     if (amplitudeStream != null) {
       _amplitudeSubscription = amplitudeStream.listen((amplitude) {
         if (!_isMuted && isCallActive) {
-          final normalizedLevel =
-              ((amplitude.current - _dbfsQuietThreshold) / _dbfsRange).clamp(0.0, 1.0);
+          final normalizedLevel = AudioUtils.normalizeAmplitude(amplitude.current);
           _amplitudeController.add(normalizedLevel);
         } else {
           _amplitudeController.add(0.0);

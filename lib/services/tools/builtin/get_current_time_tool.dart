@@ -1,4 +1,5 @@
 import '../base_tool.dart';
+import '../../../utils/duration_formatter.dart';
 
 /// Tool for getting the current date and time
 class GetCurrentTimeTool extends BaseTool {
@@ -28,7 +29,7 @@ class GetCurrentTimeTool extends BaseTool {
     
     return {
       'current_time': now.toIso8601String(),
-      'formatted': '${now.year}年${now.month}月${now.day}日 ${now.hour}時${now.minute}分${now.second}秒',
+      'formatted': DurationFormatter.formatJapaneseDateTime(now),
       'timezone': timezone ?? 'local',
       'unix_timestamp': now.millisecondsSinceEpoch ~/ 1000,
     };

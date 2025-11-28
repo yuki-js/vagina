@@ -5,6 +5,7 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'log_service.dart';
 import '../models/android_audio_config.dart';
+import '../utils/url_utils.dart';
 
 /// Service for storing settings as files in the user's Documents directory
 /// 
@@ -210,32 +211,7 @@ class StorageService {
   /// Parse Realtime URL to extract components
   /// Returns null if URL is invalid
   static Map<String, String>? parseRealtimeUrl(String url) {
-    try {
-      final uri = Uri.parse(url);
-      
-      // Expected format: https://{resource}.openai.azure.com/openai/realtime?api-version=YYYY-MM-DD&deployment=...
-      if (!uri.host.endsWith('.openai.azure.com')) {
-        return null;
-      }
-      
-      final deployment = uri.queryParameters['deployment'];
-      final apiVersion = uri.queryParameters['api-version'];
-      
-      if (deployment == null || deployment.isEmpty) {
-        return null;
-      }
-      
-      // Build the endpoint (base URL without path/query)
-      final endpoint = '${uri.scheme}://${uri.host}';
-      
-      return {
-        'endpoint': endpoint,
-        'deployment': deployment,
-        'apiVersion': apiVersion ?? '2024-10-01-preview',
-      };
-    } catch (e) {
-      return null;
-    }
+    return UrlUtils.parseAzureRealtimeUrl(url);
   }
 
   /// Check if all Azure settings are configured

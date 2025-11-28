@@ -4,6 +4,7 @@ import '../../theme/app_theme.dart';
 import '../../providers/providers.dart';
 import '../../services/call_service.dart';
 import '../../components/audio_level_visualizer.dart';
+import '../../utils/duration_formatter.dart';
 import 'control_panel.dart';
 
 /// Call page widget - displays call UI and controls
@@ -16,12 +17,6 @@ class CallPage extends ConsumerWidget {
     required this.onChatPressed,
     required this.onSettingsPressed,
   });
-
-  String _formatDuration(int seconds) {
-    final minutes = seconds ~/ 60;
-    final secs = seconds % 60;
-    return '${minutes.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -46,7 +41,6 @@ class CallPage extends ConsumerWidget {
             callDuration: duration,
             inputLevel: amplitude,
             isMuted: isMuted,
-            formatDuration: _formatDuration,
           ),
         ),
         
@@ -68,7 +62,6 @@ class _CallMainContent extends StatelessWidget {
   final int callDuration;
   final double inputLevel;
   final bool isMuted;
-  final String Function(int) formatDuration;
 
   const _CallMainContent({
     required this.isCallActive,
@@ -77,7 +70,6 @@ class _CallMainContent extends StatelessWidget {
     required this.callDuration,
     required this.inputLevel,
     required this.isMuted,
-    required this.formatDuration,
   });
 
   @override
@@ -116,7 +108,7 @@ class _CallMainContent extends StatelessWidget {
         // Duration display (when call active)
         if (isCallActive) ...[
           Text(
-            formatDuration(callDuration),
+            DurationFormatter.formatMinutesSeconds(callDuration),
             style: const TextStyle(
               fontSize: 48,
               fontWeight: FontWeight.w300,
