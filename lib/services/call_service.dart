@@ -6,6 +6,7 @@ import 'audio_player_service.dart';
 import 'realtime_api_client.dart';
 import 'storage_service.dart';
 import 'tool_service.dart';
+import 'haptic_service.dart';
 import 'log_service.dart';
 import 'chat/chat_message_manager.dart';
 import '../models/chat_message.dart';
@@ -30,6 +31,7 @@ class CallService {
   final RealtimeApiClient _apiClient;
   final StorageService _storage;
   final ToolService _toolService;
+  final HapticService _hapticService;
   final ChatMessageManager _chatManager = ChatMessageManager();
   
   /// Session-scoped tool manager (created on call start, disposed on call end)
@@ -45,6 +47,7 @@ class CallService {
   StreamSubscription<FunctionCall>? _functionCallSubscription;
   StreamSubscription<void>? _responseStartedSubscription;
   StreamSubscription<void>? _speechStartedSubscription;
+  StreamSubscription<void>? _responseAudioStartedSubscription;
   Timer? _callTimer;
 
   final StreamController<CallState> _stateController =
@@ -66,11 +69,13 @@ class CallService {
     required RealtimeApiClient apiClient,
     required StorageService storage,
     required ToolService toolService,
+    required HapticService hapticService,
   })  : _recorder = recorder,
         _player = player,
         _apiClient = apiClient,
         _storage = storage,
-        _toolService = toolService;
+        _toolService = toolService,
+        _hapticService = hapticService;
 
   /// Current call state
   CallState get currentState => _currentState;
@@ -222,6 +227,8 @@ class CallService {
       logService.info(_tag, 'Audio done event received, marking response complete');
       await _player.markResponseComplete();
       _chatManager.completeCurrentAssistantMessage();
+      // Haptic feedback: AI response ended, user's turn
+      await _hapticService.heavyImpact();
     });
     
     _transcriptSubscription = _apiClient.transcriptStream.listen((delta) {
@@ -231,6 +238,8 @@ class CallService {
     _speechStartedSubscription = _apiClient.speechStartedStream.listen((_) {
       _chatManager.createUserMessagePlaceholder();
       logService.debug(_tag, 'Created user message placeholder');
+      // Haptic feedback: VAD detected user speech started
+      _hapticService.selectionClick();
     });
     
     _userTranscriptSubscription = _apiClient.userTranscriptStream.listen((transcript) {
@@ -257,6 +266,11 @@ class CallService {
       logService.info(_tag, 'User speech detected, stopping audio for interrupt');
       await _player.stop();
       _chatManager.completeCurrentAssistantMessage();
+    });
+    
+    _responseAudioStartedSubscription = _apiClient.responseAudioStartedStream.listen((_) {
+      // Haptic feedback: AI audio response started after user speech ended
+      _hapticService.selectionClick();
     });
   }
 
@@ -350,6 +364,9 @@ class CallService {
     
     await _responseStartedSubscription?.cancel();
     _responseStartedSubscription = null;
+    
+    await _responseAudioStartedSubscription?.cancel();
+    _responseAudioStartedSubscription = null;
 
     await _recorder.stopRecording();
     await _player.stop();
