@@ -1,4 +1,5 @@
 import 'storage_service.dart';
+import 'artifact_service.dart';
 import 'tools/tool_manager.dart';
 import 'tools/builtin_tool_factory.dart';
 
@@ -12,10 +13,17 @@ export 'tools/tool_manager.dart' show ToolManager;
 /// session-scoped ToolManager instances for each call.
 class ToolService {
   final StorageService _storage;
+  final ArtifactService _artifactService;
   late final BuiltinToolFactory _builtinFactory;
   
-  ToolService({required StorageService storage}) : _storage = storage {
-    _builtinFactory = BuiltinToolFactory(storage: _storage);
+  ToolService({
+    required StorageService storage,
+    required ArtifactService artifactService,
+  }) : _storage = storage, _artifactService = artifactService {
+    _builtinFactory = BuiltinToolFactory(
+      storage: _storage,
+      artifactService: _artifactService,
+    );
   }
   
   /// Create a new session-scoped ToolManager

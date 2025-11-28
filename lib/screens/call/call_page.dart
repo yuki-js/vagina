@@ -10,11 +10,13 @@ import 'control_panel.dart';
 /// Call page widget - displays call UI and controls
 class CallPage extends ConsumerWidget {
   final VoidCallback onChatPressed;
+  final VoidCallback onArtifactPressed;
   final VoidCallback onSettingsPressed;
 
   const CallPage({
     super.key,
     required this.onChatPressed,
+    required this.onArtifactPressed,
     required this.onSettingsPressed,
   });
 
@@ -47,6 +49,7 @@ class CallPage extends ConsumerWidget {
         // Galaxy-style control panel at bottom
         ControlPanel(
           onChatPressed: onChatPressed,
+          onArtifactPressed: onArtifactPressed,
           onSettingsPressed: onSettingsPressed,
         ),
       ],
