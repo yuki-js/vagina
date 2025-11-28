@@ -87,6 +87,8 @@ class RealtimeApiClient {
       StreamController<void>.broadcast();
   final StreamController<void> _speechStartedController =
       StreamController<void>.broadcast();
+  final StreamController<void> _responseAudioStartedController =
+      StreamController<void>.broadcast();
   final StreamController<RealtimeSession> _sessionCreatedController =
       StreamController<RealtimeSession>.broadcast();
   final StreamController<RealtimeSession> _sessionUpdatedController =
@@ -147,6 +149,9 @@ class RealtimeApiClient {
   
   /// Stream indicating speech was detected (VAD)
   Stream<void> get speechStartedStream => _speechStartedController.stream;
+  
+  /// Stream indicating AI audio response started (first audio chunk received)
+  Stream<void> get responseAudioStartedStream => _responseAudioStartedController.stream;
   
   /// Stream of session created events
   Stream<RealtimeSession> get sessionCreatedStream => _sessionCreatedController.stream;
@@ -800,6 +805,12 @@ class RealtimeApiClient {
       _audioChunksReceived++;
       final audioData = base64Decode(delta);
       
+      // Emit event when first audio chunk of a response arrives
+      if (_audioChunksReceived == 1) {
+        _responseAudioStartedController.add(null);
+        logService.info(_tag, 'AI audio response started (first chunk received)');
+      }
+      
       // Only log every 50th chunk to reduce log noise
       if (_audioChunksReceived % _logAudioChunkInterval == 0) {
         logService.debug(_tag, 'Audio delta received (chunk #$_audioChunksReceived, '
@@ -1028,6 +1039,7 @@ class RealtimeApiClient {
     await _functionCallController.close();
     await _responseStartedController.close();
     await _speechStartedController.close();
+    await _responseAudioStartedController.close();
     await _sessionCreatedController.close();
     await _sessionUpdatedController.close();
     await _conversationCreatedController.close();
