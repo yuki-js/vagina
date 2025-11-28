@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:vagina/models/chat_message.dart';
 import 'package:vagina/services/chat/chat_message_manager.dart';
 
 void main() {
@@ -94,6 +95,60 @@ void main() {
       manager.addChatMessage('user', 'Hello');
       
       expect(manager.chatMessages[0].toolCalls.isEmpty, true);
+    });
+    
+    test('text and tool calls are interleaved in correct order', () {
+      // Simulate: "了解しました" -> [calculator] -> "結果は3です"
+      manager.appendAssistantTranscript('了解しました');
+      manager.addToolCall('calculator', '{"a": 1, "b": 2}', '3');
+      manager.appendAssistantTranscript('結果は3です');
+      
+      final message = manager.chatMessages[0];
+      expect(message.contentParts.length, 3);
+      
+      // First part: text
+      expect(message.contentParts[0], isA<TextPart>());
+      expect((message.contentParts[0] as TextPart).text, '了解しました');
+      
+      // Second part: tool call
+      expect(message.contentParts[1], isA<ToolCallPart>());
+      expect((message.contentParts[1] as ToolCallPart).toolCall.name, 'calculator');
+      
+      // Third part: text
+      expect(message.contentParts[2], isA<TextPart>());
+      expect((message.contentParts[2] as TextPart).text, '結果は3です');
+    });
+    
+    test('multiple tool calls between text parts', () {
+      // Simulate: "ツールを使います" -> [tool1] -> [tool2] -> "両方完了"
+      manager.appendAssistantTranscript('ツールを使います');
+      manager.addToolCall('tool1', '{}', 'result1');
+      manager.addToolCall('tool2', '{}', 'result2');
+      manager.appendAssistantTranscript('両方完了');
+      
+      final message = manager.chatMessages[0];
+      expect(message.contentParts.length, 4);
+      
+      expect(message.contentParts[0], isA<TextPart>());
+      expect(message.contentParts[1], isA<ToolCallPart>());
+      expect(message.contentParts[2], isA<ToolCallPart>());
+      expect(message.contentParts[3], isA<TextPart>());
+      
+      // Verify combined content
+      expect(message.content, 'ツールを使います両方完了');
+      expect(message.toolCalls.length, 2);
+    });
+    
+    test('tool call at the start followed by text', () {
+      // Simulate: [calculator] -> "答えは42です"
+      manager.addToolCall('calculator', '{}', '42');
+      manager.appendAssistantTranscript('答えは42です');
+      
+      final message = manager.chatMessages[0];
+      expect(message.contentParts.length, 2);
+      
+      expect(message.contentParts[0], isA<ToolCallPart>());
+      expect(message.contentParts[1], isA<TextPart>());
     });
   });
 }

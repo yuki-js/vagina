@@ -1,39 +1,78 @@
+/// Represents a content part in a message (either text or tool call)
+sealed class ContentPart {
+  /// Creates a deep copy of this content part
+  ContentPart copy();
+}
+
+/// Text content part
+/// Note: `text` is mutable for efficient streaming accumulation.
+/// Always use copy() when storing in immutable message lists.
+class TextPart extends ContentPart {
+  String text;
+  
+  TextPart(this.text);
+  
+  @override
+  TextPart copy() => TextPart(text);
+}
+
+/// Tool call content part
+class ToolCallPart extends ContentPart {
+  final ToolCallInfo toolCall;
+  
+  ToolCallPart(this.toolCall);
+  
+  @override
+  ToolCallPart copy() => ToolCallPart(toolCall);
+}
+
 /// Represents a chat message in the conversation
 class ChatMessage {
   final String id;
   final String role; // 'user' or 'assistant'
-  final String content;
   final DateTime timestamp;
   final bool isComplete;
   
-  /// Tool calls associated with this message (for assistant messages)
-  /// Tool badges are displayed in order within the message balloon
-  final List<ToolCallInfo> toolCalls;
+  /// Content parts in order (text and tool calls interleaved as generated)
+  final List<ContentPart> contentParts;
 
   ChatMessage({
     required this.id,
     required this.role,
-    required this.content,
     required this.timestamp,
     this.isComplete = true,
-    this.toolCalls = const [],
+    this.contentParts = const [],
   });
+  
+  /// Get plain text content (concatenated from all text parts)
+  String get content {
+    return contentParts
+        .whereType<TextPart>()
+        .map((p) => p.text)
+        .join();
+  }
+  
+  /// Get all tool calls in order
+  List<ToolCallInfo> get toolCalls {
+    return contentParts
+        .whereType<ToolCallPart>()
+        .map((p) => p.toolCall)
+        .toList();
+  }
 
   ChatMessage copyWith({
     String? id,
     String? role,
-    String? content,
     DateTime? timestamp,
     bool? isComplete,
-    List<ToolCallInfo>? toolCalls,
+    List<ContentPart>? contentParts,
   }) {
     return ChatMessage(
       id: id ?? this.id,
       role: role ?? this.role,
-      content: content ?? this.content,
       timestamp: timestamp ?? this.timestamp,
       isComplete: isComplete ?? this.isComplete,
-      toolCalls: toolCalls ?? this.toolCalls,
+      contentParts: contentParts ?? this.contentParts,
     );
   }
 }

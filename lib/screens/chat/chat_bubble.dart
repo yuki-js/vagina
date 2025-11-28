@@ -69,11 +69,40 @@ class _MessageBubble extends StatelessWidget {
   final bool isUser;
 
   const _MessageBubble({required this.message, required this.isUser});
+  
+  /// Build content widgets from content parts in order
+  List<Widget> _buildContentWidgets() {
+    final widgets = <Widget>[];
+    
+    for (int i = 0; i < message.contentParts.length; i++) {
+      final part = message.contentParts[i];
+      
+      // Add spacing between parts
+      if (i > 0) {
+        widgets.add(const SizedBox(height: 8));
+      }
+      
+      if (part is TextPart && part.text.isNotEmpty) {
+        widgets.add(
+          SelectableText(
+            part.text,
+            style: const TextStyle(
+              color: AppTheme.textPrimary,
+              fontSize: 15,
+            ),
+          ),
+        );
+      } else if (part is ToolCallPart) {
+        widgets.add(_ToolBadge(toolCall: part.toolCall));
+      }
+    }
+    
+    return widgets;
+  }
 
   @override
   Widget build(BuildContext context) {
-    final hasContent = message.content.isNotEmpty;
-    final hasToolCalls = message.toolCalls.isNotEmpty;
+    final hasContent = message.contentParts.isNotEmpty;
     
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -106,26 +135,9 @@ class _MessageBubble extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Tool call badges (displayed first in order)
-                  if (hasToolCalls) ...[
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: message.toolCalls.map((toolCall) {
-                        return _ToolBadge(toolCall: toolCall);
-                      }).toList(),
-                    ),
-                    if (hasContent) const SizedBox(height: 8),
-                  ],
-                  // Text content
+                  // Content parts in order (text and tool calls interleaved)
                   if (hasContent)
-                    SelectableText(
-                      message.content,
-                      style: const TextStyle(
-                        color: AppTheme.textPrimary,
-                        fontSize: 15,
-                      ),
-                    ),
+                    ..._buildContentWidgets(),
                   // Typing indicator for incomplete messages
                   if (!message.isComplete)
                     const Padding(
