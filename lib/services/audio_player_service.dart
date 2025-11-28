@@ -33,8 +33,19 @@ class AudioPlayerService {
   // Buffer settings
   static const int _minBufferSizeBeforeStart = 4800; // ~100ms of audio at 24kHz mono 16-bit
   
+  // Delay settings for setSpeed workaround
+  // These delays are needed to work around a timing bug in flutter_sound where
+  // onPrepared() is called before audioTrack.play() completes.
+  static const Duration _speedApplyDelayAfterFeed = Duration(milliseconds: 50);
+  static const Duration _speedApplyDelayDuringPlayback = Duration(milliseconds: 30);
+  
   // Playback speed setting (stored to apply when playback starts)
   double _playbackSpeed = 1.0;
+  
+  // Track if speed has been applied after first data feed
+  // This is needed because setSpeed may not work immediately after startPlayerFromStream
+  // due to a timing issue in flutter_sound where onPrepared() is called before play()
+  bool _speedAppliedAfterFirstFeed = false;
 
   bool get isPlaying => _isPlaying;
 
@@ -80,15 +91,13 @@ class AudioPlayerService {
       _isPlaying = true;
       logService.info(_tag, 'Streaming playback started');
       
-      // Apply stored playback speed if not default
-      if (_playbackSpeed != 1.0) {
-        try {
-          await _player!.setSpeed(_playbackSpeed);
-          logService.info(_tag, 'Applied stored playback speed: ${_playbackSpeed}x');
-        } catch (e) {
-          logService.warn(_tag, 'Error applying stored playback speed: $e');
-        }
-      }
+      // Reset speed tracking for new playback session
+      _speedAppliedAfterFirstFeed = false;
+      
+      // Note: We don't apply speed immediately here anymore.
+      // Due to a timing bug in flutter_sound (onPrepared is called before play()),
+      // setSpeed may not work reliably right after startPlayerFromStream returns.
+      // Instead, we apply speed after the first data feed in _processAudioQueue().
     } catch (e) {
       logService.error(_tag, 'Error starting playback: $e');
       _isPlaying = false;
@@ -148,6 +157,24 @@ class AudioPlayerService {
           if (_player != null && _isPlaying) {
             await _player!.feedUint8FromStream(chunk);
             logService.debug(_tag, 'Fed ${chunk.length} bytes to player');
+            
+            // Apply playback speed after first successful data feed
+            // This workaround is needed because flutter_sound's setSpeed may not work
+            // immediately after startPlayerFromStream due to a timing issue where
+            // the Dart callback fires before the native AudioTrack.play() is called.
+            // By waiting until after data is fed, we ensure the AudioTrack is fully ready.
+            if (!_speedAppliedAfterFirstFeed && _playbackSpeed != 1.0) {
+              // Add a small delay to ensure the AudioTrack has processed the first chunk
+              await Future.delayed(_speedApplyDelayAfterFeed);
+              try {
+                await _player!.setSpeed(_playbackSpeed);
+                _speedAppliedAfterFirstFeed = true;
+                logService.info(_tag, 'Applied playback speed after first feed: ${_playbackSpeed}x');
+              } catch (e) {
+                logService.warn(_tag, 'Error applying playback speed: $e');
+                // Don't set the flag so we can retry on next chunk
+              }
+            }
           }
         } catch (e) {
           logService.error(_tag, 'Error feeding audio chunk: $e');
@@ -222,14 +249,20 @@ class AudioPlayerService {
 
   /// Set playback speed (1.0 = normal, 2.0 = double speed)
   /// The speed setting is stored and applied when playback starts if not currently playing.
+  /// If called during playback, it will be applied immediately.
   Future<void> setSpeed(double speed) async {
     _playbackSpeed = speed;
     logService.info(_tag, 'Playback speed setting stored: ${speed}x');
     
     if (_isInitialized && _player != null && _isPlaying) {
       try {
+        // Add a small delay before applying speed during playback
+        // This helps ensure the AudioTrack is in a stable state
+        await Future.delayed(_speedApplyDelayDuringPlayback);
         await _player!.setSpeed(speed);
         logService.info(_tag, 'Playback speed applied: ${speed}x');
+        // Mark as applied so we don't re-apply in _processAudioQueue
+        _speedAppliedAfterFirstFeed = true;
       } catch (e) {
         logService.warn(_tag, 'Error setting playback speed: $e');
       }
