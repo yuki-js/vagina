@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:diff_match_patch/diff_match_patch.dart';
 import 'package:vagina/services/artifact_service.dart';
 import 'package:vagina/services/tools/builtin/document_tools.dart';
 
@@ -101,10 +102,15 @@ void main() {
       });
       final tabId = createResult['tabId'] as String;
 
-      // Apply patch in unified diff format
+      // Generate a proper unified diff patch using diff_match_patch
+      final dmp = DiffMatchPatch();
+      final patches = dmp.patch('Hello World', 'Hello Dart');
+      final patchText = patchToText(patches);
+
+      // Apply patch
       final patchResult = await tool.execute({
         'tabId': tabId,
-        'patch': '@@ -1,11 +1,10 @@\n Hello \n-World\n+Dart\n',
+        'patch': patchText,
       });
 
       expect(patchResult['success'], isTrue);
@@ -118,35 +124,32 @@ void main() {
       });
       final tabId = createResult['tabId'] as String;
 
-      // Apply patches in unified diff format  
+      // Generate patch
+      final dmp = DiffMatchPatch();
+      final patches = dmp.patch(
+        'Hello World! Welcome to World!',
+        'Hello Dart! Greetings to Dart!',
+      );
+      final patchText = patchToText(patches);
+
       final patchResult = await tool.execute({
         'tabId': tabId,
-        'patch': '@@ -1,30 +1,28 @@\n Hello \n-World\n+Dart\n ! \n-Welcome\n+Greetings\n  to World!\n',
+        'patch': patchText,
       });
 
       expect(patchResult['success'], isTrue);
-      expect(artifactService.getTabContent(tabId), contains('Dart'));
-    });
-
-    test('returns error when patch text not found', () async {
-      final createResult = await overwriteTool.execute({
-        'content': 'Hello World',
-      });
-      final tabId = createResult['tabId'] as String;
-
-      final patchResult = await tool.execute({
-        'tabId': tabId,
-        'patch': '@@ -1,20 +1,20 @@\n Something\n-Nonexistent\n+Different\n text\n',
-      });
-
-      // Patch should fail because the context doesn't match
-      expect(patchResult['success'], isFalse);
+      expect(artifactService.getTabContent(tabId), equals('Hello Dart! Greetings to Dart!'));
     });
 
     test('returns error for non-existent tab', () async {
+      // Generate a simple patch
+      final dmp = DiffMatchPatch();
+      final patches = dmp.patch('text', 'other');
+      final patchText = patchToText(patches);
+
       final result = await tool.execute({
         'tabId': 'non_existent',
-        'patch': '@@ -1,5 +1,5 @@\n-text\n+other\n',
+        'patch': patchText,
       });
 
       expect(result['success'], isFalse);

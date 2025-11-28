@@ -46,39 +46,46 @@ class DocumentOverwriteTool extends BaseTool {
     final mime = (arguments['mime'] as String?) ?? 'text/markdown';
     final title = arguments['title'] as String?;
     
-    if (tabId != null) {
-      // Update existing tab
-      final success = _artifactService.updateTab(
-        tabId, 
-        content: content, 
-        title: title,
-        mimeType: mime,
-      );
-      
-      if (!success) {
+    try {
+      if (tabId != null) {
+        // Update existing tab
+        final success = _artifactService.updateTab(
+          tabId, 
+          content: content, 
+          title: title,
+          mimeType: mime,
+        );
+        
+        if (!success) {
+          return {
+            'success': false,
+            'error': 'Tab not found: $tabId. Please create a new document without specifying tabId.',
+          };
+        }
+        
         return {
-          'success': false,
-          'error': 'Tab not found: $tabId. Please create a new document without specifying tabId.',
+          'success': true,
+          'tabId': tabId,
+          'message': 'Document updated successfully',
+        };
+      } else {
+        // Create new tab
+        final newTabId = _artifactService.createTab(
+          content: content,
+          mimeType: mime,
+          title: title,
+        );
+        
+        return {
+          'success': true,
+          'tabId': newTabId,
+          'message': 'Document created successfully',
         };
       }
-      
+    } catch (e) {
       return {
-        'success': true,
-        'tabId': tabId,
-        'message': 'Document updated successfully',
-      };
-    } else {
-      // Create new tab
-      final newTabId = _artifactService.createTab(
-        content: content,
-        mimeType: mime,
-        title: title,
-      );
-      
-      return {
-        'success': true,
-        'tabId': newTabId,
-        'message': 'Document created successfully',
+        'success': false,
+        'error': 'Failed to save document: $e',
       };
     }
   }
