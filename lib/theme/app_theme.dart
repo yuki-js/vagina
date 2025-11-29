@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:ui' as ui;
 
 /// App theme configuration
 class AppTheme {
@@ -40,7 +41,73 @@ class AppTheme {
       useMaterial3: true,
       brightness: Brightness.dark,
       // Explicitly specify sans-serif font to prevent Samsung devices from using Mincho (serif) font
-      fontFamily: 'Roboto',
+      fontFamily: 'NotoSansJP',
+      fontFamilyFallback: const ['NotoSansJP', 'Noto Sans JP', 'Noto Sans CJK JP', 'sans-serif'],
+      textTheme: TextTheme(
+        displayLarge: const TextStyle(
+          fontWeight: FontWeight.w700,
+          fontVariations: [ui.FontVariation('wght', 700)],
+        ),
+        displayMedium: const TextStyle(
+          fontWeight: FontWeight.w700,
+          fontVariations: [ui.FontVariation('wght', 700)],
+        ),
+        displaySmall: const TextStyle(
+          fontWeight: FontWeight.w700,
+          fontVariations: [ui.FontVariation('wght', 700)],
+        ),
+        headlineLarge: const TextStyle(
+          fontWeight: FontWeight.w700,
+          fontVariations: [ui.FontVariation('wght', 700)],
+        ),
+        headlineMedium: const TextStyle(
+          fontWeight: FontWeight.w700,
+          fontVariations: [ui.FontVariation('wght', 700)],
+        ),
+        headlineSmall: const TextStyle(
+          fontWeight: FontWeight.w700,
+          fontVariations: [ui.FontVariation('wght', 700)],
+        ),
+        titleLarge: const TextStyle(
+          fontWeight: FontWeight.w600,
+          fontVariations: [ui.FontVariation('wght', 600)],
+        ),
+        titleMedium: const TextStyle(
+          fontWeight: FontWeight.w600,
+          fontVariations: [ui.FontVariation('wght', 600)],
+        ),
+        titleSmall: const TextStyle(
+          fontWeight: FontWeight.w600,
+          fontVariations: [ui.FontVariation('wght', 600)],
+        ),
+        bodyLarge: const TextStyle(
+          fontWeight: FontWeight.w500,
+          fontVariations: [ui.FontVariation('wght', 500)],
+        ),
+        bodyMedium: const TextStyle(
+          fontWeight: FontWeight.w500,
+          fontVariations: [ui.FontVariation('wght', 500)],
+        ),
+        bodySmall: const TextStyle(
+          fontWeight: FontWeight.w500,
+          fontVariations: [ui.FontVariation('wght', 500)],
+        ),
+        labelLarge: const TextStyle(
+          fontWeight: FontWeight.w600,
+          fontVariations: [ui.FontVariation('wght', 600)],
+        ),
+        labelMedium: const TextStyle(
+          fontWeight: FontWeight.w600,
+          fontVariations: [ui.FontVariation('wght', 600)],
+        ),
+        labelSmall: const TextStyle(
+          fontWeight: FontWeight.w600,
+          fontVariations: [ui.FontVariation('wght', 600)],
+        ),
+      ).apply(
+        bodyColor: textPrimary,
+        displayColor: textPrimary,
+      ),
       colorScheme: ColorScheme.dark(
         primary: primaryColor,
         secondary: secondaryColor,
@@ -93,8 +160,8 @@ class AppTheme {
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: primaryColor, width: 2),
         ),
-        labelStyle: const TextStyle(color: textSecondary),
-        hintStyle: const TextStyle(color: textSecondary),
+        labelStyle: const TextStyle(color: textSecondary, fontWeight: FontWeight.w500),
+        hintStyle: const TextStyle(color: textSecondary, fontWeight: FontWeight.w500),
       ),
       sliderTheme: SliderThemeData(
         activeTrackColor: primaryColor,
