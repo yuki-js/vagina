@@ -154,11 +154,11 @@ final isCallActiveProvider = Provider<bool>((ref) {
   );
 });
 
-/// Provider for double speed playback state
-final doubleSpeedProvider = NotifierProvider<DoubleSpeedNotifier, bool>(DoubleSpeedNotifier.new);
+/// Provider for speaker mute state
+final speakerMutedProvider = NotifierProvider<SpeakerMutedNotifier, bool>(SpeakerMutedNotifier.new);
 
-/// Notifier for double speed playback state
-class DoubleSpeedNotifier extends Notifier<bool> {
+/// Notifier for speaker mute state
+class SpeakerMutedNotifier extends Notifier<bool> {
   @override
   bool build() => false;
 
