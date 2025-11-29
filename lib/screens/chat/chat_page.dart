@@ -129,7 +129,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   }
 }
 
-/// Chat header with back button
+/// Chat header with navigation to call
 class _ChatHeader extends StatelessWidget {
   final VoidCallback onBackPressed;
 
@@ -141,21 +141,7 @@ class _ChatHeader extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          GestureDetector(
-            onTap: onBackPressed,
-            child: Row(
-              children: [
-                const Icon(Icons.chevron_left, color: AppTheme.textSecondary),
-                Text(
-                  '通話画面',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: AppTheme.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
+          const SizedBox(width: 80), // Balance for the navigation button
           const Expanded(
             child: Center(
               child: Text(
@@ -168,7 +154,21 @@ class _ChatHeader extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: 80), // Balance for the back button
+          GestureDetector(
+            onTap: onBackPressed,
+            child: Row(
+              children: [
+                Text(
+                  '通話画面',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+                const Icon(Icons.chevron_right, color: AppTheme.textSecondary),
+              ],
+            ),
+          ),
         ],
       ),
     );

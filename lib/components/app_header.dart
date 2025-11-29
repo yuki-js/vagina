@@ -27,7 +27,7 @@ class AppHeader extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          'Voice AGI Native App',
+          'Voice AGI Notepad App',
           style: TextStyle(
             fontSize: 14,
             color: AppTheme.textSecondary,

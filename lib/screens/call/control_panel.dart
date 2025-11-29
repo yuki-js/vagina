@@ -8,11 +8,13 @@ import '../../services/call_service.dart';
 /// Galaxy-style control panel with 2x3 button grid and call button
 class ControlPanel extends ConsumerWidget {
   final VoidCallback onChatPressed;
+  final VoidCallback onNotepadPressed;
   final VoidCallback onSettingsPressed;
 
   const ControlPanel({
     super.key,
     required this.onChatPressed,
+    required this.onNotepadPressed,
     required this.onSettingsPressed,
   });
 
@@ -23,8 +25,8 @@ class ControlPanel extends ConsumerWidget {
     final noiseReduction = ref.watch(noiseReductionProvider);
     final isCallActive = ref.watch(isCallActiveProvider);
 
-    // Calculate button width for consistent grid layout
-    final buttonWidth = (MediaQuery.of(context).size.width - 32 - 40 - 32) / 3;
+    // Calculate button width for consistent grid layout (now 4 columns)
+    final buttonWidth = (MediaQuery.of(context).size.width - 32 - 48 - 32) / 4;
     
     return Container(
       margin: const EdgeInsets.all(16),
@@ -36,7 +38,7 @@ class ControlPanel extends ConsumerWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // First row: Chat, Speaker, Settings
+          // First row: Chat, Artifact, Speaker, Settings
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
@@ -44,6 +46,12 @@ class ControlPanel extends ConsumerWidget {
                 icon: Icons.chat_bubble_outline,
                 label: 'チャット',
                 onTap: onChatPressed,
+                width: buttonWidth,
+              ),
+              _ControlButton(
+                icon: Icons.article_outlined,
+                label: 'ノートパッド',
+                onTap: onNotepadPressed,
                 width: buttonWidth,
               ),
               _ControlButton(
@@ -90,6 +98,8 @@ class ControlPanel extends ConsumerWidget {
                 enabled: isCallActive,
                 width: buttonWidth,
               ),
+              // Empty spacer for alignment
+              SizedBox(width: buttonWidth),
             ],
           ),
           const SizedBox(height: 24),

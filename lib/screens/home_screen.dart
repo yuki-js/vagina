@@ -4,9 +4,11 @@ import '../theme/app_theme.dart';
 import '../providers/providers.dart';
 import 'call/call_page.dart';
 import 'chat/chat_page.dart';
+import 'notepad/notepad_page.dart';
 import 'settings_screen.dart';
 
-/// Main home screen with PageView for swipe navigation between call and chat
+/// Main home screen with PageView for swipe navigation between chat, call, and artifacts
+/// Layout: Chat (left) -> Call (center) -> Artifacts (right)
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
@@ -15,9 +17,11 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  /// Page indices for navigation
-  static const int _callPageIndex = 0;
-  static const int _chatPageIndex = 1;
+  /// Page indices for navigation (reversed order per requirements)
+  /// Chat on left, Call in center, Artifacts on right
+  static const int _chatPageIndex = 0;
+  static const int _callPageIndex = 1;
+  static const int _artifactPageIndex = 2;
   
   late final PageController _pageController;
   int _currentPageIndex = _callPageIndex;
@@ -25,6 +29,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    // Start on the call page (center)
     _pageController = PageController(initialPage: _callPageIndex);
     _pageController.addListener(_onPageChanged);
   }
@@ -63,6 +68,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
+  void _goToArtifact() {
+    _pageController.animateToPage(
+      _artifactPageIndex,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
+
   void _openSettings() {
     Navigator.of(context).push(
       MaterialPageRoute(builder: (context) => const SettingsScreen()),
@@ -80,7 +93,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   void _handleBackButton() {
-    if (_currentPageIndex == _chatPageIndex) {
+    if (_currentPageIndex == _chatPageIndex || _currentPageIndex == _artifactPageIndex) {
       _goToCall();
     } else {
       final isCallActive = ref.read(isCallActiveProvider);
@@ -91,7 +104,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   bool get _canPop {
-    if (_currentPageIndex == _chatPageIndex) {
+    if (_currentPageIndex == _chatPageIndex || _currentPageIndex == _artifactPageIndex) {
       return false;
     }
     return !ref.read(isCallActiveProvider);
@@ -120,11 +133,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             child: PageView(
               controller: _pageController,
               children: [
+                // Chat on left (swipe right to go to call)
+                ChatPage(
+                  onBackPressed: _goToCall,
+                ),
+                // Call in center
                 CallPage(
                   onChatPressed: _goToChat,
+                  onNotepadPressed: _goToArtifact,
                   onSettingsPressed: _openSettings,
                 ),
-                ChatPage(
+                // Artifacts on right (swipe left to go to call)
+                NotepadPage(
                   onBackPressed: _goToCall,
                 ),
               ],

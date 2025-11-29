@@ -10,11 +10,13 @@ import 'control_panel.dart';
 /// Call page widget - displays call UI and controls
 class CallPage extends ConsumerWidget {
   final VoidCallback onChatPressed;
+  final VoidCallback onNotepadPressed;
   final VoidCallback onSettingsPressed;
 
   const CallPage({
     super.key,
     required this.onChatPressed,
+    required this.onNotepadPressed,
     required this.onSettingsPressed,
   });
 
@@ -47,6 +49,7 @@ class CallPage extends ConsumerWidget {
         // Galaxy-style control panel at bottom
         ControlPanel(
           onChatPressed: onChatPressed,
+          onNotepadPressed: onNotepadPressed,
           onSettingsPressed: onSettingsPressed,
         ),
       ],
@@ -95,7 +98,7 @@ class _CallMainContent extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         Text(
-          'Voice AGI Native App',
+          'Voice AGI Notepad App',
           style: TextStyle(
             fontSize: 14,
             color: AppTheme.textSecondary,

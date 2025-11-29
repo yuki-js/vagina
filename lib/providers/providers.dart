@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:record/record.dart';
 import '../services/storage_service.dart';
+import '../services/notepad_service.dart';
 import '../services/audio_recorder_service.dart';
 import '../services/audio_player_service.dart';
 import '../services/websocket_service.dart';
@@ -10,6 +11,7 @@ import '../services/tool_service.dart';
 import '../services/haptic_service.dart';
 import '../models/assistant_config.dart';
 import '../models/chat_message.dart';
+import '../models/notepad_tab.dart';
 import '../models/android_audio_config.dart';
 
 // Core providers
@@ -17,6 +19,13 @@ import '../models/android_audio_config.dart';
 /// Provider for the storage service
 final storageServiceProvider = Provider<StorageService>((ref) {
   return StorageService();
+});
+
+/// Provider for the artifact service
+final notepadServiceProvider = Provider<NotepadService>((ref) {
+  final service = NotepadService();
+  ref.onDispose(() => service.dispose());
+  return service;
 });
 
 /// Provider for checking if API key exists
@@ -83,7 +92,8 @@ final realtimeApiClientProvider = Provider<RealtimeApiClient>((ref) {
 /// Provider for the tool service
 final toolServiceProvider = Provider<ToolService>((ref) {
   final storage = ref.read(storageServiceProvider);
-  return ToolService(storage: storage);
+  final notepadService = ref.read(notepadServiceProvider);
+  return ToolService(storage: storage, notepadService: notepadService);
 });
 
 /// Provider for the haptic service
@@ -248,3 +258,17 @@ class AndroidAudioConfigNotifier extends AsyncNotifier<AndroidAudioConfig> {
     await _saveAndApply(defaultConfig);
   }
 }
+
+// Artifact providers
+
+/// Provider for artifact tabs (stream)
+final notepadTabsProvider = StreamProvider<List<NotepadTab>>((ref) {
+  final notepadService = ref.read(notepadServiceProvider);
+  return notepadService.tabsStream;
+});
+
+/// Provider for selected artifact tab ID (stream)
+final selectedNotepadTabIdProvider = StreamProvider<String?>((ref) {
+  final notepadService = ref.read(notepadServiceProvider);
+  return notepadService.selectedTabStream;
+});
