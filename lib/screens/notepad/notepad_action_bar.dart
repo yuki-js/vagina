@@ -3,14 +3,14 @@ import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../theme/app_theme.dart';
 
-/// Action bar with copy, share, and edit buttons for notepad content
-class NotepadActionBar extends StatelessWidget {
+/// Popup menu with copy, share, and edit options for notepad content
+class NotepadMoreMenu extends StatelessWidget {
   final String content;
   final bool isEditing;
   final VoidCallback? onEditToggle;
   final bool showEditButton;
 
-  const NotepadActionBar({
+  const NotepadMoreMenu({
     super.key,
     required this.content,
     this.isEditing = false,
@@ -47,98 +47,71 @@ class NotepadActionBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceColor.withValues(alpha: 0.95),
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+    return PopupMenuButton<String>(
+      icon: const Icon(
+        Icons.more_horiz,
+        color: AppTheme.textSecondary,
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _ActionButton(
-            icon: Icons.copy_rounded,
-            label: 'コピー',
-            onTap: () => _copyToClipboard(context),
-          ),
-          const SizedBox(width: 4),
-          _ActionButton(
-            icon: Icons.share_rounded,
-            label: '共有',
-            onTap: () => _shareContent(context),
-          ),
-          if (showEditButton && onEditToggle != null) ...[
-            const SizedBox(width: 4),
-            _ActionButton(
-              icon: isEditing ? Icons.check_rounded : Icons.edit_rounded,
-              label: isEditing ? '完了' : '編集',
-              onTap: onEditToggle!,
-              isActive: isEditing,
-            ),
-          ],
-        ],
+      color: AppTheme.surfaceColor,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
       ),
-    );
-  }
-}
-
-/// Individual action button in the action bar
-class _ActionButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  final bool isActive;
-
-  const _ActionButton({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    this.isActive = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: isActive
-                ? AppTheme.primaryColor.withValues(alpha: 0.2)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(20),
-          ),
+      offset: const Offset(0, 40),
+      onSelected: (value) {
+        switch (value) {
+          case 'copy':
+            _copyToClipboard(context);
+            break;
+          case 'share':
+            _shareContent(context);
+            break;
+          case 'edit':
+            onEditToggle?.call();
+            break;
+        }
+      },
+      itemBuilder: (context) => [
+        PopupMenuItem<String>(
+          value: 'copy',
           child: Row(
-            mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                icon,
-                size: 16,
-                color: isActive ? AppTheme.primaryColor : AppTheme.textSecondary,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-                  color: isActive ? AppTheme.primaryColor : AppTheme.textSecondary,
-                ),
-              ),
+              Icon(Icons.copy_rounded, size: 20, color: AppTheme.textSecondary),
+              const SizedBox(width: 12),
+              const Text('コピー', style: TextStyle(color: AppTheme.textPrimary)),
             ],
           ),
         ),
-      ),
+        PopupMenuItem<String>(
+          value: 'share',
+          child: Row(
+            children: [
+              Icon(Icons.share_rounded, size: 20, color: AppTheme.textSecondary),
+              const SizedBox(width: 12),
+              const Text('共有', style: TextStyle(color: AppTheme.textPrimary)),
+            ],
+          ),
+        ),
+        if (showEditButton && onEditToggle != null)
+          PopupMenuItem<String>(
+            value: 'edit',
+            child: Row(
+              children: [
+                Icon(
+                  isEditing ? Icons.check_rounded : Icons.edit_rounded,
+                  size: 20,
+                  color: isEditing ? AppTheme.primaryColor : AppTheme.textSecondary,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  isEditing ? '完了' : '編集',
+                  style: TextStyle(
+                    color: isEditing ? AppTheme.primaryColor : AppTheme.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
     );
   }
 }

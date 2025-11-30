@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import '../../theme/app_theme.dart';
-import 'notepad_action_bar.dart';
 
 /// Markdown content renderer with edit/preview toggle
 class MarkdownContent extends StatefulWidget {
   final String content;
+  final bool isEditing;
   final void Function(String)? onContentChanged;
 
   const MarkdownContent({
     super.key,
     required this.content,
+    this.isEditing = false,
     this.onContentChanged,
   });
 
@@ -20,7 +21,6 @@ class MarkdownContent extends StatefulWidget {
 
 class _MarkdownContentState extends State<MarkdownContent> {
   late TextEditingController _controller;
-  bool _isEditing = false;
 
   @override
   void initState() {
@@ -31,7 +31,11 @@ class _MarkdownContentState extends State<MarkdownContent> {
   @override
   void didUpdateWidget(MarkdownContent oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.content != widget.content && !_isEditing) {
+    if (oldWidget.content != widget.content && !widget.isEditing) {
+      _controller.text = widget.content;
+    }
+    // Notify parent of current content when switching to edit mode
+    if (widget.isEditing && !oldWidget.isEditing) {
       _controller.text = widget.content;
     }
   }
@@ -42,37 +46,17 @@ class _MarkdownContentState extends State<MarkdownContent> {
     super.dispose();
   }
 
-  void _toggleEdit() {
-    if (_isEditing && _controller.text != widget.content) {
-      widget.onContentChanged?.call(_controller.text);
-    }
-    setState(() {
-      _isEditing = !_isEditing;
-    });
+  void _onTextChanged(String value) {
+    widget.onContentChanged?.call(value);
   }
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        if (_isEditing)
-          _buildEditor()
-        else
-          _buildPreview(),
-        Positioned(
-          bottom: 16,
-          left: 0,
-          right: 0,
-          child: Center(
-            child: NotepadActionBar(
-              content: _isEditing ? _controller.text : widget.content,
-              isEditing: _isEditing,
-              onEditToggle: _toggleEdit,
-            ),
-          ),
-        ),
-      ],
-    );
+    if (widget.isEditing) {
+      return _buildEditor();
+    } else {
+      return _buildPreview();
+    }
   }
 
   Widget _buildEditor() {
@@ -80,6 +64,7 @@ class _MarkdownContentState extends State<MarkdownContent> {
       padding: const EdgeInsets.all(16),
       child: TextField(
         controller: _controller,
+        onChanged: _onTextChanged,
         maxLines: null,
         expands: true,
         style: const TextStyle(
@@ -113,32 +98,37 @@ class _MarkdownContentState extends State<MarkdownContent> {
   }
 
   Widget _buildPreview() {
-    return Markdown(
-      data: widget.content,
-      selectable: true,
-      padding: const EdgeInsets.all(16),
-      styleSheet: MarkdownStyleSheet(
-        h1: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
-        h2: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
-        h3: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
-        h4: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
-        h5: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
-        h6: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
-        p: const TextStyle(fontSize: 14, color: AppTheme.textPrimary),
-        code: TextStyle(fontSize: 12, fontFamily: 'monospace', color: AppTheme.secondaryColor, backgroundColor: AppTheme.surfaceColor),
-        codeblockDecoration: BoxDecoration(color: AppTheme.surfaceColor, borderRadius: BorderRadius.circular(8)),
-        blockquote: TextStyle(fontSize: 14, color: AppTheme.textSecondary, fontStyle: FontStyle.italic),
-        blockquoteDecoration: BoxDecoration(border: Border(left: BorderSide(color: AppTheme.primaryColor.withValues(alpha: 0.5), width: 4))),
-        listBullet: const TextStyle(fontSize: 14, color: AppTheme.textPrimary),
-        tableHead: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
-        tableBody: const TextStyle(color: AppTheme.textPrimary),
-        tableBorder: TableBorder.all(color: AppTheme.textSecondary.withValues(alpha: 0.3)),
-        horizontalRuleDecoration: BoxDecoration(border: Border(top: BorderSide(color: AppTheme.textSecondary.withValues(alpha: 0.3), width: 1))),
-        a: TextStyle(color: AppTheme.primaryColor, decoration: TextDecoration.underline),
-        strong: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
-        em: const TextStyle(fontStyle: FontStyle.italic, color: AppTheme.textPrimary),
-        del: TextStyle(decoration: TextDecoration.lineThrough, color: AppTheme.textSecondary),
-        checkbox: TextStyle(color: AppTheme.primaryColor),
+    // Use SelectableRegion to allow selecting text across the entire document
+    return SelectableRegion(
+      focusNode: FocusNode(),
+      selectionControls: MaterialTextSelectionControls(),
+      child: Markdown(
+        data: widget.content,
+        selectable: false, // We use SelectableRegion instead
+        padding: const EdgeInsets.all(16),
+        styleSheet: MarkdownStyleSheet(
+          h1: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+          h2: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+          h3: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+          h4: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+          h5: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+          h6: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+          p: const TextStyle(fontSize: 14, color: AppTheme.textPrimary),
+          code: TextStyle(fontSize: 12, fontFamily: 'monospace', color: AppTheme.secondaryColor, backgroundColor: AppTheme.surfaceColor),
+          codeblockDecoration: BoxDecoration(color: AppTheme.surfaceColor, borderRadius: BorderRadius.circular(8)),
+          blockquote: TextStyle(fontSize: 14, color: AppTheme.textSecondary, fontStyle: FontStyle.italic),
+          blockquoteDecoration: BoxDecoration(border: Border(left: BorderSide(color: AppTheme.primaryColor.withValues(alpha: 0.5), width: 4))),
+          listBullet: const TextStyle(fontSize: 14, color: AppTheme.textPrimary),
+          tableHead: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+          tableBody: const TextStyle(color: AppTheme.textPrimary),
+          tableBorder: TableBorder.all(color: AppTheme.textSecondary.withValues(alpha: 0.3)),
+          horizontalRuleDecoration: BoxDecoration(border: Border(top: BorderSide(color: AppTheme.textSecondary.withValues(alpha: 0.3), width: 1))),
+          a: TextStyle(color: AppTheme.primaryColor, decoration: TextDecoration.underline),
+          strong: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+          em: const TextStyle(fontStyle: FontStyle.italic, color: AppTheme.textPrimary),
+          del: TextStyle(decoration: TextDecoration.lineThrough, color: AppTheme.textSecondary),
+          checkbox: TextStyle(color: AppTheme.primaryColor),
+        ),
       ),
     );
   }
