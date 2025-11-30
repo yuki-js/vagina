@@ -3,6 +3,9 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.INTERNET" />
     
+    <!-- Wake lock permission to keep device awake during calls -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    
     <!-- Storage permissions for saving config to user's Documents directory -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
