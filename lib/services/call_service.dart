@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 import 'package:record/record.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 import 'audio_recorder_service.dart';
 import 'audio_player_service.dart';
 import 'realtime_api_client.dart';
@@ -193,6 +194,9 @@ class CallService {
       _setupAmplitudeMonitoring();
       _startCallTimer();
 
+      // Enable wake lock to prevent device sleep during call
+      await _enableWakeLock();
+
       _setState(CallState.connected);
       logService.info(_tag, 'Call connected successfully');
     } catch (e) {
@@ -372,6 +376,9 @@ class CallService {
     await _player.stop();
     await _apiClient.disconnect();
     
+    // Disable wake lock to allow device to sleep normally
+    await _disableWakeLock();
+    
     // Dispose session-scoped tool manager
     _toolManager?.dispose();
     _toolManager = null;
@@ -391,6 +398,26 @@ class CallService {
 
   void _emitError(String message) {
     _errorController.add(message);
+  }
+
+  /// Enable wake lock to prevent device from sleeping during call
+  Future<void> _enableWakeLock() async {
+    try {
+      await WakelockPlus.enable();
+      logService.info(_tag, 'Wake lock enabled');
+    } catch (e) {
+      logService.error(_tag, 'Failed to enable wake lock: $e');
+    }
+  }
+
+  /// Disable wake lock to allow device to sleep normally
+  Future<void> _disableWakeLock() async {
+    try {
+      await WakelockPlus.disable();
+      logService.info(_tag, 'Wake lock disabled');
+    } catch (e) {
+      logService.error(_tag, 'Failed to disable wake lock: $e');
+    }
   }
   
   /// Clear chat history
