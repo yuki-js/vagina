@@ -2,6 +2,38 @@ import 'package:diff_match_patch/diff_match_patch.dart';
 import '../base_tool.dart';
 import '../../notepad_service.dart';
 
+/// Converts a plain unified diff format patch to URL-encoded format.
+/// 
+/// The diff_match_patch library expects patch content to be URL-encoded,
+/// but AI models typically generate plain text unified diff (like git diff).
+/// This function converts plain text to the expected URL-encoded format.
+String _encodePatchText(String patchText) {
+  final lines = patchText.split('\n');
+  final encodedLines = <String>[];
+  final headerPattern = RegExp(r'^@@ -\d+,?\d* \+\d+,?\d* @@');
+  
+  for (final line in lines) {
+    if (line.isEmpty) {
+      encodedLines.add(line);
+    } else if (headerPattern.hasMatch(line)) {
+      // Keep patch headers as-is
+      encodedLines.add(line);
+    } else if (line.startsWith('+') || line.startsWith('-') || line.startsWith(' ')) {
+      // Encode the content portion (after the prefix character)
+      final prefix = line[0];
+      final content = line.substring(1);
+      // URL encode the content, then replace %20 with space (as the library does)
+      final encoded = Uri.encodeFull(content).replaceAll('%20', ' ');
+      encodedLines.add('$prefix$encoded');
+    } else {
+      // For any other lines, keep as-is
+      encodedLines.add(line);
+    }
+  }
+  
+  return encodedLines.join('\n');
+}
+
 /// Tool for patching a document using unified diff format
 class DocumentPatchTool extends BaseTool {
   final NotepadService _notepadService;
@@ -47,10 +79,13 @@ class DocumentPatchTool extends BaseTool {
     
     final originalContent = tab.content;
     
+    // Convert plain diff format to URL-encoded format expected by the library
+    final encodedPatch = _encodePatchText(patchText);
+    
     // Parse the patch
     List<Patch> patches;
     try {
-      patches = patchFromText(patchText);
+      patches = patchFromText(encodedPatch);
     } catch (e) {
       return {
         'success': false,
