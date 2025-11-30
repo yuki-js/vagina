@@ -9,6 +9,7 @@ import '../services/realtime_api_client.dart';
 import '../services/call_service.dart';
 import '../services/tool_service.dart';
 import '../services/haptic_service.dart';
+import '../services/wakelock_service.dart';
 import '../models/assistant_config.dart';
 import '../models/chat_message.dart';
 import '../models/notepad_tab.dart';
@@ -101,6 +102,11 @@ final hapticServiceProvider = Provider<HapticService>((ref) {
   return HapticService();
 });
 
+/// Provider for the wake lock service
+final wakeLockServiceProvider = Provider<WakeLockService>((ref) {
+  return WakeLockService();
+});
+
 /// Provider for the call service
 final callServiceProvider = Provider<CallService>((ref) {
   final service = CallService(
@@ -110,6 +116,7 @@ final callServiceProvider = Provider<CallService>((ref) {
     storage: ref.read(storageServiceProvider),
     toolService: ref.read(toolServiceProvider),
     hapticService: ref.read(hapticServiceProvider),
+    wakeLockService: ref.read(wakeLockServiceProvider),
   );
   ref.onDispose(() => service.dispose());
   return service;
