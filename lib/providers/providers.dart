@@ -172,6 +172,8 @@ final noiseReductionProvider = NotifierProvider<NoiseReductionNotifier, String>(
 
 /// Notifier for noise reduction setting
 class NoiseReductionNotifier extends Notifier<String> {
+  static const validValues = ['near', 'far'];
+  
   @override
   String build() => 'near';
 
@@ -180,7 +182,9 @@ class NoiseReductionNotifier extends Notifier<String> {
   }
 
   void set(String value) {
-    state = value;
+    if (validValues.contains(value)) {
+      state = value;
+    }
   }
 }
 
