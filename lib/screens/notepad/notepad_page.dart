@@ -23,6 +23,7 @@ class NotepadPage extends ConsumerStatefulWidget {
 class _NotepadPageState extends ConsumerState<NotepadPage> {
   bool _isEditing = false;
   String _editedContent = '';
+  String? _currentTabId;
 
   void _toggleEdit(NotepadTab? selectedTab) {
     if (_isEditing && selectedTab != null && _editedContent != selectedTab.content) {
@@ -54,17 +55,19 @@ class _NotepadPageState extends ConsumerState<NotepadPage> {
             ? tabs.where((t) => t.id == selectedId).firstOrNull
             : null;
         
-        // Reset editing state when tab changes
-        if (selectedTab != null && _isEditing && _editedContent != selectedTab.content) {
-          // Tab changed, reset editing
+        // Reset editing state when tab changes (based on tab ID change)
+        if (_currentTabId != selectedId && _isEditing) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) {
               setState(() {
                 _isEditing = false;
                 _editedContent = '';
+                _currentTabId = selectedId;
               });
             }
           });
+        } else if (_currentTabId != selectedId) {
+          _currentTabId = selectedId;
         }
 
         return Column(

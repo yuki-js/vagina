@@ -33,7 +33,7 @@ class _PlainTextContentState extends State<PlainTextContent> {
     if (oldWidget.content != widget.content && !widget.isEditing) {
       _controller.text = widget.content;
     }
-    // Notify parent of current content when switching to edit mode
+    // Sync controller text when entering edit mode
     if (widget.isEditing && !oldWidget.isEditing) {
       _controller.text = widget.content;
     }

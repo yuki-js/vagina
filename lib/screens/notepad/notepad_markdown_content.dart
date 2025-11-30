@@ -21,11 +21,13 @@ class MarkdownContent extends StatefulWidget {
 
 class _MarkdownContentState extends State<MarkdownContent> {
   late TextEditingController _controller;
+  late FocusNode _selectionFocusNode;
 
   @override
   void initState() {
     super.initState();
     _controller = TextEditingController(text: widget.content);
+    _selectionFocusNode = FocusNode();
   }
 
   @override
@@ -34,7 +36,7 @@ class _MarkdownContentState extends State<MarkdownContent> {
     if (oldWidget.content != widget.content && !widget.isEditing) {
       _controller.text = widget.content;
     }
-    // Notify parent of current content when switching to edit mode
+    // Sync controller text when entering edit mode
     if (widget.isEditing && !oldWidget.isEditing) {
       _controller.text = widget.content;
     }
@@ -43,6 +45,7 @@ class _MarkdownContentState extends State<MarkdownContent> {
   @override
   void dispose() {
     _controller.dispose();
+    _selectionFocusNode.dispose();
     super.dispose();
   }
 
@@ -100,7 +103,7 @@ class _MarkdownContentState extends State<MarkdownContent> {
   Widget _buildPreview() {
     // Use SelectableRegion to allow selecting text across the entire document
     return SelectableRegion(
-      focusNode: FocusNode(),
+      focusNode: _selectionFocusNode,
       selectionControls: MaterialTextSelectionControls(),
       child: Markdown(
         data: widget.content,
