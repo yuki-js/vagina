@@ -12,6 +12,7 @@ class VoiceSettingsSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final assistantConfig = ref.watch(assistantConfigProvider);
+    final noiseReduction = ref.watch(noiseReductionProvider);
 
     return SettingsCard(
       child: Column(
@@ -42,8 +43,75 @@ class VoiceSettingsSection extends ConsumerWidget {
               activeColor: AppTheme.primaryColor,
             ),
           ),
+          const SizedBox(height: 24),
+          const Text(
+            'ノイズ軽減',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: AppTheme.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 12),
+          RadioListTile<String>(
+            value: 'near',
+            groupValue: noiseReduction,
+            onChanged: (value) {
+              if (value != null && value != noiseReduction) {
+                _handleNoiseReductionChange(ref, value);
+              }
+            },
+            title: const Text(
+              '近距離',
+              style: TextStyle(color: AppTheme.textPrimary),
+            ),
+            subtitle: Text(
+              '近くで話すときに適しています',
+              style: TextStyle(
+                color: AppTheme.textSecondary.withValues(alpha: 0.7),
+                fontSize: 12,
+              ),
+            ),
+            activeColor: AppTheme.primaryColor,
+          ),
+          RadioListTile<String>(
+            value: 'far',
+            groupValue: noiseReduction,
+            onChanged: (value) {
+              if (value != null && value != noiseReduction) {
+                _handleNoiseReductionChange(ref, value);
+              }
+            },
+            title: const Text(
+              '遠距離',
+              style: TextStyle(color: AppTheme.textPrimary),
+            ),
+            subtitle: Text(
+              '遠くから話すときに適しています',
+              style: TextStyle(
+                color: AppTheme.textSecondary.withValues(alpha: 0.7),
+                fontSize: 12,
+              ),
+            ),
+            activeColor: AppTheme.primaryColor,
+          ),
         ],
       ),
     );
+  }
+
+  void _handleNoiseReductionChange(WidgetRef ref, String value) {
+    // Update the provider state
+    ref.read(noiseReductionProvider.notifier).set(value);
+    
+    // Update the API client
+    final apiClient = ref.read(realtimeApiClientProvider);
+    apiClient.setNoiseReduction(value);
+    
+    // If connected, update session config
+    final isCallActive = ref.read(isCallActiveProvider);
+    if (isCallActive) {
+      apiClient.updateSessionConfig();
+    }
   }
 }

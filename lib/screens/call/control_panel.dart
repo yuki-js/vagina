@@ -22,11 +22,10 @@ class ControlPanel extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isMuted = ref.watch(isMutedProvider);
     final speakerMuted = ref.watch(speakerMutedProvider);
-    final noiseReduction = ref.watch(noiseReductionProvider);
     final isCallActive = ref.watch(isCallActiveProvider);
 
-    // Calculate button width for consistent grid layout (now 4 columns)
-    final buttonWidth = (MediaQuery.of(context).size.width - 32 - 48 - 32) / 4;
+    // Calculate button width for consistent grid layout (3 columns)
+    final buttonWidth = (MediaQuery.of(context).size.width - 32 - 48 - 32) / 3;
     
     return Container(
       margin: const EdgeInsets.all(16),
@@ -38,7 +37,7 @@ class ControlPanel extends ConsumerWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // First row: Chat, Artifact, Speaker, Settings
+          // First row: Chat, Notepad, Settings
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
@@ -55,14 +54,6 @@ class ControlPanel extends ConsumerWidget {
                 width: buttonWidth,
               ),
               _ControlButton(
-                icon: speakerMuted ? Icons.volume_off : Icons.volume_up,
-                label: 'スピーカー',
-                onTap: () => _handleSpeakerToggle(ref),
-                isActive: speakerMuted,
-                activeColor: AppTheme.warningColor,
-                width: buttonWidth,
-              ),
-              _ControlButton(
                 icon: Icons.settings,
                 label: '設定',
                 onTap: onSettingsPressed,
@@ -71,16 +62,16 @@ class ControlPanel extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 16),
-          // Second row: Noise reduction, Mute, Interrupt
+          // Second row: Speaker, Mute, Interrupt
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               _ControlButton(
-                icon: noiseReduction == 'far' ? Icons.noise_aware : Icons.noise_control_off,
-                label: noiseReduction == 'far' ? 'ノイズ軽減:遠' : 'ノイズ軽減:近',
-                onTap: () => _handleNoiseReductionToggle(ref),
-                isActive: noiseReduction == 'far',
-                activeColor: AppTheme.secondaryColor,
+                icon: speakerMuted ? Icons.volume_off : Icons.volume_up,
+                label: 'スピーカー',
+                onTap: () => _handleSpeakerToggle(ref),
+                isActive: speakerMuted,
+                activeColor: AppTheme.warningColor,
                 width: buttonWidth,
               ),
               _ControlButton(
@@ -98,8 +89,6 @@ class ControlPanel extends ConsumerWidget {
                 enabled: isCallActive,
                 width: buttonWidth,
               ),
-              // Empty spacer for alignment
-              SizedBox(width: buttonWidth),
             ],
           ),
           const SizedBox(height: 24),
@@ -119,19 +108,6 @@ class ControlPanel extends ConsumerWidget {
     final speakerMuted = ref.read(speakerMutedProvider);
     final audioPlayer = ref.read(audioPlayerServiceProvider);
     audioPlayer.setVolume(speakerMuted ? 0.0 : 1.0);
-  }
-
-  void _handleNoiseReductionToggle(WidgetRef ref) {
-    ref.read(noiseReductionProvider.notifier).toggle();
-    final noiseReduction = ref.read(noiseReductionProvider);
-    final apiClient = ref.read(realtimeApiClientProvider);
-    apiClient.setNoiseReduction(noiseReduction);
-    
-    // If connected, update session config
-    final isCallActive = ref.read(isCallActiveProvider);
-    if (isCallActive) {
-      apiClient.updateSessionConfig();
-    }
   }
 
   void _handleMuteToggle(WidgetRef ref) {
