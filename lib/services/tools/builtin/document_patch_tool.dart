@@ -10,7 +10,8 @@ import '../../notepad_service.dart';
 String _encodePatchText(String patchText) {
   final lines = patchText.split('\n');
   final encodedLines = <String>[];
-  final headerPattern = RegExp(r'^@@ -\d+,?\d* \+\d+,?\d* @@');
+  // Match unified diff headers like "@@ -1,5 +1,7 @@" or "@@ -1 +1 @@"
+  final headerPattern = RegExp(r'^@@ -\d+(?:,\d+)? \+\d+(?:,\d+)? @@');
   
   for (final line in lines) {
     if (line.isEmpty) {
@@ -22,7 +23,8 @@ String _encodePatchText(String patchText) {
       // Encode the content portion (after the prefix character)
       final prefix = line[0];
       final content = line.substring(1);
-      // URL encode the content, then replace %20 with space (as the library does)
+      // URL encode the content, then replace %20 with space to match
+      // the diff_match_patch library's expected format (see Patch.toString())
       final encoded = Uri.encodeFull(content).replaceAll('%20', ' ');
       encodedLines.add('$prefix$encoded');
     } else {
