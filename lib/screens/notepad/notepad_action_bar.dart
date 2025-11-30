@@ -29,8 +29,20 @@ class NotepadActionBar extends StatelessWidget {
     );
   }
 
-  void _shareContent(BuildContext context) {
-    SharePlus.instance.share(ShareParams(text: content));
+  void _shareContent(BuildContext context) async {
+    try {
+      await SharePlus.instance.share(ShareParams(text: content));
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('共有に失敗しました'),
+            backgroundColor: AppTheme.errorColor,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
   }
 
   @override
