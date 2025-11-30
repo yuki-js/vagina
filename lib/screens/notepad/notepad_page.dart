@@ -5,6 +5,7 @@ import '../../providers/providers.dart';
 import '../../models/notepad_tab.dart';
 import 'notepad_content_renderer.dart';
 import 'notepad_empty_state.dart';
+import 'notepad_action_bar.dart';
 
 /// Artifact page widget - displays artifact tabs and their content
 class NotepadPage extends ConsumerStatefulWidget {
@@ -20,90 +21,154 @@ class NotepadPage extends ConsumerStatefulWidget {
 }
 
 class _NotepadPageState extends ConsumerState<NotepadPage> {
+  bool _isEditing = false;
+  String _editedContent = '';
+  String? _currentTabId;
+
+  void _toggleEdit(NotepadTab? selectedTab) {
+    if (_isEditing && selectedTab != null && _editedContent != selectedTab.content) {
+      // Save changes when exiting edit mode
+      ref.read(notepadServiceProvider).updateTab(selectedTab.id, content: _editedContent);
+    }
+    setState(() {
+      _isEditing = !_isEditing;
+      if (_isEditing && selectedTab != null) {
+        _editedContent = selectedTab.content;
+      }
+    });
+  }
+
+  void _onContentChanged(String newContent) {
+    _editedContent = newContent;
+  }
+
   @override
   Widget build(BuildContext context) {
     final tabsAsync = ref.watch(notepadTabsProvider);
     final selectedTabIdAsync = ref.watch(selectedNotepadTabIdProvider);
     final notepadService = ref.read(notepadServiceProvider);
 
-    return Column(
-      children: [
-        // Header
-        _NotepadHeader(onBackPressed: widget.onBackPressed),
-
-        // Tab bar (if tabs exist)
-        tabsAsync.when(
-          data: (tabs) {
-            if (tabs.isEmpty) {
-              return const SizedBox.shrink();
+    return tabsAsync.when(
+      data: (tabs) {
+        final selectedId = selectedTabIdAsync.value;
+        final selectedTab = selectedId != null 
+            ? tabs.where((t) => t.id == selectedId).firstOrNull
+            : null;
+        
+        // Reset editing state when tab changes (based on tab ID change)
+        if (_currentTabId != selectedId && _isEditing) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              setState(() {
+                _isEditing = false;
+                _editedContent = '';
+                _currentTabId = selectedId;
+              });
             }
-            
-            final selectedId = selectedTabIdAsync.value;
-            return _NotepadTabBar(
-              tabs: tabs,
-              selectedTabId: selectedId,
-              onTabSelected: (tabId) {
-                notepadService.selectTab(tabId);
-              },
-              onTabClosed: (tabId) {
-                notepadService.closeTab(tabId);
-              },
-            );
-          },
-          loading: () => const SizedBox.shrink(),
-          error: (_, __) => const SizedBox.shrink(),
-        ),
+          });
+        } else if (_currentTabId != selectedId) {
+          _currentTabId = selectedId;
+        }
 
-        // Content area
-        Expanded(
-          child: tabsAsync.when(
-            data: (tabs) {
-              if (tabs.isEmpty) {
-                return const NotepadEmptyState();
-              }
-              
-              final selectedId = selectedTabIdAsync.value;
-              final selectedTab = selectedId != null 
-                  ? tabs.where((t) => t.id == selectedId).firstOrNull
-                  : null;
-              
-              if (selectedTab == null) {
-                return const NotepadEmptyState();
-              }
-              
-              return NotepadContentRenderer(
-                tab: selectedTab,
-                onContentChanged: (newContent) {
-                  notepadService.updateTab(selectedTab.id, content: newContent);
+        return Column(
+          children: [
+            // Header with menu
+            _NotepadHeader(
+              onBackPressed: widget.onBackPressed,
+              selectedTab: selectedTab,
+              isEditing: _isEditing,
+              onEditToggle: () => _toggleEdit(selectedTab),
+              editedContent: _editedContent,
+            ),
+
+            // Tab bar (if tabs exist)
+            if (tabs.isNotEmpty)
+              _NotepadTabBar(
+                tabs: tabs,
+                selectedTabId: selectedId,
+                onTabSelected: (tabId) {
+                  notepadService.selectTab(tabId);
                 },
-              );
-            },
-            loading: () => const Center(
+                onTabClosed: (tabId) {
+                  notepadService.closeTab(tabId);
+                },
+              ),
+
+            // Content area
+            Expanded(
+              child: tabs.isEmpty
+                  ? const NotepadEmptyState()
+                  : selectedTab == null
+                      ? const NotepadEmptyState()
+                      : NotepadContentRenderer(
+                          key: ValueKey('${selectedTab.id}_$_isEditing'),
+                          tab: selectedTab,
+                          isEditing: _isEditing,
+                          onContentChanged: _onContentChanged,
+                        ),
+            ),
+          ],
+        );
+      },
+      loading: () => Column(
+        children: [
+          _NotepadHeader(
+            onBackPressed: widget.onBackPressed,
+            selectedTab: null,
+            isEditing: false,
+            onEditToggle: () {},
+            editedContent: '',
+          ),
+          const Expanded(
+            child: Center(
               child: CircularProgressIndicator(color: AppTheme.primaryColor),
             ),
-            error: (_, __) => Center(
+          ),
+        ],
+      ),
+      error: (_, __) => Column(
+        children: [
+          _NotepadHeader(
+            onBackPressed: widget.onBackPressed,
+            selectedTab: null,
+            isEditing: false,
+            onEditToggle: () {},
+            editedContent: '',
+          ),
+          Expanded(
+            child: Center(
               child: Text(
                 'ノートパッドの読み込みに失敗しました',
                 style: TextStyle(color: AppTheme.errorColor),
               ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
 
-/// Artifact header with navigation to call
+/// Artifact header with navigation to call and more menu
 class _NotepadHeader extends StatelessWidget {
   final VoidCallback onBackPressed;
+  final NotepadTab? selectedTab;
+  final bool isEditing;
+  final VoidCallback onEditToggle;
+  final String editedContent;
 
-  const _NotepadHeader({required this.onBackPressed});
+  const _NotepadHeader({
+    required this.onBackPressed,
+    required this.selectedTab,
+    required this.isEditing,
+    required this.onEditToggle,
+    required this.editedContent,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
       child: Row(
         children: [
           GestureDetector(
@@ -133,7 +198,15 @@ class _NotepadHeader extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: 80), // Balance for the back button
+          if (selectedTab != null)
+            NotepadMoreMenu(
+              content: isEditing ? editedContent : selectedTab!.content,
+              isEditing: isEditing,
+              onEditToggle: onEditToggle,
+              showEditButton: selectedTab!.mimeType != 'text/html',
+            )
+          else
+            const SizedBox(width: 48), // Balance for the back button
         ],
       ),
     );

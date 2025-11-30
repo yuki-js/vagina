@@ -7,11 +7,13 @@ import 'notepad_html_content.dart';
 /// Routes notepad content to the appropriate renderer based on MIME type
 class NotepadContentRenderer extends StatelessWidget {
   final NotepadTab tab;
+  final bool isEditing;
   final void Function(String)? onContentChanged;
 
   const NotepadContentRenderer({
     super.key,
     required this.tab,
+    this.isEditing = false,
     this.onContentChanged,
   });
 
@@ -21,6 +23,7 @@ class NotepadContentRenderer extends StatelessWidget {
       case 'text/markdown':
         return MarkdownContent(
           content: tab.content,
+          isEditing: isEditing,
           onContentChanged: onContentChanged,
         );
       case 'text/html':
@@ -29,6 +32,7 @@ class NotepadContentRenderer extends StatelessWidget {
       default:
         return PlainTextContent(
           content: tab.content,
+          isEditing: isEditing,
           onContentChanged: onContentChanged,
         );
     }

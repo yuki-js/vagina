@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
-import 'notepad_edit_button.dart';
 
 /// Plain text content renderer with edit/preview toggle
 class PlainTextContent extends StatefulWidget {
   final String content;
+  final bool isEditing;
   final void Function(String)? onContentChanged;
 
   const PlainTextContent({
     super.key,
     required this.content,
+    this.isEditing = false,
     this.onContentChanged,
   });
 
@@ -19,7 +20,6 @@ class PlainTextContent extends StatefulWidget {
 
 class _PlainTextContentState extends State<PlainTextContent> {
   late TextEditingController _controller;
-  bool _isEditing = false;
 
   @override
   void initState() {
@@ -30,7 +30,11 @@ class _PlainTextContentState extends State<PlainTextContent> {
   @override
   void didUpdateWidget(PlainTextContent oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.content != widget.content && !_isEditing) {
+    if (oldWidget.content != widget.content && !widget.isEditing) {
+      _controller.text = widget.content;
+    }
+    // Sync controller text when entering edit mode
+    if (widget.isEditing && !oldWidget.isEditing) {
       _controller.text = widget.content;
     }
   }
@@ -41,30 +45,17 @@ class _PlainTextContentState extends State<PlainTextContent> {
     super.dispose();
   }
 
-  void _toggleEdit() {
-    if (_isEditing && _controller.text != widget.content) {
-      widget.onContentChanged?.call(_controller.text);
-    }
-    setState(() {
-      _isEditing = !_isEditing;
-    });
+  void _onTextChanged(String value) {
+    widget.onContentChanged?.call(value);
   }
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        if (_isEditing)
-          _buildEditor()
-        else
-          _buildPreview(),
-        Positioned(
-          top: 8,
-          right: 8,
-          child: NotepadEditButton(isEditing: _isEditing, onTap: _toggleEdit),
-        ),
-      ],
-    );
+    if (widget.isEditing) {
+      return _buildEditor();
+    } else {
+      return _buildPreview();
+    }
   }
 
   Widget _buildEditor() {
@@ -72,6 +63,7 @@ class _PlainTextContentState extends State<PlainTextContent> {
       padding: const EdgeInsets.all(16),
       child: TextField(
         controller: _controller,
+        onChanged: _onTextChanged,
         maxLines: null,
         expands: true,
         style: const TextStyle(fontSize: 14, color: AppTheme.textPrimary),
