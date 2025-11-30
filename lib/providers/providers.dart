@@ -178,6 +178,10 @@ class NoiseReductionNotifier extends Notifier<String> {
   void toggle() {
     state = state == 'near' ? 'far' : 'near';
   }
+
+  void set(String value) {
+    state = value;
+  }
 }
 
 // Assistant providers
