@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import '../../theme/app_theme.dart';
-import 'notepad_edit_button.dart';
+import 'notepad_action_bar.dart';
 
 /// Markdown content renderer with edit/preview toggle
 class MarkdownContent extends StatefulWidget {
@@ -60,9 +60,16 @@ class _MarkdownContentState extends State<MarkdownContent> {
         else
           _buildPreview(),
         Positioned(
-          top: 8,
-          right: 8,
-          child: NotepadEditButton(isEditing: _isEditing, onTap: _toggleEdit),
+          bottom: 16,
+          left: 0,
+          right: 0,
+          child: Center(
+            child: NotepadActionBar(
+              content: _isEditing ? _controller.text : widget.content,
+              isEditing: _isEditing,
+              onEditToggle: _toggleEdit,
+            ),
+          ),
         ),
       ],
     );

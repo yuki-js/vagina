@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
-import 'notepad_edit_button.dart';
+import 'notepad_action_bar.dart';
 
 /// Plain text content renderer with edit/preview toggle
 class PlainTextContent extends StatefulWidget {
@@ -59,9 +59,16 @@ class _PlainTextContentState extends State<PlainTextContent> {
         else
           _buildPreview(),
         Positioned(
-          top: 8,
-          right: 8,
-          child: NotepadEditButton(isEditing: _isEditing, onTap: _toggleEdit),
+          bottom: 16,
+          left: 0,
+          right: 0,
+          child: Center(
+            child: NotepadActionBar(
+              content: _isEditing ? _controller.text : widget.content,
+              isEditing: _isEditing,
+              onEditToggle: _toggleEdit,
+            ),
+          ),
         ),
       ],
     );
