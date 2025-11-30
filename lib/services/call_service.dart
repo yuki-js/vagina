@@ -9,6 +9,7 @@ import 'tool_service.dart';
 import 'haptic_service.dart';
 import 'log_service.dart';
 import 'chat/chat_message_manager.dart';
+import '../config/app_config.dart';
 import '../models/chat_message.dart';
 import '../models/realtime_events.dart';
 import '../utils/audio_utils.dart';
@@ -49,6 +50,7 @@ class CallService {
   StreamSubscription<void>? _speechStartedSubscription;
   StreamSubscription<void>? _responseAudioStartedSubscription;
   Timer? _callTimer;
+  Timer? _silenceTimer;
 
   final StreamController<CallState> _stateController =
       StreamController<CallState>.broadcast();
@@ -194,6 +196,7 @@ class CallService {
       _startCallTimer();
 
       _setState(CallState.connected);
+      _resetSilenceTimer(); // Start silence detection
       logService.info(_tag, 'Call connected successfully');
     } catch (e) {
       logService.error(_tag, 'Failed to start call: $e');
@@ -237,6 +240,7 @@ class CallService {
     
     _speechStartedSubscription = _apiClient.speechStartedStream.listen((_) {
       _chatManager.createUserMessagePlaceholder();
+      _resetSilenceTimer(); // User started speaking, reset silence timer
       logService.debug(_tag, 'Created user message placeholder');
       // Haptic feedback: VAD detected user speech started (fire-and-forget)
       unawaited(_hapticService.selectionClick());
@@ -269,6 +273,7 @@ class CallService {
     });
     
     _responseAudioStartedSubscription = _apiClient.responseAudioStartedStream.listen((_) {
+      _resetSilenceTimer(); // AI started speaking, reset silence timer
       // Haptic feedback: AI audio response started after user speech ended (fire-and-forget)
       unawaited(_hapticService.selectionClick());
     });
@@ -317,6 +322,36 @@ class CallService {
     });
   }
 
+  /// Start or reset the silence detection timer
+  /// Call this method whenever audio activity is detected
+  void _resetSilenceTimer() {
+    // Cancel any existing timer
+    _silenceTimer?.cancel();
+    
+    // Only start silence timer if configured (timeout > 0) and call is connected
+    if (AppConfig.silenceTimeoutSeconds <= 0 || _currentState != CallState.connected) {
+      return;
+    }
+    
+    logService.debug(_tag, 'Resetting silence timer (${AppConfig.silenceTimeoutSeconds}s)');
+    
+    _silenceTimer = Timer(
+      Duration(seconds: AppConfig.silenceTimeoutSeconds),
+      _onSilenceTimeout,
+    );
+  }
+
+  /// Called when silence timeout is reached
+  void _onSilenceTimeout() {
+    if (_currentState != CallState.connected) {
+      return;
+    }
+    
+    logService.info(_tag, 'Silence timeout reached (${AppConfig.silenceTimeoutSeconds}s), ending call');
+    _emitError('無音状態が続いたため通話を終了しました');
+    endCall();
+  }
+
   /// End the call
   Future<void> endCall() async {
     if (!isCallActive && _currentState != CallState.error) {
@@ -334,6 +369,9 @@ class CallService {
     
     _callTimer?.cancel();
     _callTimer = null;
+    
+    _silenceTimer?.cancel();
+    _silenceTimer = null;
 
     await _audioStreamSubscription?.cancel();
     _audioStreamSubscription = null;

@@ -16,4 +16,8 @@ class AppConfig {
 
   /// Audio bit depth
   static const int bitDepth = 16;
+
+  /// Silence timeout in seconds - call will auto-end after this duration of silence
+  /// Set to 0 to disable silence detection
+  static const int silenceTimeoutSeconds = 60;
 }
