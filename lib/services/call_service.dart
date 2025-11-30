@@ -1,13 +1,13 @@
 import 'dart:async';
 import 'dart:typed_data';
 import 'package:record/record.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 import 'audio_recorder_service.dart';
 import 'audio_player_service.dart';
 import 'realtime_api_client.dart';
 import 'storage_service.dart';
 import 'tool_service.dart';
 import 'haptic_service.dart';
-import 'wakelock_service.dart';
 import 'log_service.dart';
 import 'chat/chat_message_manager.dart';
 import '../models/chat_message.dart';
@@ -33,7 +33,6 @@ class CallService {
   final StorageService _storage;
   final ToolService _toolService;
   final HapticService _hapticService;
-  final WakeLockService _wakeLockService;
   final ChatMessageManager _chatManager = ChatMessageManager();
   
   /// Session-scoped tool manager (created on call start, disposed on call end)
@@ -72,14 +71,12 @@ class CallService {
     required StorageService storage,
     required ToolService toolService,
     required HapticService hapticService,
-    required WakeLockService wakeLockService,
   })  : _recorder = recorder,
         _player = player,
         _apiClient = apiClient,
         _storage = storage,
         _toolService = toolService,
-        _hapticService = hapticService,
-        _wakeLockService = wakeLockService;
+        _hapticService = hapticService;
 
   /// Current call state
   CallState get currentState => _currentState;
@@ -198,7 +195,7 @@ class CallService {
       _startCallTimer();
 
       // Enable wake lock to prevent device sleep during call
-      await _wakeLockService.enable();
+      await _enableWakeLock();
 
       _setState(CallState.connected);
       logService.info(_tag, 'Call connected successfully');
@@ -380,7 +377,7 @@ class CallService {
     await _apiClient.disconnect();
     
     // Disable wake lock to allow device to sleep normally
-    await _wakeLockService.disable();
+    await _disableWakeLock();
     
     // Dispose session-scoped tool manager
     _toolManager?.dispose();
@@ -401,6 +398,26 @@ class CallService {
 
   void _emitError(String message) {
     _errorController.add(message);
+  }
+
+  /// Enable wake lock to prevent device from sleeping during call
+  Future<void> _enableWakeLock() async {
+    try {
+      await WakelockPlus.enable();
+      logService.info(_tag, 'Wake lock enabled');
+    } catch (e) {
+      logService.error(_tag, 'Failed to enable wake lock: $e');
+    }
+  }
+
+  /// Disable wake lock to allow device to sleep normally
+  Future<void> _disableWakeLock() async {
+    try {
+      await WakelockPlus.disable();
+      logService.info(_tag, 'Wake lock disabled');
+    } catch (e) {
+      logService.error(_tag, 'Failed to disable wake lock: $e');
+    }
   }
   
   /// Clear chat history
