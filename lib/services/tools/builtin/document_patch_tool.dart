@@ -16,6 +16,15 @@ String _encodePatchText(String patchText) {
   final lines = patchText.split('\n');
   final headerPattern = RegExp(r'^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@');
   
+  // Pattern to detect UTF-8 multi-byte characters in URL-encoded format
+  // Matches patterns like %E3%81%82 (Japanese hiragana あ)
+  // First byte: %C0-%DF (2-byte), %E0-%EF (3-byte), %F0-%F7 (4-byte)
+  // Continuation bytes: %80-%BF
+  final urlEncodedMultibytePattern = RegExp(r'%[EeDdCc][0-9A-Fa-f]%[89AaBb][0-9A-Fa-f]');
+  
+  // Pattern to detect non-ASCII characters (any character outside 0x00-0x7F range)
+  final nonAsciiPattern = RegExp(r'[^\x00-\x7F]');
+  
   // Check if patch content contains URL-encoded sequences or non-ASCII characters
   bool hasUrlEncoding = false;
   bool hasNonAscii = false;
@@ -25,15 +34,14 @@ String _encodePatchText(String patchText) {
         (line.startsWith('+') || line.startsWith('-') || line.startsWith(' '))) {
       final content = line.substring(1);
       
-      // Check for URL-encoded content (like %0A, %E3, etc.)
-      if (content.contains('%0A') || 
-          RegExp(r'%[EeDdCc][0-9A-Fa-f]%[89AaBb][0-9A-Fa-f]').hasMatch(content)) {
+      // Check for URL-encoded newline (%0A) or multi-byte characters
+      if (content.contains('%0A') || urlEncodedMultibytePattern.hasMatch(content)) {
         hasUrlEncoding = true;
         break;
       }
       
       // Check for non-ASCII characters
-      if (RegExp(r'[^\x00-\x7F]').hasMatch(content)) {
+      if (nonAsciiPattern.hasMatch(content)) {
         hasNonAscii = true;
       }
     }
