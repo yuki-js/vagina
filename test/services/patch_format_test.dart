@@ -533,5 +533,498 @@ void main() {
       final result = await applyPatchAndGetResult(input, patch);
       expect(result, equals(expected));
     });
+
+    // ==================== Needle in Haystack Tests ====================
+    
+    test('31. Needle in haystack: single word change in long Japanese text', () async {
+      const input = '''むかしむかし、あるところにおじいさんとおばあさんがいました。
+おじいさんは山へしばかりに、おばあさんは川へせんたくに行きました。
+おばあさんが川でせんたくをしていると、大きなももが流れてきました。
+おばあさんはそのももを持ち帰り、おじいさんと一緒に食べようとしました。
+すると中から元気な男の子が生まれました。
+二人はその子を桃太郎と名づけました。
+''';
+      const patch = '''@@ -1,6 +1,6 @@
+ むかしむかし、あるところにおじいさんとおばあさんがいました。
+ おじいさんは山へしばかりに、おばあさんは川へせんたくに行きました。
+ おばあさんが川でせんたくをしていると、大きなももが流れてきました。
+-おばあさんはそのももを持ち帰り、おじいさんと一緒に食べようとしました。
++おばあさんはその大きなももを持ち帰り、おじいさんと一緒に切ろうとしました。
+ すると中から元気な男の子が生まれました。
+ 二人はその子を桃太郎と名づけました。
+''';
+      const expected = '''むかしむかし、あるところにおじいさんとおばあさんがいました。
+おじいさんは山へしばかりに、おばあさんは川へせんたくに行きました。
+おばあさんが川でせんたくをしていると、大きなももが流れてきました。
+おばあさんはその大きなももを持ち帰り、おじいさんと一緒に切ろうとしました。
+すると中から元気な男の子が生まれました。
+二人はその子を桃太郎と名づけました。
+''';
+      
+      final result = await applyPatchAndGetResult(input, patch);
+      expect(result, equals(expected));
+    });
+
+    test('32. Needle in haystack: single change in 20-line document', () async {
+      const input = '''行1：テスト
+行2：テスト
+行3：テスト
+行4：テスト
+行5：テスト
+行6：テスト
+行7：テスト
+行8：テスト
+行9：テスト
+行10：これは古いテストです
+行11：テスト
+行12：テスト
+行13：テスト
+行14：テスト
+行15：テスト
+行16：テスト
+行17：テスト
+行18：テスト
+行19：テスト
+行20：テスト
+''';
+      const patch = '''@@ -8,5 +8,5 @@
+ 行8：テスト
+ 行9：テスト
+-行10：これは古いテストです
++行10：これは新しいテストです
+ 行11：テスト
+ 行12：テスト
+''';
+      const expected = '''行1：テスト
+行2：テスト
+行3：テスト
+行4：テスト
+行5：テスト
+行6：テスト
+行7：テスト
+行8：テスト
+行9：テスト
+行10：これは新しいテストです
+行11：テスト
+行12：テスト
+行13：テスト
+行14：テスト
+行15：テスト
+行16：テスト
+行17：テスト
+行18：テスト
+行19：テスト
+行20：テスト
+''';
+      
+      final result = await applyPatchAndGetResult(input, patch);
+      expect(result, equals(expected));
+    });
+
+    test('33. Needle in haystack: change one line at the end of long document', () async {
+      final inputLines = List.generate(30, (i) => '段落${i + 1}');
+      inputLines[29] = '最後の段落（旧）';
+      final input = '${inputLines.join('\n')}\n';
+      
+      const patch = '''@@ -28,3 +28,3 @@
+ 段落28
+ 段落29
+-最後の段落（旧）
++最後の段落（新）
+''';
+      
+      final expectedLines = List.generate(30, (i) => '段落${i + 1}');
+      expectedLines[29] = '最後の段落（新）';
+      final expected = '${expectedLines.join('\n')}\n';
+      
+      final result = await applyPatchAndGetResult(input, patch);
+      expect(result, equals(expected));
+    });
+
+    test('34. Needle in haystack: change one line at the beginning of long document', () async {
+      final inputLines = ['最初の行（旧）'] + List.generate(29, (i) => '段落${i + 2}');
+      final input = '${inputLines.join('\n')}\n';
+      
+      const patch = '''@@ -1,3 +1,3 @@
+-最初の行（旧）
++最初の行（新）
+ 段落2
+ 段落3
+''';
+      
+      final expectedLines = ['最初の行（新）'] + List.generate(29, (i) => '段落${i + 2}');
+      final expected = '${expectedLines.join('\n')}\n';
+      
+      final result = await applyPatchAndGetResult(input, patch);
+      expect(result, equals(expected));
+    });
+
+    // ==================== Long Content Tests ====================
+    
+    test('35. Long content: 15-line Japanese document with middle edit', () async {
+      const input = '''最初の段落です。
+二番目の段落です。
+三番目の段落です。
+四番目の段落です。
+五番目の段落です。
+六番目の段落です。
+七番目の段落です。
+八番目の段落（古い内容）です。
+九番目の段落です。
+十番目の段落です。
+十一番目の段落です。
+十二番目の段落です。
+十三番目の段落です。
+十四番目の段落です。
+十五番目の段落です。
+''';
+      const patch = '''@@ -6,5 +6,5 @@
+ 六番目の段落です。
+ 七番目の段落です。
+-八番目の段落（古い内容）です。
++八番目の段落（新しい内容）です。
+ 九番目の段落です。
+ 十番目の段落です。
+''';
+      const expected = '''最初の段落です。
+二番目の段落です。
+三番目の段落です。
+四番目の段落です。
+五番目の段落です。
+六番目の段落です。
+七番目の段落です。
+八番目の段落（新しい内容）です。
+九番目の段落です。
+十番目の段落です。
+十一番目の段落です。
+十二番目の段落です。
+十三番目の段落です。
+十四番目の段落です。
+十五番目の段落です。
+''';
+      
+      final result = await applyPatchAndGetResult(input, patch);
+      expect(result, equals(expected));
+    });
+
+    test('36. Long content: add line to 25-line document', () async {
+      const input = '''行1
+行2
+行3
+行4
+行5
+行6
+行7
+行8
+行9
+行10
+行11
+行12
+行13
+行14
+行15
+行16
+行17
+行18
+行19
+行20
+行21
+行22
+行23
+行24
+行25
+''';
+      const patch = '''@@ -10,5 +10,6 @@
+ 行10
+ 行11
+ 行12
++新しい行
+ 行13
+ 行14
+''';
+      const expected = '''行1
+行2
+行3
+行4
+行5
+行6
+行7
+行8
+行9
+行10
+行11
+行12
+新しい行
+行13
+行14
+行15
+行16
+行17
+行18
+行19
+行20
+行21
+行22
+行23
+行24
+行25
+''';
+      
+      final result = await applyPatchAndGetResult(input, patch);
+      expect(result, equals(expected));
+    });
+
+    test('37. Long content: very long single line (1000 chars)', () async {
+      final longContent = 'あ' * 1000;
+      final input = '$longContent\n';
+      
+      final newContent = 'あ' * 500 + 'い' * 500;
+      final patch = '''@@ -1 +1 @@
+-$longContent
++$newContent
+''';
+      final expected = '$newContent\n';
+      
+      final result = await applyPatchAndGetResult(input, patch);
+      expect(result, equals(expected));
+    });
+
+    test('38. Long content: multiple long lines', () async {
+      final line1 = '第一行：${'漢字' * 100}';
+      final line2 = '第二行：${'ひらがな' * 100}';
+      final line3 = '第三行：${'カタカナ' * 100}';
+      final input = '$line1\n$line2\n$line3\n';
+      
+      final newLine2 = '第二行（修正）：${'ひらがな' * 100}';
+      final patch = '''@@ -1,3 +1,3 @@
+ $line1
+-$line2
++$newLine2
+ $line3
+''';
+      final expected = '$line1\n$newLine2\n$line3\n';
+      
+      final result = await applyPatchAndGetResult(input, patch);
+      expect(result, equals(expected));
+    });
+
+    // ==================== Fine-grained Detail Tests ====================
+    
+    test('39. Detail: single character replacement in Japanese', () async {
+      const input = '東京都\n';
+      const patch = '''@@ -1 +1 @@
+-東京都
++東京府
+''';
+      const expected = '東京府\n';
+      
+      final result = await applyPatchAndGetResult(input, patch);
+      expect(result, equals(expected));
+    });
+
+    test('40. Detail: single punctuation change', () async {
+      const input = 'こんにちは。\n';
+      const patch = '''@@ -1 +1 @@
+-こんにちは。
++こんにちは！
+''';
+      const expected = 'こんにちは！\n';
+      
+      final result = await applyPatchAndGetResult(input, patch);
+      expect(result, equals(expected));
+    });
+
+    test('41. Detail: whitespace preservation', () async {
+      const input = '　インデントされた行\n';  // Full-width space at start
+      const patch = '''@@ -1 +1,2 @@
+ 　インデントされた行
++　別のインデント行
+''';
+      const expected = '　インデントされた行\n　別のインデント行\n';
+      
+      final result = await applyPatchAndGetResult(input, patch);
+      expect(result, equals(expected));
+    });
+
+    test('42. Detail: mixed width characters', () async {
+      const input = 'ABCあいうDEF\n';
+      const patch = '''@@ -1 +1 @@
+-ABCあいうDEF
++ABCかきくDEF
+''';
+      const expected = 'ABCかきくDEF\n';
+      
+      final result = await applyPatchAndGetResult(input, patch);
+      expect(result, equals(expected));
+    });
+
+    test('43. Detail: special Unicode characters', () async {
+      const input = '①②③\n';
+      const patch = '''@@ -1 +1 @@
+-①②③
++❶❷❸
+''';
+      const expected = '❶❷❸\n';
+      
+      final result = await applyPatchAndGetResult(input, patch);
+      expect(result, equals(expected));
+    });
+
+    test('44. Detail: mathematical symbols with Japanese', () async {
+      const input = 'x² + y² = r²\n';
+      const patch = '''@@ -1 +1,2 @@
+ x² + y² = r²
++（円の方程式）
+''';
+      const expected = 'x² + y² = r²\n（円の方程式）\n';
+      
+      final result = await applyPatchAndGetResult(input, patch);
+      expect(result, equals(expected));
+    });
+
+    test('45. Detail: consecutive empty lines handling', () async {
+      const input = '第一段落\n\n\n第二段落\n';
+      const patch = '''@@ -1,4 +1,5 @@
+ 第一段落
+ 
+ 
++追加行
+ 第二段落
+''';
+      const expected = '第一段落\n\n\n追加行\n第二段落\n';
+      
+      final result = await applyPatchAndGetResult(input, patch);
+      expect(result, equals(expected));
+    });
+
+    // ==================== Complex Scenario Tests ====================
+    
+    test('46. Complex: multiple scattered changes in document', () async {
+      const input = '''章1：序章
+内容A
+内容B
+章2：本編
+内容C
+内容D
+章3：終章
+内容E
+内容F
+''';
+      // Note: This requires multiple hunks or separate patches
+      // For simplicity, testing one hunk that changes multiple consecutive lines
+      const patch = '''@@ -4,3 +4,3 @@
+ 章2：本編
+-内容C
+-内容D
++内容C（更新）
++内容D（更新）
+''';
+      const expected = '''章1：序章
+内容A
+内容B
+章2：本編
+内容C（更新）
+内容D（更新）
+章3：終章
+内容E
+内容F
+''';
+      
+      final result = await applyPatchAndGetResult(input, patch);
+      expect(result, equals(expected));
+    });
+
+    test('47. Complex: delete multiple consecutive lines', () async {
+      const input = '''保持行1
+削除行1
+削除行2
+削除行3
+保持行2
+''';
+      const patch = '''@@ -1,5 +1,2 @@
+ 保持行1
+-削除行1
+-削除行2
+-削除行3
+ 保持行2
+''';
+      const expected = '''保持行1
+保持行2
+''';
+      
+      final result = await applyPatchAndGetResult(input, patch);
+      expect(result, equals(expected));
+    });
+
+    test('48. Complex: insert block of text', () async {
+      const input = '''既存行1
+既存行2
+''';
+      const patch = '''@@ -1,2 +1,5 @@
+ 既存行1
++挿入行1
++挿入行2
++挿入行3
+ 既存行2
+''';
+      const expected = '''既存行1
+挿入行1
+挿入行2
+挿入行3
+既存行2
+''';
+      
+      final result = await applyPatchAndGetResult(input, patch);
+      expect(result, equals(expected));
+    });
+
+    test('49. Complex: replace entire content', () async {
+      const input = '''古い内容1
+古い内容2
+古い内容3
+''';
+      const patch = '''@@ -1,3 +1,3 @@
+-古い内容1
+-古い内容2
+-古い内容3
++新しい内容A
++新しい内容B
++新しい内容C
+''';
+      const expected = '''新しい内容A
+新しい内容B
+新しい内容C
+''';
+      
+      final result = await applyPatchAndGetResult(input, patch);
+      expect(result, equals(expected));
+    });
+
+    test('50. Complex: interleaved additions and deletions', () async {
+      const input = '''行1
+行2
+行3
+行4
+行5
+''';
+      const patch = '''@@ -1,5 +1,5 @@
+ 行1
+-行2
++行2（変更）
+ 行3
+-行4
++行4（変更）
+ 行5
+''';
+      const expected = '''行1
+行2（変更）
+行3
+行4（変更）
+行5
+''';
+      
+      final result = await applyPatchAndGetResult(input, patch);
+      expect(result, equals(expected));
+    });
   });
 }
