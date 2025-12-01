@@ -2,38 +2,108 @@ import 'package:diff_match_patch/diff_match_patch.dart';
 import '../base_tool.dart';
 import '../../notepad_service.dart';
 
-/// Converts a plain unified diff format patch to URL-encoded format.
+/// Converts a plain unified diff format patch to the format expected by diff_match_patch.
 /// 
-/// The diff_match_patch library expects patch content to be URL-encoded,
-/// but AI models typically generate plain text unified diff (like git diff).
-/// This function converts plain text to the expected URL-encoded format.
+/// The diff_match_patch library can work with two types of patches:
+/// 1. Library-generated patches: may have URL-encoded content (%0A, %E3, etc.)
+/// 2. AI-generated patches: plain text that needs encoding for non-ASCII
+///
+/// This function:
+/// - If patch already has URL-encoding, returns as-is
+/// - If patch has non-ASCII characters, encodes them and adds %0A line endings
+/// - Otherwise, returns as-is (ASCII-only library patches)
 String _encodePatchText(String patchText) {
   final lines = patchText.split('\n');
-  final encodedLines = <String>[];
-  // Match unified diff headers like "@@ -1,5 +1,7 @@" or "@@ -1 +1 @@"
-  final headerPattern = RegExp(r'^@@ -\d+(?:,\d+)? \+\d+(?:,\d+)? @@');
+  final headerPattern = RegExp(r'^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@');
+  
+  // Check if patch content contains URL-encoded sequences or non-ASCII characters
+  bool hasUrlEncoding = false;
+  bool hasNonAscii = false;
   
   for (final line in lines) {
-    if (line.isEmpty) {
-      encodedLines.add(line);
-    } else if (headerPattern.hasMatch(line)) {
-      // Keep patch headers as-is
-      encodedLines.add(line);
-    } else if (line.startsWith('+') || line.startsWith('-') || line.startsWith(' ')) {
-      // Encode the content portion (after the prefix character)
-      final prefix = line[0];
+    if (line.isNotEmpty && !headerPattern.hasMatch(line) && 
+        (line.startsWith('+') || line.startsWith('-') || line.startsWith(' '))) {
       final content = line.substring(1);
-      // URL encode the content, then replace %20 with space to match
-      // the diff_match_patch library's expected format (see Patch.toString())
-      final encoded = Uri.encodeFull(content).replaceAll('%20', ' ');
-      encodedLines.add('$prefix$encoded');
-    } else {
-      // For any other lines, keep as-is
-      encodedLines.add(line);
+      
+      // Check for URL-encoded content (like %0A, %E3, etc.)
+      if (content.contains('%0A') || 
+          RegExp(r'%[EeDdCc][0-9A-Fa-f]%[89AaBb][0-9A-Fa-f]').hasMatch(content)) {
+        hasUrlEncoding = true;
+        break;
+      }
+      
+      // Check for non-ASCII characters
+      if (RegExp(r'[^\x00-\x7F]').hasMatch(content)) {
+        hasNonAscii = true;
+      }
     }
   }
   
-  return encodedLines.join('\n');
+  // If already URL-encoded, return as-is
+  if (hasUrlEncoding) {
+    return patchText;
+  }
+  
+  // If no non-ASCII characters, assume it's a library patch and return as-is
+  if (!hasNonAscii) {
+    return patchText;
+  }
+  
+  // Has non-ASCII, needs encoding - this is an AI-generated patch
+  // Find all patch sections
+  final sections = <List<String>>[];
+  List<String>? currentSection;
+  
+  for (final line in lines) {
+    if (headerPattern.hasMatch(line)) {
+      if (currentSection != null) {
+        sections.add(currentSection);
+      }
+      currentSection = [line];
+    } else if (currentSection != null) {
+      currentSection.add(line);
+    }
+  }
+  if (currentSection != null && currentSection.isNotEmpty) {
+    sections.add(currentSection);
+  }
+  
+  if (sections.isEmpty) {
+    return patchText;
+  }
+  
+  final encodedSections = <String>[];
+  
+  for (final section in sections) {
+    final header = section[0];
+    final processedLines = <String>[];
+    processedLines.add(header);
+    
+    for (var i = 1; i < section.length; i++) {
+      final line = section[i];
+      
+      if (line.isEmpty) continue;
+      
+      if (line.startsWith('+') || line.startsWith('-') || line.startsWith(' ')) {
+        final prefix = line[0];
+        final content = line.substring(1);
+        
+        // URL encode the content
+        var encoded = Uri.encodeFull(content);
+        encoded = encoded.replaceAll('%20', ' ');
+        // Add newline at end - AI patches represent full lines
+        encoded = '$encoded%0A';
+        
+        processedLines.add('$prefix$encoded');
+      } else {
+        processedLines.add(line);
+      }
+    }
+    
+    encodedSections.add(processedLines.join('\n'));
+  }
+  
+  return encodedSections.join('\n');
 }
 
 /// Tool for patching a document using unified diff format
