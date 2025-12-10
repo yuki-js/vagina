@@ -20,12 +20,17 @@ cp scripts/pre-commit.sh .git/hooks/pre-commit
 
 # Install Flutter dependencies using fvm
 echo "Installing Flutter dependencies..."
-fvm flutter pub get
+if ! fvm flutter pub get; then
+    echo "Error: Failed to install Flutter dependencies."
+    exit 1
+fi
 
 echo "Setup complete!"
 echo ""
 echo "Development tools installed:"
 echo "  - Pre-commit hook (format & analyze)"
-echo "  - Flutter version: $(fvm flutter --version | head -n 1)"
+if fvm flutter --version &> /dev/null; then
+    echo "  - Flutter version: $(fvm flutter --version | head -n 1)"
+fi
 echo ""
 echo "Run 'fvm flutter run' to start the app."
