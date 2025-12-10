@@ -19,11 +19,9 @@ RUN mkdir -p /opt/android-sdk && \
     rm -rf /opt/android-sdk/cmdline-tools-tmp cmdline-tools.zip
 
 # Install fvm and Flutter 3.27.1
-RUN git clone https://github.com/leoafarias/fvm.git /opt/fvm && \
-    cd /opt/fvm && \
-    git checkout tags/3.3.2 && \
-    dart pub get && \
-    dart compile exe bin/main.dart -o /usr/local/bin/fvm
+ENV PUB_CACHE=/opt/pub-cache
+ENV PATH="$PUB_CACHE/bin:$PATH"
+RUN dart pub global activate fvm 3.3.2
 
 # Download Flutter 3.27.1 via fvm
 ENV FVM_HOME=/opt/fvm_home
@@ -43,8 +41,9 @@ ENV ANDROID_SDK_ROOT=/opt/android-sdk
 ENV ANDROID_HOME=/opt/android-sdk
 ENV JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
 ENV FVM_HOME=/opt/fvm_home
+ENV PUB_CACHE=/opt/pub-cache
 # Prefer fvm and Flutter tooling first in PATH
-ENV PATH="/usr/local/bin:$FVM_HOME/default/bin:$FVM_HOME/default/bin/cache/dart-sdk/bin:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools:$PATH"
+ENV PATH="$PUB_CACHE/bin:$FVM_HOME/default/bin:$FVM_HOME/default/bin/cache/dart-sdk/bin:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools:$PATH"
 # Pin toolchain paths to values observed at runtime to avoid Gradle scanning/downloads
 ENV ANDROID_NDK_ROOT=/opt/android-sdk/ndk/28.2.13676358
 ENV ANDROID_NDK_HOME=/opt/android-sdk/ndk/28.2.13676358
@@ -52,7 +51,7 @@ ENV CMAKE_HOME=/opt/android-sdk/cmake/3.22.1
 
 # Copy hoisted files from download stage
 COPY --from=download --chown=user:user /opt/android-sdk/cmdline-tools/latest /opt/android-sdk/cmdline-tools/latest
-COPY --from=download --chown=user:user /usr/local/bin/fvm /usr/local/bin/fvm
+COPY --from=download --chown=user:user /opt/pub-cache /opt/pub-cache
 COPY --from=download --chown=user:user /opt/fvm_home /opt/fvm_home
 
 # Latest cmdline-tools revision (discovered externally)
