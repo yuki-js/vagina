@@ -2,8 +2,8 @@
 
 ## 前提条件
 
-- Flutter SDK (3.38.3 以上)
-- Dart SDK (3.10.1 以上)
+- Flutter SDK 3.27.1 (fvm 経由で管理)
+- fvm (Flutter Version Management)
 - Android Studio または VS Code (Flutter 拡張機能付き)
 - Xcode (iOS 開発の場合)
 - Git
@@ -19,13 +19,27 @@ cd vagina
 
 ### 2. 開発環境セットアップ
 
+fvm をインストールしてから、セットアップスクリプトを実行します:
+
 ```bash
+# fvm のインストール (まだの場合)
+dart pub global activate fvm
+# または Homebrew
+brew install fvm
+
+# プロジェクトの Flutter バージョンをインストール
+fvm install
+
+# 開発環境のセットアップ
 ./scripts/setup.sh
 ```
 
 このスクリプトは以下を行います:
+- fvm の確認
 - Pre-commit hook のインストール
 - Flutter 依存関係のインストール
+
+> **注意**: devcontainer を使用する場合、fvm と Flutter 3.27.1 は自動的にセットアップされます。
 
 ### 3. 環境設定
 
@@ -46,38 +60,46 @@ cp .env.example .env
 - Flutter
 - Flutter Riverpod Snippets
 
+fvm を使用する場合、`.fvm/flutter_sdk` を Flutter SDK パスとして設定します。
+devcontainer を使用する場合は自動的に設定されます。
+
 #### Android Studio
 
 プラグイン:
 - Flutter
 - Dart
 
+fvm を使用する場合、Flutter SDK パスを `.fvm/flutter_sdk` に設定します。
+
 ## ビルド & 実行
+
+> **注意**: fvm を使用している場合、すべての `flutter` コマンドの前に `fvm` を付けて実行します: `fvm flutter run` など。
+> devcontainer 内では `flutter` コマンドがそのまま使用できます。
 
 ### 開発ビルド
 
 ```bash
 # Android
-flutter run -d android
+fvm flutter run -d android
 
 # iOS
-flutter run -d ios
+fvm flutter run -d ios
 
 # すべてのデバイス一覧
-flutter devices
+fvm flutter devices
 ```
 
 ### リリースビルド
 
 ```bash
 # Android APK
-flutter build apk --release
+fvm flutter build apk --release
 
 # Android App Bundle
-flutter build appbundle --release
+fvm flutter build appbundle --release
 
 # iOS
-flutter build ios --release
+fvm flutter build ios --release
 ```
 
 ## コード品質
@@ -85,7 +107,7 @@ flutter build ios --release
 ### 静的解析
 
 ```bash
-flutter analyze
+fvm flutter analyze
 ```
 
 ### フォーマット
@@ -98,10 +120,10 @@ dart format .
 
 ```bash
 # 全テスト実行
-flutter test
+fvm flutter test
 
 # カバレッジ付き
-flutter test --coverage
+fvm flutter test --coverage
 ```
 
 ## プロジェクト構造
@@ -129,8 +151,8 @@ vagina/
 
 ```bash
 cd packages/core
-flutter pub get
-flutter test
+fvm flutter pub get
+fvm flutter test
 ```
 
 パッケージ間の依存関係は `pubspec.yaml` で `path:` 指定しています：
@@ -172,15 +194,27 @@ iOS の場合、`ios/Runner/Info.plist` に説明が追加されていること�
 
 ```bash
 # クリーンビルド
-flutter clean
-flutter pub get
-flutter run
+fvm flutter clean
+fvm flutter pub get
+fvm flutter run
 ```
 
 ### 依存関係の問題
 
 ```bash
-flutter pub upgrade
+fvm flutter pub upgrade
+```
+
+### Flutter バージョンの問題
+
+プロジェクトは Flutter 3.27.1 を使用しています。バージョンが異なる場合:
+
+```bash
+# fvm でプロジェクトのバージョンをインストール
+fvm install
+
+# 確認
+fvm flutter --version
 ```
 
 ## コントリビューション
