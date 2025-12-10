@@ -4,6 +4,13 @@
 
 echo "Running pre-commit checks..."
 
+# Check if fvm is available, if not fall back to flutter
+if command -v fvm &> /dev/null; then
+    FLUTTER_CMD="fvm flutter"
+else
+    FLUTTER_CMD="flutter"
+fi
+
 # Format Dart code
 echo "Formatting Dart code..."
 dart format --set-exit-if-changed .
@@ -14,7 +21,7 @@ fi
 
 # Run analyzer
 echo "Running Dart analyzer..."
-flutter analyze --no-fatal-infos
+$FLUTTER_CMD analyze --no-fatal-infos
 if [ $? -ne 0 ]; then
     echo "Error: Analysis issues found. Please fix before committing."
     exit 1

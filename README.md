@@ -18,8 +18,42 @@ Azure OpenAI Realtime API を使用したリアルタイム音声 AI アシス�
 
 ## 必要条件
 
-- Flutter SDK 3.10.0 以上
+- Flutter SDK 3.27.1 (fvm 経由で管理)
 - Azure OpenAI API キー (Realtime API アクセス権限付き)
+
+### Flutter バージョン管理 (fvm)
+
+このプロジェクトは [fvm (Flutter Version Management)](https://fvm.app/) を使用して Flutter のバージョンを管理しています。
+
+#### fvm のインストール
+
+```bash
+# Dart がインストール済みの場合
+dart pub global activate fvm
+
+# または Homebrew (macOS/Linux)
+brew tap leoafarias/fvm
+brew install fvm
+```
+
+詳細は [fvm の公式ドキュメント](https://fvm.app/docs/getting_started/installation) を参照してください。
+
+#### fvm の使用方法
+
+```bash
+# プロジェクトで指定されたバージョンの Flutter をインストール
+fvm install
+
+# fvm 経由で Flutter コマンドを実行
+fvm flutter --version
+fvm flutter pub get
+fvm flutter run
+
+# IDE で fvm を使用する場合
+# .fvm/flutter_sdk が作成されるので、このパスを IDE に設定してください
+```
+
+> **注意**: devcontainer を使用する場合、fvm は自動的に設定されます。
 
 ## クイックスタート
 
@@ -28,10 +62,29 @@ Azure OpenAI Realtime API を使用したリアルタイム音声 AI アシス�
 git clone https://github.com/yuki-js/vagina.git
 cd vagina
 
+# fvm で Flutter をインストール
+fvm install
+
 # 依存関係をインストール
-flutter pub get
+fvm flutter pub get
 
 # アプリを実行
+fvm flutter run
+```
+
+### devcontainer を使用する場合
+
+devcontainer を使用すると、fvm と Flutter 3.27.1 が自動的にセットアップされます。
+
+```bash
+# VS Code で開く
+code .
+
+# Command Palette から "Dev Containers: Reopen in Container" を選択
+
+# devcontainer 内では fvm が設定済みなので、直接 flutter コマンドを使用可能
+flutter --version
+flutter pub get
 flutter run
 ```
 
@@ -82,13 +135,28 @@ vagina/
 
 ```bash
 # 静的解析
-flutter analyze
+fvm flutter analyze
 
 # テスト
-flutter test
+fvm flutter test
 
 # フォーマット
 dart format .
+```
+
+### その他の Flutter バージョンを使いたい場合
+
+fvm を使用すると、複数のバージョンを管理できます:
+
+```bash
+# 別のバージョンをインストール
+fvm install 3.38.3
+
+# 一時的に別のバージョンを使用
+fvm use 3.38.3
+
+# デフォルトバージョン (3.27.1) に戻す
+fvm use 3.27.1
 ```
 
 ## ライセンス
