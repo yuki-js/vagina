@@ -27,7 +27,7 @@
       ],
       "settings": {
         "terminal.integrated.defaultProfile.linux": "zsh",
-        "dart.flutterSdkPath": "/opt/flutter"
+        "dart.flutterSdkPath": "/opt/fvm_home/default"
       }
     }
   },

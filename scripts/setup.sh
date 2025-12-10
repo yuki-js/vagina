@@ -6,18 +6,26 @@ set -e
 
 echo "Setting up VAGINA development environment..."
 
+# Check if fvm is available
+if ! command -v fvm &> /dev/null; then
+    echo "Warning: fvm is not installed. Please install fvm first."
+    echo "See: https://fvm.app/docs/getting_started/installation"
+    exit 1
+fi
+
 # Install git hooks
 echo "Installing pre-commit hook..."
 chmod +x scripts/pre-commit.sh
 cp scripts/pre-commit.sh .git/hooks/pre-commit
 
-# Install Flutter dependencies
+# Install Flutter dependencies using fvm
 echo "Installing Flutter dependencies..."
-flutter pub get
+fvm flutter pub get
 
 echo "Setup complete!"
 echo ""
 echo "Development tools installed:"
 echo "  - Pre-commit hook (format & analyze)"
+echo "  - Flutter version: $(fvm flutter --version | head -n 1)"
 echo ""
-echo "Run 'flutter run' to start the app."
+echo "Run 'fvm flutter run' to start the app."
