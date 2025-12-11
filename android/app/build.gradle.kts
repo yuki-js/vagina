@@ -8,10 +8,11 @@ plugins {
 android {
     namespace = "app.aoki.yuki.vagina"
     compileSdk = flutter.compileSdkVersion
-    // NDK r28 (27.0.12077973) is required by multiple plugins:
-    // device_info_plus, flutter_sound, package_info_plus, path_provider_android,
-    // permission_handler_android, record_android, share_plus, wakelock_plus
-    ndkVersion = "27.0.12077973"
+    // NDK r28 (28.2.13676358) is required by multiple plugins and Google Play requirements:
+    // - Multiple plugins require NDK r27+: device_info_plus, flutter_sound, package_info_plus,
+    //   path_provider_android, permission_handler_android, record_android, share_plus, wakelock_plus
+    // - NDK r28+ has 16KB page support enabled by default, required for Google Play
+    ndkVersion = "28.2.13676358"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
