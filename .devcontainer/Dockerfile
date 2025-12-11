@@ -18,9 +18,14 @@ RUN mkdir -p /opt/android-sdk && \
     mv /opt/android-sdk/cmdline-tools-tmp/cmdline-tools/* /opt/android-sdk/cmdline-tools/latest/ && \
     rm -rf /opt/android-sdk/cmdline-tools-tmp cmdline-tools.zip
 
+# Download and install Dart SDK
+RUN wget -qO /tmp/dart-sdk.zip https://storage.googleapis.com/dart-archive/channels/stable/release/3.6.0/sdk/dartsdk-linux-x64-release.zip && \
+    unzip -q /tmp/dart-sdk.zip -d /opt && \
+    rm /tmp/dart-sdk.zip
+
 # Install fvm and Flutter 3.27.1
 ENV PUB_CACHE=/opt/pub-cache
-ENV PATH="$PUB_CACHE/bin:$PATH"
+ENV PATH="/opt/dart-sdk/bin:$PUB_CACHE/bin:$PATH"
 RUN dart pub global activate fvm 3.3.2
 
 # Download Flutter 3.27.1 via fvm
