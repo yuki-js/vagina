@@ -96,7 +96,7 @@ jobs:
           zip -r ../ipa/app-debug.ipa Payload
       
       - name: Upload Debug IPA
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: ios-debug-ipa
           path: build/ios/ipa/app-debug.ipa
@@ -156,7 +156,7 @@ jobs:
           zip -r ../ipa/app-release.ipa Payload
       
       - name: Upload Release IPA
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: ios-release-ipa
           path: build/ios/ipa/app-release.ipa

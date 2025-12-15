@@ -122,7 +122,7 @@ jobs:
         run: flutter build apk --debug
       
       - name: Upload Debug APK
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: android-debug-apk
           path: build/app/outputs/flutter-apk/app-debug.apk
@@ -177,7 +177,7 @@ jobs:
         run: flutter build apk --release
       
       - name: Upload Release APK
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: android-release-apk
           path: build/app/outputs/flutter-apk/app-release.apk
