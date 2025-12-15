@@ -15,7 +15,7 @@ dependencies:
   google_fonts: ^6.2.1
   
   # State management
-  flutter_riverpod: ^2.6.1
+  flutter_riverpod: ^3.0.3
   
   # Audio handling
   record: ^6.1.2
