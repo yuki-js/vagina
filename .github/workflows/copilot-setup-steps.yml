@@ -58,6 +58,12 @@ jobs:
       - name: Install Flutter dependencies
         run: flutter pub get
 
+      - name: Enable Windows desktop support
+        run: flutter config --enable-windows-desktop
+
+      - name: Generate Windows plugin files
+        run: flutter pub get
+
       - name: Verify setup
         run: |
           echo "Setup completed successfully"
