@@ -119,6 +119,8 @@ vagina/
 - [アーキテクチャ](docs/ARCHITECTURE.md)
 - [OpenAI Realtime API 仕様](docs/OPENAI_REALTIME_API.md)
 - [プライバシーポリシー](docs/PRIVACY.md)
+- [Windows ビルドガイド](docs/WINDOWS_BUILD.md)
+- [Windows テスト手順](docs/WINDOWS_TESTING.md)
 
 ## 技術スタック
 
