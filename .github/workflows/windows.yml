@@ -19,14 +19,14 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v6
-      
+
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.27.1'
           channel: 'stable'
           cache: true
-      
+
       - name: Cache pub dependencies
         uses: actions/cache@v4
         with:
@@ -36,16 +36,16 @@ jobs:
           key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
           restore-keys: |
             ${{ runner.os }}-pub-
-      
+
       - name: Install dependencies
         run: flutter pub get
-      
+
       - name: Analyze project source
         run: flutter analyze --no-fatal-infos
-      
+
       - name: Run tests
         run: flutter test
-      
+
       # Cache the .dart_tool directory for Windows builds
       - name: Upload .dart_tool cache
         uses: actions/upload-artifact@v5
@@ -62,14 +62,14 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v6
-      
+
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.27.1'
           channel: 'stable'
           cache: true
-      
+
       # Download preprocessed cache
       - name: Download .dart_tool cache
         uses: actions/download-artifact@v5
@@ -77,7 +77,7 @@ jobs:
           name: dart-tool-cache
           path: .dart_tool
         continue-on-error: true
-      
+
       # Cache pub dependencies with Windows-specific key
       - name: Cache pub dependencies
         uses: actions/cache@v4
@@ -88,7 +88,7 @@ jobs:
           key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
           restore-keys: |
             ${{ runner.os }}-pub-
-      
+
       # Cache Flutter build outputs
       - name: Cache Flutter build
         uses: actions/cache@v4
@@ -99,18 +99,18 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-flutter-build-debug-
             ${{ runner.os }}-flutter-build-
-      
+
       - name: Install dependencies
         run: flutter pub get
-      
+
       - name: Build Windows (debug)
         run: flutter build windows --debug
-      
+
       - name: Package debug build
         run: |
           Compress-Archive -Path build\windows\x64\runner\Debug\* -DestinationPath build\windows\vagina-debug-windows.zip
         shell: powershell
-      
+
       - name: Upload Debug Build
         uses: actions/upload-artifact@v5
         with:
@@ -126,14 +126,14 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v6
-      
+
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.27.1'
           channel: 'stable'
           cache: true
-      
+
       # Download preprocessed cache
       - name: Download .dart_tool cache
         uses: actions/download-artifact@v5
@@ -141,7 +141,7 @@ jobs:
           name: dart-tool-cache
           path: .dart_tool
         continue-on-error: true
-      
+
       # Cache pub dependencies with Windows-specific key
       - name: Cache pub dependencies
         uses: actions/cache@v4
@@ -152,7 +152,7 @@ jobs:
           key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
           restore-keys: |
             ${{ runner.os }}-pub-
-      
+
       # Cache Flutter build outputs
       - name: Cache Flutter build
         uses: actions/cache@v4
@@ -163,18 +163,18 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-flutter-build-release-
             ${{ runner.os }}-flutter-build-
-      
+
       - name: Install dependencies
         run: flutter pub get
-      
+
       - name: Build Windows (release)
         run: flutter build windows --release
-      
+
       - name: Package release build
         run: |
           Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath build\windows\vagina-release-windows.zip
         shell: powershell
-      
+
       - name: Upload Release Build
         uses: actions/upload-artifact@v5
         with:
