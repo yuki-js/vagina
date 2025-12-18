@@ -27,7 +27,7 @@ jobs:
           cache: true
       
       - name: Cache pub dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.pub-cache
@@ -59,7 +59,7 @@ jobs:
           cache: true
       
       - name: Cache pub dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.pub-cache
@@ -69,7 +69,7 @@ jobs:
             ${{ runner.os }}-pub-
       
       - name: Cache CocoaPods
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ios/Pods
           key: ${{ runner.os }}-pods-${{ hashFiles('ios/Podfile.lock') }}
@@ -96,7 +96,7 @@ jobs:
           zip -r ../ipa/app-debug.ipa Payload
       
       - name: Upload Debug IPA
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: ios-debug-ipa
           path: build/ios/ipa/app-debug.ipa
@@ -119,7 +119,7 @@ jobs:
           cache: true
       
       - name: Cache pub dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.pub-cache
@@ -129,7 +129,7 @@ jobs:
             ${{ runner.os }}-pub-
       
       - name: Cache CocoaPods
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ios/Pods
           key: ${{ runner.os }}-pods-${{ hashFiles('ios/Podfile.lock') }}
@@ -156,7 +156,7 @@ jobs:
           zip -r ../ipa/app-release.ipa Payload
       
       - name: Upload Release IPA
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: ios-release-ipa
           path: build/ios/ipa/app-release.ipa
