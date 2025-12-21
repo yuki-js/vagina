@@ -6,6 +6,7 @@ import '../components/settings_card.dart';
 import 'settings/azure_config_section.dart';
 import 'settings/voice_settings_section.dart';
 import 'settings/android_audio_section.dart';
+import 'settings/window_settings_section.dart';
 import 'settings/developer_section.dart';
 import 'settings/about_section.dart';
 
@@ -51,6 +52,14 @@ class SettingsScreen extends ConsumerWidget {
                       const SectionHeader(title: 'Android 音声設定'),
                       const SizedBox(height: 12),
                       const AndroidAudioSection(),
+                    ],
+                    
+                    // Window Settings Section (Desktop only)
+                    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) ...[
+                      const SizedBox(height: 24),
+                      const SectionHeader(title: 'ウィンドウ設定'),
+                      const SizedBox(height: 12),
+                      const WindowSettingsSection(),
                     ],
                     const SizedBox(height: 24),
                     

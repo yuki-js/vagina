@@ -38,6 +38,9 @@ dependencies:
   diff_match_patch: ^0.4.1
   share_plus: ^12.0.1
   wakelock_plus: ^1.4.0
+  
+  # Window management
+  window_manager: ^0.5.1
 
 dev_dependencies:
   flutter_test:

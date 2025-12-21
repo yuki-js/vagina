@@ -130,28 +130,92 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         body: Container(
           decoration: AppTheme.backgroundGradient,
           child: SafeArea(
-            child: PageView(
-              controller: _pageController,
-              children: [
-                // Chat on left (swipe right to go to call)
-                ChatPage(
-                  onBackPressed: _goToCall,
-                ),
-                // Call in center
-                CallPage(
-                  onChatPressed: _goToChat,
-                  onNotepadPressed: _goToArtifact,
-                  onSettingsPressed: _openSettings,
-                ),
-                // Artifacts on right (swipe left to go to call)
-                NotepadPage(
-                  onBackPressed: _goToCall,
-                ),
-              ],
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                // Use multi-column layout for wide screens (>= 900px)
+                if (constraints.maxWidth >= 900) {
+                  return _buildThreeColumnLayout();
+                } else {
+                  // Use PageView for mobile/narrow screens
+                  return _buildPageViewLayout();
+                }
+              },
             ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildPageViewLayout() {
+    return PageView(
+      controller: _pageController,
+      children: [
+        // Chat on left (swipe right to go to call)
+        ChatPage(
+          onBackPressed: _goToCall,
+        ),
+        // Call in center
+        CallPage(
+          onChatPressed: _goToChat,
+          onNotepadPressed: _goToArtifact,
+          onSettingsPressed: _openSettings,
+        ),
+        // Artifacts on right (swipe left to go to call)
+        NotepadPage(
+          onBackPressed: _goToCall,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildThreeColumnLayout() {
+    return Row(
+      children: [
+        // Chat panel on left
+        Expanded(
+          flex: 3,
+          child: Container(
+            decoration: BoxDecoration(
+              border: Border(
+                right: BorderSide(
+                  color: AppTheme.textSecondary.withValues(alpha: 0.2),
+                  width: 1,
+                ),
+              ),
+            ),
+            child: ChatPage(
+              onBackPressed: () {}, // No back action needed in 3-column layout
+            ),
+          ),
+        ),
+        // Call panel in center
+        Expanded(
+          flex: 4,
+          child: Container(
+            decoration: BoxDecoration(
+              border: Border(
+                right: BorderSide(
+                  color: AppTheme.textSecondary.withValues(alpha: 0.2),
+                  width: 1,
+                ),
+              ),
+            ),
+            child: CallPage(
+              onChatPressed: () {}, // No navigation needed in 3-column layout
+              onNotepadPressed: () {}, // No navigation needed in 3-column layout
+              onSettingsPressed: _openSettings,
+            ),
+          ),
+        ),
+        // Notepad panel on right
+        Expanded(
+          flex: 3,
+          child: NotepadPage(
+            onBackPressed: () {}, // No back action needed in 3-column layout
+          ),
+        ),
+      ],
     );
   }
 }
