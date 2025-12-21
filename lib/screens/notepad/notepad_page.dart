@@ -199,11 +199,25 @@ class _NotepadHeader extends StatelessWidget {
             ),
           ),
           if (selectedTab != null)
-            NotepadMoreMenu(
-              content: isEditing ? editedContent : selectedTab!.content,
-              isEditing: isEditing,
-              onEditToggle: onEditToggle,
-              showEditButton: selectedTab!.mimeType != 'text/html',
+            Consumer(
+              builder: (context, ref, child) {
+                return NotepadMoreMenu(
+                  content: isEditing ? editedContent : selectedTab!.content,
+                  isEditing: isEditing,
+                  onEditToggle: onEditToggle,
+                  showEditButton: selectedTab!.mimeType != 'text/html',
+                  canUndo: selectedTab!.canUndo,
+                  canRedo: selectedTab!.canRedo,
+                  onUndo: () {
+                    final service = ref.read(notepadServiceProvider);
+                    service.undo(selectedTab!.id);
+                  },
+                  onRedo: () {
+                    final service = ref.read(notepadServiceProvider);
+                    service.redo(selectedTab!.id);
+                  },
+                );
+              },
             )
           else
             const SizedBox(width: 48), // Balance for the back button

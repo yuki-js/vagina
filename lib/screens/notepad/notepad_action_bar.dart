@@ -3,19 +3,27 @@ import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../theme/app_theme.dart';
 
-/// Popup menu with copy, share, and edit options for notepad content
+/// Popup menu with copy, share, edit, undo, and redo options for notepad content
 class NotepadMoreMenu extends StatelessWidget {
   final String content;
   final bool isEditing;
   final VoidCallback? onEditToggle;
+  final VoidCallback? onUndo;
+  final VoidCallback? onRedo;
   final bool showEditButton;
+  final bool canUndo;
+  final bool canRedo;
 
   const NotepadMoreMenu({
     super.key,
     required this.content,
     this.isEditing = false,
     this.onEditToggle,
+    this.onUndo,
+    this.onRedo,
     this.showEditButton = true,
+    this.canUndo = false,
+    this.canRedo = false,
   });
 
   void _copyToClipboard(BuildContext context) {
@@ -68,6 +76,12 @@ class NotepadMoreMenu extends StatelessWidget {
           case 'edit':
             onEditToggle?.call();
             break;
+          case 'undo':
+            onUndo?.call();
+            break;
+          case 'redo':
+            onRedo?.call();
+            break;
         }
       },
       itemBuilder: (context) => [
@@ -106,6 +120,48 @@ class NotepadMoreMenu extends StatelessWidget {
                   isEditing ? '完了' : '編集',
                   style: TextStyle(
                     color: isEditing ? AppTheme.primaryColor : AppTheme.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        if (onUndo != null)
+          PopupMenuItem<String>(
+            value: 'undo',
+            enabled: canUndo,
+            child: Row(
+              children: [
+                Icon(
+                  Icons.undo_rounded,
+                  size: 20,
+                  color: canUndo ? AppTheme.textSecondary : AppTheme.textSecondary.withValues(alpha: 0.3),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  '元に戻す',
+                  style: TextStyle(
+                    color: canUndo ? AppTheme.textPrimary : AppTheme.textPrimary.withValues(alpha: 0.3),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        if (onRedo != null)
+          PopupMenuItem<String>(
+            value: 'redo',
+            enabled: canRedo,
+            child: Row(
+              children: [
+                Icon(
+                  Icons.redo_rounded,
+                  size: 20,
+                  color: canRedo ? AppTheme.textSecondary : AppTheme.textSecondary.withValues(alpha: 0.3),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'やり直し',
+                  style: TextStyle(
+                    color: canRedo ? AppTheme.textPrimary : AppTheme.textPrimary.withValues(alpha: 0.3),
                   ),
                 ),
               ],

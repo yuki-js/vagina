@@ -52,6 +52,11 @@ class NotepadService {
     final id = _generateId();
     final now = DateTime.now();
     
+    // Initialize history with the initial content
+    final initialHistory = [
+      EditHistoryEntry(content: content, timestamp: now),
+    ];
+    
     final tab = NotepadTab(
       id: id,
       title: title ?? _generateTitleFromContent(content, mimeType),
@@ -59,6 +64,8 @@ class NotepadService {
       mimeType: mimeType,
       createdAt: now,
       updatedAt: now,
+      history: initialHistory,
+      currentHistoryIndex: 0,
     );
     
     _tabs.add(tab);
@@ -82,15 +89,90 @@ class NotepadService {
     
     final oldTab = _tabs[index];
     final newContent = content ?? oldTab.content;
+    final now = DateTime.now();
+    
+    // Add to history if content changed
+    List<EditHistoryEntry> newHistory = List.from(oldTab.history);
+    int newHistoryIndex = oldTab.currentHistoryIndex;
+    
+    if (content != null && content != oldTab.content) {
+      // Truncate history after current index (discard redo history)
+      newHistory = newHistory.sublist(0, oldTab.currentHistoryIndex + 1);
+      
+      // Add new entry
+      newHistory.add(EditHistoryEntry(content: content, timestamp: now));
+      newHistoryIndex = newHistory.length - 1;
+    }
+    
     _tabs[index] = oldTab.copyWith(
       content: newContent,
       title: title ?? (content != null ? _generateTitleFromContent(newContent, oldTab.mimeType) : null),
       mimeType: mimeType,
-      updatedAt: DateTime.now(),
+      updatedAt: now,
+      history: newHistory,
+      currentHistoryIndex: newHistoryIndex,
     );
     
     _notifyTabsChanged();
     logService.info(_tag, 'Updated tab: $tabId');
+    return true;
+  }
+  
+  /// Undo the last edit
+  /// Returns true if successful, false if cannot undo or tab not found
+  bool undo(String tabId) {
+    final index = _tabs.indexWhere((t) => t.id == tabId);
+    if (index == -1) {
+      logService.warn(_tag, 'Tab not found: $tabId');
+      return false;
+    }
+    
+    final tab = _tabs[index];
+    if (!tab.canUndo) {
+      logService.warn(_tag, 'Cannot undo: at beginning of history');
+      return false;
+    }
+    
+    final newIndex = tab.currentHistoryIndex - 1;
+    final previousContent = tab.history[newIndex].content;
+    
+    _tabs[index] = tab.copyWith(
+      content: previousContent,
+      currentHistoryIndex: newIndex,
+      updatedAt: DateTime.now(),
+    );
+    
+    _notifyTabsChanged();
+    logService.info(_tag, 'Undone edit for tab: $tabId');
+    return true;
+  }
+  
+  /// Redo the previously undone edit
+  /// Returns true if successful, false if cannot redo or tab not found
+  bool redo(String tabId) {
+    final index = _tabs.indexWhere((t) => t.id == tabId);
+    if (index == -1) {
+      logService.warn(_tag, 'Tab not found: $tabId');
+      return false;
+    }
+    
+    final tab = _tabs[index];
+    if (!tab.canRedo) {
+      logService.warn(_tag, 'Cannot redo: at end of history');
+      return false;
+    }
+    
+    final newIndex = tab.currentHistoryIndex + 1;
+    final nextContent = tab.history[newIndex].content;
+    
+    _tabs[index] = tab.copyWith(
+      content: nextContent,
+      currentHistoryIndex: newIndex,
+      updatedAt: DateTime.now(),
+    );
+    
+    _notifyTabsChanged();
+    logService.info(_tag, 'Redone edit for tab: $tabId');
     return true;
   }
 
