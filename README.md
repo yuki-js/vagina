@@ -8,7 +8,7 @@ Azure OpenAI Realtime API を使用したリアルタイム音声 AI アシス�
 
 - 🎤 リアルタイム音声会話
 - 🤖 Azure OpenAI GPT-4o Realtime API 連携
-- 📱 Android / iOS クロスプラットフォーム
+- 📱 Android / iOS / Windows クロスプラットフォーム
 - 🔒 セキュアな API キー管理
 - 🎨 スタイリッシュな UI
 
@@ -119,6 +119,8 @@ vagina/
 - [アーキテクチャ](docs/ARCHITECTURE.md)
 - [OpenAI Realtime API 仕様](docs/OPENAI_REALTIME_API.md)
 - [プライバシーポリシー](docs/PRIVACY.md)
+- [Windows ビルドガイド](docs/WINDOWS_BUILD.md)
+- [Windows テスト手順](docs/WINDOWS_TESTING.md)
 
 ## 技術スタック
 
