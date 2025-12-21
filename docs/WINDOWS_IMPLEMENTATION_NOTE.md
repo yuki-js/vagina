@@ -41,6 +41,17 @@
 
 ## 制限事項と今後の対応
 
+### 既知の問題: Windows での音声再生
+
+**問題**: Windows環境でアプリを実行すると、音声再生時に `MissingPluginException(No implementation found for method openPlayer on channel xyz.canardoux.flutter_sound_player)` エラーが発生します。
+
+**原因**: flutter_sound パッケージ（v9.30.0）は pub.dev で Windows サポートを謳っていますが、実際には Windows 向けのネイティブ実装が不足しています。[GitHub リポジトリ](https://github.com/Canardoux/flutter_sound)に `flutter_sound/windows` ディレクトリが存在せず、プラグインが `generated_plugins.cmake` に登録されていても実装コードがありません。
+
+**解決策（要対応）**:
+1. **just_audio への移行（推奨）**: Windows で実績のある just_audio パッケージに移行
+2. **audioplayers の使用**: よりシンプルな API で Windows をサポート
+3. **flutter_sound の更新待ち**: 上流プロジェクトでの Windows サポート完了を待つ
+
 ### ローカル環境でのテスト未実施
 
 **現状**: 開発環境がLinuxのため、Windows版のバイナリを実際にビルド・実行してのテストは実施できていません。

@@ -231,3 +231,18 @@ GitHub Actions でビルドされたバイナリをダウンロードしてテ�
 - **セキュリティ**: スクリーンショットに API キーやその他の機密情報が写り込まないように注意
 - **プライバシー**: 個人情報が含まれる可能性のある会話内容は、サンプルデータを使用
 - **Windows Defender**: 初回実行時に SmartScreen の警告が表示される可能性があります（正常）
+
+## 既知の問題
+
+### 音声再生が動作しない（Windows）
+
+**現象**: Windows環境でアプリを実行すると、以下のエラーが発生します：
+```
+Status: Error: MissingPluginException(No implementation found for method openPlayer on channel xyz.canardoux.flutter_sound_player)
+```
+
+**原因**: flutter_sound パッケージは Windows プラットフォームを公式にサポートしていますが、実際のネイティブ実装が不完全です。
+
+**ワークアラウンド**: 現時点では Windows での音声再生機能は動作しません。この問題は別途対応する予定です（just_audio などの代替ライブラリへの移行を検討中）。
+
+**テスト時の注意**: 音声出力のテスト項目はスキップし、その他の機能（UI表示、ネットワーク接続、マイク入力など）を重点的にテストしてください。
