@@ -28,7 +28,7 @@ jobs:
           cache: true
 
       - name: Cache pub dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.pub-cache
@@ -80,7 +80,7 @@ jobs:
 
       # Cache pub dependencies with Windows-specific key
       - name: Cache pub dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~\AppData\Local\Pub\Cache
@@ -91,7 +91,7 @@ jobs:
 
       # Cache Flutter build outputs
       - name: Cache Flutter build
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             build\windows
@@ -144,7 +144,7 @@ jobs:
 
       # Cache pub dependencies with Windows-specific key
       - name: Cache pub dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~\AppData\Local\Pub\Cache
@@ -155,7 +155,7 @@ jobs:
 
       # Cache Flutter build outputs
       - name: Cache Flutter build
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             build\windows
