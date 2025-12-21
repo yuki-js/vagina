@@ -24,6 +24,7 @@ class _PlainTextContentState extends State<PlainTextContent> {
   static const _tag = 'PlainTextContent';
   late TextEditingController _controller;
   final FocusNode _focusNode = FocusNode();
+  final FocusNode? _keyboardListenerFocusNode = Platform.isWindows ? FocusNode() : null;
 
   @override
   void initState() {
@@ -58,6 +59,7 @@ class _PlainTextContentState extends State<PlainTextContent> {
   void dispose() {
     _controller.dispose();
     _focusNode.dispose();
+    _keyboardListenerFocusNode?.dispose();
     super.dispose();
   }
 
@@ -108,9 +110,9 @@ class _PlainTextContentState extends State<PlainTextContent> {
     );
     
     // Wrap with KeyboardListener for debugging on Windows
-    if (Platform.isWindows) {
+    if (Platform.isWindows && _keyboardListenerFocusNode != null) {
       textField = KeyboardListener(
-        focusNode: FocusNode(),
+        focusNode: _keyboardListenerFocusNode,
         onKeyEvent: _handleKeyEvent,
         child: textField,
       );

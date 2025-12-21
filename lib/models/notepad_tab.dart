@@ -28,7 +28,7 @@ class NotepadTab {
     required this.createdAt,
     required this.updatedAt,
     this.history = const [],
-    this.currentHistoryIndex = -1,
+    this.currentHistoryIndex = 0,
   });
 
   NotepadTab copyWith({
@@ -54,10 +54,10 @@ class NotepadTab {
   }
   
   /// Check if undo is available
-  bool get canUndo => currentHistoryIndex > 0;
+  bool get canUndo => history.isNotEmpty && currentHistoryIndex > 0;
   
   /// Check if redo is available
-  bool get canRedo => currentHistoryIndex < history.length - 1;
+  bool get canRedo => history.isNotEmpty && currentHistoryIndex < history.length - 1;
 
   /// Get metadata as a map (for AI tools)
   Map<String, dynamic> toMetadata() {

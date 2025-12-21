@@ -96,8 +96,10 @@ class NotepadService {
     int newHistoryIndex = oldTab.currentHistoryIndex;
     
     if (content != null && content != oldTab.content) {
-      // Truncate history after current index (discard redo history)
-      newHistory = newHistory.sublist(0, oldTab.currentHistoryIndex + 1);
+      // Only truncate if we're not at the end (i.e., there's redo history to discard)
+      if (oldTab.currentHistoryIndex < oldTab.history.length - 1) {
+        newHistory = newHistory.sublist(0, oldTab.currentHistoryIndex + 1);
+      }
       
       // Add new entry
       newHistory.add(EditHistoryEntry(content: content, timestamp: now));

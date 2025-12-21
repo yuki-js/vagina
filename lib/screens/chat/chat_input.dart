@@ -19,6 +19,7 @@ class _ChatInputState extends ConsumerState<ChatInput> {
   static const _tag = 'ChatInput';
   final TextEditingController _textController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
+  final FocusNode? _keyboardListenerFocusNode = Platform.isWindows ? FocusNode() : null;
 
   @override
   void initState() {
@@ -40,6 +41,7 @@ class _ChatInputState extends ConsumerState<ChatInput> {
   void dispose() {
     _textController.dispose();
     _focusNode.dispose();
+    _keyboardListenerFocusNode?.dispose();
     super.dispose();
   }
 
@@ -82,9 +84,9 @@ class _ChatInputState extends ConsumerState<ChatInput> {
     );
     
     // Wrap with KeyboardListener for debugging on Windows
-    if (Platform.isWindows) {
+    if (Platform.isWindows && _keyboardListenerFocusNode != null) {
       textField = KeyboardListener(
-        focusNode: FocusNode(),
+        focusNode: _keyboardListenerFocusNode,
         onKeyEvent: _handleKeyEvent,
         child: textField,
       );
