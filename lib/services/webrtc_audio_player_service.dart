@@ -6,13 +6,22 @@ import 'log_service.dart';
 
 /// WebRTC-based service for playing streaming PCM audio from Azure OpenAI Realtime API
 /// 
+/// ⚠️ **PROOF OF CONCEPT**: This is a proof-of-concept implementation.
+/// The current flutter_webrtc package doesn't provide direct access to feed raw PCM data.
+/// A complete implementation requires platform-specific code using platform channels.
+/// 
 /// Uses flutter_webrtc's RTCPeerConnection with streaming for real-time
 /// PCM16 playback at 24kHz mono.
 /// 
 /// This implementation provides:
-/// - Cross-platform support (Windows, macOS, Linux, Android, iOS, Web)
-/// - Built-in noise cancellation and echo cancellation
-/// - Better integration with real-time communication APIs
+/// - Cross-platform support framework (Windows, macOS, Linux, Android, iOS, Web)
+/// - Built-in noise cancellation and echo cancellation setup
+/// - Better integration path with real-time communication APIs
+/// 
+/// **To complete the implementation:**
+/// - Use platform channels to access native audio APIs
+/// - Implement PCM data decoding/playback in native code
+/// - Or use RTCDataChannel to transfer audio data
 class WebRTCAudioPlayerService {
   static const _tag = 'WebRTCAudioPlayer';
   
