@@ -5,17 +5,19 @@ import '../../providers/providers.dart';
 import '../../components/call_button.dart';
 import '../../services/call_service.dart';
 
-/// Galaxy-style control panel with 2x3 button grid and call button
+/// Galaxy-style control panel with button grid and call button
 class ControlPanel extends ConsumerWidget {
   final VoidCallback onChatPressed;
   final VoidCallback onNotepadPressed;
   final VoidCallback onSettingsPressed;
+  final bool hideNavigationButtons;
 
   const ControlPanel({
     super.key,
     required this.onChatPressed,
     required this.onNotepadPressed,
     required this.onSettingsPressed,
+    this.hideNavigationButtons = false,
   });
 
   @override
@@ -24,8 +26,10 @@ class ControlPanel extends ConsumerWidget {
     final speakerMuted = ref.watch(speakerMutedProvider);
     final isCallActive = ref.watch(isCallActiveProvider);
 
-    // Calculate button width for consistent grid layout (3 columns)
-    final buttonWidth = (MediaQuery.of(context).size.width - 32 - 48 - 32) / 3;
+    // Calculate button width for consistent grid layout
+    // 2 columns when hideNavigationButtons is true, 3 columns otherwise
+    final numColumns = hideNavigationButtons ? 2 : 3;
+    final buttonWidth = (MediaQuery.of(context).size.width - 32 - 48 - 32) / numColumns;
     
     return Container(
       margin: const EdgeInsets.all(16),
@@ -37,32 +41,33 @@ class ControlPanel extends ConsumerWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // First row: Chat, Notepad, Settings
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _ControlButton(
-                icon: Icons.chat_bubble_outline,
-                label: 'チャット',
-                onTap: onChatPressed,
-                width: buttonWidth,
-              ),
-              _ControlButton(
-                icon: Icons.article_outlined,
-                label: 'ノートパッド',
-                onTap: onNotepadPressed,
-                width: buttonWidth,
-              ),
-              _ControlButton(
-                icon: Icons.settings,
-                label: '設定',
-                onTap: onSettingsPressed,
-                width: buttonWidth,
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          // Second row: Speaker, Mute, Interrupt
+          // First row: conditionally show navigation buttons
+          if (!hideNavigationButtons)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _ControlButton(
+                  icon: Icons.chat_bubble_outline,
+                  label: 'チャット',
+                  onTap: onChatPressed,
+                  width: buttonWidth,
+                ),
+                _ControlButton(
+                  icon: Icons.article_outlined,
+                  label: 'ノートパッド',
+                  onTap: onNotepadPressed,
+                  width: buttonWidth,
+                ),
+                _ControlButton(
+                  icon: Icons.settings,
+                  label: '設定',
+                  onTap: onSettingsPressed,
+                  width: buttonWidth,
+                ),
+              ],
+            ),
+          if (!hideNavigationButtons) const SizedBox(height: 16),
+          // Control row: Speaker, Mute, Interrupt (or Settings when navigation buttons hidden)
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
@@ -82,15 +87,37 @@ class ControlPanel extends ConsumerWidget {
                 activeColor: AppTheme.errorColor,
                 width: buttonWidth,
               ),
-              _ControlButton(
-                icon: Icons.front_hand,
-                label: '割込み',
-                onTap: () => _handleInterrupt(ref),
-                enabled: isCallActive,
-                width: buttonWidth,
-              ),
+              if (!hideNavigationButtons)
+                _ControlButton(
+                  icon: Icons.front_hand,
+                  label: '割込み',
+                  onTap: () => _handleInterrupt(ref),
+                  enabled: isCallActive,
+                  width: buttonWidth,
+                ),
             ],
           ),
+          if (hideNavigationButtons) const SizedBox(height: 16),
+          // Second row when navigation buttons are hidden
+          if (hideNavigationButtons)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _ControlButton(
+                  icon: Icons.front_hand,
+                  label: '割込み',
+                  onTap: () => _handleInterrupt(ref),
+                  enabled: isCallActive,
+                  width: buttonWidth,
+                ),
+                _ControlButton(
+                  icon: Icons.settings,
+                  label: '設定',
+                  onTap: onSettingsPressed,
+                  width: buttonWidth,
+                ),
+              ],
+            ),
           const SizedBox(height: 24),
           // Main call button
           CallButton(

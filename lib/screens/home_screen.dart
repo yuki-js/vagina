@@ -181,9 +181,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget _buildThreeColumnLayout() {
     return Row(
       children: [
-        // Chat panel on left
+        // Chat panel on left (37%)
         Expanded(
-          flex: 3,
+          flex: 37,
           child: Container(
             decoration: BoxDecoration(
               border: Border(
@@ -195,12 +195,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
             child: ChatPage(
               onBackPressed: () {}, // No back action needed in 3-column layout
+              hideBackButton: true, // Hide back button in 3-column layout
             ),
           ),
         ),
-        // Call panel in center
+        // Call panel in center (26%)
         Expanded(
-          flex: 4,
+          flex: 26,
           child: Container(
             decoration: BoxDecoration(
               border: Border(
@@ -214,14 +215,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               onChatPressed: () {}, // No navigation needed in 3-column layout
               onNotepadPressed: () {}, // No navigation needed in 3-column layout
               onSettingsPressed: _openSettings,
+              hideNavigationButtons: true, // Hide chat/notepad buttons in 3-column layout
             ),
           ),
         ),
-        // Notepad panel on right
+        // Notepad panel on right (37%)
         Expanded(
-          flex: 3,
+          flex: 37,
           child: NotepadPage(
             onBackPressed: () {}, // No back action needed in 3-column layout
+            hideBackButton: true, // Hide back button in 3-column layout
           ),
         ),
       ],
