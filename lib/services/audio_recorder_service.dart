@@ -5,7 +5,7 @@ import '../config/app_config.dart';
 import '../models/android_audio_config.dart';
 import 'log_service.dart';
 
-/// WebRTC-based service for recording audio from the microphone
+/// Service for recording audio from the microphone
 /// 
 /// ⚠️ **PROOF OF CONCEPT**: This is a proof-of-concept implementation.
 /// The current flutter_webrtc package doesn't provide direct access to extract raw PCM data from MediaStream.
@@ -23,8 +23,8 @@ import 'log_service.dart';
 /// - Use platform channels to extract PCM data from MediaStream
 /// - Implement native code to decode WebRTC audio to PCM
 /// - Or use Web Audio API for web platform
-class WebRTCAudioRecorderService {
-  static const _tag = 'WebRTCAudioRecorder';
+class AudioRecorderService {
+  static const _tag = 'AudioRecorder';
   
   MediaStream? _mediaStream;
   StreamController<Uint8List>? _audioDataController;

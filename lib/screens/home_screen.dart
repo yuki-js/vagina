@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/app_theme.dart';
 import '../providers/providers.dart';
+import '../widgets/custom_title_bar.dart';
 import 'call/call_page.dart';
 import 'chat/chat_page.dart';
 import 'notepad/notepad_page.dart';
@@ -127,21 +128,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         }
       },
       child: Scaffold(
-        body: Container(
-          decoration: AppTheme.backgroundGradient,
-          child: SafeArea(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                // Use multi-column layout for wide screens (>= 900px)
-                if (constraints.maxWidth >= 900) {
-                  return _buildThreeColumnLayout();
-                } else {
-                  // Use PageView for mobile/narrow screens
-                  return _buildPageViewLayout();
-                }
-              },
+        body: Column(
+          children: [
+            // Custom title bar for desktop platforms
+            const CustomTitleBar(),
+            Expanded(
+              child: Container(
+                decoration: AppTheme.backgroundGradient,
+                child: SafeArea(
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      // Use multi-column layout for wide screens (>= 900px)
+                      if (constraints.maxWidth >= 900) {
+                        return _buildThreeColumnLayout();
+                      } else {
+                        // Use PageView for mobile/narrow screens
+                        return _buildPageViewLayout();
+                      }
+                    },
+                  ),
+                ),
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );

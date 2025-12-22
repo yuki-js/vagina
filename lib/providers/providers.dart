@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/storage_service.dart';
 import '../services/notepad_service.dart';
-import '../services/webrtc_audio_recorder_service.dart';
-import '../services/webrtc_audio_player_service.dart';
+import '../services/audio_recorder_service.dart';
+import '../services/audio_player_service.dart';
 import '../services/websocket_service.dart';
 import '../services/realtime_api_client.dart';
 import '../services/call_service.dart';
@@ -42,15 +42,15 @@ final apiKeyProvider = FutureProvider<String?>((ref) async {
 // Audio providers
 
 /// Provider for the audio recorder service
-final audioRecorderServiceProvider = Provider<WebRTCAudioRecorderService>((ref) {
-  final recorder = WebRTCAudioRecorderService();
+final audioRecorderServiceProvider = Provider<AudioRecorderService>((ref) {
+  final recorder = AudioRecorderService();
   ref.onDispose(() => recorder.dispose());
   return recorder;
 });
 
 /// Provider for the audio player service
-final audioPlayerServiceProvider = Provider<WebRTCAudioPlayerService>((ref) {
-  final player = WebRTCAudioPlayerService();
+final audioPlayerServiceProvider = Provider<AudioPlayerService>((ref) {
+  final player = AudioPlayerService();
   ref.onDispose(() => player.dispose());
   return player;
 });
