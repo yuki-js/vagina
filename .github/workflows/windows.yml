@@ -72,7 +72,7 @@ jobs:
 
       # Download preprocessed cache
       - name: Download .dart_tool cache
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v7
         with:
           name: dart-tool-cache
           path: .dart_tool
@@ -136,7 +136,7 @@ jobs:
 
       # Download preprocessed cache
       - name: Download .dart_tool cache
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v7
         with:
           name: dart-tool-cache
           path: .dart_tool
