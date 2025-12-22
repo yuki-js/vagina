@@ -18,7 +18,7 @@ dependencies:
   flutter_riverpod: ^3.0.3
   
   # Audio handling
-  flutter_webrtc: ^1.2.1
+  flutter_sound: ^9.28.0
   record: ^6.1.2
   
   # Network & WebSocket

@@ -67,39 +67,31 @@ class ControlPanel extends ConsumerWidget {
               ],
             ),
           if (!hideNavigationButtons) const SizedBox(height: 16),
-          // Control row: Speaker, Mute, Interrupt (or Settings when navigation buttons hidden)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _ControlButton(
-                icon: speakerMuted ? Icons.volume_off : Icons.volume_up,
-                label: 'スピーカー',
-                onTap: () => _handleSpeakerToggle(ref),
-                isActive: speakerMuted,
-                activeColor: AppTheme.warningColor,
-                width: buttonWidth,
-              ),
-              _ControlButton(
-                icon: isMuted ? Icons.mic_off : Icons.mic,
-                label: '消音',
-                onTap: () => _handleMuteToggle(ref),
-                isActive: isMuted,
-                activeColor: AppTheme.errorColor,
-                width: buttonWidth,
-              ),
-              if (!hideNavigationButtons)
+          // Wide layout: 2x2 grid (Speaker/Mute + Interrupt/Settings)
+          // Mobile layout: 1 row with Speaker/Mute/Interrupt
+          if (hideNavigationButtons) ...[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
                 _ControlButton(
-                  icon: Icons.front_hand,
-                  label: '割込み',
-                  onTap: () => _handleInterrupt(ref),
-                  enabled: isCallActive,
+                  icon: speakerMuted ? Icons.volume_off : Icons.volume_up,
+                  label: 'スピーカー',
+                  onTap: () => _handleSpeakerToggle(ref),
+                  isActive: speakerMuted,
+                  activeColor: AppTheme.warningColor,
                   width: buttonWidth,
                 ),
-            ],
-          ),
-          if (hideNavigationButtons) const SizedBox(height: 16),
-          // Second row when navigation buttons are hidden
-          if (hideNavigationButtons)
+                _ControlButton(
+                  icon: isMuted ? Icons.mic_off : Icons.mic,
+                  label: '消音',
+                  onTap: () => _handleMuteToggle(ref),
+                  isActive: isMuted,
+                  activeColor: AppTheme.errorColor,
+                  width: buttonWidth,
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
@@ -114,6 +106,35 @@ class ControlPanel extends ConsumerWidget {
                   icon: Icons.settings,
                   label: '設定',
                   onTap: onSettingsPressed,
+                  width: buttonWidth,
+                ),
+              ],
+            ),
+          ] else
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _ControlButton(
+                  icon: speakerMuted ? Icons.volume_off : Icons.volume_up,
+                  label: 'スピーカー',
+                  onTap: () => _handleSpeakerToggle(ref),
+                  isActive: speakerMuted,
+                  activeColor: AppTheme.warningColor,
+                  width: buttonWidth,
+                ),
+                _ControlButton(
+                  icon: isMuted ? Icons.mic_off : Icons.mic,
+                  label: '消音',
+                  onTap: () => _handleMuteToggle(ref),
+                  isActive: isMuted,
+                  activeColor: AppTheme.errorColor,
+                  width: buttonWidth,
+                ),
+                _ControlButton(
+                  icon: Icons.front_hand,
+                  label: '割込み',
+                  onTap: () => _handleInterrupt(ref),
+                  enabled: isCallActive,
                   width: buttonWidth,
                 ),
               ],
