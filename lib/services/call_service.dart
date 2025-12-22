@@ -1,9 +1,8 @@
 import 'dart:async';
 import 'dart:typed_data';
-import 'package:record/record.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
-import 'audio_recorder_service.dart';
-import 'audio_player_service.dart';
+import 'webrtc_audio_recorder_service.dart';
+import 'webrtc_audio_player_service.dart';
 import 'realtime_api_client.dart';
 import 'storage_service.dart';
 import 'tool_service.dart';
@@ -28,8 +27,8 @@ enum CallState {
 class CallService {
   static const _tag = 'CallService';
   
-  final AudioRecorderService _recorder;
-  final AudioPlayerService _player;
+  final WebRTCAudioRecorderService _recorder;
+  final WebRTCAudioPlayerService _player;
   final RealtimeApiClient _apiClient;
   final StorageService _storage;
   final ToolService _toolService;
@@ -67,8 +66,8 @@ class CallService {
   bool _isMuted = false;
 
   CallService({
-    required AudioRecorderService recorder,
-    required AudioPlayerService player,
+    required WebRTCAudioRecorderService recorder,
+    required WebRTCAudioPlayerService player,
     required RealtimeApiClient apiClient,
     required StorageService storage,
     required ToolService toolService,

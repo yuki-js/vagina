@@ -18,8 +18,6 @@ dependencies:
   flutter_riverpod: ^2.6.1
   
   # Audio handling
-  record: ^6.1.2
-  flutter_sound: ^9.28.0
   flutter_webrtc: ^0.12.4
   
   # Network & WebSocket
@@ -42,9 +40,6 @@ dependencies:
   
   # Window management
   window_manager: ^0.5.1
-  
-  # Picture-in-Picture (Mobile)
-  floating: ^2.0.0
 
 dev_dependencies:
   flutter_test:
