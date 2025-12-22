@@ -19,6 +19,8 @@ void main() {
     );
 
     // Verify that the app title is displayed
-    expect(find.text('VAGINA'), findsOneWidget);
+    // Note: On desktop platforms, "VAGINA" appears twice:
+    // once in the custom title bar and once in the main content
+    expect(find.text('VAGINA'), findsAtLeastNWidgets(1));
   });
 }
