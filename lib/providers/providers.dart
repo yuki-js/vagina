@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:record/record.dart';
 import '../services/storage_service.dart';
 import '../services/notepad_service.dart';
 import '../services/audio_recorder_service.dart';

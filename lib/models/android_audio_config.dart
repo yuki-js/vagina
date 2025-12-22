@@ -1,28 +1,4 @@
-/// Android audio source enum (from record package, now local)
-enum AndroidAudioSource {
-  defaultSource,
-  mic,
-  voiceUplink,
-  voiceDownlink,
-  voiceCall,
-  camcorder,
-  voiceRecognition,
-  voiceCommunication,
-  remoteSubMix,
-  unprocessed,
-  voicePerformance,
-}
-
-/// Audio manager mode enum (from record package, now local)
-enum AudioManagerMode {
-  modeNormal,
-  modeRingtone,
-  modeInCall,
-  modeInCommunication,
-  modeCallScreening,
-  modeCallRedirect,
-  modeCommunicationRedirect,
-}
+import 'package:record/record.dart';
 
 /// Configuration for Android-specific audio recording settings
 class AndroidAudioConfig {

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:typed_data';
+import 'package:record/record.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'audio_recorder_service.dart';
 import 'audio_player_service.dart';
