@@ -41,6 +41,8 @@ dependencies:
   
   # Window management
   window_manager: ^0.5.1
+  just_audio: ^0.10.5
+  path: ^1.9.1
 
 dev_dependencies:
   flutter_test:
