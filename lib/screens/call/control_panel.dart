@@ -1,9 +1,11 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/app_theme.dart';
 import '../../providers/providers.dart';
 import '../../components/call_button.dart';
 import '../../services/call_service.dart';
+import '../../services/pip_service.dart';
 
 /// Galaxy-style control panel with button grid and call button
 class ControlPanel extends ConsumerWidget {
@@ -102,12 +104,21 @@ class ControlPanel extends ConsumerWidget {
                   enabled: isCallActive,
                   width: buttonWidth,
                 ),
-                _ControlButton(
-                  icon: Icons.settings,
-                  label: '設定',
-                  onTap: onSettingsPressed,
-                  width: buttonWidth,
-                ),
+                // PiP button for desktop (similar to Windows always-on-top in title bar)
+                if (Platform.isAndroid || Platform.isIOS)
+                  _ControlButton(
+                    icon: Icons.picture_in_picture_alt,
+                    label: 'PiP',
+                    onTap: () => _handlePiPToggle(context),
+                    width: buttonWidth,
+                  )
+                else
+                  _ControlButton(
+                    icon: Icons.settings,
+                    label: '設定',
+                    onTap: onSettingsPressed,
+                    width: buttonWidth,
+                  ),
               ],
             ),
           ] else
@@ -185,6 +196,38 @@ class ControlPanel extends ConsumerWidget {
       await callService.startCall();
     } else {
       await callService.endCall();
+    }
+  }
+
+  Future<void> _handlePiPToggle(BuildContext context) async {
+    if (!Platform.isAndroid && !Platform.isIOS) return;
+    
+    final pipService = PiPService();
+    final isAvailable = await pipService.isPiPAvailable();
+    
+    if (!isAvailable) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Picture-in-Picture is not available on this device'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+      return;
+    }
+    
+    try {
+      await pipService.enterPiPMode();
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to enter PiP mode: $e'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
     }
   }
 }
