@@ -184,12 +184,14 @@ jobs:
       
       # Code signing (optional - requires secrets)
       - name: Decode certificate
+        if: secrets.WINDOWS_CERT_PFX != '' && secrets.WINDOWS_CERT_PASSWORD != ''
         run: |
           $certBytes = [Convert]::FromBase64String("${{ secrets.WINDOWS_CERT_PFX }}")
           [IO.File]::WriteAllBytes("$env:TEMP\cert.pfx", $certBytes)
         shell: powershell
         
       - name: Sign executable
+        if: secrets.WINDOWS_CERT_PFX != '' && secrets.WINDOWS_CERT_PASSWORD != ''
         run: |
           # Find signtool.exe (Windows SDK)
           $signtool = Get-ChildItem -Path "C:\Program Files (x86)\Windows Kits" -Recurse -Filter "signtool.exe" | Select-Object -First 1 -ExpandProperty FullName
