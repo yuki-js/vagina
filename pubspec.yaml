@@ -1,10 +1,10 @@
 name: vagina
 description: "VAGINA: Voice AGI as Notepad App - A voice assistant powered by OpenAI Realtime API"
-publish_to: 'none'
+publish_to: "none"
 version: 1.0.0+1
 
 environment:
-  sdk: '>=3.6.0 <4.0.0'
+  sdk: ">=3.6.0 <4.0.0"
 
 dependencies:
   flutter:
@@ -13,24 +13,24 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.8
   google_fonts: ^6.2.1
-  
+
   # State management
   flutter_riverpod: ^3.0.3
-  
+
   # Audio handling
-  flutter_sound: ^9.30.0
+  taudio: ^10.0.0
   record: ^6.1.2
-  
+
   # Network & WebSocket
   web_socket_channel: ^3.0.3
   http: ^1.4.0
-  
+
   # Environment configuration
   flutter_dotenv: ^6.0.0
-  
+
   # Permissions
   permission_handler: ^12.0.1
-  
+
   # File storage
   path_provider: ^2.1.5
   device_info_plus: ^12.3.0
@@ -38,7 +38,7 @@ dependencies:
   diff_match_patch: ^0.4.1
   share_plus: ^12.0.1
   wakelock_plus: ^1.4.0
-  
+
   # Window management
   window_manager: ^0.5.1
   just_audio: ^0.10.5

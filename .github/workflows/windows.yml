@@ -167,8 +167,6 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - uses: mxschmitt/action-tmate@v3
-
       - name: Build Windows (release)
         run: flutter build windows --release
 
