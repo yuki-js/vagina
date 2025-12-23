@@ -103,6 +103,13 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Fix Windows plugins (remove unsupported flutter_sound)
+        run: |
+          $file = "windows\flutter\generated_plugins.cmake"
+          (Get-Content $file) | Where-Object { $_ -notmatch '^\s*flutter_sound\s*$' } | Set-Content $file
+          Write-Host "Removed flutter_sound from Windows plugins"
+        shell: powershell
+
       - name: Build Windows (debug)
         run: flutter build windows --debug
 
@@ -166,6 +173,13 @@ jobs:
 
       - name: Install dependencies
         run: flutter pub get
+
+      - name: Fix Windows plugins (remove unsupported flutter_sound)
+        run: |
+          $file = "windows\flutter\generated_plugins.cmake"
+          (Get-Content $file) | Where-Object { $_ -notmatch '^\s*flutter_sound\s*$' } | Set-Content $file
+          Write-Host "Removed flutter_sound from Windows plugins"
+        shell: powershell
 
       - name: Build Windows (release)
         run: flutter build windows --release
