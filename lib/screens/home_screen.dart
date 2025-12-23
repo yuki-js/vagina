@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/app_theme.dart';
 import '../providers/providers.dart';
-import '../widgets/custom_title_bar.dart';
+import '../components/title_bar.dart';
 import 'call/call_page.dart';
 import 'chat/chat_page.dart';
 import 'notepad/notepad_page.dart';

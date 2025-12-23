@@ -169,6 +169,43 @@ jobs:
 
       - name: Build Windows (release)
         run: flutter build windows --release
+      
+      # Code signing (optional - requires secrets)
+      - name: Decode certificate
+        if: ${{ secrets.WINDOWS_CERT_PFX != '' }}
+        run: |
+          $certBytes = [Convert]::FromBase64String("${{ secrets.WINDOWS_CERT_PFX }}")
+          [IO.File]::WriteAllBytes("$env:TEMP\cert.pfx", $certBytes)
+        shell: powershell
+        
+      - name: Sign executable
+        if: ${{ secrets.WINDOWS_CERT_PFX != '' }}
+        run: |
+          # Find signtool.exe (Windows SDK)
+          $signtool = Get-ChildItem -Path "C:\Program Files (x86)\Windows Kits" -Recurse -Filter "signtool.exe" | Select-Object -First 1 -ExpandProperty FullName
+          
+          if (-not $signtool) {
+            Write-Error "SignTool not found"
+            exit 1
+          }
+          
+          # Sign the executable
+          $exePath = "build\windows\x64\runner\Release\vagina.exe"
+          & $signtool sign /f "$env:TEMP\cert.pfx" /p "${{ secrets.WINDOWS_CERT_PASSWORD }}" /t http://timestamp.digicert.com /fd SHA256 /v $exePath
+          
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "Signing failed with exit code $LASTEXITCODE"
+            exit 1
+          }
+          
+          Write-Host "Successfully signed $exePath"
+        shell: powershell
+        
+      - name: Cleanup certificate
+        if: always()
+        run: |
+          Remove-Item "$env:TEMP\cert.pfx" -ErrorAction SilentlyContinue
+        shell: powershell
 
       - name: Package release build
         run: |
