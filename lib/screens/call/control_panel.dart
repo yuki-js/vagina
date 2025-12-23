@@ -27,11 +27,6 @@ class ControlPanel extends ConsumerWidget {
     final isMuted = ref.watch(isMutedProvider);
     final speakerMuted = ref.watch(speakerMutedProvider);
     final isCallActive = ref.watch(isCallActiveProvider);
-
-    // Calculate button width for consistent grid layout
-    // 2 columns when hideNavigationButtons is true, 3 columns otherwise
-    final numColumns = hideNavigationButtons ? 2 : 3;
-    final buttonWidth = (MediaQuery.of(context).size.width - 32 - 48 - 32) / numColumns;
     
     return Container(
       margin: const EdgeInsets.all(16),
@@ -48,23 +43,28 @@ class ControlPanel extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _ControlButton(
-                  icon: Icons.chat_bubble_outline,
-                  label: 'チャット',
-                  onTap: onChatPressed,
-                  width: buttonWidth,
+                Expanded(
+                  child: _ControlButton(
+                    icon: Icons.chat_bubble_outline,
+                    label: 'チャット',
+                    onTap: onChatPressed,
+                  ),
                 ),
-                _ControlButton(
-                  icon: Icons.article_outlined,
-                  label: 'ノートパッド',
-                  onTap: onNotepadPressed,
-                  width: buttonWidth,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _ControlButton(
+                    icon: Icons.article_outlined,
+                    label: 'ノートパッド',
+                    onTap: onNotepadPressed,
+                  ),
                 ),
-                _ControlButton(
-                  icon: Icons.settings,
-                  label: '設定',
-                  onTap: onSettingsPressed,
-                  width: buttonWidth,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _ControlButton(
+                    icon: Icons.settings,
+                    label: '設定',
+                    onTap: onSettingsPressed,
+                  ),
                 ),
               ],
             ),
@@ -75,21 +75,24 @@ class ControlPanel extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _ControlButton(
-                  icon: speakerMuted ? Icons.volume_off : Icons.volume_up,
-                  label: 'スピーカー',
-                  onTap: () => _handleSpeakerToggle(ref),
-                  isActive: speakerMuted,
-                  activeColor: AppTheme.warningColor,
-                  width: buttonWidth,
+                Expanded(
+                  child: _ControlButton(
+                    icon: speakerMuted ? Icons.volume_off : Icons.volume_up,
+                    label: 'スピーカー',
+                    onTap: () => _handleSpeakerToggle(ref),
+                    isActive: speakerMuted,
+                    activeColor: AppTheme.warningColor,
+                  ),
                 ),
-                _ControlButton(
-                  icon: isMuted ? Icons.mic_off : Icons.mic,
-                  label: '消音',
-                  onTap: () => _handleMuteToggle(ref),
-                  isActive: isMuted,
-                  activeColor: AppTheme.errorColor,
-                  width: buttonWidth,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _ControlButton(
+                    icon: isMuted ? Icons.mic_off : Icons.mic,
+                    label: '消音',
+                    onTap: () => _handleMuteToggle(ref),
+                    isActive: isMuted,
+                    activeColor: AppTheme.errorColor,
+                  ),
                 ),
               ],
             ),
@@ -97,56 +100,62 @@ class ControlPanel extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _ControlButton(
-                  icon: Icons.front_hand,
-                  label: '割込み',
-                  onTap: () => _handleInterrupt(ref),
-                  enabled: isCallActive,
-                  width: buttonWidth,
-                ),
-                // PiP button for desktop (similar to Windows always-on-top in title bar)
-                if (Platform.isAndroid || Platform.isIOS)
-                  _ControlButton(
-                    icon: Icons.picture_in_picture_alt,
-                    label: 'PiP',
-                    onTap: () => _handlePiPToggle(context),
-                    width: buttonWidth,
-                  )
-                else
-                  _ControlButton(
-                    icon: Icons.settings,
-                    label: '設定',
-                    onTap: onSettingsPressed,
-                    width: buttonWidth,
+                Expanded(
+                  child: _ControlButton(
+                    icon: Icons.front_hand,
+                    label: '割込み',
+                    onTap: () => _handleInterrupt(ref),
+                    enabled: isCallActive,
                   ),
+                ),
+                const SizedBox(width: 12),
+                // PiP button for mobile, Settings for desktop
+                Expanded(
+                  child: (Platform.isAndroid || Platform.isIOS)
+                      ? _ControlButton(
+                          icon: Icons.picture_in_picture_alt,
+                          label: 'PiP',
+                          onTap: () => _handlePiPToggle(context),
+                        )
+                      : _ControlButton(
+                          icon: Icons.settings,
+                          label: '設定',
+                          onTap: onSettingsPressed,
+                        ),
+                ),
               ],
             ),
           ] else
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _ControlButton(
-                  icon: speakerMuted ? Icons.volume_off : Icons.volume_up,
-                  label: 'スピーカー',
-                  onTap: () => _handleSpeakerToggle(ref),
-                  isActive: speakerMuted,
-                  activeColor: AppTheme.warningColor,
-                  width: buttonWidth,
+                Expanded(
+                  child: _ControlButton(
+                    icon: speakerMuted ? Icons.volume_off : Icons.volume_up,
+                    label: 'スピーカー',
+                    onTap: () => _handleSpeakerToggle(ref),
+                    isActive: speakerMuted,
+                    activeColor: AppTheme.warningColor,
+                  ),
                 ),
-                _ControlButton(
-                  icon: isMuted ? Icons.mic_off : Icons.mic,
-                  label: '消音',
-                  onTap: () => _handleMuteToggle(ref),
-                  isActive: isMuted,
-                  activeColor: AppTheme.errorColor,
-                  width: buttonWidth,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _ControlButton(
+                    icon: isMuted ? Icons.mic_off : Icons.mic,
+                    label: '消音',
+                    onTap: () => _handleMuteToggle(ref),
+                    isActive: isMuted,
+                    activeColor: AppTheme.errorColor,
+                  ),
                 ),
-                _ControlButton(
-                  icon: Icons.front_hand,
-                  label: '割込み',
-                  onTap: () => _handleInterrupt(ref),
-                  enabled: isCallActive,
-                  width: buttonWidth,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _ControlButton(
+                    icon: Icons.front_hand,
+                    label: '割込み',
+                    onTap: () => _handleInterrupt(ref),
+                    enabled: isCallActive,
+                  ),
                 ),
               ],
             ),
@@ -237,7 +246,6 @@ class _ControlButton extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
-  final double width;
   final bool enabled;
   final bool isActive;
   final Color? activeColor;
@@ -246,7 +254,6 @@ class _ControlButton extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.onTap,
-    required this.width,
     this.enabled = true,
     this.isActive = false,
     this.activeColor,
@@ -262,33 +269,33 @@ class _ControlButton extends StatelessWidget {
 
     return GestureDetector(
       onTap: enabled ? onTap : null,
-      child: SizedBox(
-        width: width,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: isActive 
-                    ? (activeColor ?? AppTheme.primaryColor).withValues(alpha: 0.2)
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Icon(icon, color: color, size: 28),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: isActive 
+                  ? (activeColor ?? AppTheme.primaryColor).withValues(alpha: 0.2)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(16),
             ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                color: color,
-              ),
-              textAlign: TextAlign.center,
+            child: Icon(icon, color: color, size: 28),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              color: color,
             ),
-          ],
-        ),
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
       ),
     );
   }
