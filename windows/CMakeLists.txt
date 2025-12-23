@@ -55,7 +55,8 @@ add_subdirectory("runner")
 
 # Generated plugin build rules, which manage building the plugins and adding
 # them to the application.
-include(flutter/generated_plugins.cmake)
+# Note: We use a filter to exclude flutter_sound which doesn't support Windows
+include(flutter/generated_plugins_filter.cmake)
 
 
 # === Installation ===
