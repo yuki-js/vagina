@@ -6,6 +6,7 @@ import '../components/settings_card.dart';
 import 'settings/azure_config_section.dart';
 import 'settings/voice_settings_section.dart';
 import 'settings/android_audio_section.dart';
+import 'settings/pip_settings_section.dart';
 import 'settings/developer_section.dart';
 import 'settings/about_section.dart';
 
@@ -51,6 +52,14 @@ class SettingsScreen extends ConsumerWidget {
                       const SectionHeader(title: 'Android 音声設定'),
                       const SizedBox(height: 12),
                       const AndroidAudioSection(),
+                    ],
+                    
+                    // PiP Settings Section (Mobile only)
+                    if (Platform.isAndroid || Platform.isIOS) ...[
+                      const SizedBox(height: 24),
+                      const SectionHeader(title: 'Picture-in-Picture'),
+                      const SizedBox(height: 12),
+                      const PiPSettingsSection(),
                     ],
                     
                     // Window settings removed - always-on-top is now in title bar
