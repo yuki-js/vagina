@@ -1,21 +1,25 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/app_theme.dart';
 import '../../providers/providers.dart';
 import '../../components/call_button.dart';
 import '../../services/call_service.dart';
+import '../../services/pip_service.dart';
 
-/// Galaxy-style control panel with 2x3 button grid and call button
+/// Galaxy-style control panel with button grid and call button
 class ControlPanel extends ConsumerWidget {
   final VoidCallback onChatPressed;
   final VoidCallback onNotepadPressed;
   final VoidCallback onSettingsPressed;
+  final bool hideNavigationButtons;
 
   const ControlPanel({
     super.key,
     required this.onChatPressed,
     required this.onNotepadPressed,
     required this.onSettingsPressed,
+    this.hideNavigationButtons = false,
   });
 
   @override
@@ -23,9 +27,6 @@ class ControlPanel extends ConsumerWidget {
     final isMuted = ref.watch(isMutedProvider);
     final speakerMuted = ref.watch(speakerMutedProvider);
     final isCallActive = ref.watch(isCallActiveProvider);
-
-    // Calculate button width for consistent grid layout (3 columns)
-    final buttonWidth = (MediaQuery.of(context).size.width - 32 - 48 - 32) / 3;
     
     return Container(
       margin: const EdgeInsets.all(16),
@@ -37,60 +38,127 @@ class ControlPanel extends ConsumerWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // First row: Chat, Notepad, Settings
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _ControlButton(
-                icon: Icons.chat_bubble_outline,
-                label: 'チャット',
-                onTap: onChatPressed,
-                width: buttonWidth,
-              ),
-              _ControlButton(
-                icon: Icons.article_outlined,
-                label: 'ノートパッド',
-                onTap: onNotepadPressed,
-                width: buttonWidth,
-              ),
-              _ControlButton(
-                icon: Icons.settings,
-                label: '設定',
-                onTap: onSettingsPressed,
-                width: buttonWidth,
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          // Second row: Speaker, Mute, Interrupt
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _ControlButton(
-                icon: speakerMuted ? Icons.volume_off : Icons.volume_up,
-                label: 'スピーカー',
-                onTap: () => _handleSpeakerToggle(ref),
-                isActive: speakerMuted,
-                activeColor: AppTheme.warningColor,
-                width: buttonWidth,
-              ),
-              _ControlButton(
-                icon: isMuted ? Icons.mic_off : Icons.mic,
-                label: '消音',
-                onTap: () => _handleMuteToggle(ref),
-                isActive: isMuted,
-                activeColor: AppTheme.errorColor,
-                width: buttonWidth,
-              ),
-              _ControlButton(
-                icon: Icons.front_hand,
-                label: '割込み',
-                onTap: () => _handleInterrupt(ref),
-                enabled: isCallActive,
-                width: buttonWidth,
-              ),
-            ],
-          ),
+          // First row: conditionally show navigation buttons
+          if (!hideNavigationButtons)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                Expanded(
+                  child: _ControlButton(
+                    icon: Icons.chat_bubble_outline,
+                    label: 'チャット',
+                    onTap: onChatPressed,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _ControlButton(
+                    icon: Icons.article_outlined,
+                    label: 'ノートパッド',
+                    onTap: onNotepadPressed,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _ControlButton(
+                    icon: Icons.settings,
+                    label: '設定',
+                    onTap: onSettingsPressed,
+                  ),
+                ),
+              ],
+            ),
+          if (!hideNavigationButtons) const SizedBox(height: 16),
+          // Wide layout: 2x2 grid (Speaker/Mute + Interrupt/Settings)
+          // Mobile layout: 1 row with Speaker/Mute/Interrupt
+          if (hideNavigationButtons) ...[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                Expanded(
+                  child: _ControlButton(
+                    icon: speakerMuted ? Icons.volume_off : Icons.volume_up,
+                    label: 'スピーカー',
+                    onTap: () => _handleSpeakerToggle(ref),
+                    isActive: speakerMuted,
+                    activeColor: AppTheme.warningColor,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _ControlButton(
+                    icon: isMuted ? Icons.mic_off : Icons.mic,
+                    label: '消音',
+                    onTap: () => _handleMuteToggle(ref),
+                    isActive: isMuted,
+                    activeColor: AppTheme.errorColor,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                Expanded(
+                  child: _ControlButton(
+                    icon: Icons.front_hand,
+                    label: '割込み',
+                    onTap: () => _handleInterrupt(ref),
+                    enabled: isCallActive,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // PiP button for mobile, Settings for desktop
+                Expanded(
+                  child: (Platform.isAndroid || Platform.isIOS)
+                      ? _ControlButton(
+                          icon: Icons.picture_in_picture_alt,
+                          label: 'PiP',
+                          onTap: () => _handlePiPToggle(context),
+                        )
+                      : _ControlButton(
+                          icon: Icons.settings,
+                          label: '設定',
+                          onTap: onSettingsPressed,
+                        ),
+                ),
+              ],
+            ),
+          ] else
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                Expanded(
+                  child: _ControlButton(
+                    icon: speakerMuted ? Icons.volume_off : Icons.volume_up,
+                    label: 'スピーカー',
+                    onTap: () => _handleSpeakerToggle(ref),
+                    isActive: speakerMuted,
+                    activeColor: AppTheme.warningColor,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _ControlButton(
+                    icon: isMuted ? Icons.mic_off : Icons.mic,
+                    label: '消音',
+                    onTap: () => _handleMuteToggle(ref),
+                    isActive: isMuted,
+                    activeColor: AppTheme.errorColor,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _ControlButton(
+                    icon: Icons.front_hand,
+                    label: '割込み',
+                    onTap: () => _handleInterrupt(ref),
+                    enabled: isCallActive,
+                  ),
+                ),
+              ],
+            ),
           const SizedBox(height: 24),
           // Main call button
           CallButton(
@@ -139,6 +207,38 @@ class ControlPanel extends ConsumerWidget {
       await callService.endCall();
     }
   }
+
+  Future<void> _handlePiPToggle(BuildContext context) async {
+    if (!Platform.isAndroid && !Platform.isIOS) return;
+    
+    final pipService = PiPService();
+    final isAvailable = await pipService.isPiPAvailable();
+    
+    if (!isAvailable) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Picture-in-Picture is not available on this device'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+      return;
+    }
+    
+    try {
+      await pipService.enterPiPMode();
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to enter PiP mode: $e'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
 }
 
 /// Individual control button widget
@@ -146,7 +246,6 @@ class _ControlButton extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
-  final double width;
   final bool enabled;
   final bool isActive;
   final Color? activeColor;
@@ -155,7 +254,6 @@ class _ControlButton extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.onTap,
-    required this.width,
     this.enabled = true,
     this.isActive = false,
     this.activeColor,
@@ -171,33 +269,33 @@ class _ControlButton extends StatelessWidget {
 
     return GestureDetector(
       onTap: enabled ? onTap : null,
-      child: SizedBox(
-        width: width,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: isActive 
-                    ? (activeColor ?? AppTheme.primaryColor).withValues(alpha: 0.2)
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Icon(icon, color: color, size: 28),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: isActive 
+                  ? (activeColor ?? AppTheme.primaryColor).withValues(alpha: 0.2)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(16),
             ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                color: color,
-              ),
-              textAlign: TextAlign.center,
+            child: Icon(icon, color: color, size: 28),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              color: color,
             ),
-          ],
-        ),
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
       ),
     );
   }

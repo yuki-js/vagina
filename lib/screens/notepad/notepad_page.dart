@@ -10,10 +10,12 @@ import 'notepad_action_bar.dart';
 /// Artifact page widget - displays artifact tabs and their content
 class NotepadPage extends ConsumerStatefulWidget {
   final VoidCallback onBackPressed;
+  final bool hideBackButton;
 
   const NotepadPage({
     super.key,
     required this.onBackPressed,
+    this.hideBackButton = false,
   });
 
   @override
@@ -79,6 +81,7 @@ class _NotepadPageState extends ConsumerState<NotepadPage> {
               isEditing: _isEditing,
               onEditToggle: () => _toggleEdit(selectedTab),
               editedContent: _editedContent,
+              hideBackButton: widget.hideBackButton,
             ),
 
             // Tab bar (if tabs exist)
@@ -118,6 +121,7 @@ class _NotepadPageState extends ConsumerState<NotepadPage> {
             isEditing: false,
             onEditToggle: () {},
             editedContent: '',
+            hideBackButton: widget.hideBackButton,
           ),
           const Expanded(
             child: Center(
@@ -134,6 +138,7 @@ class _NotepadPageState extends ConsumerState<NotepadPage> {
             isEditing: false,
             onEditToggle: () {},
             editedContent: '',
+            hideBackButton: widget.hideBackButton,
           ),
           Expanded(
             child: Center(
@@ -156,6 +161,7 @@ class _NotepadHeader extends StatelessWidget {
   final bool isEditing;
   final VoidCallback onEditToggle;
   final String editedContent;
+  final bool hideBackButton;
 
   const _NotepadHeader({
     required this.onBackPressed,
@@ -163,6 +169,7 @@ class _NotepadHeader extends StatelessWidget {
     required this.isEditing,
     required this.onEditToggle,
     required this.editedContent,
+    this.hideBackButton = false,
   });
 
   @override
@@ -171,16 +178,17 @@ class _NotepadHeader extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
       child: Row(
         children: [
-          GestureDetector(
-            onTap: onBackPressed,
-            child: Row(
-              children: [
-                const Icon(Icons.chevron_left, color: AppTheme.textSecondary),
-                Text(
-                  '通話画面',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: AppTheme.textSecondary,
+          if (!hideBackButton)
+            GestureDetector(
+              onTap: onBackPressed,
+              child: Row(
+                children: [
+                  const Icon(Icons.chevron_left, color: AppTheme.textSecondary),
+                  Text(
+                    '通話画面',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: AppTheme.textSecondary,
                   ),
                 ),
               ],
@@ -199,11 +207,25 @@ class _NotepadHeader extends StatelessWidget {
             ),
           ),
           if (selectedTab != null)
-            NotepadMoreMenu(
-              content: isEditing ? editedContent : selectedTab!.content,
-              isEditing: isEditing,
-              onEditToggle: onEditToggle,
-              showEditButton: selectedTab!.mimeType != 'text/html',
+            Consumer(
+              builder: (context, ref, child) {
+                return NotepadMoreMenu(
+                  content: isEditing ? editedContent : selectedTab!.content,
+                  isEditing: isEditing,
+                  onEditToggle: onEditToggle,
+                  showEditButton: selectedTab!.mimeType != 'text/html',
+                  canUndo: selectedTab!.canUndo,
+                  canRedo: selectedTab!.canRedo,
+                  onUndo: () {
+                    final service = ref.read(notepadServiceProvider);
+                    service.undo(selectedTab!.id);
+                  },
+                  onRedo: () {
+                    final service = ref.read(notepadServiceProvider);
+                    service.redo(selectedTab!.id);
+                  },
+                );
+              },
             )
           else
             const SizedBox(width: 48), // Balance for the back button

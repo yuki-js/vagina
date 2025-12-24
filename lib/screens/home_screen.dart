@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/app_theme.dart';
 import '../providers/providers.dart';
+import '../components/title_bar.dart';
 import 'call/call_page.dart';
 import 'chat/chat_page.dart';
 import 'notepad/notepad_page.dart';
@@ -127,31 +128,106 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         }
       },
       child: Scaffold(
-        body: Container(
-          decoration: AppTheme.backgroundGradient,
-          child: SafeArea(
-            child: PageView(
-              controller: _pageController,
-              children: [
-                // Chat on left (swipe right to go to call)
-                ChatPage(
-                  onBackPressed: _goToCall,
+        body: Column(
+          children: [
+            // Custom title bar for desktop platforms
+            const CustomTitleBar(),
+            Expanded(
+              child: Container(
+                decoration: AppTheme.backgroundGradient,
+                child: SafeArea(
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      // Use multi-column layout for wide screens (>= 900px)
+                      if (constraints.maxWidth >= 900) {
+                        return _buildThreeColumnLayout();
+                      } else {
+                        // Use PageView for mobile/narrow screens
+                        return _buildPageViewLayout();
+                      }
+                    },
+                  ),
                 ),
-                // Call in center
-                CallPage(
-                  onChatPressed: _goToChat,
-                  onNotepadPressed: _goToArtifact,
-                  onSettingsPressed: _openSettings,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPageViewLayout() {
+    return PageView(
+      controller: _pageController,
+      children: [
+        // Chat on left (swipe right to go to call)
+        ChatPage(
+          onBackPressed: _goToCall,
+        ),
+        // Call in center
+        CallPage(
+          onChatPressed: _goToChat,
+          onNotepadPressed: _goToArtifact,
+          onSettingsPressed: _openSettings,
+        ),
+        // Artifacts on right (swipe left to go to call)
+        NotepadPage(
+          onBackPressed: _goToCall,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildThreeColumnLayout() {
+    return Row(
+      children: [
+        // Chat panel on left (37%)
+        Expanded(
+          flex: 37,
+          child: Container(
+            decoration: BoxDecoration(
+              border: Border(
+                right: BorderSide(
+                  color: AppTheme.textSecondary.withValues(alpha: 0.2),
+                  width: 1,
                 ),
-                // Artifacts on right (swipe left to go to call)
-                NotepadPage(
-                  onBackPressed: _goToCall,
-                ),
-              ],
+              ),
+            ),
+            child: ChatPage(
+              onBackPressed: () {}, // No back action needed in 3-column layout
+              hideBackButton: true, // Hide back button in 3-column layout
             ),
           ),
         ),
-      ),
+        // Call panel in center (26%)
+        Expanded(
+          flex: 26,
+          child: Container(
+            decoration: BoxDecoration(
+              border: Border(
+                right: BorderSide(
+                  color: AppTheme.textSecondary.withValues(alpha: 0.2),
+                  width: 1,
+                ),
+              ),
+            ),
+            child: CallPage(
+              onChatPressed: () {}, // No navigation needed in 3-column layout
+              onNotepadPressed: () {}, // No navigation needed in 3-column layout
+              onSettingsPressed: _openSettings,
+              hideNavigationButtons: true, // Hide chat/notepad buttons in 3-column layout
+            ),
+          ),
+        ),
+        // Notepad panel on right (37%)
+        Expanded(
+          flex: 37,
+          child: NotepadPage(
+            onBackPressed: () {}, // No back action needed in 3-column layout
+            hideBackButton: true, // Hide back button in 3-column layout
+          ),
+        ),
+      ],
     );
   }
 }

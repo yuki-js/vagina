@@ -19,5 +19,5 @@ class AppConfig {
 
   /// Silence timeout in seconds - call will auto-end after this duration of silence
   /// Set to 0 to disable silence detection
-  static const int silenceTimeoutSeconds = 60;
+  static const int silenceTimeoutSeconds = 180;
 }

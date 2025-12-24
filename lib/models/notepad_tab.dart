@@ -1,3 +1,14 @@
+/// Represents a single edit in the history
+class EditHistoryEntry {
+  final String content;
+  final DateTime timestamp;
+  
+  const EditHistoryEntry({
+    required this.content,
+    required this.timestamp,
+  });
+}
+
 /// Represents a single notepad tab
 class NotepadTab {
   final String id;
@@ -6,6 +17,8 @@ class NotepadTab {
   final String mimeType;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final List<EditHistoryEntry> history;
+  final int currentHistoryIndex;
 
   const NotepadTab({
     required this.id,
@@ -14,6 +27,8 @@ class NotepadTab {
     required this.mimeType,
     required this.createdAt,
     required this.updatedAt,
+    this.history = const [],
+    this.currentHistoryIndex = 0,
   });
 
   NotepadTab copyWith({
@@ -23,6 +38,8 @@ class NotepadTab {
     String? mimeType,
     DateTime? createdAt,
     DateTime? updatedAt,
+    List<EditHistoryEntry>? history,
+    int? currentHistoryIndex,
   }) {
     return NotepadTab(
       id: id ?? this.id,
@@ -31,8 +48,16 @@ class NotepadTab {
       mimeType: mimeType ?? this.mimeType,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      history: history ?? this.history,
+      currentHistoryIndex: currentHistoryIndex ?? this.currentHistoryIndex,
     );
   }
+  
+  /// Check if undo is available
+  bool get canUndo => history.isNotEmpty && currentHistoryIndex > 0;
+  
+  /// Check if redo is available
+  bool get canRedo => history.isNotEmpty && currentHistoryIndex < history.length - 1;
 
   /// Get metadata as a map (for AI tools)
   Map<String, dynamic> toMetadata() {

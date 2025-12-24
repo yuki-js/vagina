@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../theme/app_theme.dart';
 import '../services/log_service.dart';
+import '../components/app_scaffold.dart';
 
 /// Screen for viewing trace logs
 class LogScreen extends StatefulWidget {
@@ -98,138 +99,117 @@ class _LogScreenState extends State<LogScreen> {
   Widget build(BuildContext context) {
     final logs = _filteredLogs;
 
-    return Scaffold(
+    return AppScaffold(
+      title: 'ログ',
+      actions: [
+        // Auto-scroll toggle
+        IconButton(
+          icon: Icon(
+            _autoScroll ? Icons.vertical_align_bottom : Icons.vertical_align_center,
+            color: _autoScroll ? AppTheme.primaryColor : AppTheme.textSecondary,
+          ),
+          onPressed: () {
+            setState(() {
+              _autoScroll = !_autoScroll;
+            });
+          },
+          tooltip: '自動スクロール',
+        ),
+        IconButton(
+          icon: const Icon(Icons.copy),
+          onPressed: _copyLogs,
+          tooltip: 'コピー',
+        ),
+        IconButton(
+          icon: const Icon(Icons.delete_outline),
+          onPressed: _clearLogs,
+          tooltip: 'クリア',
+        ),
+      ],
       body: Container(
         decoration: AppTheme.backgroundGradient,
-        child: SafeArea(
-          child: Column(
-            children: [
-              // App bar
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back),
-                      onPressed: () => Navigator.of(context).pop(),
+        child: Column(
+          children: [
+            // Filter input
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: TextField(
+                decoration: const InputDecoration(
+                  hintText: 'フィルター...',
+                  prefixIcon: Icon(Icons.search),
+                  isDense: true,
+                ),
+                onChanged: (value) {
+                  setState(() {
+                    _filter = value;
+                  });
+                },
+              ),
+            ),
+            
+            const SizedBox(height: 8),
+            
+            // Log count
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Row(
+                children: [
+                  Text(
+                    '${logs.length} エントリ',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppTheme.textSecondary.withValues(alpha: 0.7),
                     ),
-                    const Expanded(
-                      child: Text(
-                        'ログ',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
+                  ),
+                  const Spacer(),
+                  // Level legend
+                  _buildLegend('INFO', AppTheme.textPrimary),
+                  _buildLegend('WS', Colors.cyan),
+                  _buildLegend('WARN', AppTheme.warningColor),
+                  _buildLegend('ERR', AppTheme.errorColor),
+                ],
+              ),
+            ),
+            
+            const SizedBox(height: 8),
+            
+            // Log list
+            Expanded(
+              child: Container(
+                margin: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.black87,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: logs.isEmpty
+                    ? const Center(
+                        child: Text(
+                          'ログがありません',
+                          style: TextStyle(color: Colors.grey),
                         ),
-                      ),
-                    ),
-                    // Auto-scroll toggle
-                    IconButton(
-                      icon: Icon(
-                        _autoScroll ? Icons.vertical_align_bottom : Icons.vertical_align_center,
-                        color: _autoScroll ? AppTheme.primaryColor : AppTheme.textSecondary,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _autoScroll = !_autoScroll;
-                        });
-                      },
-                      tooltip: '自動スクロール',
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.copy),
-                      onPressed: _copyLogs,
-                      tooltip: 'コピー',
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline),
-                      onPressed: _clearLogs,
-                      tooltip: 'クリア',
-                    ),
-                  ],
-                ),
-              ),
-              
-              // Filter input
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: TextField(
-                  decoration: const InputDecoration(
-                    hintText: 'フィルター...',
-                    prefixIcon: Icon(Icons.search),
-                    isDense: true,
-                  ),
-                  onChanged: (value) {
-                    setState(() {
-                      _filter = value;
-                    });
-                  },
-                ),
-              ),
-              
-              const SizedBox(height: 8),
-              
-              // Log count
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Row(
-                  children: [
-                    Text(
-                      '${logs.length} エントリ',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppTheme.textSecondary.withValues(alpha: 0.7),
-                      ),
-                    ),
-                    const Spacer(),
-                    // Level legend
-                    _buildLegend('INFO', AppTheme.textPrimary),
-                    _buildLegend('WS', Colors.cyan),
-                    _buildLegend('WARN', AppTheme.warningColor),
-                    _buildLegend('ERR', AppTheme.errorColor),
-                  ],
-                ),
-              ),
-              
-              const SizedBox(height: 8),
-              
-              // Log list
-              Expanded(
-                child: Container(
-                  margin: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.black87,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: logs.isEmpty
-                      ? const Center(
-                          child: Text(
-                            'ログがありません',
-                            style: TextStyle(color: Colors.grey),
-                          ),
-                        )
-                      : ListView.builder(
-                          controller: _scrollController,
-                          itemCount: logs.length,
-                          padding: const EdgeInsets.all(8),
-                          itemBuilder: (context, index) {
-                            final log = logs[index];
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 2),
-                              child: SelectableText(
-                                log.toString(),
-                                style: TextStyle(
-                                  fontFamily: 'monospace',
-                                  fontSize: 11,
-                                  color: _getLevelColor(log.level),
-                                ),
+                      )
+                    : ListView.builder(
+                        controller: _scrollController,
+                        itemCount: logs.length,
+                        padding: const EdgeInsets.all(8),
+                        itemBuilder: (context, index) {
+                          final log = logs[index];
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 2),
+                            child: SelectableText(
+                              log.toString(),
+                              style: TextStyle(
+                                fontFamily: 'monospace',
+                                fontSize: 11,
+                                color: _getLevelColor(log.level),
                               ),
-                            );
-                          },
-                        ),
-                ),
+                            ),
+                          );
+                        },
+                      ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

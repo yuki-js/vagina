@@ -2,9 +2,9 @@ name: Windows CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 # Restrict permissions for security
 permissions:
@@ -23,8 +23,8 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.27.1'
-          channel: 'stable'
+          flutter-version: "3.38.3"
+          channel: "stable"
           cache: true
 
       - name: Cache pub dependencies
@@ -66,8 +66,8 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.27.1'
-          channel: 'stable'
+          flutter-version: "3.38.3"
+          channel: "stable"
           cache: true
 
       # Download preprocessed cache
@@ -130,8 +130,8 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.27.1'
-          channel: 'stable'
+          flutter-version: "3.38.3"
+          channel: "stable"
           cache: true
 
       # Download preprocessed cache
@@ -180,4 +180,51 @@ jobs:
         with:
           name: windows-release-build
           path: build\windows\vagina-release-windows.zip
+          retention-days: 30
+
+      # Code signing (optional - requires secrets)
+      - name: Decode certificate
+        run: |
+          $certBytes = [Convert]::FromBase64String("${{ secrets.WINDOWS_CERT_PFX }}")
+          [IO.File]::WriteAllBytes("$env:TEMP\cert.pfx", $certBytes)
+        shell: powershell
+
+      - name: Sign executable
+        run: |
+          # Find signtool.exe (Windows SDK)
+          $signtool = Get-ChildItem -Path "C:\Program Files (x86)\Windows Kits" -Recurse -Filter "signtool.exe" | Select-Object -First 1 -ExpandProperty FullName
+
+          if (-not $signtool) {
+            Write-Error "SignTool not found"
+            exit 1
+          }
+
+          # Sign the executable
+          $exePath = "build\windows\x64\runner\Release\vagina.exe"
+          & $signtool sign /f "$env:TEMP\cert.pfx" /p "${{ secrets.WINDOWS_CERT_PASSWORD }}" /t http://timestamp.digicert.com /fd SHA256 /v $exePath
+
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "Signing failed with exit code $LASTEXITCODE"
+            exit 1
+          }
+
+          Write-Host "Successfully signed $exePath"
+        shell: powershell
+
+      - name: Cleanup certificate
+        if: always()
+        run: |
+          Remove-Item "$env:TEMP\cert.pfx" -ErrorAction SilentlyContinue
+        shell: powershell
+
+      - name: Package release build
+        run: |
+          Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath build\windows\vagina-release-windows-signed.zip
+        shell: powershell
+
+      - name: Upload Release Build
+        uses: actions/upload-artifact@v5
+        with:
+          name: windows-release-build
+          path: build\windows\vagina-release-windows-signed.zip
           retention-days: 30

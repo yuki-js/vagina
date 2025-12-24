@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
+import '../../services/log_service.dart';
 
 /// Plain text content renderer with edit/preview toggle
 class PlainTextContent extends StatefulWidget {
@@ -19,12 +21,26 @@ class PlainTextContent extends StatefulWidget {
 }
 
 class _PlainTextContentState extends State<PlainTextContent> {
+  static const _tag = 'PlainTextContent';
   late TextEditingController _controller;
+  final FocusNode _focusNode = FocusNode();
+  final FocusNode? _keyboardListenerFocusNode = Platform.isWindows ? FocusNode() : null;
 
   @override
   void initState() {
     super.initState();
     _controller = TextEditingController(text: widget.content);
+    
+    // Add listener for debugging on Windows
+    if (Platform.isWindows) {
+      _controller.addListener(() {
+        logService.debug(_tag, 'Text changed: length=${_controller.text.length}');
+      });
+      
+      _focusNode.addListener(() {
+        logService.debug(_tag, 'Focus changed: ${_focusNode.hasFocus}');
+      });
+    }
   }
 
   @override
@@ -42,11 +58,19 @@ class _PlainTextContentState extends State<PlainTextContent> {
   @override
   void dispose() {
     _controller.dispose();
+    _focusNode.dispose();
+    _keyboardListenerFocusNode?.dispose();
     super.dispose();
   }
 
   void _onTextChanged(String value) {
     widget.onContentChanged?.call(value);
+  }
+  
+  void _handleKeyEvent(KeyEvent event) {
+    if (Platform.isWindows) {
+      logService.debug(_tag, 'Key event: ${event.logicalKey}, character: ${event.character}');
+    }
   }
 
   @override
@@ -59,32 +83,44 @@ class _PlainTextContentState extends State<PlainTextContent> {
   }
 
   Widget _buildEditor() {
+    Widget textField = TextField(
+      controller: _controller,
+      focusNode: _focusNode,
+      onChanged: _onTextChanged,
+      maxLines: null,
+      expands: true,
+      style: const TextStyle(fontSize: 14, color: AppTheme.textPrimary),
+      decoration: InputDecoration(
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: AppTheme.primaryColor.withValues(alpha: 0.3)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: AppTheme.primaryColor.withValues(alpha: 0.3)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: AppTheme.primaryColor),
+        ),
+        filled: true,
+        fillColor: AppTheme.surfaceColor,
+        contentPadding: const EdgeInsets.all(12),
+      ),
+    );
+    
+    // Wrap with KeyboardListener for debugging on Windows
+    if (Platform.isWindows && _keyboardListenerFocusNode != null) {
+      textField = KeyboardListener(
+        focusNode: _keyboardListenerFocusNode,
+        onKeyEvent: _handleKeyEvent,
+        child: textField,
+      );
+    }
+    
     return Container(
       padding: const EdgeInsets.all(16),
-      child: TextField(
-        controller: _controller,
-        onChanged: _onTextChanged,
-        maxLines: null,
-        expands: true,
-        style: const TextStyle(fontSize: 14, color: AppTheme.textPrimary),
-        decoration: InputDecoration(
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(color: AppTheme.primaryColor.withValues(alpha: 0.3)),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(color: AppTheme.primaryColor.withValues(alpha: 0.3)),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: AppTheme.primaryColor),
-          ),
-          filled: true,
-          fillColor: AppTheme.surfaceColor,
-          contentPadding: const EdgeInsets.all(12),
-        ),
-      ),
+      child: textField,
     );
   }
 

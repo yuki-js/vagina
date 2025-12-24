@@ -9,10 +9,12 @@ import 'chat_empty_state.dart';
 /// Chat page widget - displays chat history and input
 class ChatPage extends ConsumerStatefulWidget {
   final VoidCallback onBackPressed;
+  final bool hideBackButton;
 
   const ChatPage({
     super.key,
     required this.onBackPressed,
+    this.hideBackButton = false,
   });
 
   @override
@@ -71,7 +73,10 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     return Column(
       children: [
         // Header
-        _ChatHeader(onBackPressed: widget.onBackPressed),
+        _ChatHeader(
+          onBackPressed: widget.onBackPressed,
+          hideBackButton: widget.hideBackButton,
+        ),
 
         // Chat messages
         Expanded(
@@ -132,8 +137,12 @@ class _ChatPageState extends ConsumerState<ChatPage> {
 /// Chat header with navigation to call
 class _ChatHeader extends StatelessWidget {
   final VoidCallback onBackPressed;
+  final bool hideBackButton;
 
-  const _ChatHeader({required this.onBackPressed});
+  const _ChatHeader({
+    required this.onBackPressed,
+    this.hideBackButton = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -141,8 +150,8 @@ class _ChatHeader extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          const SizedBox(width: 80), // Balance for the navigation button
-          const Expanded(
+          if (!hideBackButton) const SizedBox(width: 80), // Balance for the navigation button
+          Expanded(
             child: Center(
               child: Text(
                 'チャット',
@@ -154,20 +163,21 @@ class _ChatHeader extends StatelessWidget {
               ),
             ),
           ),
-          GestureDetector(
-            onTap: onBackPressed,
-            child: Row(
-              children: [
-                Text(
-                  '通話画面',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: AppTheme.textSecondary,
+          if (!hideBackButton)
+            GestureDetector(
+              onTap: onBackPressed,
+              child: Row(
+                children: [
+                  Text(
+                    '通話画面',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: AppTheme.textSecondary,
+                    ),
                   ),
-                ),
-                const Icon(Icons.chevron_right, color: AppTheme.textSecondary),
-              ],
-            ),
+                  const Icon(Icons.chevron_right, color: AppTheme.textSecondary),
+                ],
+              ),
           ),
         ],
       ),

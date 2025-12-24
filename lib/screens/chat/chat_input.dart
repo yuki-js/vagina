@@ -1,7 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/app_theme.dart';
 import '../../providers/providers.dart';
+import '../../services/log_service.dart';
 
 /// Chat input area widget
 class ChatInput extends ConsumerStatefulWidget {
@@ -14,13 +16,32 @@ class ChatInput extends ConsumerStatefulWidget {
 }
 
 class _ChatInputState extends ConsumerState<ChatInput> {
+  static const _tag = 'ChatInput';
   final TextEditingController _textController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
+  final FocusNode? _keyboardListenerFocusNode = Platform.isWindows ? FocusNode() : null;
+
+  @override
+  void initState() {
+    super.initState();
+    
+    // Add listener for debugging on Windows
+    if (Platform.isWindows) {
+      _textController.addListener(() {
+        logService.debug(_tag, 'Text changed: "${_textController.text}"');
+      });
+      
+      _focusNode.addListener(() {
+        logService.debug(_tag, 'Focus changed: ${_focusNode.hasFocus}');
+      });
+    }
+  }
 
   @override
   void dispose() {
     _textController.dispose();
     _focusNode.dispose();
+    _keyboardListenerFocusNode?.dispose();
     super.dispose();
   }
 
@@ -33,9 +54,44 @@ class _ChatInputState extends ConsumerState<ChatInput> {
     _textController.clear();
     _focusNode.requestFocus();
   }
+  
+  void _handleKeyEvent(KeyEvent event) {
+    if (Platform.isWindows) {
+      logService.debug(_tag, 'Key event: ${event.logicalKey}, character: ${event.character}');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    Widget textField = TextField(
+      controller: _textController,
+      focusNode: _focusNode,
+      enabled: widget.isConnected,
+      decoration: InputDecoration(
+        hintText: widget.isConnected ? 'メッセージを入力...' : '通話中でないと入力できません',
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(24),
+          borderSide: BorderSide.none,
+        ),
+        filled: true,
+        fillColor: AppTheme.backgroundStart,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 12,
+        ),
+      ),
+      onSubmitted: (_) => _sendMessage(),
+    );
+    
+    // Wrap with KeyboardListener for debugging on Windows
+    if (Platform.isWindows && _keyboardListenerFocusNode != null) {
+      textField = KeyboardListener(
+        focusNode: _keyboardListenerFocusNode,
+        onKeyEvent: _handleKeyEvent,
+        child: textField,
+      );
+    }
+    
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -44,27 +100,7 @@ class _ChatInputState extends ConsumerState<ChatInput> {
       ),
       child: Row(
         children: [
-          Expanded(
-            child: TextField(
-              controller: _textController,
-              focusNode: _focusNode,
-              enabled: widget.isConnected,
-              decoration: InputDecoration(
-                hintText: widget.isConnected ? 'メッセージを入力...' : '通話中でないと入力できません',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(24),
-                  borderSide: BorderSide.none,
-                ),
-                filled: true,
-                fillColor: AppTheme.backgroundStart,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-              ),
-              onSubmitted: (_) => _sendMessage(),
-            ),
-          ),
+          Expanded(child: textField),
           const SizedBox(width: 8),
           FloatingActionButton(
             mini: true,
