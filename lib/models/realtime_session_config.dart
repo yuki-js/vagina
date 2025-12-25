@@ -2,16 +2,16 @@
 class RealtimeSessionConfig {
   /// Voice to use for audio output
   final String voice;
-  
+
   /// Noise reduction type: 'near' (close-talk) or 'far' (far-field)
   final String noiseReduction;
-  
+
   /// Tools registered with the session
   final List<Map<String, dynamic>> tools;
-  
+
   /// System instructions
   static const String systemInstructions = '''
-あなたの名前はVaginaです。Voice AGI Notepad Appの略です。
+あなたの名前はVaginaです。Voice AGI Notepad Agentの略です。
 ユーザーとの音声会話を通じて、役立つアシスタントとして振る舞ってください。
 日本語で応答し、親しみやすく自然な会話を心がけてください。
 ツールを使って時刻を確認したり、情報を記憶したり、計算を行うことができます。
@@ -57,13 +57,13 @@ class RealtimeSessionConfig {
         'interrupt_response': true,
       },
     };
-    
+
     // Add tools if any are configured
     if (tools.isNotEmpty) {
       config['tools'] = tools;
       config['tool_choice'] = 'auto';
     }
-    
+
     return config;
   }
 }

@@ -47,7 +47,7 @@ class CallPage extends ConsumerWidget {
             isMuted: isMuted,
           ),
         ),
-        
+
         // Galaxy-style control panel at bottom
         ControlPanel(
           onChatPressed: onChatPressed,
@@ -101,14 +101,14 @@ class _CallMainContent extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         Text(
-          'Voice AGI Notepad App',
+          'Voice AGI Notepad Agent',
           style: TextStyle(
             fontSize: 14,
             color: AppTheme.textSecondary,
             letterSpacing: 1,
           ),
         ),
-        
+
         const SizedBox(height: 32),
 
         // Duration display (when call active)

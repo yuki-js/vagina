@@ -23,7 +23,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   static const int _chatPageIndex = 0;
   static const int _callPageIndex = 1;
   static const int _artifactPageIndex = 2;
-  
+
   late final PageController _pageController;
   int _currentPageIndex = _callPageIndex;
 
@@ -94,7 +94,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   void _handleBackButton() {
-    if (_currentPageIndex == _chatPageIndex || _currentPageIndex == _artifactPageIndex) {
+    if (_currentPageIndex == _chatPageIndex ||
+        _currentPageIndex == _artifactPageIndex) {
       _goToCall();
     } else {
       final isCallActive = ref.read(isCallActiveProvider);
@@ -105,7 +106,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   bool get _canPop {
-    if (_currentPageIndex == _chatPageIndex || _currentPageIndex == _artifactPageIndex) {
+    if (_currentPageIndex == _chatPageIndex ||
+        _currentPageIndex == _artifactPageIndex) {
       return false;
     }
     return !ref.read(isCallActiveProvider);
@@ -181,9 +183,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget _buildThreeColumnLayout() {
     return Row(
       children: [
-        // Chat panel on left (37%)
         Expanded(
-          flex: 37,
+          flex: 40,
           child: Container(
             decoration: BoxDecoration(
               border: Border(
@@ -199,9 +200,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
           ),
         ),
-        // Call panel in center (26%)
         Expanded(
-          flex: 26,
+          flex: 30,
           child: Container(
             decoration: BoxDecoration(
               border: Border(
@@ -213,15 +213,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
             child: CallPage(
               onChatPressed: () {}, // No navigation needed in 3-column layout
-              onNotepadPressed: () {}, // No navigation needed in 3-column layout
+              onNotepadPressed:
+                  () {}, // No navigation needed in 3-column layout
               onSettingsPressed: _openSettings,
-              hideNavigationButtons: true, // Hide chat/notepad buttons in 3-column layout
+              hideNavigationButtons:
+                  true, // Hide chat/notepad buttons in 3-column layout
             ),
           ),
         ),
-        // Notepad panel on right (37%)
         Expanded(
-          flex: 37,
+          flex: 40,
           child: NotepadPage(
             onBackPressed: () {}, // No back action needed in 3-column layout
             hideBackButton: true, // Hide back button in 3-column layout
