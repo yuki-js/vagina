@@ -1,4 +1,4 @@
-import 'dart:io';
+import '../utils/platform_compat.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'title_bar.dart' show CustomTitleBar;
@@ -32,7 +32,7 @@ class AppScaffold extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isDesktop = Platform.isWindows || Platform.isMacOS || Platform.isLinux;
+    final isDesktop = PlatformCompat.isWindows || PlatformCompat.isMacOS || PlatformCompat.isLinux;
 
     if (isDesktop) {
       // Desktop: Custom title bar with SafeArea pattern

@@ -1,4 +1,4 @@
-import 'dart:io';
+import '../utils/platform_compat.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/app_theme.dart';
@@ -38,7 +38,7 @@ class SettingsScreen extends ConsumerWidget {
                   const VoiceSettingsSection(),
                   
                   // Android Audio Settings Section (Android only)
-                  if (Platform.isAndroid) ...[
+                  if (PlatformCompat.isAndroid) ...[
                     const SizedBox(height: 24),
                     const SectionHeader(title: 'Android 音声設定'),
                     const SizedBox(height: 12),

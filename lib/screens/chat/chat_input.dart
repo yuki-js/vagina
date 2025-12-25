@@ -1,4 +1,4 @@
-import 'dart:io';
+import '../../utils/platform_compat.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/app_theme.dart';
@@ -19,14 +19,14 @@ class _ChatInputState extends ConsumerState<ChatInput> {
   static const _tag = 'ChatInput';
   final TextEditingController _textController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
-  final FocusNode? _keyboardListenerFocusNode = Platform.isWindows ? FocusNode() : null;
+  final FocusNode? _keyboardListenerFocusNode = PlatformCompat.isWindows ? FocusNode() : null;
 
   @override
   void initState() {
     super.initState();
     
     // Add listener for debugging on Windows
-    if (Platform.isWindows) {
+    if (PlatformCompat.isWindows) {
       _textController.addListener(() {
         logService.debug(_tag, 'Text changed: "${_textController.text}"');
       });
@@ -56,7 +56,7 @@ class _ChatInputState extends ConsumerState<ChatInput> {
   }
   
   void _handleKeyEvent(KeyEvent event) {
-    if (Platform.isWindows) {
+    if (PlatformCompat.isWindows) {
       logService.debug(_tag, 'Key event: ${event.logicalKey}, character: ${event.character}');
     }
   }
@@ -84,7 +84,7 @@ class _ChatInputState extends ConsumerState<ChatInput> {
     );
     
     // Wrap with KeyboardListener for debugging on Windows
-    if (Platform.isWindows && _keyboardListenerFocusNode != null) {
+    if (PlatformCompat.isWindows && _keyboardListenerFocusNode != null) {
       textField = KeyboardListener(
         focusNode: _keyboardListenerFocusNode,
         onKeyEvent: _handleKeyEvent,

@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'utils/platform_compat.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,7 +11,7 @@ void main() async {
   
   // Initialize window manager ONLY for desktop platforms
   // This prevents crashes on mobile (Android/iOS) and web
-  if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
+  if (PlatformCompat.isWindows || PlatformCompat.isMacOS || PlatformCompat.isLinux) {
     await windowManager.ensureInitialized();
     
     // Configure window options for desktop
