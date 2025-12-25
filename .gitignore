@@ -64,6 +64,3 @@ app.*.map.json
 vagina.iml
 _codeql_detected_source_root
 .idea/
-
-# Web build (created by flutter create . --platforms web)
-web/
