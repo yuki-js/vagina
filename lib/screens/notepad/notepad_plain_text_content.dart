@@ -1,4 +1,4 @@
-import 'dart:io';
+import '../../utils/platform_compat.dart';
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../services/log_service.dart';
@@ -24,7 +24,7 @@ class _PlainTextContentState extends State<PlainTextContent> {
   static const _tag = 'PlainTextContent';
   late TextEditingController _controller;
   final FocusNode _focusNode = FocusNode();
-  final FocusNode? _keyboardListenerFocusNode = Platform.isWindows ? FocusNode() : null;
+  final FocusNode? _keyboardListenerFocusNode = PlatformCompat.isWindows ? FocusNode() : null;
 
   @override
   void initState() {
@@ -32,7 +32,7 @@ class _PlainTextContentState extends State<PlainTextContent> {
     _controller = TextEditingController(text: widget.content);
     
     // Add listener for debugging on Windows
-    if (Platform.isWindows) {
+    if (PlatformCompat.isWindows) {
       _controller.addListener(() {
         logService.debug(_tag, 'Text changed: length=${_controller.text.length}');
       });
@@ -68,7 +68,7 @@ class _PlainTextContentState extends State<PlainTextContent> {
   }
   
   void _handleKeyEvent(KeyEvent event) {
-    if (Platform.isWindows) {
+    if (PlatformCompat.isWindows) {
       logService.debug(_tag, 'Key event: ${event.logicalKey}, character: ${event.character}');
     }
   }
@@ -110,7 +110,7 @@ class _PlainTextContentState extends State<PlainTextContent> {
     );
     
     // Wrap with KeyboardListener for debugging on Windows
-    if (Platform.isWindows && _keyboardListenerFocusNode != null) {
+    if (PlatformCompat.isWindows && _keyboardListenerFocusNode != null) {
       textField = KeyboardListener(
         focusNode: _keyboardListenerFocusNode,
         onKeyEvent: _handleKeyEvent,

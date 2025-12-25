@@ -1,3 +1,4 @@
+import '../utils/platform_compat.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:permission_handler/permission_handler.dart';
@@ -23,7 +24,7 @@ class StorageService {
   Future<int> _getAndroidSdkVersion() async {
     if (_androidSdkVersion != null) return _androidSdkVersion!;
     
-    if (Platform.isAndroid) {
+    if (PlatformCompat.isAndroid) {
       final deviceInfo = DeviceInfoPlugin();
       final androidInfo = await deviceInfo.androidInfo;
       _androidSdkVersion = androidInfo.version.sdkInt;
@@ -37,7 +38,7 @@ class StorageService {
   Future<bool> requestStoragePermission() async {
     logService.info(_tag, 'Requesting storage permission');
     
-    if (Platform.isAndroid) {
+    if (PlatformCompat.isAndroid) {
       final sdkVersion = await _getAndroidSdkVersion();
       
       if (sdkVersion >= 30) {
@@ -58,7 +59,7 @@ class StorageService {
 
   /// Check if storage permission is granted
   Future<bool> hasStoragePermission() async {
-    if (Platform.isAndroid) {
+    if (PlatformCompat.isAndroid) {
       final sdkVersion = await _getAndroidSdkVersion();
       
       if (sdkVersion >= 30) {
@@ -77,7 +78,7 @@ class StorageService {
     
     Directory? directory;
     
-    if (Platform.isAndroid) {
+    if (PlatformCompat.isAndroid) {
       // Check permission first
       final hasPermission = await hasStoragePermission();
       
@@ -105,7 +106,7 @@ class StorageService {
         }
         logService.warn(_tag, 'Falling back to app documents directory: ${directory.path}');
       }
-    } else if (Platform.isIOS) {
+    } else if (PlatformCompat.isIOS) {
       // iOS: Use app's Documents directory
       final appDir = await getApplicationDocumentsDirectory();
       directory = Directory('${appDir.path}/$_appFolderName');
@@ -114,7 +115,7 @@ class StorageService {
       }
     } else {
       // Desktop platforms
-      final home = Platform.environment['HOME'] ?? Platform.environment['USERPROFILE'] ?? '.';
+      final home = PlatformCompat.environment['HOME'] ?? PlatformCompat.environment['USERPROFILE'] ?? '.';
       directory = Directory('$home/Documents/$_appFolderName');
       if (!await directory.exists()) {
         await directory.create(recursive: true);

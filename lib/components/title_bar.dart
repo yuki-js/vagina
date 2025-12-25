@@ -1,4 +1,4 @@
-import 'dart:io';
+import '../utils/platform_compat.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:window_manager/window_manager.dart';
@@ -42,7 +42,7 @@ class CustomTitleBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Only show on desktop platforms
-    if (!Platform.isWindows && !Platform.isMacOS && !Platform.isLinux) {
+    if (!PlatformCompat.isWindows && !PlatformCompat.isMacOS && !PlatformCompat.isLinux) {
       return const SizedBox.shrink();
     }
 
@@ -51,7 +51,7 @@ class CustomTitleBar extends ConsumerWidget {
     final isAlwaysOnTop = ref.watch(alwaysOnTopProvider);
     
     // macOS uses left-side buttons, Windows uses right-side
-    final isMacOS = Platform.isMacOS;
+    final isMacOS = PlatformCompat.isMacOS;
 
     return Container(
       height: 32,

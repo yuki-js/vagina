@@ -1,6 +1,6 @@
+import '../utils/platform_compat.dart';
 import 'dart:async';
 import 'dart:collection';
-import 'dart:io';
 import 'dart:typed_data';
 import 'package:taudio/taudio.dart';
 import 'audio_player_service_windows.dart';
@@ -32,7 +32,7 @@ class AudioPlayerService {
   bool get isPlaying => _isPlaying;
 
   AudioPlayerService() {
-    if (Platform.isWindows) {
+    if (PlatformCompat.isWindows) {
       _playerImpl = AudioPlayerServiceWindows();
     } else {
       _playerImpl = FlutterSoundPlayer();
@@ -44,7 +44,7 @@ class AudioPlayerService {
 
     logService.info(_tag, 'Initializing audio player');
 
-    if (Platform.isWindows) {
+    if (PlatformCompat.isWindows) {
       await (_playerImpl as AudioPlayerServiceWindows).initialize();
     } else {
       await (_playerImpl as FlutterSoundPlayer).openPlayer();
@@ -64,7 +64,7 @@ class AudioPlayerService {
     try {
       await _ensureInitialized();
 
-      if (Platform.isWindows) {
+      if (PlatformCompat.isWindows) {
         _isPlaying = true;
       } else {
         if (_playerImpl == null || _isDisposed) {
@@ -98,7 +98,7 @@ class AudioPlayerService {
 
     logService.debug(_tag, 'Queuing audio data: ${pcmData.length} bytes');
 
-    if (Platform.isWindows) {
+    if (PlatformCompat.isWindows) {
       await _ensureInitialized();
       await (_playerImpl as AudioPlayerServiceWindows).play(pcmData);
     } else {
@@ -108,7 +108,7 @@ class AudioPlayerService {
   }
 
   Future<void> _processAudioQueue() async {
-    if (_isProcessingQueue || _isDisposed || Platform.isWindows) {
+    if (_isProcessingQueue || _isDisposed || PlatformCompat.isWindows) {
       return;
     }
 
@@ -179,7 +179,7 @@ class AudioPlayerService {
 
     if (_isInitialized && wasPlaying) {
       try {
-        if (Platform.isWindows) {
+        if (PlatformCompat.isWindows) {
           await (_playerImpl as AudioPlayerServiceWindows).stop();
         } else if (_playerImpl != null) {
           await (_playerImpl as FlutterSoundPlayer).stopPlayer();
@@ -193,7 +193,7 @@ class AudioPlayerService {
 
   Future<void> setVolume(double volume) async {
     if (_isInitialized) {
-      if (Platform.isWindows) {
+      if (PlatformCompat.isWindows) {
         // Volume control not implemented for Windows
       } else if (_playerImpl != null) {
         await (_playerImpl as FlutterSoundPlayer).setVolume(volume);
@@ -211,7 +211,7 @@ class AudioPlayerService {
 
     if (_isInitialized) {
       try {
-        if (Platform.isWindows) {
+        if (PlatformCompat.isWindows) {
           await (_playerImpl as AudioPlayerServiceWindows).dispose();
         } else if (_playerImpl != null) {
           await (_playerImpl as FlutterSoundPlayer).closePlayer();
