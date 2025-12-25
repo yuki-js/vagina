@@ -1,4 +1,4 @@
-import 'dart:io';
+import '../../utils/platform_compat.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/app_theme.dart';
@@ -111,7 +111,7 @@ class ControlPanel extends ConsumerWidget {
                 const SizedBox(width: 12),
                 // PiP button for mobile, Settings for desktop
                 Expanded(
-                  child: (Platform.isAndroid || Platform.isIOS)
+                  child: (PlatformCompat.isAndroid || PlatformCompat.isIOS)
                       ? _ControlButton(
                           icon: Icons.picture_in_picture_alt,
                           label: 'PiP',
@@ -209,7 +209,7 @@ class ControlPanel extends ConsumerWidget {
   }
 
   Future<void> _handlePiPToggle(BuildContext context) async {
-    if (!Platform.isAndroid && !Platform.isIOS) return;
+    if (!PlatformCompat.isAndroid && !PlatformCompat.isIOS) return;
     
     final pipService = PiPService();
     final isAvailable = await pipService.isPiPAvailable();

@@ -1,11 +1,16 @@
+import '../utils/platform_compat.dart';
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'log_service.dart';
 import '../models/android_audio_config.dart';
 import '../utils/url_utils.dart';
+
+// Web support for LocalStorage
+import 'package:web/web.dart' as web;
 
 /// Service for storing settings as files in the user's Documents directory
 /// 
@@ -23,7 +28,7 @@ class StorageService {
   Future<int> _getAndroidSdkVersion() async {
     if (_androidSdkVersion != null) return _androidSdkVersion!;
     
-    if (Platform.isAndroid) {
+    if (PlatformCompat.isAndroid) {
       final deviceInfo = DeviceInfoPlugin();
       final androidInfo = await deviceInfo.androidInfo;
       _androidSdkVersion = androidInfo.version.sdkInt;
@@ -37,7 +42,7 @@ class StorageService {
   Future<bool> requestStoragePermission() async {
     logService.info(_tag, 'Requesting storage permission');
     
-    if (Platform.isAndroid) {
+    if (PlatformCompat.isAndroid) {
       final sdkVersion = await _getAndroidSdkVersion();
       
       if (sdkVersion >= 30) {
@@ -58,7 +63,7 @@ class StorageService {
 
   /// Check if storage permission is granted
   Future<bool> hasStoragePermission() async {
-    if (Platform.isAndroid) {
+    if (PlatformCompat.isAndroid) {
       final sdkVersion = await _getAndroidSdkVersion();
       
       if (sdkVersion >= 30) {
@@ -77,7 +82,7 @@ class StorageService {
     
     Directory? directory;
     
-    if (Platform.isAndroid) {
+    if (PlatformCompat.isAndroid) {
       // Check permission first
       final hasPermission = await hasStoragePermission();
       
@@ -105,7 +110,7 @@ class StorageService {
         }
         logService.warn(_tag, 'Falling back to app documents directory: ${directory.path}');
       }
-    } else if (Platform.isIOS) {
+    } else if (PlatformCompat.isIOS) {
       // iOS: Use app's Documents directory
       final appDir = await getApplicationDocumentsDirectory();
       directory = Directory('${appDir.path}/$_appFolderName');
@@ -114,7 +119,7 @@ class StorageService {
       }
     } else {
       // Desktop platforms
-      final home = Platform.environment['HOME'] ?? Platform.environment['USERPROFILE'] ?? '.';
+      final home = PlatformCompat.environment['HOME'] ?? PlatformCompat.environment['USERPROFILE'] ?? '.';
       directory = Directory('$home/Documents/$_appFolderName');
       if (!await directory.exists()) {
         await directory.create(recursive: true);
@@ -126,28 +131,49 @@ class StorageService {
     return _configFile!;
   }
 
-  /// Load all settings from file
+  /// Load all settings from file or LocalStorage (web)
   Future<Map<String, dynamic>> _loadConfig() async {
     try {
-      final file = await _getConfigFile();
-      if (await file.exists()) {
-        final contents = await file.readAsString();
-        logService.debug(_tag, 'Loaded config from file');
-        return jsonDecode(contents) as Map<String, dynamic>;
+      if (kIsWeb) {
+        // Use LocalStorage on web
+        final storage = web.window.localStorage;
+        final contents = storage['vagina_config'];
+        if (contents != null && contents.isNotEmpty) {
+          logService.debug(_tag, 'Loaded config from LocalStorage');
+          return jsonDecode(contents) as Map<String, dynamic>;
+        }
+        logService.debug(_tag, 'Config not found in LocalStorage');
+        return {};
+      } else {
+        // Use file system on native platforms
+        final file = await _getConfigFile();
+        if (await file.exists()) {
+          final contents = await file.readAsString();
+          logService.debug(_tag, 'Loaded config from file');
+          return jsonDecode(contents) as Map<String, dynamic>;
+        }
+        logService.debug(_tag, 'Config file does not exist yet');
       }
-      logService.debug(_tag, 'Config file does not exist yet');
     } catch (e) {
       logService.error(_tag, 'Failed to load config: $e');
     }
     return {};
   }
 
-  /// Save all settings to file
+  /// Save all settings to file or LocalStorage (web)
   Future<void> _saveConfig(Map<String, dynamic> config) async {
     try {
-      final file = await _getConfigFile();
-      await file.writeAsString(jsonEncode(config));
-      logService.info(_tag, 'Saved config to file');
+      if (kIsWeb) {
+        // Use LocalStorage on web
+        final storage = web.window.localStorage;
+        storage['vagina_config'] = jsonEncode(config);
+        logService.info(_tag, 'Saved config to LocalStorage');
+      } else {
+        // Use file system on native platforms
+        final file = await _getConfigFile();
+        await file.writeAsString(jsonEncode(config));
+        logService.info(_tag, 'Saved config to file');
+      }
     } catch (e) {
       logService.error(_tag, 'Failed to save config: $e');
       rethrow;
@@ -230,9 +256,16 @@ class StorageService {
   /// Clear all settings
   Future<void> clearAll() async {
     logService.info(_tag, 'Clearing all settings');
-    final file = await _getConfigFile();
-    if (await file.exists()) {
-      await file.delete();
+    if (kIsWeb) {
+      // Clear LocalStorage on web
+      final storage = web.window.localStorage;
+      storage.removeItem('vagina_config');
+    } else {
+      // Clear file on native platforms
+      final file = await _getConfigFile();
+      if (await file.exists()) {
+        await file.delete();
+      }
     }
   }
   

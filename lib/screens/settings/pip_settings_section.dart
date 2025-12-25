@@ -1,4 +1,4 @@
-import 'dart:io';
+import '../../utils/platform_compat.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../services/pip_service.dart';
@@ -58,7 +58,7 @@ class _PiPSettingsSectionState extends ConsumerState<PiPSettingsSection> {
   @override
   Widget build(BuildContext context) {
     // Only show on Android and iOS
-    if (!Platform.isAndroid && !Platform.isIOS) {
+    if (!PlatformCompat.isAndroid && !PlatformCompat.isIOS) {
       return const SizedBox.shrink();
     }
 
@@ -78,7 +78,7 @@ class _PiPSettingsSectionState extends ConsumerState<PiPSettingsSection> {
         child: ListTile(
           title: const Text('PiP 利用不可'),
           subtitle: Text(
-            Platform.isAndroid
+            PlatformCompat.isAndroid
                 ? 'Android 8.0以降が必要です'
                 : 'このデバイスではPiPがサポートされていません',
           ),
@@ -100,7 +100,7 @@ class _PiPSettingsSectionState extends ConsumerState<PiPSettingsSection> {
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Text(
-                Platform.isAndroid
+                PlatformCompat.isAndroid
                     ? 'ホームボタンを押すとPiPモードに入ります'
                     : 'システムがPiPモードを管理します',
                 style: Theme.of(context).textTheme.bodySmall,
