@@ -16,7 +16,7 @@ dependencies:
   web: ^1.0.0
 
   # State management
-  flutter_riverpod: ^3.0.3
+  flutter_riverpod: ^3.1.0
 
   # Audio handling
   taudio: ^10.0.0
