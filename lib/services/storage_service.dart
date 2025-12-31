@@ -9,8 +9,9 @@ import 'log_service.dart';
 import '../models/android_audio_config.dart';
 import '../utils/url_utils.dart';
 
-// Web support for LocalStorage
-import 'package:web/web.dart' as web;
+// Web support for LocalStorage - conditional import
+import 'web_stub/web_stub.dart' 
+    if (dart.library.html) 'package:web/web.dart' as web;
 
 /// Service for storing settings as files in the user's Documents directory
 /// 
