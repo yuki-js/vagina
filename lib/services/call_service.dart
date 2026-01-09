@@ -411,8 +411,18 @@ class CallService {
       // Collect all notepad content
       final notepadTabs = _notepadService.tabs;
       String? notepadContent;
+      List<SessionNotepadTab>? notepadTabsData;
+      
       if (notepadTabs.isNotEmpty) {
-        // Combine all tabs with headers
+        // Save tabs as structured data
+        notepadTabsData = notepadTabs.map((tab) {
+          return SessionNotepadTab(
+            title: tab.title,
+            content: tab.content,
+          );
+        }).toList();
+        
+        // Also keep concatenated version for backward compatibility
         notepadContent = notepadTabs.map((tab) {
           final header = '# ${tab.title}\n\n';
           return header + tab.content;
@@ -426,6 +436,7 @@ class CallService {
         duration: _callDuration,
         chatMessages: chatMessagesJson,
         notepadContent: notepadContent,
+        notepadTabs: notepadTabsData,
         speedDialId: _currentSpeedDialId,
       );
 

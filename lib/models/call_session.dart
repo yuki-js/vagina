@@ -1,3 +1,28 @@
+/// Represents a simple notepad tab for session history
+class SessionNotepadTab {
+  final String title;
+  final String content;
+
+  const SessionNotepadTab({
+    required this.title,
+    required this.content,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'title': title,
+      'content': content,
+    };
+  }
+
+  factory SessionNotepadTab.fromJson(Map<String, dynamic> json) {
+    return SessionNotepadTab(
+      title: json['title'] as String,
+      content: json['content'] as String,
+    );
+  }
+}
+
 /// Represents a single call session with metadata and chat history
 class CallSession {
   final String id;
@@ -5,7 +30,8 @@ class CallSession {
   final DateTime? endTime;
   final int duration; // in seconds
   final List<String> chatMessages; // JSON-encoded messages
-  final String? notepadContent; // Markdown content from notepad
+  final String? notepadContent; // Markdown content from notepad (deprecated, kept for backward compatibility)
+  final List<SessionNotepadTab>? notepadTabs; // Structured notepad tabs (preferred)
   final String? speedDialId; // Reference to speed dial if used
 
   const CallSession({
@@ -15,6 +41,7 @@ class CallSession {
     this.duration = 0,
     this.chatMessages = const [],
     this.notepadContent,
+    this.notepadTabs,
     this.speedDialId,
   });
 
@@ -25,6 +52,7 @@ class CallSession {
     int? duration,
     List<String>? chatMessages,
     String? notepadContent,
+    List<SessionNotepadTab>? notepadTabs,
     String? speedDialId,
   }) {
     return CallSession(
@@ -34,6 +62,7 @@ class CallSession {
       duration: duration ?? this.duration,
       chatMessages: chatMessages ?? this.chatMessages,
       notepadContent: notepadContent ?? this.notepadContent,
+      notepadTabs: notepadTabs ?? this.notepadTabs,
       speedDialId: speedDialId ?? this.speedDialId,
     );
   }
@@ -46,6 +75,7 @@ class CallSession {
       'duration': duration,
       'chatMessages': chatMessages,
       if (notepadContent != null) 'notepadContent': notepadContent,
+      if (notepadTabs != null) 'notepadTabs': notepadTabs!.map((t) => t.toJson()).toList(),
       if (speedDialId != null) 'speedDialId': speedDialId,
     };
   }
@@ -63,6 +93,9 @@ class CallSession {
               .toList() ??
           const [],
       notepadContent: json['notepadContent'] as String?,
+      notepadTabs: (json['notepadTabs'] as List<dynamic>?)
+              ?.map((e) => SessionNotepadTab.fromJson(e as Map<String, dynamic>))
+              .toList(),
       speedDialId: json['speedDialId'] as String?,
     );
   }
