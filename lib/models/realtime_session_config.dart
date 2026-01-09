@@ -9,8 +9,11 @@ class RealtimeSessionConfig {
   /// Tools registered with the session
   final List<Map<String, dynamic>> tools;
 
-  /// System instructions
-  static const String systemInstructions = '''
+  /// System instructions (custom or default)
+  final String instructions;
+
+  /// Default system instructions
+  static const String defaultInstructions = '''
 あなたの名前はVaginaです。Voice AGI Notepad Agentの略です。
 ユーザーとの音声会話を通じて、役立つアシスタントとして振る舞ってください。
 日本語で応答し、親しみやすく自然な会話を心がけてください。
@@ -21,17 +24,20 @@ class RealtimeSessionConfig {
     this.voice = 'alloy',
     this.noiseReduction = 'near',
     this.tools = const [],
+    this.instructions = defaultInstructions,
   });
 
   RealtimeSessionConfig copyWith({
     String? voice,
     String? noiseReduction,
     List<Map<String, dynamic>>? tools,
+    String? instructions,
   }) {
     return RealtimeSessionConfig(
       voice: voice ?? this.voice,
       noiseReduction: noiseReduction ?? this.noiseReduction,
       tools: tools ?? this.tools,
+      instructions: instructions ?? this.instructions,
     );
   }
 
@@ -41,7 +47,7 @@ class RealtimeSessionConfig {
   Map<String, dynamic> toSessionPayload() {
     final config = <String, dynamic>{
       'modalities': ['text', 'audio'],
-      'instructions': systemInstructions,
+      'instructions': instructions,
       'voice': voice,
       'input_audio_format': 'pcm16',
       'output_audio_format': 'pcm16',

@@ -133,6 +133,11 @@ class CallService {
     _currentSpeedDialId = speedDialId;
   }
 
+  /// Set assistant configuration (voice and instructions) before starting a call
+  void setAssistantConfig(String voice, String instructions) {
+    _apiClient.setVoiceAndInstructions(voice, instructions);
+  }
+
   /// Check if Azure configuration exists
   Future<bool> hasAzureConfig() async {
     return await _storage.hasAzureConfig();
