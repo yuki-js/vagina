@@ -1,9 +1,36 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import 'voice_visualizer_demo.dart';
 
 /// About page with app information and philosophy
-class AboutScreen extends StatelessWidget {
+class AboutScreen extends StatefulWidget {
   const AboutScreen({super.key});
+
+  @override
+  State<AboutScreen> createState() => _AboutScreenState();
+}
+
+class _AboutScreenState extends State<AboutScreen> {
+  int _tapCount = 0;
+  static const int _requiredTaps = 7;
+
+  void _handleTitleTap() {
+    setState(() {
+      _tapCount++;
+    });
+
+    if (_tapCount >= _requiredTaps) {
+      // Reset counter and navigate to hidden demo
+      setState(() {
+        _tapCount = 0;
+      });
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => const VoiceVisualizerDemo(),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,15 +53,33 @@ class AboutScreen extends StatelessWidget {
                 padding: const EdgeInsets.all(24),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
-                    // Title with fancy animation-ready styling
-                    const Text(
-                      'VAGINA',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 48,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.primaryColor,
-                        letterSpacing: 8,
+                    // Title with fancy animation-ready styling and hidden tap counter
+                    GestureDetector(
+                      onTap: _handleTitleTap,
+                      child: Column(
+                        children: [
+                          Text(
+                            'VAGINA',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 48,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.primaryColor,
+                              letterSpacing: 8,
+                            ),
+                          ),
+                          if (_tapCount > 0 && _tapCount < _requiredTaps)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(
+                                '${_requiredTaps - _tapCount}',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: AppTheme.lightTextSecondary.withValues(alpha: 0.5),
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 8),
