@@ -27,17 +27,34 @@ class ToolService {
   }
   
   /// Create a new session-scoped ToolManager
-  /// Called when starting a call
-  ToolManager createToolManager({void Function()? onToolsChanged}) {
+  /// Called when starting a call - only registers enabled tools
+  Future<ToolManager> createToolManager({void Function()? onToolsChanged}) async {
     final manager = ToolManager(onToolsChanged: onToolsChanged);
-    manager.registerTools(_builtinFactory.createBuiltinTools());
+    final allTools = _builtinFactory.createBuiltinTools();
+    final enabledTools = await _storage.getEnabledTools();
+    
+    // Filter tools based on user preferences
+    final toolsToRegister = enabledTools.isEmpty
+        ? allTools // If no preferences, enable all
+        : allTools.where((tool) => enabledTools.contains(tool.name)).toList();
+    
+    manager.registerTools(toolsToRegister);
     return manager;
   }
   
-  /// Get tool definitions without creating a manager
-  /// (for backwards compatibility with existing code)
+  /// Get all tool definitions (regardless of enabled state)
   List<Map<String, dynamic>> get toolDefinitions {
     final tools = _builtinFactory.createBuiltinTools();
     return tools.map((t) => t.toJson()).toList();
+  }
+  
+  /// Get enabled status for a tool
+  Future<bool> isToolEnabled(String toolName) async {
+    return await _storage.isToolEnabled(toolName);
+  }
+  
+  /// Toggle a tool's enabled state
+  Future<void> toggleTool(String toolName) async {
+    await _storage.toggleTool(toolName);
   }
 }

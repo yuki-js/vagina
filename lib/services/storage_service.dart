@@ -494,4 +494,59 @@ class StorageService {
     config['speed_dials'] = <dynamic>[];
     await _saveConfig(config);
   }
+
+  // ================== Tool Preferences ==================
+
+  /// Get enabled tool names (if empty, all tools are enabled)
+  Future<Set<String>> getEnabledTools() async {
+    final config = await _loadConfig();
+    final enabledTools = (config['enabled_tools'] as List<dynamic>?) ?? [];
+    return Set<String>.from(enabledTools.map((e) => e.toString()));
+  }
+
+  /// Set enabled tools
+  Future<void> setEnabledTools(Set<String> enabledTools) async {
+    logService.info(_tag, 'Setting enabled tools: ${enabledTools.length} tools');
+    final config = await _loadConfig();
+    config['enabled_tools'] = enabledTools.toList();
+    await _saveConfig(config);
+  }
+
+  /// Check if a specific tool is enabled
+  Future<bool> isToolEnabled(String toolName) async {
+    final enabledTools = await getEnabledTools();
+    // If no preferences set, all tools are enabled by default
+    if (enabledTools.isEmpty) return true;
+    return enabledTools.contains(toolName);
+  }
+
+  /// Toggle a tool's enabled state
+  Future<void> toggleTool(String toolName) async {
+    final enabledTools = await getEnabledTools();
+    final allTools = [
+      'get_current_time',
+      'memory_save',
+      'memory_recall',
+      'memory_delete',
+      'calculator',
+      'notepad_list_tabs',
+      'notepad_get_metadata',
+      'notepad_get_content',
+      'notepad_close_tab',
+      'document_overwrite',
+      'document_patch',
+      'document_read',
+    ];
+
+    // Initialize with all tools if empty
+    final currentlyEnabled = enabledTools.isEmpty ? Set<String>.from(allTools) : enabledTools;
+    
+    if (currentlyEnabled.contains(toolName)) {
+      currentlyEnabled.remove(toolName);
+    } else {
+      currentlyEnabled.add(toolName);
+    }
+    
+    await setEnabledTools(currentlyEnabled);
+  }
 }

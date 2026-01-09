@@ -191,8 +191,8 @@ class CallService {
         return;
       }
 
-      // Create session-scoped tool manager
-      _toolManager = _toolService.createToolManager(
+      // Create session-scoped tool manager (async now)
+      _toolManager = await _toolService.createToolManager(
         onToolsChanged: _onToolsChanged,
       );
       _apiClient.setTools(_toolManager!.toolDefinitions);

@@ -3,7 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/app_theme.dart';
 import '../../providers/providers.dart';
 
-/// Tools tab - shows available tools (currently read-only, all tools always enabled)
+/// Provider for tool enabled states
+final toolEnabledProvider = FutureProvider.family<bool, String>((ref, toolName) async {
+  final storage = ref.watch(storageServiceProvider);
+  return await storage.isToolEnabled(toolName);
+});
+
+/// Tools tab - shows available tools with enable/disable toggle via long press
 class ToolsTab extends ConsumerWidget {
   const ToolsTab({super.key});
 
@@ -25,7 +31,7 @@ class ToolsTab extends ConsumerWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          '利用可能なツール一覧（すべて有効）',
+          'ツールを長押しして有効・無効を切り替え',
           style: TextStyle(
             fontSize: 14,
             color: AppTheme.lightTextSecondary,
@@ -33,51 +39,93 @@ class ToolsTab extends ConsumerWidget {
         ),
         const SizedBox(height: 24),
         // Tools list
-        ...tools.map((tool) => _buildToolItem(tool)),
+        ...tools.map((tool) => _buildToolItem(context, ref, tool)),
       ],
     );
   }
 
-  Widget _buildToolItem(Map<String, dynamic> tool) {
+  Widget _buildToolItem(BuildContext context, WidgetRef ref, Map<String, dynamic> tool) {
     final name = tool['name'] as String;
     
     // Map tool names to friendly Japanese names and icons
     final toolInfo = _getToolInfo(name);
+    final enabledAsync = ref.watch(toolEnabledProvider(name));
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: ListTile(
-        leading: Icon(toolInfo.icon, color: AppTheme.primaryColor),
-        title: Text(
-          toolInfo.displayName,
-          style: const TextStyle(
-            fontWeight: FontWeight.w600,
-            color: AppTheme.lightTextPrimary,
-          ),
-        ),
-        subtitle: Text(
-          toolInfo.displayDescription,
-          style: TextStyle(
-            fontSize: 12,
-            color: AppTheme.lightTextSecondary,
-          ),
-        ),
-        trailing: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: AppTheme.successColor.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: const Text(
-            '有効',
-            style: TextStyle(
-              fontSize: 12,
-              color: AppTheme.successColor,
-              fontWeight: FontWeight.w600,
+    return enabledAsync.when(
+      data: (isEnabled) => Card(
+        margin: const EdgeInsets.only(bottom: 12),
+        child: InkWell(
+          onLongPress: () async {
+            // Toggle tool on long press
+            final storage = ref.read(storageServiceProvider);
+            await storage.toggleTool(name);
+            ref.invalidate(toolEnabledProvider(name));
+            
+            // Show snackbar
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    isEnabled ? '${toolInfo.displayName}を無効にしました' : '${toolInfo.displayName}を有効にしました',
+                  ),
+                  duration: const Duration(seconds: 2),
+                ),
+              );
+            }
+          },
+          child: ListTile(
+            leading: Icon(
+              toolInfo.icon,
+              color: isEnabled ? AppTheme.primaryColor : Colors.grey,
+            ),
+            title: Text(
+              toolInfo.displayName,
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: isEnabled ? AppTheme.lightTextPrimary : Colors.grey,
+              ),
+            ),
+            subtitle: Text(
+              toolInfo.displayDescription,
+              style: TextStyle(
+                fontSize: 12,
+                color: isEnabled ? AppTheme.lightTextSecondary : Colors.grey,
+              ),
+            ),
+            trailing: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: isEnabled
+                    ? AppTheme.successColor.withValues(alpha: 0.1)
+                    : Colors.grey.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                isEnabled ? '有効' : '無効',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: isEnabled ? AppTheme.successColor : Colors.grey,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
           ),
         ),
       ),
+      loading: () => Card(
+        margin: const EdgeInsets.only(bottom: 12),
+        child: ListTile(
+          leading: Icon(toolInfo.icon, color: Colors.grey),
+          title: Text(toolInfo.displayName),
+          subtitle: Text(toolInfo.displayDescription),
+          trailing: const SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+      ),
+      error: (_, __) => const SizedBox(),
     );
   }
 

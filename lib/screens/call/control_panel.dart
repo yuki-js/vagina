@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/app_theme.dart';
 import '../../providers/providers.dart';
 import '../../components/call_button.dart';
-import '../../services/call_service.dart';
 import '../../services/pip_service.dart';
 
 /// Galaxy-style control panel with button grid and call button
