@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/app_theme.dart';
+import '../../components/emoji_picker.dart';
 import '../../providers/providers.dart';
 import '../../models/speed_dial.dart';
 import '../call/call_screen.dart';
@@ -265,16 +266,44 @@ class SpeedDialTab extends ConsumerWidget {
     WidgetRef ref,
     SpeedDial speedDial,
   ) async {
+    String? selectedEmoji;
+    
+    // Show emoji picker first
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        contentPadding: EdgeInsets.zero,
+        content: SizedBox(
+          width: double.maxFinite,
+          child: EmojiPicker(
+            selectedEmoji: speedDial.iconEmoji,
+            onEmojiSelected: (emoji) {
+              selectedEmoji = emoji;
+              Navigator.of(context).pop();
+            },
+          ),
+        ),
+      ),
+    );
+
+    final iconEmoji = selectedEmoji ?? speedDial.iconEmoji ?? '⭐';
+
+    // Then show the main edit form
     final formKey = GlobalKey<FormState>();
     String name = speedDial.name;
     String systemPrompt = speedDial.systemPrompt;
     String voice = speedDial.voice;
-    String iconEmoji = speedDial.iconEmoji ?? '⭐';
 
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('スピードダイヤルを編集'),
+        title: Row(
+          children: [
+            Text(iconEmoji, style: const TextStyle(fontSize: 32)),
+            const SizedBox(width: 12),
+            const Text('スピードダイヤルを編集'),
+          ],
+        ),
         content: SingleChildScrollView(
           child: Form(
             key: formKey,
@@ -318,16 +347,6 @@ class SpeedDialTab extends ConsumerWidget {
                   onChanged: (value) {
                     if (value != null) voice = value;
                   },
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  initialValue: iconEmoji,
-                  decoration: const InputDecoration(
-                    labelText: 'アイコン絵文字',
-                    hintText: '例: ⭐',
-                  ),
-                  maxLength: 2,
-                  onSaved: (value) => iconEmoji = value ?? '⭐',
                 ),
               ],
             ),

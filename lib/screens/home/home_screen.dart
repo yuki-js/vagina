@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/app_theme.dart';
 import '../../components/title_bar.dart';
-import '../../components/call_button.dart';
+import '../../components/emoji_picker.dart';
 import '../../providers/providers.dart';
 import '../../models/speed_dial.dart';
 import '../settings_screen.dart';
@@ -72,16 +72,45 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Future<void> _addSpeedDial() async {
+    String? selectedEmoji;
+    
+    // Show emoji picker first
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        contentPadding: EdgeInsets.zero,
+        content: SizedBox(
+          width: double.maxFinite,
+          child: EmojiPicker(
+            selectedEmoji: selectedEmoji,
+            onEmojiSelected: (emoji) {
+              selectedEmoji = emoji;
+              Navigator.of(context).pop();
+            },
+          ),
+        ),
+      ),
+    );
+
+    if (selectedEmoji == null || !mounted) return;
+
+    // Then show the main form dialog
     final formKey = GlobalKey<FormState>();
     String name = '';
     String systemPrompt = '';
     String voice = 'alloy';
-    String iconEmoji = '⭐';
+    final iconEmoji = selectedEmoji!;
 
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('スピードダイヤルを追加'),
+        title: Row(
+          children: [
+            Text(iconEmoji, style: const TextStyle(fontSize: 32)),
+            const SizedBox(width: 12),
+            const Text('スピードダイヤルを追加'),
+          ],
+        ),
         content: SingleChildScrollView(
           child: Form(
             key: formKey,
@@ -100,15 +129,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     return null;
                   },
                   onSaved: (value) => name = value!,
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  decoration: const InputDecoration(
-                    labelText: 'アイコン絵文字',
-                    hintText: '例: ⭐',
-                  ),
-                  initialValue: iconEmoji,
-                  onSaved: (value) => iconEmoji = value ?? '⭐',
+                  autofocus: true,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
