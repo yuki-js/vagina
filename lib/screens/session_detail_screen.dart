@@ -5,6 +5,7 @@ import '../models/call_session.dart';
 import '../components/historical_chat_view.dart';
 import '../components/historical_notepad_view.dart';
 import '../providers/providers.dart';
+import '../services/storage_service.dart';
 
 /// Session detail screen showing chat and notepad from a past session
 class SessionDetailScreen extends ConsumerStatefulWidget {
@@ -67,7 +68,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
     );
   }
   
-  Future<CallSession?> _loadSession(storage) async {
+  Future<CallSession?> _loadSession(StorageService storage) async {
     final sessions = await storage.getCallSessions();
     try {
       return sessions.firstWhere((s) => s.id == widget.sessionId);

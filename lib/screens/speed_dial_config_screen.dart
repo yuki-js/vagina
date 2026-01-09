@@ -285,7 +285,7 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
-                      value: _selectedVoice,
+                      initialValue: _selectedVoice,
                       decoration: InputDecoration(
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
