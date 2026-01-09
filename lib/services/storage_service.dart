@@ -7,6 +7,8 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'log_service.dart';
 import '../models/android_audio_config.dart';
+import '../models/call_session.dart';
+import '../models/speed_dial.dart';
 import '../utils/url_utils.dart';
 
 // Web support for LocalStorage - conditional import
@@ -348,5 +350,132 @@ class StorageService {
       return AndroidAudioConfig.fromJson(audioConfigJson);
     }
     return const AndroidAudioConfig();
+  }
+
+  // Call Sessions
+
+  /// Save a call session
+  Future<void> saveCallSession(CallSession session) async {
+    logService.info(_tag, 'Saving call session: ${session.id}');
+    final config = await _loadConfig();
+    final sessions = (config['call_sessions'] as List<dynamic>?) ?? [];
+    
+    // Remove existing session with same ID if it exists
+    sessions.removeWhere((s) => (s as Map<String, dynamic>)['id'] == session.id);
+    
+    // Add new session at the beginning (most recent first)
+    sessions.insert(0, session.toJson());
+    
+    // Keep only last 100 sessions
+    if (sessions.length > 100) {
+      sessions.removeRange(100, sessions.length);
+    }
+    
+    config['call_sessions'] = sessions;
+    await _saveConfig(config);
+  }
+
+  /// Get all call sessions
+  Future<List<CallSession>> getCallSessions() async {
+    final config = await _loadConfig();
+    final sessions = (config['call_sessions'] as List<dynamic>?) ?? [];
+    return sessions
+        .map((s) => CallSession.fromJson(s as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// Get a specific call session by ID
+  Future<CallSession?> getCallSession(String id) async {
+    final sessions = await getCallSessions();
+    try {
+      return sessions.firstWhere((s) => s.id == id);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Delete a call session
+  Future<bool> deleteCallSession(String id) async {
+    logService.info(_tag, 'Deleting call session: $id');
+    final config = await _loadConfig();
+    final sessions = (config['call_sessions'] as List<dynamic>?) ?? [];
+    final initialLength = sessions.length;
+    sessions.removeWhere((s) => (s as Map<String, dynamic>)['id'] == id);
+    
+    if (sessions.length < initialLength) {
+      config['call_sessions'] = sessions;
+      await _saveConfig(config);
+      return true;
+    }
+    return false;
+  }
+
+  /// Delete all call sessions
+  Future<void> deleteAllCallSessions() async {
+    logService.info(_tag, 'Deleting all call sessions');
+    final config = await _loadConfig();
+    config['call_sessions'] = <dynamic>[];
+    await _saveConfig(config);
+  }
+
+  // Speed Dials
+
+  /// Save a speed dial
+  Future<void> saveSpeedDial(SpeedDial speedDial) async {
+    logService.info(_tag, 'Saving speed dial: ${speedDial.id}');
+    final config = await _loadConfig();
+    final speedDials = (config['speed_dials'] as List<dynamic>?) ?? [];
+    
+    // Remove existing speed dial with same ID if it exists
+    speedDials.removeWhere((s) => (s as Map<String, dynamic>)['id'] == speedDial.id);
+    
+    // Add new speed dial
+    speedDials.add(speedDial.toJson());
+    
+    config['speed_dials'] = speedDials;
+    await _saveConfig(config);
+  }
+
+  /// Get all speed dials
+  Future<List<SpeedDial>> getSpeedDials() async {
+    final config = await _loadConfig();
+    final speedDials = (config['speed_dials'] as List<dynamic>?) ?? [];
+    return speedDials
+        .map((s) => SpeedDial.fromJson(s as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// Get a specific speed dial by ID
+  Future<SpeedDial?> getSpeedDial(String id) async {
+    final speedDials = await getSpeedDials();
+    try {
+      return speedDials.firstWhere((s) => s.id == id);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Delete a speed dial
+  Future<bool> deleteSpeedDial(String id) async {
+    logService.info(_tag, 'Deleting speed dial: $id');
+    final config = await _loadConfig();
+    final speedDials = (config['speed_dials'] as List<dynamic>?) ?? [];
+    final initialLength = speedDials.length;
+    speedDials.removeWhere((s) => (s as Map<String, dynamic>)['id'] == id);
+    
+    if (speedDials.length < initialLength) {
+      config['speed_dials'] = speedDials;
+      await _saveConfig(config);
+      return true;
+    }
+    return false;
+  }
+
+  /// Delete all speed dials
+  Future<void> deleteAllSpeedDials() async {
+    logService.info(_tag, 'Deleting all speed dials');
+    final config = await _loadConfig();
+    config['speed_dials'] = <dynamic>[];
+    await _saveConfig(config);
   }
 }

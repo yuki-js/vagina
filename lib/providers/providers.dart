@@ -13,6 +13,8 @@ import '../models/assistant_config.dart';
 import '../models/chat_message.dart';
 import '../models/notepad_tab.dart';
 import '../models/android_audio_config.dart';
+import '../models/call_session.dart';
+import '../models/speed_dial.dart';
 
 // Core providers
 
@@ -280,3 +282,51 @@ final selectedNotepadTabIdProvider = StreamProvider<String?>((ref) {
   final notepadService = ref.read(notepadServiceProvider);
   return notepadService.selectedTabStream;
 });
+
+// Speed Dial providers
+
+/// Provider for speed dials
+final speedDialsProvider = FutureProvider<List<SpeedDial>>((ref) async {
+  final storage = ref.read(storageServiceProvider);
+  return await storage.getSpeedDials();
+});
+
+/// Provider to refresh speed dials
+final speedDialsRefreshProvider = NotifierProvider<RefreshNotifier, int>(RefreshNotifier.new);
+
+/// Provider for speed dials that auto-refreshes
+final refreshableSpeedDialsProvider = FutureProvider<List<SpeedDial>>((ref) async {
+  // Watch the refresh trigger
+  ref.watch(speedDialsRefreshProvider);
+  final storage = ref.read(storageServiceProvider);
+  return await storage.getSpeedDials();
+});
+
+// Call Session providers
+
+/// Provider for call sessions
+final callSessionsProvider = FutureProvider<List<CallSession>>((ref) async {
+  final storage = ref.read(storageServiceProvider);
+  return await storage.getCallSessions();
+});
+
+/// Provider to refresh call sessions
+final callSessionsRefreshProvider = NotifierProvider<RefreshNotifier, int>(RefreshNotifier.new);
+
+/// Provider for call sessions that auto-refreshes
+final refreshableCallSessionsProvider = FutureProvider<List<CallSession>>((ref) async {
+  // Watch the refresh trigger
+  ref.watch(callSessionsRefreshProvider);
+  final storage = ref.read(storageServiceProvider);
+  return await storage.getCallSessions();
+});
+
+/// Simple refresh notifier
+class RefreshNotifier extends Notifier<int> {
+  @override
+  int build() => 0;
+
+  void refresh() {
+    state++;
+  }
+}
