@@ -19,7 +19,7 @@ class SettingsScreen extends ConsumerWidget {
     return AppScaffold(
       title: '設定',
       body: Container(
-        decoration: AppTheme.backgroundGradient,
+        decoration: AppTheme.lightBackgroundGradient,
         child: CustomScrollView(
           slivers: [
             SliverPadding(

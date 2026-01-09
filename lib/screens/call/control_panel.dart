@@ -109,7 +109,7 @@ class ControlPanel extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-                // PiP button for mobile, Settings for desktop
+                // PiP button for mobile only when in standalone call screen
                 Expanded(
                   child: (PlatformCompat.isAndroid || PlatformCompat.isIOS)
                       ? _ControlButton(
@@ -117,11 +117,7 @@ class ControlPanel extends ConsumerWidget {
                           label: 'PiP',
                           onTap: () => _handlePiPToggle(context),
                         )
-                      : _ControlButton(
-                          icon: Icons.settings,
-                          label: '設定',
-                          onTap: onSettingsPressed,
-                        ),
+                      : const SizedBox(), // No settings button in standalone call
                 ),
               ],
             ),

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:window_manager/window_manager.dart';
-import 'screens/home_screen.dart';
+import 'screens/home/new_home_screen.dart';
 import 'theme/app_theme.dart';
 
 void main() async {
@@ -45,7 +45,9 @@ class VaginaApp extends StatelessWidget {
     return MaterialApp(
       title: 'VAGINA',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme,
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.light, // Default to light theme for home screen
       locale: const Locale('ja', 'JP'),
       supportedLocales: const [Locale('ja', 'JP'), Locale('en', 'US')],
       localizationsDelegates: const [
@@ -53,7 +55,7 @@ class VaginaApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      home: const HomeScreen(),
+      home: const NewHomeScreen(),
     );
   }
 }
