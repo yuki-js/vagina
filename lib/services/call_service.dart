@@ -6,7 +6,6 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import 'audio_recorder_service.dart';
 import 'audio_player_service.dart';
 import 'realtime_api_client.dart';
-import 'storage_service.dart';
 import 'tool_service.dart';
 import 'haptic_service.dart';
 import 'notepad_service.dart';
@@ -18,6 +17,7 @@ import '../models/call_session.dart';
 import '../models/realtime_events.dart';
 import '../utils/audio_utils.dart';
 import '../repositories/repository_factory.dart';
+import '../interfaces/config_repository.dart';
 
 /// Enum representing the current state of the call
 enum CallState {
@@ -35,7 +35,7 @@ class CallService {
   final AudioRecorderService _recorder;
   final AudioPlayerService _player;
   final RealtimeApiClient _apiClient;
-  final StorageService _storage;
+  final ConfigRepository _config;
   final ToolService _toolService;
   final HapticService _hapticService;
   final NotepadService _notepadService;
@@ -77,14 +77,14 @@ class CallService {
     required AudioRecorderService recorder,
     required AudioPlayerService player,
     required RealtimeApiClient apiClient,
-    required StorageService storage,
+    required ConfigRepository config,
     required ToolService toolService,
     required HapticService hapticService,
     required NotepadService notepadService,
   })  : _recorder = recorder,
         _player = player,
         _apiClient = apiClient,
-        _storage = storage,
+        _config = config,
         _toolService = toolService,
         _hapticService = hapticService,
         _notepadService = notepadService;
@@ -141,7 +141,7 @@ class CallService {
 
   /// Check if Azure configuration exists
   Future<bool> hasAzureConfig() async {
-    return await _storage.hasAzureConfig();
+    return await _config.hasAzureConfig();
   }
 
   /// Check microphone permission
@@ -170,7 +170,7 @@ class CallService {
       _setState(CallState.connecting);
 
       logService.debug(_tag, 'Checking Azure config');
-      final hasConfig = await _storage.hasAzureConfig();
+      final hasConfig = await hasAzureConfig();
       if (!hasConfig) {
         logService.error(_tag, 'Azure config not found');
         _emitError('Azure OpenAI設定を先に行ってください');
@@ -187,8 +187,8 @@ class CallService {
         return;
       }
 
-      final realtimeUrl = await _storage.getRealtimeUrl();
-      final apiKey = await _storage.getApiKey();
+      final realtimeUrl = await _config.getRealtimeUrl();
+      final apiKey = await _config.getApiKey();
 
       if (realtimeUrl == null || apiKey == null) {
         logService.error(_tag, 'Azure credentials not found');

@@ -3,7 +3,6 @@ import 'tools/tool_manager.dart';
 import 'tools/builtin_tool_factory.dart';
 import '../repositories/repository_factory.dart';
 
-// Re-export for backward compatibility
 export 'tools/base_tool.dart' show BaseTool, ToolExecutionResult, ToolManagerRef;
 export 'tools/tool_manager.dart' show ToolManager;
 

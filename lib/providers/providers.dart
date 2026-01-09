@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:record/record.dart';
-import '../services/storage_service.dart';
 import '../services/notepad_service.dart';
 import '../services/audio_recorder_service.dart';
 import '../services/audio_player_service.dart';
@@ -16,14 +15,9 @@ import '../models/android_audio_config.dart';
 import '../models/call_session.dart';
 import '../models/speed_dial.dart';
 import '../repositories/repository_factory.dart';
+import 'repository_providers.dart';
 
 // Core providers
-
-/// Provider for the storage service (DEPRECATED - use repositories instead)
-/// This is kept for backward compatibility during migration
-final storageServiceProvider = Provider<StorageService>((ref) {
-  return StorageService();
-});
 
 /// Provider for the artifact service
 final notepadServiceProvider = Provider<NotepadService>((ref) {
@@ -34,14 +28,14 @@ final notepadServiceProvider = Provider<NotepadService>((ref) {
 
 /// Provider for checking if API key exists
 final hasApiKeyProvider = FutureProvider<bool>((ref) async {
-  final storage = ref.read(storageServiceProvider);
-  return await storage.hasApiKey();
+  final config = ref.read(configRepositoryProvider);
+  return await config.hasApiKey();
 });
 
 /// Provider for the API key
 final apiKeyProvider = FutureProvider<String?>((ref) async {
-  final storage = ref.read(storageServiceProvider);
-  return await storage.getApiKey();
+  final config = ref.read(configRepositoryProvider);
+  return await config.getApiKey();
 });
 
 // Audio providers
@@ -110,7 +104,7 @@ final callServiceProvider = Provider<CallService>((ref) {
     recorder: ref.read(audioRecorderServiceProvider),
     player: ref.read(audioPlayerServiceProvider),
     apiClient: ref.read(realtimeApiClientProvider),
-    storage: ref.read(storageServiceProvider),
+    config: ref.read(configRepositoryProvider),
     toolService: ref.read(toolServiceProvider),
     hapticService: ref.read(hapticServiceProvider),
     notepadService: ref.read(notepadServiceProvider),
@@ -235,11 +229,11 @@ final androidAudioConfigProvider =
 class AndroidAudioConfigNotifier extends AsyncNotifier<AndroidAudioConfig> {
   @override
   Future<AndroidAudioConfig> build() async {
-    final storage = ref.read(storageServiceProvider);
-    final config = await storage.getAndroidAudioConfig();
+    final config = ref.read(configRepositoryProvider);
+    final audioConfig = await config.getAndroidAudioConfig();
     // Apply config to recorder service
-    ref.read(audioRecorderServiceProvider).setAndroidAudioConfig(config);
-    return config;
+    ref.read(audioRecorderServiceProvider).setAndroidAudioConfig(audioConfig);
+    return audioConfig;
   }
 
   /// Update the audio source
@@ -258,8 +252,8 @@ class AndroidAudioConfigNotifier extends AsyncNotifier<AndroidAudioConfig> {
 
   /// Save and apply the configuration
   Future<void> _saveAndApply(AndroidAudioConfig config) async {
-    final storage = ref.read(storageServiceProvider);
-    await storage.saveAndroidAudioConfig(config);
+    final configRepo = ref.read(configRepositoryProvider);
+    await configRepo.saveAndroidAudioConfig(config);
     ref.read(audioRecorderServiceProvider).setAndroidAudioConfig(config);
     state = AsyncData(config);
   }
