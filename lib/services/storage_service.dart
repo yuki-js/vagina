@@ -523,6 +523,9 @@ class StorageService {
   /// Toggle a tool's enabled state
   Future<void> toggleTool(String toolName) async {
     final enabledTools = await getEnabledTools();
+    
+    // Use centralized tool list from BuiltinToolFactory
+    // Import is already present via tool_service.dart
     final allTools = [
       'get_current_time',
       'memory_save',

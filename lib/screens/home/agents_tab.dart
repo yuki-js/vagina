@@ -26,7 +26,7 @@ class _AgentDef {
 class AgentsTab extends ConsumerWidget {
   const AgentsTab({super.key});
 
-  // Define available agents
+  // Define available agents (currently only default, more can be added later)
   static const _agents = [
     _AgentDef(
       id: 'default',
@@ -34,27 +34,6 @@ class AgentsTab extends ConsumerWidget {
       description: '標準的なAI会話アシスタント',
       icon: Icons.assistant,
       color: AppTheme.primaryColor,
-    ),
-    _AgentDef(
-      id: 'creative',
-      name: 'クリエイティブアシスタント',
-      description: '創造的なアイデア生成に特化（準備中）',
-      icon: Icons.lightbulb_outline,
-      color: Colors.amber,
-    ),
-    _AgentDef(
-      id: 'technical',
-      name: 'テクニカルアシスタント',
-      description: '技術的な質問や問題解決に特化（準備中）',
-      icon: Icons.code,
-      color: Colors.green,
-    ),
-    _AgentDef(
-      id: 'casual',
-      name: 'カジュアルアシスタント',
-      description: '気軽な雑談や日常会話に特化（準備中）',
-      icon: Icons.chat_bubble_outline,
-      color: Colors.blue,
     ),
   ];
 
@@ -126,28 +105,53 @@ class AgentsTab extends ConsumerWidget {
         const SizedBox(height: 24),
         // Agents list
         ..._agents.map((agent) => _buildAgentCard(context, agent)),
+        const SizedBox(height: 16),
+        // Info message
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.grey.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.lightbulb_outline,
+                color: AppTheme.lightTextSecondary,
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  '追加のエージェントタイプは今後のアップデートで追加予定です',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppTheme.lightTextSecondary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
 
   Widget _buildAgentCard(BuildContext context, _AgentDef agent) {
-    final isComingSoon = agent.id != 'default';
-
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
-        onTap: isComingSoon
-            ? null
-            : () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => AgentConfigScreen(
-                      agentId: agent.id,
-                      agentName: agent.name,
-                    ),
-                  ),
-                );
-              },
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => AgentConfigScreen(
+                agentId: agent.id,
+                agentName: agent.name,
+              ),
+            ),
+          );
+        },
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -156,12 +160,12 @@ class AgentsTab extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: (isComingSoon ? Colors.grey : agent.color).withValues(alpha: 0.1),
+                  color: agent.color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   agent.icon,
-                  color: isComingSoon ? Colors.grey : agent.color,
+                  color: agent.color,
                   size: 28,
                 ),
               ),
@@ -172,10 +176,10 @@ class AgentsTab extends ConsumerWidget {
                   children: [
                     Text(
                       agent.name,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: isComingSoon ? Colors.grey : AppTheme.lightTextPrimary,
+                        color: AppTheme.lightTextPrimary,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -183,7 +187,7 @@ class AgentsTab extends ConsumerWidget {
                       agent.description,
                       style: TextStyle(
                         fontSize: 12,
-                        color: isComingSoon ? Colors.grey : AppTheme.lightTextSecondary,
+                        color: AppTheme.lightTextSecondary,
                       ),
                     ),
                   ],
@@ -192,7 +196,7 @@ class AgentsTab extends ConsumerWidget {
               Icon(
                 Icons.arrow_forward_ios,
                 size: 16,
-                color: isComingSoon ? Colors.grey : AppTheme.lightTextSecondary,
+                color: AppTheme.lightTextSecondary,
               ),
             ],
           ),
