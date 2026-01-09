@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
-/// Easter egg page explaining what VAGINA is
-class WhatIsVaginaScreen extends StatelessWidget {
-  const WhatIsVaginaScreen({super.key});
+/// About page with app information and philosophy
+class AboutScreen extends StatelessWidget {
+  const AboutScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -113,6 +113,23 @@ class WhatIsVaginaScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 32),
+                    
+                    // App info section
+                    Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: AppTheme.lightSurfaceColor,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Column(
+                        children: [
+                          _buildInfoRow('バージョン', '1.0.0'),
+                          const Divider(height: 24),
+                          _buildInfoRow('Powered by', 'Azure OpenAI Realtime API'),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 32),
                   ]),
                 ),
               ),
@@ -166,6 +183,29 @@ class WhatIsVaginaScreen extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 14,
+            color: AppTheme.lightTextSecondary,
+          ),
+        ),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: AppTheme.lightTextPrimary,
           ),
         ),
       ],

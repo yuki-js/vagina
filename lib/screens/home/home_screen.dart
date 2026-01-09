@@ -4,22 +4,22 @@ import '../../theme/app_theme.dart';
 import '../../components/title_bar.dart';
 import '../../components/call_button.dart';
 import '../settings_screen.dart';
-import '../what_is_vagina_screen.dart';
+import '../about_screen.dart';
 import '../call/call_screen.dart';
 import 'speed_dial_tab.dart';
 import 'sessions_tab.dart';
 import 'tools_tab.dart';
 import 'agents_tab.dart';
 
-/// New main home screen with tab bar for phone app design
-class NewHomeScreen extends ConsumerStatefulWidget {
-  const NewHomeScreen({super.key});
+/// Main home screen with tab bar for phone app design
+class HomeScreen extends ConsumerStatefulWidget {
+  const HomeScreen({super.key});
 
   @override
-  ConsumerState<NewHomeScreen> createState() => _NewHomeScreenState();
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _NewHomeScreenState extends ConsumerState<NewHomeScreen> {
+class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _currentTabIndex = 0;
 
   // Tab definitions
@@ -52,9 +52,9 @@ class _NewHomeScreenState extends ConsumerState<NewHomeScreen> {
     );
   }
 
-  void _openWhatIsVagina() {
+  void _openAbout() {
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) => const WhatIsVaginaScreen()),
+      MaterialPageRoute(builder: (context) => const AboutScreen()),
     );
   }
 
@@ -105,7 +105,7 @@ class _NewHomeScreenState extends ConsumerState<NewHomeScreen> {
                         const Spacer(),
                         // Title with easter egg
                         GestureDetector(
-                          onTap: _openWhatIsVagina,
+                          onTap: _openAbout,
                           child: const Text(
                             'VAGINA',
                             style: TextStyle(
