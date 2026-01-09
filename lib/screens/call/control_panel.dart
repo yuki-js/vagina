@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/app_theme.dart';
 import '../../providers/providers.dart';
-import '../../components/call_button.dart';
-import '../../services/call_service.dart';
 import '../../services/pip_service.dart';
 
 /// Galaxy-style control panel with button grid and call button
@@ -27,7 +25,7 @@ class ControlPanel extends ConsumerWidget {
     final isMuted = ref.watch(isMutedProvider);
     final speakerMuted = ref.watch(speakerMutedProvider);
     final isCallActive = ref.watch(isCallActiveProvider);
-    
+
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(20),
@@ -150,10 +148,19 @@ class ControlPanel extends ConsumerWidget {
             ),
           const SizedBox(height: 24),
           // Main call button - always shows as end call (red) since start is from home screen
-          CallButton(
-            isCallActive: true, // Always show as active (end call state)
-            size: 72,
-            onPressed: () => _handleCallButton(context, ref),
+          SizedBox(
+            height: 72,
+            width: 72,
+            child: FloatingActionButton(
+              onPressed: () => _handleCallButton(context, ref),
+              backgroundColor: AppTheme.errorColor,
+              shape: const CircleBorder(),
+              child: const Icon(
+                Icons.call_end,
+                color: Colors.white,
+                size: 40,
+              ),
+            ),
           ),
         ],
       ),
@@ -177,10 +184,10 @@ class ControlPanel extends ConsumerWidget {
   void _handleInterrupt(WidgetRef ref) {
     final isCallActive = ref.read(isCallActiveProvider);
     if (!isCallActive) return;
-    
+
     final audioPlayer = ref.read(audioPlayerServiceProvider);
     final apiClient = ref.read(realtimeApiClientProvider);
-    
+
     audioPlayer.stop();
     apiClient.cancelResponse();
   }
@@ -189,7 +196,7 @@ class ControlPanel extends ConsumerWidget {
     final callService = ref.read(callServiceProvider);
     // Only end call functionality - start is triggered from home screen
     await callService.endCall();
-    
+
     // Navigate back to home screen after ending call
     if (context.mounted) {
       Navigator.of(context).pop();
@@ -198,10 +205,10 @@ class ControlPanel extends ConsumerWidget {
 
   Future<void> _handlePiPToggle(BuildContext context) async {
     if (!PlatformCompat.isAndroid && !PlatformCompat.isIOS) return;
-    
+
     final pipService = PiPService();
     final isAvailable = await pipService.isPiPAvailable();
-    
+
     if (!isAvailable) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -213,7 +220,7 @@ class ControlPanel extends ConsumerWidget {
       }
       return;
     }
-    
+
     try {
       await pipService.enterPiPMode();
     } catch (e) {
@@ -249,9 +256,9 @@ class _ControlButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = !enabled 
+    final color = !enabled
         ? AppTheme.textSecondary.withValues(alpha: 0.3)
-        : isActive 
+        : isActive
             ? (activeColor ?? AppTheme.primaryColor)
             : AppTheme.textSecondary;
 
@@ -265,8 +272,9 @@ class _ControlButton extends StatelessWidget {
             width: 56,
             height: 56,
             decoration: BoxDecoration(
-              color: isActive 
-                  ? (activeColor ?? AppTheme.primaryColor).withValues(alpha: 0.2)
+              color: isActive
+                  ? (activeColor ?? AppTheme.primaryColor)
+                      .withValues(alpha: 0.2)
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(16),
             ),

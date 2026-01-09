@@ -24,6 +24,8 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _currentTabIndex = 0;
 
+  late final PageController _pageController;
+
   // Tab definitions
   final List<_TabInfo> _tabs = const [
     _TabInfo(
@@ -47,6 +49,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       canAdd: false,
     ),
   ];
+
+  static const List<Widget> _pages = [
+    SpeedDialTab(),
+    SessionsTab(),
+    ToolsTab(),
+    AgentsTab(),
+  ];
+
+  // Reserve the middle slot in BottomNavigationBar for the FAB.
+  static const int _fabNavIndex = 2;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(initialPage: _currentTabIndex);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
 
   void _openSettings() {
     Navigator.of(context).push(
@@ -73,7 +97,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Future<void> _addSpeedDial() async {
     String? selectedEmoji;
-    
+
     // Show emoji picker first
     await showDialog(
       context: context,
@@ -194,7 +218,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
       final storage = ref.read(storageServiceProvider);
       await storage.saveSpeedDial(speedDial);
-      
+
       // Refresh the speed dials list
       ref.invalidate(refreshableSpeedDialsProvider);
 
@@ -233,7 +257,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 children: [
                   // Title and action buttons
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
                     child: Row(
                       children: [
                         const Spacer(),
@@ -278,106 +303,88 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
           ),
-          // Tab content
+          // Tab content (swipeable)
           Expanded(
             child: Container(
               decoration: AppTheme.lightBackgroundGradient,
               child: SafeArea(
                 top: false,
-                child: _buildTabContent(),
+                child: PageView(
+                  controller: _pageController,
+                  onPageChanged: (index) {
+                    setState(() {
+                      _currentTabIndex = index;
+                    });
+                  },
+                  children: _pages,
+                ),
               ),
             ),
           ),
         ],
       ),
-      // Bottom App Bar with notched FAB
-      bottomNavigationBar: BottomAppBar(
-        color: AppTheme.lightSurfaceColor,
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentTabIndex >= _fabNavIndex
+            ? _currentTabIndex + 1
+            : _currentTabIndex,
+        type: BottomNavigationBarType.fixed,
+        backgroundColor: AppTheme.lightSurfaceColor,
         elevation: 8,
-        notchMargin: 8.0,
-        shape: const CircularNotchedRectangle(),
-        child: Row(
-          children: List.generate(_tabs.length, (index) {
-            final tab = _tabs[index];
-            final isSelected = _currentTabIndex == index;
-            return Expanded(
-              child: _buildTabButton(
-                icon: tab.icon,
-                label: tab.label,
-                isSelected: isSelected,
-                onTap: () {
-                  setState(() {
-                    _currentTabIndex = index;
-                  });
-                },
-              ),
-            );
-          }),
-        ),
+        selectedItemColor: AppTheme.primaryColor,
+        unselectedItemColor: AppTheme.lightTextSecondary,
+        onTap: (navIndex) {
+          // Center slot is reserved for the call FAB.
+          if (navIndex == _fabNavIndex) return;
+
+          final tabIndex = navIndex > _fabNavIndex ? navIndex - 1 : navIndex;
+          setState(() {
+            _currentTabIndex = tabIndex;
+          });
+          _pageController.animateToPage(
+            tabIndex,
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOutCubic,
+          );
+        },
+        items: [
+          BottomNavigationBarItem(
+            icon: Icon(_tabs[0].icon),
+            label: _tabs[0].label,
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(_tabs[1].icon),
+            label: _tabs[1].label,
+          ),
+          const BottomNavigationBarItem(
+            icon: SizedBox.shrink(),
+            label: '',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(_tabs[2].icon),
+            label: _tabs[2].label,
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(_tabs[3].icon),
+            label: _tabs[3].label,
+          ),
+        ],
       ),
-      // Floating Action Button for call - embeds into tab bar with notch
-      floatingActionButton: FloatingActionButton(
-        onPressed: _handleCallButton,
-        backgroundColor: AppTheme.successColor,
-        elevation: 4,
-        child: const Icon(
-          Icons.phone,
-          size: 32,
-          color: Colors.white,
+      floatingActionButton: SizedBox(
+        height: 64,
+        width: 64,
+        child: FloatingActionButton(
+          shape: const CircleBorder(),
+          onPressed: _handleCallButton,
+          backgroundColor: AppTheme.successColor,
+          elevation: 6,
+          child: const Icon(
+            Icons.phone,
+            size: 32,
+            color: Colors.white,
+          ),
         ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-    );
-  }
-
-  Widget _buildTabContent() {
-    switch (_currentTabIndex) {
-      case 0:
-        return const SpeedDialTab();
-      case 1:
-        return const SessionsTab();
-      case 2:
-        return const ToolsTab();
-      case 3:
-        return const AgentsTab();
-      default:
-        return const SizedBox();
-    }
-  }
-
-  Widget _buildTabButton({
-    required IconData icon,
-    required String label,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              color: isSelected ? AppTheme.primaryColor : AppTheme.lightTextSecondary,
-              size: 24,
-            ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 10,
-                color: isSelected ? AppTheme.primaryColor : AppTheme.lightTextSecondary,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-              ),
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
