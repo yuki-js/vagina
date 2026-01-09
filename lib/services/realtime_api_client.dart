@@ -190,9 +190,7 @@ class RealtimeApiClient {
   void setVoiceAndInstructions(String voice, String instructions) {
     _sessionConfig = _sessionConfig.copyWith(
       voice: voice,
-      instructions: instructions.isEmpty 
-          ? RealtimeSessionConfig.defaultInstructions 
-          : instructions,
+      instructions: instructions,
     );
   }
 

@@ -138,7 +138,6 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                       chatMessages: session.chatMessages,
                     )
                   : HistoricalNotepadView(
-                      notepadContent: session.notepadContent,
                       notepadTabs: session.notepadTabs,
                     ),
             ),

@@ -6,22 +6,18 @@ import '../models/call_session.dart';
 
 /// Read-only notepad viewer for session detail screen
 class HistoricalNotepadView extends StatelessWidget {
-  final String? notepadContent;
   final List<SessionNotepadTab>? notepadTabs;
 
   const HistoricalNotepadView({
     super.key,
-    this.notepadContent,
     this.notepadTabs,
   });
 
   @override
   Widget build(BuildContext context) {
-    // Prefer structured tabs if available, fall back to concatenated content
+    // Only use structured tabs
     if (notepadTabs != null && notepadTabs!.isNotEmpty) {
       return _buildTabsView(context);
-    } else if (notepadContent != null && notepadContent!.isNotEmpty) {
-      return _buildLegacyView(context);
     }
 
     return Container(
@@ -174,71 +170,6 @@ class HistoricalNotepadView extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildLegacyView(BuildContext context) {
-    return Container(
-      decoration: AppTheme.lightBackgroundGradient,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: AppTheme.lightSurfaceColor,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: MarkdownBody(
-            data: notepadContent!,
-            selectable: true,
-            styleSheet: MarkdownStyleSheet(
-              p: const TextStyle(
-                fontSize: 15,
-                height: 1.6,
-                color: AppTheme.lightTextPrimary,
-              ),
-              h1: const TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: AppTheme.lightTextPrimary,
-              ),
-              h2: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: AppTheme.lightTextPrimary,
-              ),
-              h3: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: AppTheme.lightTextPrimary,
-              ),
-              code: TextStyle(
-                backgroundColor: AppTheme.lightTextSecondary.withValues(alpha: 0.1),
-                color: AppTheme.primaryColor,
-                fontFamily: 'monospace',
-              ),
-              codeblockDecoration: BoxDecoration(
-                color: AppTheme.lightTextSecondary.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              blockquote: TextStyle(
-                color: AppTheme.lightTextSecondary,
-                fontStyle: FontStyle.italic,
-              ),
-              listBullet: const TextStyle(
-                color: AppTheme.primaryColor,
-              ),
-            ),
-          ),
-        ),
       ),
     );
   }

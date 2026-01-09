@@ -9,22 +9,14 @@ class RealtimeSessionConfig {
   /// Tools registered with the session
   final List<Map<String, dynamic>> tools;
 
-  /// System instructions (custom or default)
+  /// System instructions
   final String instructions;
-
-  /// Default system instructions
-  static const String defaultInstructions = '''
-あなたの名前はVaginaです。Voice AGI Notepad Agentの略です。
-ユーザーとの音声会話を通じて、役立つアシスタントとして振る舞ってください。
-日本語で応答し、親しみやすく自然な会話を心がけてください。
-ツールを使って時刻を確認したり、情報を記憶したり、計算を行うことができます。
-''';
 
   const RealtimeSessionConfig({
     this.voice = 'alloy',
     this.noiseReduction = 'near',
     this.tools = const [],
-    this.instructions = defaultInstructions,
+    this.instructions = '',
   });
 
   RealtimeSessionConfig copyWith({
