@@ -8,9 +8,7 @@ import 'call_page.dart';
 /// Standalone call screen with dark theme (special screen for calls)
 /// Auto-starts the call when the screen is opened
 class CallScreen extends ConsumerStatefulWidget {
-  final String? speedDialId; // Optional speed dial reference
-  
-  const CallScreen({super.key, this.speedDialId});
+  const CallScreen({super.key});
 
   @override
   ConsumerState<CallScreen> createState() => _CallScreenState();
@@ -50,7 +48,6 @@ class _CallScreenState extends ConsumerState<CallScreen> {
                 decoration: AppTheme.backgroundGradient,
                 child: SafeArea(
                   child: CallPage(
-                    speedDialId: widget.speedDialId,
                     onChatPressed: () {}, // Not used in standalone mode
                     onNotepadPressed: () {}, // Not used in standalone mode
                     onSettingsPressed: () {}, // Settings removed from call screen

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:typed_data';
+import 'dart:convert';
 import 'package:record/record.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'audio_recorder_service.dart';
@@ -12,6 +13,7 @@ import 'log_service.dart';
 import 'chat/chat_message_manager.dart';
 import '../config/app_config.dart';
 import '../models/chat_message.dart';
+import '../models/call_session.dart';
 import '../models/realtime_events.dart';
 import '../utils/audio_utils.dart';
 
@@ -65,6 +67,8 @@ class CallService {
   CallState _currentState = CallState.idle;
   int _callDuration = 0;
   bool _isMuted = false;
+  DateTime? _callStartTime;
+  String? _currentSpeedDialId;
 
   CallService({
     required AudioRecorderService recorder,
@@ -118,6 +122,11 @@ class CallService {
     if (_isMuted) {
       _amplitudeController.add(0.0);
     }
+  }
+
+  /// Set the current speed dial ID (call before startCall)
+  void setSpeedDialId(String? speedDialId) {
+    _currentSpeedDialId = speedDialId;
   }
 
   /// Check if Azure configuration exists
@@ -195,6 +204,9 @@ class CallService {
       _setupAudioStream(audioStream);
       _setupAmplitudeMonitoring();
       _startCallTimer();
+      
+      // Track call start time for session saving
+      _callStartTime = DateTime.now();
 
       // Enable wake lock to prevent device sleep during call
       await _enableWakeLock();
@@ -363,9 +375,44 @@ class CallService {
       return;
     }
 
+    // Save session before cleanup
+    await _saveSession();
+    
     await _cleanup();
     _setState(CallState.idle);
     logService.info(_tag, 'Call ended');
+  }
+
+  Future<void> _saveSession() async {
+    if (_callStartTime == null || _callDuration == 0) {
+      logService.debug(_tag, 'Skipping session save (no meaningful data)');
+      return;
+    }
+
+    try {
+      // Convert chat messages to JSON strings
+      final chatMessagesJson = _chatManager.chatMessages
+          .map((msg) => jsonEncode({
+                'role': msg.role,
+                'content': msg.content,
+                'timestamp': msg.timestamp.toIso8601String(),
+              }))
+          .toList();
+
+      final session = CallSession(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        startTime: _callStartTime!,
+        endTime: DateTime.now(),
+        duration: _callDuration,
+        chatMessages: chatMessagesJson,
+        speedDialId: _currentSpeedDialId,
+      );
+
+      await _storage.saveCallSession(session);
+      logService.info(_tag, 'Session saved: ${session.id}');
+    } catch (e) {
+      logService.error(_tag, 'Failed to save session: $e');
+    }
   }
 
   Future<void> _cleanup() async {

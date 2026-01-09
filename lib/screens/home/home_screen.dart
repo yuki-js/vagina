@@ -44,7 +44,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     _TabInfo(
       icon: Icons.person,
       label: 'エージェント',
-      canAdd: true,
+      canAdd: false,
     ),
   ];
 
@@ -68,14 +68,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     if (_currentTabIndex == 0) {
       // Speed dial tab
       await _addSpeedDial();
-    } else if (_currentTabIndex == 3) {
-      // Agents tab
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('エージェント機能は準備中です'),
-          duration: Duration(seconds: 2),
-        ),
-      );
     }
   }
 

@@ -13,7 +13,6 @@ class CallPage extends ConsumerWidget {
   final VoidCallback onNotepadPressed;
   final VoidCallback onSettingsPressed;
   final bool hideNavigationButtons;
-  final String? speedDialId; // Optional speed dial reference
 
   const CallPage({
     super.key,
@@ -21,7 +20,6 @@ class CallPage extends ConsumerWidget {
     required this.onNotepadPressed,
     required this.onSettingsPressed,
     this.hideNavigationButtons = false,
-    this.speedDialId,
   });
 
   @override

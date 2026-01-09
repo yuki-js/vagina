@@ -181,12 +181,19 @@ class SpeedDialTab extends ConsumerWidget {
     ref.read(assistantConfigProvider.notifier).updateInstructions(speedDial.systemPrompt);
     ref.read(assistantConfigProvider.notifier).updateVoice(speedDial.voice);
 
+    // Set speed dial ID for session tracking
+    final callService = ref.read(callServiceProvider);
+    callService.setSpeedDialId(speedDial.id);
+
     // Navigate to call screen
     await Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => CallScreen(speedDialId: speedDial.id),
+        builder: (context) => const CallScreen(),
       ),
     );
+    
+    // Clear speed dial ID after call
+    callService.setSpeedDialId(null);
   }
 
   Future<void> _editSpeedDial(
