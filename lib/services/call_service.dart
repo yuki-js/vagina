@@ -17,6 +17,7 @@ import '../models/chat_message.dart';
 import '../models/call_session.dart';
 import '../models/realtime_events.dart';
 import '../utils/audio_utils.dart';
+import '../repositories/repository_factory.dart';
 
 /// Enum representing the current state of the call
 enum CallState {
@@ -440,7 +441,7 @@ class CallService {
         speedDialId: _currentSpeedDialId,
       );
 
-      await _storage.saveCallSession(session);
+      await RepositoryFactory.callSessions.save(session);
       logService.info(_tag, 'Session saved: ${session.id}');
     } catch (e) {
       logService.error(_tag, 'Failed to save session: $e');

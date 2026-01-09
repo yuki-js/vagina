@@ -4,8 +4,7 @@ import '../theme/app_theme.dart';
 import '../models/call_session.dart';
 import '../components/historical_chat_view.dart';
 import '../components/historical_notepad_view.dart';
-import '../providers/providers.dart';
-import '../services/storage_service.dart';
+import '../repositories/repository_factory.dart';
 
 /// Session detail screen showing chat and notepad from a past session
 class SessionDetailScreen extends ConsumerStatefulWidget {
@@ -25,10 +24,8 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final storage = ref.watch(storageServiceProvider);
-    
     return FutureBuilder<CallSession?>(
-      future: _loadSession(storage),
+      future: _loadSession(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Scaffold(
@@ -68,13 +65,8 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
     );
   }
   
-  Future<CallSession?> _loadSession(StorageService storage) async {
-    final sessions = await storage.getCallSessions();
-    try {
-      return sessions.firstWhere((s) => s.id == widget.sessionId);
-    } catch (e) {
-      return null;
-    }
+  Future<CallSession?> _loadSession() async {
+    return await RepositoryFactory.callSessions.getById(widget.sessionId);
   }
   
   Widget _buildSessionDetail(CallSession session) {

@@ -1,7 +1,7 @@
-import 'storage_service.dart';
 import 'notepad_service.dart';
 import 'tools/tool_manager.dart';
 import 'tools/builtin_tool_factory.dart';
+import '../repositories/repository_factory.dart';
 
 // Re-export for backward compatibility
 export 'tools/base_tool.dart' show BaseTool, ToolExecutionResult, ToolManagerRef;
@@ -12,16 +12,14 @@ export 'tools/tool_manager.dart' show ToolManager;
 /// The ToolService itself is application-scoped but creates
 /// session-scoped ToolManager instances for each call.
 class ToolService {
-  final StorageService _storage;
   final NotepadService _notepadService;
   late final BuiltinToolFactory _builtinFactory;
   
   ToolService({
-    required StorageService storage,
     required NotepadService notepadService,
-  }) : _storage = storage, _notepadService = notepadService {
+  }) : _notepadService = notepadService {
     _builtinFactory = BuiltinToolFactory(
-      storage: _storage,
+      memoryRepository: RepositoryFactory.memory,
       notepadService: _notepadService,
     );
   }
@@ -31,7 +29,7 @@ class ToolService {
   Future<ToolManager> createToolManager({void Function()? onToolsChanged}) async {
     final manager = ToolManager(onToolsChanged: onToolsChanged);
     final allTools = _builtinFactory.createBuiltinTools();
-    final enabledTools = await _storage.getEnabledTools();
+    final enabledTools = await RepositoryFactory.config.getEnabledTools();
     
     // Filter tools based on user preferences
     final toolsToRegister = enabledTools.isEmpty
@@ -50,11 +48,11 @@ class ToolService {
   
   /// Get enabled status for a tool
   Future<bool> isToolEnabled(String toolName) async {
-    return await _storage.isToolEnabled(toolName);
+    return await RepositoryFactory.config.isToolEnabled(toolName);
   }
   
   /// Toggle a tool's enabled state
   Future<void> toggleTool(String toolName) async {
-    await _storage.toggleTool(toolName);
+    await RepositoryFactory.config.toggleTool(toolName);
   }
 }

@@ -4,6 +4,7 @@ import '../theme/app_theme.dart';
 import '../providers/providers.dart';
 import '../models/speed_dial.dart';
 import '../components/emoji_picker.dart';
+import '../repositories/repository_factory.dart';
 
 /// Speed dial configuration screen
 /// Accessed from speed dial tab when tapping on a speed dial
@@ -89,7 +90,7 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
       return;
     }
 
-    final storage = ref.read(storageServiceProvider);
+    final speedDialRepo = RepositoryFactory.speedDials;
     final speedDial = SpeedDial(
       id: _isNewSpeedDial 
           ? DateTime.now().millisecondsSinceEpoch.toString()
@@ -102,9 +103,9 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
     );
 
     if (_isNewSpeedDial) {
-      await storage.saveSpeedDial(speedDial);
+      await speedDialRepo.save(speedDial);
     } else {
-      await storage.updateSpeedDial(speedDial);
+      await speedDialRepo.update(speedDial);
     }
 
     ref.invalidate(refreshableSpeedDialsProvider);
@@ -145,8 +146,7 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
     );
 
     if (confirmed == true && mounted) {
-      final storage = ref.read(storageServiceProvider);
-      await storage.deleteSpeedDial(widget.speedDial!.id);
+      await RepositoryFactory.speedDials.delete(widget.speedDial!.id);
       ref.invalidate(refreshableSpeedDialsProvider);
 
       if (mounted) {

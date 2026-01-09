@@ -15,10 +15,12 @@ import '../models/notepad_tab.dart';
 import '../models/android_audio_config.dart';
 import '../models/call_session.dart';
 import '../models/speed_dial.dart';
+import '../repositories/repository_factory.dart';
 
 // Core providers
 
-/// Provider for the storage service
+/// Provider for the storage service (DEPRECATED - use repositories instead)
+/// This is kept for backward compatibility during migration
 final storageServiceProvider = Provider<StorageService>((ref) {
   return StorageService();
 });
@@ -93,9 +95,8 @@ final realtimeApiClientProvider = Provider<RealtimeApiClient>((ref) {
 
 /// Provider for the tool service
 final toolServiceProvider = Provider<ToolService>((ref) {
-  final storage = ref.read(storageServiceProvider);
   final notepadService = ref.read(notepadServiceProvider);
-  return ToolService(storage: storage, notepadService: notepadService);
+  return ToolService(notepadService: notepadService);
 });
 
 /// Provider for the haptic service
@@ -286,40 +287,36 @@ final selectedNotepadTabIdProvider = StreamProvider<String?>((ref) {
 
 // Speed Dial providers
 
-/// Provider for speed dials
+/// Provider for speed dials (uses repository)
 final speedDialsProvider = FutureProvider<List<SpeedDial>>((ref) async {
-  final storage = ref.read(storageServiceProvider);
-  return await storage.getSpeedDials();
+  return await RepositoryFactory.speedDials.getAll();
 });
 
 /// Provider to refresh speed dials
 final speedDialsRefreshProvider = NotifierProvider<RefreshNotifier, int>(RefreshNotifier.new);
 
-/// Provider for speed dials that auto-refreshes
+/// Provider for speed dials that auto-refreshes (uses repository)
 final refreshableSpeedDialsProvider = FutureProvider<List<SpeedDial>>((ref) async {
   // Watch the refresh trigger
   ref.watch(speedDialsRefreshProvider);
-  final storage = ref.read(storageServiceProvider);
-  return await storage.getSpeedDials();
+  return await RepositoryFactory.speedDials.getAll();
 });
 
 // Call Session providers
 
-/// Provider for call sessions
+/// Provider for call sessions (uses repository)
 final callSessionsProvider = FutureProvider<List<CallSession>>((ref) async {
-  final storage = ref.read(storageServiceProvider);
-  return await storage.getCallSessions();
+  return await RepositoryFactory.callSessions.getAll();
 });
 
 /// Provider to refresh call sessions
 final callSessionsRefreshProvider = NotifierProvider<RefreshNotifier, int>(RefreshNotifier.new);
 
-/// Provider for call sessions that auto-refreshes
+/// Provider for call sessions that auto-refreshes (uses repository)
 final refreshableCallSessionsProvider = FutureProvider<List<CallSession>>((ref) async {
   // Watch the refresh trigger
   ref.watch(callSessionsRefreshProvider);
-  final storage = ref.read(storageServiceProvider);
-  return await storage.getCallSessions();
+  return await RepositoryFactory.callSessions.getAll();
 });
 
 /// Simple refresh notifier

@@ -5,9 +5,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:window_manager/window_manager.dart';
 import 'screens/home/home_screen.dart';
 import 'theme/app_theme.dart';
+import 'repositories/repository_factory.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize repositories
+  await RepositoryFactory.initialize();
   
   // Initialize window manager ONLY for desktop platforms
   // This prevents crashes on mobile (Android/iOS) and web

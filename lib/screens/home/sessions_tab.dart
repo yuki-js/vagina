@@ -4,6 +4,7 @@ import '../../theme/app_theme.dart';
 import '../../models/call_session.dart';
 import '../../providers/providers.dart';
 import '../session_detail_screen.dart';
+import '../../repositories/repository_factory.dart';
 
 /// Sessions tab - shows call history
 class SessionsTab extends ConsumerStatefulWidget {
@@ -77,9 +78,9 @@ class _SessionsTabState extends ConsumerState<SessionsTab> {
     );
 
     if (confirmed == true && mounted) {
-      final storage = ref.read(storageServiceProvider);
+      final sessionRepo = RepositoryFactory.callSessions;
       for (final id in _selectedSessionIds) {
-        await storage.deleteCallSession(id);
+        await sessionRepo.delete(id);
       }
 
       setState(() {

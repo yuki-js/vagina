@@ -1,17 +1,17 @@
 import 'base_tool.dart';
 import 'builtin/builtin_tools.dart';
-import '../storage_service.dart';
 import '../notepad_service.dart';
+import '../../repositories/memory_repository.dart';
 
 /// Factory for creating built-in tools
 class BuiltinToolFactory {
-  final StorageService _storage;
+  final MemoryRepository _memoryRepo;
   final NotepadService _notepadService;
   
   BuiltinToolFactory({
-    required StorageService storage,
+    required MemoryRepository memoryRepository,
     required NotepadService notepadService,
-  }) : _storage = storage, _notepadService = notepadService;
+  }) : _memoryRepo = memoryRepository, _notepadService = notepadService;
   
   /// Get all built-in tool names (for configuration)
   static const List<String> allToolNames = [
@@ -33,9 +33,9 @@ class BuiltinToolFactory {
   List<BaseTool> createBuiltinTools() {
     return [
       GetCurrentTimeTool(),
-      MemorySaveTool(storage: _storage),
-      MemoryRecallTool(storage: _storage),
-      MemoryDeleteTool(storage: _storage),
+      MemorySaveTool(memoryRepository: _memoryRepo),
+      MemoryRecallTool(memoryRepository: _memoryRepo),
+      MemoryDeleteTool(memoryRepository: _memoryRepo),
       CalculatorTool(),
       // Artifact management tools
       NotepadListTabsTool(notepadService: _notepadService),

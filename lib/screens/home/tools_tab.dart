@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/app_theme.dart';
 import '../../providers/providers.dart';
+import '../../repositories/repository_factory.dart';
 
-/// Provider for tool enabled states
+/// Provider for tool enabled states (uses repository)
 final toolEnabledProvider = FutureProvider.family<bool, String>((ref, toolName) async {
-  final storage = ref.watch(storageServiceProvider);
-  return await storage.isToolEnabled(toolName);
+  return await RepositoryFactory.config.isToolEnabled(toolName);
 });
 
 /// Tools tab - shows available tools with enable/disable toggle via long press
@@ -59,11 +59,11 @@ class _ToolsTabState extends ConsumerState<ToolsTab> {
   Future<void> _enableSelected() async {
     if (_selectedTools.isEmpty) return;
 
-    final storage = ref.read(storageServiceProvider);
+    final configRepo = RepositoryFactory.config;
     for (final toolName in _selectedTools) {
-      final isEnabled = await storage.isToolEnabled(toolName);
+      final isEnabled = await configRepo.isToolEnabled(toolName);
       if (!isEnabled) {
-        await storage.toggleTool(toolName);
+        await configRepo.toggleTool(toolName);
         ref.invalidate(toolEnabledProvider(toolName));
       }
     }
@@ -83,11 +83,11 @@ class _ToolsTabState extends ConsumerState<ToolsTab> {
   Future<void> _disableSelected() async {
     if (_selectedTools.isEmpty) return;
 
-    final storage = ref.read(storageServiceProvider);
+    final configRepo = RepositoryFactory.config;
     for (final toolName in _selectedTools) {
-      final isEnabled = await storage.isToolEnabled(toolName);
+      final isEnabled = await configRepo.isToolEnabled(toolName);
       if (isEnabled) {
-        await storage.toggleTool(toolName);
+        await configRepo.toggleTool(toolName);
         ref.invalidate(toolEnabledProvider(toolName));
       }
     }
