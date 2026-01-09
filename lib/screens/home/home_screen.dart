@@ -267,57 +267,45 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
           ),
-          // Bottom navigation with call button
-          Container(
-            decoration: BoxDecoration(
-              color: AppTheme.lightSurfaceColor,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, -2),
-                ),
-              ],
-            ),
-            child: SafeArea(
-              top: false,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Green circular call button (special design)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 16, bottom: 8),
-                    child: CallButton(
-                      isCallActive: false,
-                      size: 64,
-                      onPressed: _handleCallButton,
-                    ),
-                  ),
-                  // Tab bar
-                  Row(
-                    children: List.generate(_tabs.length, (index) {
-                      final tab = _tabs[index];
-                      final isSelected = _currentTabIndex == index;
-                      return Expanded(
-                        child: _buildTabButton(
-                          icon: tab.icon,
-                          label: tab.label,
-                          isSelected: isSelected,
-                          onTap: () {
-                            setState(() {
-                              _currentTabIndex = index;
-                            });
-                          },
-                        ),
-                      );
-                    }),
-                  ),
-                ],
-              ),
-            ),
-          ),
         ],
       ),
+      // Bottom App Bar with notched FAB
+      bottomNavigationBar: BottomAppBar(
+        color: AppTheme.lightSurfaceColor,
+        elevation: 8,
+        notchMargin: 8.0,
+        shape: const CircularNotchedRectangle(),
+        child: Row(
+          children: List.generate(_tabs.length, (index) {
+            final tab = _tabs[index];
+            final isSelected = _currentTabIndex == index;
+            return Expanded(
+              child: _buildTabButton(
+                icon: tab.icon,
+                label: tab.label,
+                isSelected: isSelected,
+                onTap: () {
+                  setState(() {
+                    _currentTabIndex = index;
+                  });
+                },
+              ),
+            );
+          }),
+        ),
+      ),
+      // Floating Action Button for call - embeds into tab bar with notch
+      floatingActionButton: FloatingActionButton(
+        onPressed: _handleCallButton,
+        backgroundColor: AppTheme.successColor,
+        elevation: 4,
+        child: const Icon(
+          Icons.phone,
+          size: 32,
+          color: Colors.white,
+        ),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
 
@@ -345,7 +333,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return InkWell(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.symmetric(vertical: 4),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -354,7 +342,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               color: isSelected ? AppTheme.primaryColor : AppTheme.lightTextSecondary,
               size: 24,
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 2),
             Text(
               label,
               style: TextStyle(

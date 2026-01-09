@@ -58,14 +58,7 @@ class ControlPanel extends ConsumerWidget {
                     onTap: onNotepadPressed,
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _ControlButton(
-                    icon: Icons.settings,
-                    label: '設定',
-                    onTap: onSettingsPressed,
-                  ),
-                ),
+                // Settings button removed - only accessible from home screen
               ],
             ),
           if (!hideNavigationButtons) const SizedBox(height: 16),
@@ -156,11 +149,11 @@ class ControlPanel extends ConsumerWidget {
               ],
             ),
           const SizedBox(height: 24),
-          // Main call button
+          // Main call button - always shows as end call (red) since start is from home screen
           CallButton(
-            isCallActive: isCallActive,
+            isCallActive: true, // Always show as active (end call state)
             size: 72,
-            onPressed: () => _handleCallButton(ref),
+            onPressed: () => _handleCallButton(context, ref),
           ),
         ],
       ),
@@ -192,15 +185,14 @@ class ControlPanel extends ConsumerWidget {
     apiClient.cancelResponse();
   }
 
-  Future<void> _handleCallButton(WidgetRef ref) async {
+  Future<void> _handleCallButton(BuildContext context, WidgetRef ref) async {
     final callService = ref.read(callServiceProvider);
-    final callStateAsync = ref.read(callStateProvider);
-    final callState = callStateAsync.value ?? CallState.idle;
+    // Only end call functionality - start is triggered from home screen
+    await callService.endCall();
     
-    if (callState == CallState.idle || callState == CallState.error) {
-      await callService.startCall();
-    } else {
-      await callService.endCall();
+    // Navigate back to home screen after ending call
+    if (context.mounted) {
+      Navigator.of(context).pop();
     }
   }
 
