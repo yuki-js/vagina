@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/app_theme.dart';
-import '../../components/emoji_picker.dart';
 import '../../providers/providers.dart';
 import '../../models/speed_dial.dart';
 import '../call/call_screen.dart';
+import '../speed_dial_config_screen.dart';
 
 /// Speed dial tab - shows saved character presets for quick call start
 class SpeedDialTab extends ConsumerWidget {
@@ -140,7 +140,7 @@ class SpeedDialTab extends ConsumerWidget {
       ),
       child: InkWell(
         onTap: () => _startCall(context, ref, speedDial),
-        onLongPress: () => _editSpeedDial(context, ref, speedDial),
+        onLongPress: () => _editSpeedDial(context, speedDial),
         borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -216,181 +216,15 @@ class SpeedDialTab extends ConsumerWidget {
 
   Future<void> _editSpeedDial(
     BuildContext context,
-    WidgetRef ref,
     SpeedDial speedDial,
   ) async {
-    final result = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(speedDial.name),
-        content: const Text('操作を選択してください'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop('cancel'),
-            child: const Text('キャンセル'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop('delete'),
-            style: TextButton.styleFrom(
-              foregroundColor: AppTheme.errorColor,
-            ),
-            child: const Text('削除'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop('edit'),
-            child: const Text('編集'),
-          ),
-        ],
-      ),
-    );
-
-    if (result == 'delete' && context.mounted) {
-      final storage = ref.read(storageServiceProvider);
-      await storage.deleteSpeedDial(speedDial.id);
-      
-      // Refresh the list
-      ref.invalidate(refreshableSpeedDialsProvider);
-      
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('削除しました')),
-        );
-      }
-    } else if (result == 'edit' && context.mounted) {
-      await _showEditDialog(context, ref, speedDial);
-    }
-  }
-
-  Future<void> _showEditDialog(
-    BuildContext context,
-    WidgetRef ref,
-    SpeedDial speedDial,
-  ) async {
-    String? selectedEmoji;
-    
-    // Show emoji picker first
-    await showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        contentPadding: EdgeInsets.zero,
-        content: SizedBox(
-          width: double.maxFinite,
-          child: EmojiPicker(
-            selectedEmoji: speedDial.iconEmoji,
-            onEmojiSelected: (emoji) {
-              selectedEmoji = emoji;
-              Navigator.of(context).pop();
-            },
-          ),
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => SpeedDialConfigScreen(
+          speedDialId: speedDial.id,
+          speedDial: speedDial,
         ),
       ),
     );
-
-    final iconEmoji = selectedEmoji ?? speedDial.iconEmoji ?? '⭐';
-
-    // Then show the main edit form
-    final formKey = GlobalKey<FormState>();
-    String name = speedDial.name;
-    String systemPrompt = speedDial.systemPrompt;
-    String voice = speedDial.voice;
-
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Text(iconEmoji, style: const TextStyle(fontSize: 32)),
-            const SizedBox(width: 12),
-            const Text('スピードダイヤルを編集'),
-          ],
-        ),
-        content: SingleChildScrollView(
-          child: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  initialValue: name,
-                  decoration: const InputDecoration(
-                    labelText: '名前',
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return '名前を入力してください';
-                    }
-                    return null;
-                  },
-                  onSaved: (value) => name = value!,
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  initialValue: systemPrompt,
-                  decoration: const InputDecoration(
-                    labelText: 'システムプロンプト',
-                    hintText: 'アシスタントの振る舞いを設定',
-                  ),
-                  maxLines: 3,
-                  onSaved: (value) => systemPrompt = value ?? '',
-                ),
-                const SizedBox(height: 16),
-                DropdownButtonFormField<String>(
-                  value: voice,
-                  decoration: const InputDecoration(
-                    labelText: '音声',
-                  ),
-                  items: const [
-                    DropdownMenuItem(value: 'alloy', child: Text('Alloy')),
-                    DropdownMenuItem(value: 'echo', child: Text('Echo')),
-                    DropdownMenuItem(value: 'shimmer', child: Text('Shimmer')),
-                  ],
-                  onChanged: (value) {
-                    if (value != null) voice = value;
-                  },
-                ),
-              ],
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('キャンセル'),
-          ),
-          TextButton(
-            onPressed: () {
-              if (formKey.currentState!.validate()) {
-                formKey.currentState!.save();
-                Navigator.of(context).pop(true);
-              }
-            },
-            child: const Text('保存'),
-          ),
-        ],
-      ),
-    );
-
-    if (result == true && context.mounted) {
-      final storage = ref.read(storageServiceProvider);
-      final updatedSpeedDial = SpeedDial(
-        id: speedDial.id,
-        name: name,
-        systemPrompt: systemPrompt,
-        voice: voice,
-        iconEmoji: iconEmoji,
-        createdAt: speedDial.createdAt,
-      );
-      
-      await storage.updateSpeedDial(updatedSpeedDial);
-      
-      // Refresh the list
-      ref.invalidate(refreshableSpeedDialsProvider);
-      
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('更新しました')),
-        );
-      }
-    }
   }
 }
