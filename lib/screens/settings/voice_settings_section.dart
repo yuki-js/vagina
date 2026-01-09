@@ -23,7 +23,7 @@ class VoiceSettingsSection extends ConsumerWidget {
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
-              color: AppTheme.textSecondary,
+              color: AppTheme.lightTextSecondary,
             ),
           ),
           const SizedBox(height: 12),
@@ -38,7 +38,7 @@ class VoiceSettingsSection extends ConsumerWidget {
               },
               title: Text(
                 voice[0].toUpperCase() + voice.substring(1),
-                style: const TextStyle(color: AppTheme.textPrimary),
+                style: const TextStyle(color: AppTheme.lightTextPrimary),
               ),
               activeColor: AppTheme.primaryColor,
             ),
@@ -49,7 +49,7 @@ class VoiceSettingsSection extends ConsumerWidget {
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
-              color: AppTheme.textSecondary,
+              color: AppTheme.lightTextSecondary,
             ),
           ),
           const SizedBox(height: 12),
@@ -63,12 +63,12 @@ class VoiceSettingsSection extends ConsumerWidget {
             },
             title: const Text(
               '近距離',
-              style: TextStyle(color: AppTheme.textPrimary),
+              style: TextStyle(color: AppTheme.lightTextPrimary),
             ),
             subtitle: Text(
               '近くで話すときに適しています',
               style: TextStyle(
-                color: AppTheme.textSecondary.withValues(alpha: 0.7),
+                color: AppTheme.lightTextSecondary.withValues(alpha: 0.7),
                 fontSize: 12,
               ),
             ),
@@ -84,12 +84,12 @@ class VoiceSettingsSection extends ConsumerWidget {
             },
             title: const Text(
               '遠距離',
-              style: TextStyle(color: AppTheme.textPrimary),
+              style: TextStyle(color: AppTheme.lightTextPrimary),
             ),
             subtitle: Text(
               '遠くから話すときに適しています',
               style: TextStyle(
-                color: AppTheme.textSecondary.withValues(alpha: 0.7),
+                color: AppTheme.lightTextSecondary.withValues(alpha: 0.7),
                 fontSize: 12,
               ),
             ),

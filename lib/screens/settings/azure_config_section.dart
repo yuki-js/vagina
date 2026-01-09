@@ -169,7 +169,7 @@ class _AzureConfigSectionState extends ConsumerState<AzureConfigSection> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AppTheme.surfaceColor,
+        backgroundColor: AppTheme.lightSurfaceColor,
         title: const Text('設定をクリア?'),
         content: const Text('保存済みのAPI設定をすべて削除しますか？'),
         actions: [
