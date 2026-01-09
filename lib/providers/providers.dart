@@ -328,3 +328,21 @@ class RefreshNotifier extends Notifier<int> {
     state++;
   }
 }
+
+/// Provider for Cupertino style preference (Material vs Cupertino widgets)
+final useCupertinoStyleProvider = NotifierProvider<CupertinoStyleNotifier, bool>(
+  CupertinoStyleNotifier.new,
+);
+
+class CupertinoStyleNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+  
+  void toggle() {
+    state = !state;
+  }
+  
+  void set(bool value) {
+    state = value;
+  }
+}

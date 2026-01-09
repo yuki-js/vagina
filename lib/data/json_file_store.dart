@@ -7,6 +7,10 @@ import '../utils/platform_compat.dart';
 import '../services/log_service.dart';
 import 'permission_manager.dart';
 
+// Conditional import for web support
+import 'web_storage_stub.dart'
+    if (dart.library.html) 'dart:html' as html;
+
 /// File-based JSON key-value store implementation
 class JsonFileStore implements KeyValueStore {
   static const _tag = 'JsonFileStore';
@@ -129,17 +133,39 @@ class JsonFileStore implements KeyValueStore {
   Map<String, dynamic> _loadFromWebStorage() {
     if (!kIsWeb) return {};
     
-    // Web storage implementation is different - we'll store the whole config as a single JSON string
-    // For simplicity, we don't support web storage in this implementation
-    // Web users will lose data on refresh, but this is acceptable for now
-    return {};
+    try {
+      final storage = html.window.localStorage;
+      final key = 'vagina_${fileName}_data';
+      final value = storage[key];
+      
+      if (value == null || value.isEmpty) {
+        logService.debug(_tag, 'No web storage data found');
+        return {};
+      }
+      
+      final data = jsonDecode(value) as Map<String, dynamic>;
+      logService.debug(_tag, 'Loaded ${data.keys.length} keys from web storage');
+      return data;
+    } catch (e) {
+      logService.error(_tag, 'Error loading from web storage: $e');
+      return {};
+    }
   }
 
   Future<void> _saveToWebStorage(Map<String, dynamic> data) async {
     if (!kIsWeb) return;
     
-    // Web storage not fully supported - data won't persist on refresh
-    // This is acceptable as the app is primarily designed for mobile/desktop
+    try {
+      final storage = html.window.localStorage;
+      final key = 'vagina_${fileName}_data';
+      final json = jsonEncode(data);
+      storage[key] = json;
+      
+      logService.debug(_tag, 'Saved ${data.keys.length} keys to web storage');
+    } catch (e) {
+      logService.error(_tag, 'Error saving to web storage: $e');
+      rethrow;
+    }
   }
 
   void _ensureInitialized() {

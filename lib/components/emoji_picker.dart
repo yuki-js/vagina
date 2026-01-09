@@ -26,8 +26,15 @@ class EmojiPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    // Calculate responsive column count (more columns on wider screens)
+    final crossAxisCount = (screenWidth / 60).floor().clamp(4, 8);
+    
     return Container(
-      constraints: const BoxConstraints(maxHeight: 300),
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.6,
+        minHeight: 400,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -67,8 +74,8 @@ class EmojiPicker extends StatelessWidget {
           Expanded(
             child: GridView.builder(
               padding: const EdgeInsets.all(16),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 8,
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: crossAxisCount,
                 crossAxisSpacing: 8,
                 mainAxisSpacing: 8,
                 childAspectRatio: 1,
