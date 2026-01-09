@@ -13,6 +13,22 @@ class BuiltinToolFactory {
     required NotepadService notepadService,
   }) : _storage = storage, _notepadService = notepadService;
   
+  /// Get all built-in tool names (for configuration)
+  static const List<String> allToolNames = [
+    'get_current_time',
+    'memory_save',
+    'memory_recall',
+    'memory_delete',
+    'calculator',
+    'notepad_list_tabs',
+    'notepad_get_metadata',
+    'notepad_get_content',
+    'notepad_close_tab',
+    'document_overwrite',
+    'document_patch',
+    'document_read',
+  ];
+  
   /// Create all built-in tools
   List<BaseTool> createBuiltinTools() {
     return [

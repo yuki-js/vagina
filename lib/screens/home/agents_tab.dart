@@ -2,11 +2,40 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/app_theme.dart';
 import '../../providers/providers.dart';
-import '../../models/assistant_config.dart';
+import '../agent_config_screen.dart';
 
-/// Agents tab - shows current assistant configuration
+/// Agent definition for the list
+class _AgentDef {
+  final String id;
+  final String name;
+  final String description;
+  final IconData icon;
+  final Color color;
+
+  const _AgentDef({
+    required this.id,
+    required this.name,
+    required this.description,
+    required this.icon,
+    required this.color,
+  });
+}
+
+/// Agents tab - shows available agents list
+/// Tap to navigate to agent configuration screen
 class AgentsTab extends ConsumerWidget {
   const AgentsTab({super.key});
+
+  // Define available agents (currently only default, more can be added later)
+  static const _agents = [
+    _AgentDef(
+      id: 'default',
+      name: 'デフォルトアシスタント',
+      description: '標準的なAI会話アシスタント',
+      icon: Icons.assistant,
+      color: AppTheme.primaryColor,
+    ),
+  ];
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -16,7 +45,7 @@ class AgentsTab extends ConsumerWidget {
       padding: const EdgeInsets.all(16),
       children: [
         const Text(
-          'エージェント設定',
+          'エージェント',
           style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
@@ -25,118 +54,14 @@ class AgentsTab extends ConsumerWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          'アシスタントの動作設定',
+          'エージェントを選択して設定を変更',
           style: TextStyle(
             fontSize: 14,
             color: AppTheme.lightTextSecondary,
           ),
         ),
         const SizedBox(height: 24),
-        // Current configuration display
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.person, color: AppTheme.primaryColor),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        assistantConfig.name,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.lightTextPrimary,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  '音声',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppTheme.lightTextSecondary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  assistantConfig.voice,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: AppTheme.lightTextPrimary,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'システムプロンプト',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppTheme.lightTextSecondary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  assistantConfig.instructions.isEmpty
-                      ? '（デフォルト）'
-                      : assistantConfig.instructions,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: AppTheme.lightTextPrimary,
-                  ),
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        // Voice selection
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '音声選択',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.lightTextSecondary,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                ...AssistantConfig.availableVoices.map(
-                  (voice) => RadioListTile<String>(
-                    value: voice,
-                    groupValue: assistantConfig.voice,
-                    onChanged: (value) {
-                      if (value != null) {
-                        ref.read(assistantConfigProvider.notifier).updateVoice(value);
-                      }
-                    },
-                    title: Text(
-                      voice[0].toUpperCase() + voice.substring(1),
-                      style: const TextStyle(color: AppTheme.lightTextPrimary),
-                    ),
-                    activeColor: AppTheme.primaryColor,
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 24),
-        // Info text
+        // Current agent info
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -151,8 +76,55 @@ class AgentsTab extends ConsumerWidget {
               ),
               const SizedBox(width: 12),
               Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      '現在のエージェント',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.primaryColor,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      assistantConfig.name,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: AppTheme.lightTextPrimary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+        // Agents list
+        ..._agents.map((agent) => _buildAgentCard(context, agent)),
+        const SizedBox(height: 16),
+        // Info message
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.grey.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.lightbulb_outline,
+                color: AppTheme.lightTextSecondary,
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
                 child: Text(
-                  'スピードダイヤルから通話を開始すると、一時的にその設定が適用されます',
+                  '追加のエージェントタイプは今後のアップデートで追加予定です',
                   style: TextStyle(
                     fontSize: 12,
                     color: AppTheme.lightTextSecondary,
@@ -163,6 +135,73 @@ class AgentsTab extends ConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildAgentCard(BuildContext context, _AgentDef agent) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: InkWell(
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => AgentConfigScreen(
+                agentId: agent.id,
+                agentName: agent.name,
+              ),
+            ),
+          );
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: agent.color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  agent.icon,
+                  color: agent.color,
+                  size: 28,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      agent.name,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.lightTextPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      agent.description,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppTheme.lightTextSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.arrow_forward_ios,
+                size: 16,
+                color: AppTheme.lightTextSecondary,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
