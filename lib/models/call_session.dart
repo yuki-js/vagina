@@ -5,6 +5,7 @@ class CallSession {
   final DateTime? endTime;
   final int duration; // in seconds
   final List<String> chatMessages; // JSON-encoded messages
+  final String? notepadContent; // Markdown content from notepad
   final String? speedDialId; // Reference to speed dial if used
 
   const CallSession({
@@ -13,6 +14,7 @@ class CallSession {
     this.endTime,
     this.duration = 0,
     this.chatMessages = const [],
+    this.notepadContent,
     this.speedDialId,
   });
 
@@ -22,6 +24,7 @@ class CallSession {
     DateTime? endTime,
     int? duration,
     List<String>? chatMessages,
+    String? notepadContent,
     String? speedDialId,
   }) {
     return CallSession(
@@ -30,6 +33,7 @@ class CallSession {
       endTime: endTime ?? this.endTime,
       duration: duration ?? this.duration,
       chatMessages: chatMessages ?? this.chatMessages,
+      notepadContent: notepadContent ?? this.notepadContent,
       speedDialId: speedDialId ?? this.speedDialId,
     );
   }
@@ -41,6 +45,7 @@ class CallSession {
       if (endTime != null) 'endTime': endTime!.toIso8601String(),
       'duration': duration,
       'chatMessages': chatMessages,
+      if (notepadContent != null) 'notepadContent': notepadContent,
       if (speedDialId != null) 'speedDialId': speedDialId,
     };
   }
@@ -57,6 +62,7 @@ class CallSession {
               ?.map((e) => e as String)
               .toList() ??
           const [],
+      notepadContent: json['notepadContent'] as String?,
       speedDialId: json['speedDialId'] as String?,
     );
   }

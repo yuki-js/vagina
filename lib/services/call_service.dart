@@ -9,6 +9,7 @@ import 'realtime_api_client.dart';
 import 'storage_service.dart';
 import 'tool_service.dart';
 import 'haptic_service.dart';
+import 'notepad_service.dart';
 import 'log_service.dart';
 import 'chat/chat_message_manager.dart';
 import '../config/app_config.dart';
@@ -36,6 +37,7 @@ class CallService {
   final StorageService _storage;
   final ToolService _toolService;
   final HapticService _hapticService;
+  final NotepadService _notepadService;
   final ChatMessageManager _chatManager = ChatMessageManager();
   
   /// Session-scoped tool manager (created on call start, disposed on call end)
@@ -77,12 +79,14 @@ class CallService {
     required StorageService storage,
     required ToolService toolService,
     required HapticService hapticService,
+    required NotepadService notepadService,
   })  : _recorder = recorder,
         _player = player,
         _apiClient = apiClient,
         _storage = storage,
         _toolService = toolService,
-        _hapticService = hapticService;
+        _hapticService = hapticService,
+        _notepadService = notepadService;
 
   /// Current call state
   CallState get currentState => _currentState;
@@ -399,12 +403,24 @@ class CallService {
               }))
           .toList();
 
+      // Collect all notepad content
+      final notepadTabs = _notepadService.tabs;
+      String? notepadContent;
+      if (notepadTabs.isNotEmpty) {
+        // Combine all tabs with headers
+        notepadContent = notepadTabs.map((tab) {
+          final header = '# ${tab.title}\n\n';
+          return header + tab.content;
+        }).join('\n\n---\n\n');
+      }
+
       final session = CallSession(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         startTime: _callStartTime!,
         endTime: DateTime.now(),
         duration: _callDuration,
         chatMessages: chatMessagesJson,
+        notepadContent: notepadContent,
         speedDialId: _currentSpeedDialId,
       );
 

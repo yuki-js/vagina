@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/app_theme.dart';
 import '../models/call_session.dart';
-import 'chat/chat_page.dart';
-import 'notepad/notepad_page.dart';
+import '../components/historical_chat_view.dart';
+import '../components/historical_notepad_view.dart';
 
 /// Session detail screen showing chat and notepad from a past session
-class SessionDetailScreen extends ConsumerStatefulWidget {
+class SessionDetailScreen extends StatefulWidget {
   final CallSession session;
 
   const SessionDetailScreen({
@@ -15,10 +14,10 @@ class SessionDetailScreen extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<SessionDetailScreen> createState() => _SessionDetailScreenState();
+  State<SessionDetailScreen> createState() => _SessionDetailScreenState();
 }
 
-class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
+class _SessionDetailScreenState extends State<SessionDetailScreen> {
   int _selectedSegment = 0; // 0: Chat, 1: Notepad
 
   @override
@@ -93,16 +92,14 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
               ),
             ),
 
-            // Content area
+            // Content area - Historical views
             Expanded(
               child: _selectedSegment == 0
-                  ? ChatPage(
-                      onBackPressed: () {},
-                      hideBackButton: true,
+                  ? HistoricalChatView(
+                      chatMessages: widget.session.chatMessages,
                     )
-                  : NotepadPage(
-                      onBackPressed: () {},
-                      hideBackButton: true,
+                  : HistoricalNotepadView(
+                      notepadContent: widget.session.notepadContent,
                     ),
             ),
           ],

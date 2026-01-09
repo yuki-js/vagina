@@ -112,6 +112,7 @@ final callServiceProvider = Provider<CallService>((ref) {
     storage: ref.read(storageServiceProvider),
     toolService: ref.read(toolServiceProvider),
     hapticService: ref.read(hapticServiceProvider),
+    notepadService: ref.read(notepadServiceProvider),
   );
   ref.onDispose(() => service.dispose());
   return service;
