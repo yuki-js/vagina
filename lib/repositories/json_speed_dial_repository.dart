@@ -1,6 +1,6 @@
 import '../models/speed_dial.dart';
-import 'speed_dial_repository.dart';
-import '../data/key_value_store.dart';
+import '../interfaces/speed_dial_repository.dart';
+import '../interfaces/key_value_store.dart';
 import '../services/log_service.dart';
 
 /// JSON-based implementation of SpeedDialRepository

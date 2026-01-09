@@ -1,9 +1,9 @@
-import '../data/key_value_store.dart';
+import '../interfaces/key_value_store.dart';
 import '../data/json_file_store.dart';
-import 'call_session_repository.dart';
-import 'speed_dial_repository.dart';
-import 'memory_repository.dart';
-import 'config_repository.dart';
+import '../interfaces/call_session_repository.dart';
+import '../interfaces/speed_dial_repository.dart';
+import '../interfaces/memory_repository.dart';
+import '../interfaces/config_repository.dart';
 import 'json_call_session_repository.dart';
 import 'json_speed_dial_repository.dart';
 import 'json_memory_repository.dart';

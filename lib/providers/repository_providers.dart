@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../repositories/repository_factory.dart';
-import '../repositories/call_session_repository.dart';
-import '../repositories/speed_dial_repository.dart';
-import '../repositories/memory_repository.dart';
-import '../repositories/config_repository.dart';
+import '../interfaces/call_session_repository.dart';
+import '../interfaces/speed_dial_repository.dart';
+import '../interfaces/memory_repository.dart';
+import '../interfaces/config_repository.dart';
 import '../data/permission_manager.dart';
 
 /// Provider for CallSessionRepository

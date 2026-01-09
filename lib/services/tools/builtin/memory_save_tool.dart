@@ -1,5 +1,5 @@
 import '../base_tool.dart';
-import '../../../repositories/memory_repository.dart';
+import '../../../interfaces/memory_repository.dart';
 
 /// Tool for saving information to long-term memory
 class MemorySaveTool extends BaseTool {

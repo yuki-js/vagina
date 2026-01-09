@@ -1,5 +1,5 @@
-import 'memory_repository.dart';
-import '../data/key_value_store.dart';
+import '../interfaces/memory_repository.dart';
+import '../interfaces/key_value_store.dart';
 import '../services/log_service.dart';
 
 /// JSON-based implementation of MemoryRepository

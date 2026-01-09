@@ -1,6 +1,6 @@
 import '../models/call_session.dart';
-import 'call_session_repository.dart';
-import '../data/key_value_store.dart';
+import '../interfaces/call_session_repository.dart';
+import '../interfaces/key_value_store.dart';
 import '../services/log_service.dart';
 
 /// JSON-based implementation of CallSessionRepository

@@ -1,5 +1,5 @@
 import '../base_tool.dart';
-import '../../../repositories/memory_repository.dart';
+import '../../../interfaces/memory_repository.dart';
 
 /// Tool for deleting information from long-term memory
 class MemoryDeleteTool extends BaseTool {

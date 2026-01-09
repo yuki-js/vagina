@@ -2,9 +2,10 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
-import 'key_value_store.dart';
+import '../interfaces/key_value_store.dart';
 import '../utils/platform_compat.dart';
 import '../services/log_service.dart';
+import 'permission_manager.dart';
 
 /// File-based JSON key-value store implementation
 class JsonFileStore implements KeyValueStore {
@@ -12,6 +13,7 @@ class JsonFileStore implements KeyValueStore {
   
   final String fileName;
   final String? folderName;
+  final PermissionManager _permissionManager;
   File? _file;
   Map<String, dynamic> _cache = {};
   bool _initialized = false;
@@ -19,7 +21,8 @@ class JsonFileStore implements KeyValueStore {
   JsonFileStore({
     required this.fileName,
     this.folderName,
-  });
+    PermissionManager? permissionManager,
+  }) : _permissionManager = permissionManager ?? PermissionManager();
 
   @override
   Future<void> initialize() async {
@@ -36,16 +39,23 @@ class JsonFileStore implements KeyValueStore {
     Directory? directory;
     
     if (PlatformCompat.isAndroid && folderName != null) {
-      // Try to use external storage for persistence
-      try {
-        directory = Directory('/storage/emulated/0/Documents/$folderName');
-        if (!await directory.exists()) {
-          await directory.create(recursive: true);
+      // Check permission first
+      final hasPermission = await _permissionManager.hasStoragePermission();
+      
+      if (hasPermission) {
+        // Try to use external storage for persistence
+        try {
+          directory = Directory('/storage/emulated/0/Documents/$folderName');
+          if (!await directory.exists()) {
+            await directory.create(recursive: true);
+          }
+          logService.info(_tag, 'Using external directory: ${directory.path}');
+        } catch (e) {
+          logService.warn(_tag, 'Cannot access external storage: $e');
+          directory = null;
         }
-        logService.info(_tag, 'Using external directory: ${directory.path}');
-      } catch (e) {
-        logService.warn(_tag, 'Cannot access external storage: $e');
-        directory = null;
+      } else {
+        logService.info(_tag, 'Storage permission not granted, using app directory');
       }
     }
     
@@ -59,6 +69,15 @@ class JsonFileStore implements KeyValueStore {
       } else {
         directory = await getApplicationDocumentsDirectory();
       }
+      
+      // Create subfolder if specified
+      if (folderName != null && !kIsWeb) {
+        directory = Directory('${directory.path}/$folderName');
+        if (!await directory.exists()) {
+          await directory.create(recursive: true);
+        }
+      }
+      
       logService.info(_tag, 'Using app directory: ${directory.path}');
     }
     

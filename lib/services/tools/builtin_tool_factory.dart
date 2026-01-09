@@ -1,7 +1,7 @@
 import 'base_tool.dart';
 import 'builtin/builtin_tools.dart';
 import '../notepad_service.dart';
-import '../../repositories/memory_repository.dart';
+import '../../interfaces/memory_repository.dart';
 
 /// Factory for creating built-in tools
 class BuiltinToolFactory {

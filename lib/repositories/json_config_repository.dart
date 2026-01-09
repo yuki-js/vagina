@@ -1,6 +1,6 @@
 import '../models/android_audio_config.dart';
-import 'config_repository.dart';
-import '../data/key_value_store.dart';
+import '../interfaces/config_repository.dart';
+import '../interfaces/key_value_store.dart';
 import '../services/log_service.dart';
 
 /// JSON-based implementation of ConfigRepository
