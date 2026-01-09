@@ -471,6 +471,22 @@ class StorageService {
     return false;
   }
 
+  /// Update an existing speed dial
+  Future<bool> updateSpeedDial(SpeedDial speedDial) async {
+    logService.info(_tag, 'Updating speed dial: ${speedDial.id}');
+    final config = await _loadConfig();
+    final speedDials = (config['speed_dials'] as List<dynamic>?) ?? [];
+    
+    final index = speedDials.indexWhere((s) => (s as Map<String, dynamic>)['id'] == speedDial.id);
+    if (index >= 0) {
+      speedDials[index] = speedDial.toJson();
+      config['speed_dials'] = speedDials;
+      await _saveConfig(config);
+      return true;
+    }
+    return false;
+  }
+
   /// Delete all speed dials
   Future<void> deleteAllSpeedDials() async {
     logService.info(_tag, 'Deleting all speed dials');

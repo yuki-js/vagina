@@ -43,20 +43,29 @@ class SpeedDialTab extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 24),
-            // Speed dial grid
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                childAspectRatio: 1.2,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-              ),
-              itemCount: speedDials.length,
-              itemBuilder: (context, index) {
-                final speedDial = speedDials[index];
-                return _buildSpeedDialCard(context, ref, speedDial);
+            // Speed dial grid with fixed-size cards
+            LayoutBuilder(
+              builder: (context, constraints) {
+                // Calculate number of columns based on screen width
+                // Each card should be approximately 160px wide
+                final cardWidth = 160.0;
+                final crossAxisCount = (constraints.maxWidth / cardWidth).floor().clamp(2, 6);
+                
+                return GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: crossAxisCount,
+                    childAspectRatio: 0.85,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                  ),
+                  itemCount: speedDials.length,
+                  itemBuilder: (context, index) {
+                    final speedDial = speedDials[index];
+                    return _buildSpeedDialCard(context, ref, speedDial);
+                  },
+                );
               },
             ),
           ],
@@ -176,7 +185,10 @@ class SpeedDialTab extends ConsumerWidget {
     WidgetRef ref,
     SpeedDial speedDial,
   ) async {
-    // Update assistant config with speed dial settings
+    // Save current assistant config to restore after call
+    final originalConfig = ref.read(assistantConfigProvider);
+    
+    // Temporarily update assistant config with speed dial settings
     ref.read(assistantConfigProvider.notifier).updateName(speedDial.name);
     ref.read(assistantConfigProvider.notifier).updateInstructions(speedDial.systemPrompt);
     ref.read(assistantConfigProvider.notifier).updateVoice(speedDial.voice);
@@ -192,6 +204,11 @@ class SpeedDialTab extends ConsumerWidget {
       ),
     );
     
+    // Restore original config after call ends
+    ref.read(assistantConfigProvider.notifier).updateName(originalConfig.name);
+    ref.read(assistantConfigProvider.notifier).updateInstructions(originalConfig.instructions);
+    ref.read(assistantConfigProvider.notifier).updateVoice(originalConfig.voice);
+    
     // Clear speed dial ID after call
     callService.setSpeedDialId(null);
   }
@@ -201,28 +218,32 @@ class SpeedDialTab extends ConsumerWidget {
     WidgetRef ref,
     SpeedDial speedDial,
   ) async {
-    final result = await showDialog<bool>(
+    final result = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(speedDial.name),
-        content: const Text('このスピードダイヤルを削除しますか？'),
+        content: const Text('操作を選択してください'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
+            onPressed: () => Navigator.of(context).pop('cancel'),
             child: const Text('キャンセル'),
           ),
           TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
+            onPressed: () => Navigator.of(context).pop('delete'),
             style: TextButton.styleFrom(
               foregroundColor: AppTheme.errorColor,
             ),
             child: const Text('削除'),
           ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop('edit'),
+            child: const Text('編集'),
+          ),
         ],
       ),
     );
 
-    if (result == true && context.mounted) {
+    if (result == 'delete' && context.mounted) {
       final storage = ref.read(storageServiceProvider);
       await storage.deleteSpeedDial(speedDial.id);
       
@@ -232,6 +253,123 @@ class SpeedDialTab extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('削除しました')),
+        );
+      }
+    } else if (result == 'edit' && context.mounted) {
+      await _showEditDialog(context, ref, speedDial);
+    }
+  }
+
+  Future<void> _showEditDialog(
+    BuildContext context,
+    WidgetRef ref,
+    SpeedDial speedDial,
+  ) async {
+    final formKey = GlobalKey<FormState>();
+    String name = speedDial.name;
+    String systemPrompt = speedDial.systemPrompt;
+    String voice = speedDial.voice;
+    String iconEmoji = speedDial.iconEmoji ?? '⭐';
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('スピードダイヤルを編集'),
+        content: SingleChildScrollView(
+          child: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  initialValue: name,
+                  decoration: const InputDecoration(
+                    labelText: '名前',
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return '名前を入力してください';
+                    }
+                    return null;
+                  },
+                  onSaved: (value) => name = value!,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  initialValue: systemPrompt,
+                  decoration: const InputDecoration(
+                    labelText: 'システムプロンプト',
+                    hintText: 'アシスタントの振る舞いを設定',
+                  ),
+                  maxLines: 3,
+                  onSaved: (value) => systemPrompt = value ?? '',
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  value: voice,
+                  decoration: const InputDecoration(
+                    labelText: '音声',
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 'alloy', child: Text('Alloy')),
+                    DropdownMenuItem(value: 'echo', child: Text('Echo')),
+                    DropdownMenuItem(value: 'shimmer', child: Text('Shimmer')),
+                  ],
+                  onChanged: (value) {
+                    if (value != null) voice = value;
+                  },
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  initialValue: iconEmoji,
+                  decoration: const InputDecoration(
+                    labelText: 'アイコン絵文字',
+                    hintText: '例: ⭐',
+                  ),
+                  maxLength: 2,
+                  onSaved: (value) => iconEmoji = value ?? '⭐',
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('キャンセル'),
+          ),
+          TextButton(
+            onPressed: () {
+              if (formKey.currentState!.validate()) {
+                formKey.currentState!.save();
+                Navigator.of(context).pop(true);
+              }
+            },
+            child: const Text('保存'),
+          ),
+        ],
+      ),
+    );
+
+    if (result == true && context.mounted) {
+      final storage = ref.read(storageServiceProvider);
+      final updatedSpeedDial = SpeedDial(
+        id: speedDial.id,
+        name: name,
+        systemPrompt: systemPrompt,
+        voice: voice,
+        iconEmoji: iconEmoji,
+        createdAt: speedDial.createdAt,
+      );
+      
+      await storage.updateSpeedDial(updatedSpeedDial);
+      
+      // Refresh the list
+      ref.invalidate(refreshableSpeedDialsProvider);
+      
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('更新しました')),
         );
       }
     }
