@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:typed_data';
+import 'dart:convert';
 import 'package:record/record.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'audio_recorder_service.dart';
@@ -8,10 +9,12 @@ import 'realtime_api_client.dart';
 import 'storage_service.dart';
 import 'tool_service.dart';
 import 'haptic_service.dart';
+import 'notepad_service.dart';
 import 'log_service.dart';
 import 'chat/chat_message_manager.dart';
 import '../config/app_config.dart';
 import '../models/chat_message.dart';
+import '../models/call_session.dart';
 import '../models/realtime_events.dart';
 import '../utils/audio_utils.dart';
 
@@ -34,6 +37,7 @@ class CallService {
   final StorageService _storage;
   final ToolService _toolService;
   final HapticService _hapticService;
+  final NotepadService _notepadService;
   final ChatMessageManager _chatManager = ChatMessageManager();
   
   /// Session-scoped tool manager (created on call start, disposed on call end)
@@ -65,6 +69,8 @@ class CallService {
   CallState _currentState = CallState.idle;
   int _callDuration = 0;
   bool _isMuted = false;
+  DateTime? _callStartTime;
+  String? _currentSpeedDialId;
 
   CallService({
     required AudioRecorderService recorder,
@@ -73,12 +79,14 @@ class CallService {
     required StorageService storage,
     required ToolService toolService,
     required HapticService hapticService,
+    required NotepadService notepadService,
   })  : _recorder = recorder,
         _player = player,
         _apiClient = apiClient,
         _storage = storage,
         _toolService = toolService,
-        _hapticService = hapticService;
+        _hapticService = hapticService,
+        _notepadService = notepadService;
 
   /// Current call state
   CallState get currentState => _currentState;
@@ -118,6 +126,11 @@ class CallService {
     if (_isMuted) {
       _amplitudeController.add(0.0);
     }
+  }
+
+  /// Set the current speed dial ID (call before startCall)
+  void setSpeedDialId(String? speedDialId) {
+    _currentSpeedDialId = speedDialId;
   }
 
   /// Check if Azure configuration exists
@@ -178,8 +191,8 @@ class CallService {
         return;
       }
 
-      // Create session-scoped tool manager
-      _toolManager = _toolService.createToolManager(
+      // Create session-scoped tool manager (async now)
+      _toolManager = await _toolService.createToolManager(
         onToolsChanged: _onToolsChanged,
       );
       _apiClient.setTools(_toolManager!.toolDefinitions);
@@ -195,6 +208,9 @@ class CallService {
       _setupAudioStream(audioStream);
       _setupAmplitudeMonitoring();
       _startCallTimer();
+      
+      // Track call start time for session saving
+      _callStartTime = DateTime.now();
 
       // Enable wake lock to prevent device sleep during call
       await _enableWakeLock();
@@ -363,9 +379,56 @@ class CallService {
       return;
     }
 
+    // Save session before cleanup
+    await _saveSession();
+    
     await _cleanup();
     _setState(CallState.idle);
     logService.info(_tag, 'Call ended');
+  }
+
+  Future<void> _saveSession() async {
+    if (_callStartTime == null || _callDuration == 0) {
+      logService.debug(_tag, 'Skipping session save (no meaningful data)');
+      return;
+    }
+
+    try {
+      // Convert chat messages to JSON strings
+      final chatMessagesJson = _chatManager.chatMessages
+          .map((msg) => jsonEncode({
+                'role': msg.role,
+                'content': msg.content,
+                'timestamp': msg.timestamp.toIso8601String(),
+              }))
+          .toList();
+
+      // Collect all notepad content
+      final notepadTabs = _notepadService.tabs;
+      String? notepadContent;
+      if (notepadTabs.isNotEmpty) {
+        // Combine all tabs with headers
+        notepadContent = notepadTabs.map((tab) {
+          final header = '# ${tab.title}\n\n';
+          return header + tab.content;
+        }).join('\n\n---\n\n');
+      }
+
+      final session = CallSession(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        startTime: _callStartTime!,
+        endTime: DateTime.now(),
+        duration: _callDuration,
+        chatMessages: chatMessagesJson,
+        notepadContent: notepadContent,
+        speedDialId: _currentSpeedDialId,
+      );
+
+      await _storage.saveCallSession(session);
+      logService.info(_tag, 'Session saved: ${session.id}');
+    } catch (e) {
+      logService.error(_tag, 'Failed to save session: $e');
+    }
   }
 
   Future<void> _cleanup() async {

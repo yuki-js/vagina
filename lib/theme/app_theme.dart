@@ -35,6 +35,154 @@ class AppTheme {
   /// Text color - Secondary
   static const Color textSecondary = Color(0xFFB8B8D1);
 
+  /// Light theme colors
+  static const Color lightBackgroundStart = Color(0xFFF5F7FA);
+  static const Color lightBackgroundEnd = Color(0xFFE8EDF2);
+  static const Color lightSurfaceColor = Color(0xFFFFFFFF);
+  static const Color lightTextPrimary = Color(0xFF1A1A2E);
+  static const Color lightTextSecondary = Color(0xFF6B7280);
+
+  /// Get the light theme
+  static ThemeData get lightTheme {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.light,
+      fontFamily: 'NotoSansJP',
+      fontFamilyFallback: const ['NotoSansJP', 'Noto Sans JP', 'Noto Sans CJK JP', 'sans-serif'],
+      textTheme: TextTheme(
+        displayLarge: const TextStyle(
+          fontWeight: FontWeight.w700,
+          fontVariations: [ui.FontVariation('wght', 700)],
+        ),
+        displayMedium: const TextStyle(
+          fontWeight: FontWeight.w700,
+          fontVariations: [ui.FontVariation('wght', 700)],
+        ),
+        displaySmall: const TextStyle(
+          fontWeight: FontWeight.w700,
+          fontVariations: [ui.FontVariation('wght', 700)],
+        ),
+        headlineLarge: const TextStyle(
+          fontWeight: FontWeight.w700,
+          fontVariations: [ui.FontVariation('wght', 700)],
+        ),
+        headlineMedium: const TextStyle(
+          fontWeight: FontWeight.w700,
+          fontVariations: [ui.FontVariation('wght', 700)],
+        ),
+        headlineSmall: const TextStyle(
+          fontWeight: FontWeight.w700,
+          fontVariations: [ui.FontVariation('wght', 700)],
+        ),
+        titleLarge: const TextStyle(
+          fontWeight: FontWeight.w600,
+          fontVariations: [ui.FontVariation('wght', 600)],
+        ),
+        titleMedium: const TextStyle(
+          fontWeight: FontWeight.w600,
+          fontVariations: [ui.FontVariation('wght', 600)],
+        ),
+        titleSmall: const TextStyle(
+          fontWeight: FontWeight.w600,
+          fontVariations: [ui.FontVariation('wght', 600)],
+        ),
+        bodyLarge: const TextStyle(
+          fontWeight: FontWeight.w500,
+          fontVariations: [ui.FontVariation('wght', 500)],
+        ),
+        bodyMedium: const TextStyle(
+          fontWeight: FontWeight.w500,
+          fontVariations: [ui.FontVariation('wght', 500)],
+        ),
+        bodySmall: const TextStyle(
+          fontWeight: FontWeight.w500,
+          fontVariations: [ui.FontVariation('wght', 500)],
+        ),
+        labelLarge: const TextStyle(
+          fontWeight: FontWeight.w600,
+          fontVariations: [ui.FontVariation('wght', 600)],
+        ),
+        labelMedium: const TextStyle(
+          fontWeight: FontWeight.w600,
+          fontVariations: [ui.FontVariation('wght', 600)],
+        ),
+        labelSmall: const TextStyle(
+          fontWeight: FontWeight.w600,
+          fontVariations: [ui.FontVariation('wght', 600)],
+        ),
+      ).apply(
+        bodyColor: lightTextPrimary,
+        displayColor: lightTextPrimary,
+      ),
+      colorScheme: ColorScheme.light(
+        primary: primaryColor,
+        secondary: secondaryColor,
+        surface: lightSurfaceColor,
+        error: errorColor,
+        onPrimary: Colors.white,
+        onSecondary: Colors.white,
+        onSurface: lightTextPrimary,
+        onError: Colors.white,
+      ),
+      scaffoldBackgroundColor: lightBackgroundStart,
+      appBarTheme: AppBarTheme(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+        titleTextStyle: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+          color: lightTextPrimary,
+        ),
+        iconTheme: IconThemeData(color: lightTextPrimary),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: primaryColor,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: primaryColor,
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: lightSurfaceColor,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: lightTextSecondary.withValues(alpha: 0.3)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: lightTextSecondary.withValues(alpha: 0.3)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: primaryColor, width: 2),
+        ),
+        labelStyle: TextStyle(color: lightTextSecondary, fontWeight: FontWeight.w500),
+        hintStyle: TextStyle(color: lightTextSecondary, fontWeight: FontWeight.w500),
+      ),
+      sliderTheme: SliderThemeData(
+        activeTrackColor: primaryColor,
+        inactiveTrackColor: lightTextSecondary.withValues(alpha: 0.2),
+        thumbColor: primaryColor,
+        overlayColor: primaryColor.withValues(alpha: 0.2),
+      ),
+      iconButtonTheme: IconButtonThemeData(
+        style: IconButton.styleFrom(
+          foregroundColor: lightTextPrimary,
+        ),
+      ),
+    );
+  }
+
   /// Get the dark theme
   static ThemeData get darkTheme {
     return ThemeData(
@@ -184,6 +332,17 @@ class AppTheme {
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: [backgroundStart, backgroundEnd],
+      ),
+    );
+  }
+
+  /// Light background gradient decoration
+  static BoxDecoration get lightBackgroundGradient {
+    return const BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [lightBackgroundStart, lightBackgroundEnd],
       ),
     );
   }

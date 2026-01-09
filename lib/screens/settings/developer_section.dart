@@ -14,7 +14,7 @@ class DeveloperSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ListTile(
-            leading: const Icon(Icons.article_outlined, color: AppTheme.textSecondary),
+            leading: const Icon(Icons.article_outlined, color: AppTheme.lightTextSecondary),
             title: const Text(
               'ログを表示',
               style: TextStyle(color: AppTheme.textPrimary),
@@ -22,11 +22,11 @@ class DeveloperSection extends StatelessWidget {
             subtitle: Text(
               'トレースログとWebSocketイベントを確認',
               style: TextStyle(
-                color: AppTheme.textSecondary.withValues(alpha: 0.7),
+                color: AppTheme.lightTextSecondary.withValues(alpha: 0.7),
                 fontSize: 12,
               ),
             ),
-            trailing: const Icon(Icons.chevron_right, color: AppTheme.textSecondary),
+            trailing: const Icon(Icons.chevron_right, color: AppTheme.lightTextSecondary),
             onTap: () {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (context) => const LogScreen()),

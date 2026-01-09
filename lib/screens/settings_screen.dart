@@ -8,7 +8,6 @@ import 'settings/azure_config_section.dart';
 import 'settings/voice_settings_section.dart';
 import 'settings/android_audio_section.dart';
 import 'settings/developer_section.dart';
-import 'settings/about_section.dart';
 
 /// Settings screen for API configuration
 class SettingsScreen extends ConsumerWidget {
@@ -19,7 +18,7 @@ class SettingsScreen extends ConsumerWidget {
     return AppScaffold(
       title: '設定',
       body: Container(
-        decoration: AppTheme.backgroundGradient,
+        decoration: AppTheme.lightBackgroundGradient,
         child: CustomScrollView(
           slivers: [
             SliverPadding(
@@ -53,12 +52,6 @@ class SettingsScreen extends ConsumerWidget {
                   const SectionHeader(title: '開発者向け'),
                   const SizedBox(height: 12),
                   const DeveloperSection(),
-                  const SizedBox(height: 24),
-                  
-                  // About Section
-                  const SectionHeader(title: 'このアプリについて'),
-                  const SizedBox(height: 12),
-                  const AboutSection(),
                   const SizedBox(height: 32),
                 ]),
               ),

@@ -1,28 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../theme/app_theme.dart';
-import '../providers/providers.dart';
-import '../components/title_bar.dart';
-import 'call/call_page.dart';
-import 'chat/chat_page.dart';
-import 'notepad/notepad_page.dart';
-import 'settings_screen.dart';
+import '../../theme/app_theme.dart';
+import '../../providers/providers.dart';
+import '../../components/title_bar.dart';
+import '../chat/chat_page.dart';
+import '../notepad/notepad_page.dart';
+import '../settings_screen.dart';
+import 'call_page.dart';
 
-/// Main home screen with PageView for swipe navigation between chat, call, and artifacts
-/// Layout: Chat (left) -> Call (center) -> Artifacts (right)
-class HomeScreen extends ConsumerStatefulWidget {
-  const HomeScreen({super.key});
+/// Call screen with PageView for swipe navigation between chat, call, and notepad
+/// Layout: Chat (left) ← Call (center) → Notepad (right)
+/// Dark theme for focused calling experience
+class CallScreen extends ConsumerStatefulWidget {
+  const CallScreen({super.key});
 
   @override
-  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+  ConsumerState<CallScreen> createState() => _CallScreenState();
 }
 
-class _HomeScreenState extends ConsumerState<HomeScreen> {
-  /// Page indices for navigation (reversed order per requirements)
-  /// Chat on left, Call in center, Artifacts on right
+class _CallScreenState extends ConsumerState<CallScreen> {
+  /// Page indices for navigation
+  /// Chat on left, Call in center, Notepad on right
   static const int _chatPageIndex = 0;
   static const int _callPageIndex = 1;
-  static const int _artifactPageIndex = 2;
+  static const int _notepadPageIndex = 2;
 
   late final PageController _pageController;
   int _currentPageIndex = _callPageIndex;
@@ -33,6 +34,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     // Start on the call page (center)
     _pageController = PageController(initialPage: _callPageIndex);
     _pageController.addListener(_onPageChanged);
+    
+    // Auto-start call when screen opens
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _startCallIfNeeded();
+    });
   }
 
   @override
@@ -53,6 +59,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
   }
 
+  Future<void> _startCallIfNeeded() async {
+    final callService = ref.read(callServiceProvider);
+    final isActive = ref.read(isCallActiveProvider);
+    
+    // Only start if not already active
+    if (!isActive) {
+      await callService.startCall();
+    }
+  }
+
   void _goToChat() {
     _pageController.animateToPage(
       _chatPageIndex,
@@ -69,9 +85,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  void _goToArtifact() {
+  void _goToNotepad() {
     _pageController.animateToPage(
-      _artifactPageIndex,
+      _notepadPageIndex,
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
     );
@@ -84,6 +100,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   void _showSnackBar(String message, {bool isError = false}) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
@@ -95,22 +112,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   void _handleBackButton() {
     if (_currentPageIndex == _chatPageIndex ||
-        _currentPageIndex == _artifactPageIndex) {
+        _currentPageIndex == _notepadPageIndex) {
       _goToCall();
     } else {
-      final isCallActive = ref.read(isCallActiveProvider);
-      if (isCallActive) {
-        _showSnackBar('通話を終了してからアプリを閉じてください', isError: true);
-      }
+      // On call page, allow navigation back to home
+      Navigator.of(context).pop();
     }
   }
 
   bool get _canPop {
+    // Can't pop if on side pages (must go to call page first)
     if (_currentPageIndex == _chatPageIndex ||
-        _currentPageIndex == _artifactPageIndex) {
+        _currentPageIndex == _notepadPageIndex) {
       return false;
     }
-    return !ref.read(isCallActiveProvider);
+    // Can pop from call page
+    return true;
   }
 
   @override
@@ -129,30 +146,33 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           _handleBackButton();
         }
       },
-      child: Scaffold(
-        body: Column(
-          children: [
-            // Custom title bar for desktop platforms
-            const CustomTitleBar(),
-            Expanded(
-              child: Container(
-                decoration: AppTheme.backgroundGradient,
-                child: SafeArea(
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      // Use multi-column layout for wide screens (>= 900px)
-                      if (constraints.maxWidth >= 900) {
-                        return _buildThreeColumnLayout();
-                      } else {
-                        // Use PageView for mobile/narrow screens
-                        return _buildPageViewLayout();
-                      }
-                    },
+      child: Theme(
+        data: AppTheme.darkTheme, // Force dark theme for call screen
+        child: Scaffold(
+          body: Column(
+            children: [
+              // Custom title bar for desktop platforms
+              const CustomTitleBar(),
+              Expanded(
+                child: Container(
+                  decoration: AppTheme.backgroundGradient,
+                  child: SafeArea(
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        // Use multi-column layout for wide screens (>= 900px)
+                        if (constraints.maxWidth >= 900) {
+                          return _buildThreeColumnLayout();
+                        } else {
+                          // Use PageView for mobile/narrow screens
+                          return _buildPageViewLayout();
+                        }
+                      },
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -169,10 +189,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         // Call in center
         CallPage(
           onChatPressed: _goToChat,
-          onNotepadPressed: _goToArtifact,
+          onNotepadPressed: _goToNotepad,
           onSettingsPressed: _openSettings,
         ),
-        // Artifacts on right (swipe left to go to call)
+        // Notepad on right (swipe left to go to call)
         NotepadPage(
           onBackPressed: _goToCall,
         ),
@@ -213,11 +233,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
             child: CallPage(
               onChatPressed: () {}, // No navigation needed in 3-column layout
-              onNotepadPressed:
-                  () {}, // No navigation needed in 3-column layout
+              onNotepadPressed: () {}, // No navigation needed in 3-column layout
               onSettingsPressed: _openSettings,
-              hideNavigationButtons:
-                  true, // Hide chat/notepad buttons in 3-column layout
+              hideNavigationButtons: true, // Hide chat/notepad buttons in 3-column layout
             ),
           ),
         ),

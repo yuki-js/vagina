@@ -19,18 +19,19 @@ class _ChatInputState extends ConsumerState<ChatInput> {
   static const _tag = 'ChatInput';
   final TextEditingController _textController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
-  final FocusNode? _keyboardListenerFocusNode = PlatformCompat.isWindows ? FocusNode() : null;
+  final FocusNode? _keyboardListenerFocusNode =
+      PlatformCompat.isWindows ? FocusNode() : null;
 
   @override
   void initState() {
     super.initState();
-    
+
     // Add listener for debugging on Windows
     if (PlatformCompat.isWindows) {
       _textController.addListener(() {
         logService.debug(_tag, 'Text changed: "${_textController.text}"');
       });
-      
+
       _focusNode.addListener(() {
         logService.debug(_tag, 'Focus changed: ${_focusNode.hasFocus}');
       });
@@ -48,16 +49,17 @@ class _ChatInputState extends ConsumerState<ChatInput> {
   void _sendMessage() {
     final text = _textController.text.trim();
     if (text.isEmpty) return;
-    
+
     final callService = ref.read(callServiceProvider);
     callService.sendTextMessage(text);
     _textController.clear();
     _focusNode.requestFocus();
   }
-  
+
   void _handleKeyEvent(KeyEvent event) {
     if (PlatformCompat.isWindows) {
-      logService.debug(_tag, 'Key event: ${event.logicalKey}, character: ${event.character}');
+      logService.debug(_tag,
+          'Key event: ${event.logicalKey}, character: ${event.character}');
     }
   }
 
@@ -82,7 +84,7 @@ class _ChatInputState extends ConsumerState<ChatInput> {
       ),
       onSubmitted: (_) => _sendMessage(),
     );
-    
+
     // Wrap with KeyboardListener for debugging on Windows
     if (PlatformCompat.isWindows && _keyboardListenerFocusNode != null) {
       textField = KeyboardListener(
@@ -91,7 +93,7 @@ class _ChatInputState extends ConsumerState<ChatInput> {
         child: textField,
       );
     }
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -102,13 +104,21 @@ class _ChatInputState extends ConsumerState<ChatInput> {
         children: [
           Expanded(child: textField),
           const SizedBox(width: 8),
-          FloatingActionButton(
-            mini: true,
+          IconButton(
             onPressed: widget.isConnected ? _sendMessage : null,
-            backgroundColor: widget.isConnected 
-                ? AppTheme.primaryColor 
-                : AppTheme.textSecondary,
-            child: const Icon(Icons.send, color: Colors.white),
+            icon: Icon(
+              Icons.send,
+              color: Colors.white,
+            ),
+            style: IconButton.styleFrom(
+              backgroundColor: widget.isConnected
+                  ? AppTheme.primaryColor
+                  : AppTheme.textSecondary,
+              padding: const EdgeInsets.all(12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
+            ),
           ),
         ],
       ),
