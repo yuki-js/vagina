@@ -24,14 +24,20 @@ class _VoiceVisualizerGameState extends State<VoiceVisualizerGame>
   
   bool _isRecording = false;
   bool _hasPermission = false;
-  final List<double> _audioLevels = List.filled(50, 0.0);
+  final List<double> _audioLevels = <double>[];  // Growable list
   double _currentAmplitude = 0.0;
   StreamSubscription<Amplitude>? _amplitudeSubscription;
   StreamSubscription<Uint8List>? _audioStreamSubscription;
+  final int _maxBars = 50;
 
   @override
   void initState() {
     super.initState();
+
+    // Initialize with zeros
+    for (int i = 0; i < _maxBars; i++) {
+      _audioLevels.add(0.0);
+    }
 
     _pulseController = AnimationController(
       vsync: this,
@@ -118,7 +124,9 @@ class _VoiceVisualizerGameState extends State<VoiceVisualizerGame>
               setState(() {
                 _currentAmplitude = normalizedAmplitude;
                 // Shift levels and add new one
-                _audioLevels.removeAt(0);
+                if (_audioLevels.length >= _maxBars) {
+                  _audioLevels.removeAt(0);
+                }
                 _audioLevels.add(normalizedAmplitude);
               });
             }

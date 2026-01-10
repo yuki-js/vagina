@@ -2,23 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../theme/app_theme.dart';
 import '../../data/permission_manager.dart';
+import '../../components/permission_card.dart';
 
-/// Permission item configuration
-class PermissionItem {
-  final String title;
-  final String description;
-  final IconData icon;
-  final bool isRequired;
-  bool isGranted;
-
-  PermissionItem({
-    required this.title,
-    required this.description,
-    required this.icon,
-    required this.isRequired,
-    required this.isGranted,
-  });
-}
+export '../../components/permission_card.dart';
 
 /// Fourth OOBE screen - Permissions and preferences setup
 class PermissionsScreen extends StatefulWidget {
@@ -52,25 +38,27 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
     final micStatus = await Permission.microphone.status;
     final storageGranted = await _permissionManager.hasStoragePermission();
 
-    setState(() {
-      _permissions = [
-        PermissionItem(
-          title: 'マイク',
-          description: '音声での会話に必要です',
-          icon: Icons.mic,
-          isRequired: true,
-          isGranted: micStatus.isGranted,
-        ),
-        PermissionItem(
-          title: 'ストレージ',
-          description: '会話履歴やメモを保存します',
-          icon: Icons.storage,
-          isRequired: false,
-          isGranted: storageGranted,
-        ),
-      ];
-      _isLoading = false;
-    });
+    if (mounted) {
+      setState(() {
+        _permissions = [
+          PermissionItem(
+            title: 'マイク',
+            description: '音声での会話に必要です',
+            icon: Icons.mic,
+            isRequired: true,
+            isGranted: micStatus.isGranted,
+          ),
+          PermissionItem(
+            title: 'ストレージ',
+            description: '会話履歴やメモを保存します',
+            icon: Icons.storage,
+            isRequired: false,
+            isGranted: storageGranted,
+          ),
+        ];
+        _isLoading = false;
+      });
+    }
   }
 
   Future<void> _handlePermissionRequest(PermissionItem permission) async {
@@ -153,7 +141,6 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
   }
 
   bool get _canContinue {
-    // Can continue if all required permissions are granted
     return _permissions
         .where((p) => p.isRequired)
         .every((p) => p.isGranted);
@@ -188,30 +175,13 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 32),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 24),
-
-                  // Icon
-                  Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: AppTheme.primaryColor.withValues(alpha: 0.2),
-                    ),
-                    child: const Icon(
-                      Icons.security,
-                      size: 50,
-                      color: AppTheme.primaryColor,
-                    ),
-                  ),
-
-                  const SizedBox(height: 32),
 
                   // Title
                   const Text(
                     '権限の設定',
-                    textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
@@ -224,7 +194,6 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
 
                   Text(
                     'VAGINAを最大限に活用するために、\nいくつかの権限が必要です',
-                    textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.white.withValues(alpha: 0.7),
@@ -237,7 +206,10 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
                   // Permission items
                   ..._permissions.map((permission) => Padding(
                         padding: const EdgeInsets.only(bottom: 16),
-                        child: _buildPermissionCard(permission),
+                        child: PermissionCard(
+                          permission: permission,
+                          onRequest: () => _handlePermissionRequest(permission),
+                        ),
                       )),
 
                   const SizedBox(height: 32),
@@ -283,13 +255,15 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
                   const SizedBox(height: 16),
 
                   // Skip button
-                  TextButton(
-                    onPressed: widget.onContinue,
-                    child: Text(
-                      'あとで設定する',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.white.withValues(alpha: 0.6),
+                  Center(
+                    child: TextButton(
+                      onPressed: widget.onContinue,
+                      child: Text(
+                        'あとで設定する',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.white.withValues(alpha: 0.6),
+                        ),
                       ),
                     ),
                   ),
@@ -299,125 +273,6 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
               ),
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPermissionCard(PermissionItem permission) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: permission.isGranted
-              ? AppTheme.successColor.withValues(alpha: 0.5)
-              : Colors.white.withValues(alpha: 0.1),
-          width: 1.5,
-        ),
-      ),
-      child: Row(
-        children: [
-          // Icon
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: permission.isGranted
-                  ? AppTheme.successColor.withValues(alpha: 0.2)
-                  : AppTheme.primaryColor.withValues(alpha: 0.2),
-            ),
-            child: Icon(
-              permission.isGranted ? Icons.check : permission.icon,
-              color: permission.isGranted
-                  ? AppTheme.successColor
-                  : AppTheme.primaryColor,
-              size: 24,
-            ),
-          ),
-
-          const SizedBox(width: 16),
-
-          // Text content
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      permission.title,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    if (permission.isRequired) ...[
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppTheme.errorColor.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          '必須',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.errorColor,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  permission.description,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.white.withValues(alpha: 0.6),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(width: 12),
-
-          // Action button
-          if (!permission.isGranted)
-            OutlinedButton(
-              onPressed: () => _handlePermissionRequest(permission),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppTheme.primaryColor,
-                side: const BorderSide(
-                  color: AppTheme.primaryColor,
-                  width: 1.5,
-                ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: const Text(
-                '許可',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
         ],
       ),
     );

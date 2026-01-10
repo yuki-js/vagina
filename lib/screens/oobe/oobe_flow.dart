@@ -69,7 +69,7 @@ class _OOBEFlowState extends ConsumerState<OOBEFlow> {
             ),
           );
         },
-        transitionDuration: const Duration(milliseconds: 1200), // Slower for elegance
+        transitionDuration: const Duration(milliseconds: 2000), // Elegant slow transition
       ),
     );
   }
@@ -82,21 +82,10 @@ class _OOBEFlowState extends ConsumerState<OOBEFlow> {
         switchInCurve: Curves.easeInOut,
         switchOutCurve: Curves.easeInOut,
         transitionBuilder: (Widget child, Animation<double> animation) {
-          // Slide transition for page changes
-          final offsetAnimation = Tween<Offset>(
-            begin: const Offset(1.0, 0.0),
-            end: Offset.zero,
-          ).animate(CurvedAnimation(
-            parent: animation,
-            curve: Curves.easeInOutCubic,
-          ));
-
-          return SlideTransition(
-            position: offsetAnimation,
-            child: FadeTransition(
-              opacity: animation,
-              child: child,
-            ),
+          // Simple fade transition - more natural than slide
+          return FadeTransition(
+            opacity: animation,
+            child: child,
           );
         },
         child: _buildCurrentPage(),

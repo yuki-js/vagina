@@ -150,31 +150,22 @@ class _DiveInScreenState extends State<DiveInScreen>
                   const SizedBox(height: 64),
 
                   // Start button (FAB for smooth morphing transition)
-                  FloatingActionButton(
+                  FloatingActionButton.extended(
                     onPressed: widget.onStart,
                     backgroundColor: AppTheme.successColor,
                     elevation: 6,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(28),
+                    icon: const Icon(
+                      Icons.phone,
+                      size: 24,
+                      color: Colors.white,
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: const [
-                        Icon(
-                          Icons.phone,
-                          size: 24,
-                          color: Colors.white,
-                        ),
-                        SizedBox(width: 8),
-                        Text(
-                          'はじめる',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
+                    label: const Text(
+                      'はじめる',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
 
