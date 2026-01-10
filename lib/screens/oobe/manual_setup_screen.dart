@@ -26,7 +26,6 @@ class _ManualSetupScreenState extends ConsumerState<ManualSetupScreen> {
   final _apiKeyController = TextEditingController();
   bool _isApiKeyVisible = false;
   bool _isSaving = false;
-  bool _isTesting = false;
 
   @override
   void initState() {
@@ -89,41 +88,7 @@ class _ManualSetupScreenState extends ConsumerState<ManualSetupScreen> {
 
     setState(() => _isSaving = true);
 
-    try {
-      final config = ref.read(configRepositoryProvider);
-      await config.saveRealtimeUrl(_realtimeUrlController.text.trim());
-      await config.saveApiKey(_apiKeyController.text.trim());
-      
-      if (mounted) {
-        widget.onContinue();
-      }
-    } catch (e) {
-      _showSnackBar('保存に失敗しました: $e', isError: true);
-    } finally {
-      if (mounted) {
-        setState(() => _isSaving = false);
-      }
-    }
-  }
-
-  Future<void> _testConnection() async {
-    if (_realtimeUrlController.text.trim().isEmpty) {
-      _showSnackBar('Realtime URLを入力してください', isError: true);
-      return;
-    }
-    if (_apiKeyController.text.trim().isEmpty) {
-      _showSnackBar('APIキーを入力してください', isError: true);
-      return;
-    }
-
-    final parsed = UrlUtils.parseAzureRealtimeUrl(_realtimeUrlController.text.trim());
-    if (parsed == null) {
-      _showSnackBar('Realtime URLの形式が正しくありません', isError: true);
-      return;
-    }
-
-    setState(() => _isTesting = true);
-
+    // Test connection before saving
     RealtimeApiClient? apiClient;
     try {
       apiClient = RealtimeApiClient();
@@ -142,14 +107,21 @@ class _ManualSetupScreenState extends ConsumerState<ManualSetupScreen> {
       await apiClient.dispose();
       apiClient = null;
       
-      _showSnackBar('接続テスト成功');
+      // Connection successful, save the config
+      final config = ref.read(configRepositoryProvider);
+      await config.saveRealtimeUrl(_realtimeUrlController.text.trim());
+      await config.saveApiKey(_apiKeyController.text.trim());
+      
+      if (mounted) {
+        widget.onContinue();
+      }
     } catch (e) {
-      _showSnackBar('接続テスト失敗: $e', isError: true);
+      _showSnackBar('接続に失敗しました: $e', isError: true);
       await apiClient?.disconnect();
       await apiClient?.dispose();
     } finally {
       if (mounted) {
-        setState(() => _isTesting = false);
+        setState(() => _isSaving = false);
       }
     }
   }
@@ -296,47 +268,11 @@ class _ManualSetupScreenState extends ConsumerState<ManualSetupScreen> {
 
                   const SizedBox(height: 32),
 
-                  // Test connection button
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton(
-                      onPressed: _isTesting || _isSaving ? null : _testConnection,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        side: BorderSide(
-                          color: Colors.white.withValues(alpha: 0.3),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: _isTesting
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Text(
-                              '接続テスト',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-
                   // Continue button
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: _isTesting || _isSaving ? null : _saveAndContinue,
+                      onPressed: _isSaving ? null : _saveAndContinue,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppTheme.primaryColor,
                         foregroundColor: Colors.white,

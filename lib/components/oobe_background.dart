@@ -94,7 +94,7 @@ class OOBEParticlePainter extends CustomPainter {
       final x = size.width / 2 + math.cos(angle) * radius;
       final y = size.height / 2 + math.sin(angle) * radius;
 
-      final particleSize = 4.0 + (i % 3) * 2;
+      final particleSize = 2.0 + (i % 3) * 1.0;
 
       canvas.drawCircle(
         Offset(x, y),

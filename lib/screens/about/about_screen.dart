@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import '../theme/app_theme.dart';
+import '../../theme/app_theme.dart';
 import 'constellation_game.dart';
+import 'voice_echo_game.dart';
 
 /// About page with app information and philosophy
 class AboutScreen extends StatefulWidget {
@@ -13,6 +14,7 @@ class AboutScreen extends StatefulWidget {
 class _AboutScreenState extends State<AboutScreen> {
   int _tapCount = 0;
   static const int _requiredTaps = 7;
+  int _easterEggIndex = 0; // Alternates between easter eggs
 
   void _handleTitleTap() {
     setState(() {
@@ -20,13 +22,21 @@ class _AboutScreenState extends State<AboutScreen> {
     });
 
     if (_tapCount >= _requiredTaps) {
-      // Reset counter and navigate to hidden constellation game
+      // Reset counter and navigate to hidden easter egg
       setState(() {
         _tapCount = 0;
       });
+      
+      // Alternate between the two easter eggs
+      final easterEgg = _easterEggIndex % 2 == 0
+          ? const ConstellationGame()
+          : const VoiceEchoGame();
+      
+      _easterEggIndex++;
+      
       Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (context) => const ConstellationGame(),
+          builder: (context) => easterEgg,
         ),
       );
     }

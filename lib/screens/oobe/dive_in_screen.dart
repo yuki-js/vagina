@@ -159,6 +159,9 @@ class _DiveInScreenState extends State<DiveInScreen>
                         onPressed: widget.onStart,
                         backgroundColor: AppTheme.successColor,
                         elevation: 6,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(32),
+                        ),
                         icon: const Icon(
                           Icons.phone,
                           size: 28,
@@ -177,17 +180,6 @@ class _DiveInScreenState extends State<DiveInScreen>
                     ),
                   ),
 
-                  const SizedBox(height: 24),
-
-                  Text(
-                    'Let\'s dive in!',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontStyle: FontStyle.italic,
-                      color: Colors.white.withValues(alpha: 0.5),
-                      letterSpacing: 1,
-                    ),
-                  ),
                 ],
               ),
             ),
