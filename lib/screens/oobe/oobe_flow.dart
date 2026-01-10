@@ -7,6 +7,7 @@ import 'manual_setup_screen.dart';
 import 'permissions_screen.dart';
 import 'dive_in_screen.dart';
 import '../home/home_screen.dart';
+import '../../repositories/preferences_repository.dart';
 
 /// Main OOBE flow coordinator with navigation and page management
 class OOBEFlow extends ConsumerStatefulWidget {
@@ -33,7 +34,14 @@ class _OOBEFlowState extends ConsumerState<OOBEFlow> {
     }
   }
 
-  void _completeOOBE() {
+  void _completeOOBE() async {
+    // Mark first launch as completed
+    final prefs = PreferencesRepository();
+    await prefs.initialize();
+    await prefs.markFirstLaunchCompleted();
+    
+    if (!mounted) return;
+
     // Navigate to HomeScreen with elegant transition
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(

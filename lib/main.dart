@@ -71,11 +71,6 @@ class _VaginaAppState extends State<VaginaApp> {
         _isLoading = false;
       });
     }
-
-    // If first launch, mark as completed when OOBE flow finishes
-    if (isFirst) {
-      await prefs.markFirstLaunchCompleted();
-    }
   }
 
   @override
