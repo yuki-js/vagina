@@ -17,7 +17,7 @@ class DeveloperSection extends StatelessWidget {
             leading: const Icon(Icons.article_outlined, color: AppTheme.lightTextSecondary),
             title: const Text(
               'ログを表示',
-              style: TextStyle(color: AppTheme.textPrimary),
+              style: TextStyle(color: AppTheme.lightTextPrimary),
             ),
             subtitle: Text(
               'トレースログとWebSocketイベントを確認',

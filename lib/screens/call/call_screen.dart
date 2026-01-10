@@ -65,6 +65,13 @@ class _CallScreenState extends ConsumerState<CallScreen> {
     
     // Only start if not already active
     if (!isActive) {
+      // Set assistant config from provider before starting call
+      final assistantConfig = ref.read(assistantConfigProvider);
+      callService.setAssistantConfig(
+        assistantConfig.voice,
+        assistantConfig.instructions,
+      );
+      
       await callService.startCall();
     }
   }

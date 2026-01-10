@@ -1,11 +1,11 @@
 import '../base_tool.dart';
-import '../../storage_service.dart';
+import '../../../interfaces/memory_repository.dart';
 
 /// Tool for deleting information from long-term memory
 class MemoryDeleteTool extends BaseTool {
-  final StorageService _storage;
+  final MemoryRepository _memoryRepo;
   
-  MemoryDeleteTool({required StorageService storage}) : _storage = storage;
+  MemoryDeleteTool({required MemoryRepository memoryRepository}) : _memoryRepo = memoryRepository;
   
   @override
   String get name => 'memory_delete';
@@ -31,14 +31,14 @@ class MemoryDeleteTool extends BaseTool {
     final key = arguments['key'] as String;
     
     if (key == 'all') {
-      await _storage.deleteAllMemories();
+      await _memoryRepo.deleteAll();
       return {
         'success': true,
         'message': 'All memories deleted successfully',
       };
     }
     
-    final existed = await _storage.deleteMemory(key);
+    final existed = await _memoryRepo.delete(key);
     if (!existed) {
       return {
         'success': false,

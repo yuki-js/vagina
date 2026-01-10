@@ -89,9 +89,9 @@ class _LogScreenState extends State<LogScreen> {
       case 'WS':
         return Colors.cyan;
       case 'DEBUG':
-        return Colors.grey;
+        return AppTheme.lightTextSecondary;
       default:
-        return AppTheme.textPrimary;
+        return AppTheme.lightTextPrimary;
     }
   }
 
@@ -106,7 +106,7 @@ class _LogScreenState extends State<LogScreen> {
         IconButton(
           icon: Icon(
             _autoScroll ? Icons.vertical_align_bottom : Icons.vertical_align_center,
-            color: _autoScroll ? AppTheme.primaryColor : AppTheme.textSecondary,
+            color: _autoScroll ? AppTheme.primaryColor : AppTheme.lightTextSecondary,
           ),
           onPressed: () {
             setState(() {
@@ -116,29 +116,37 @@ class _LogScreenState extends State<LogScreen> {
           tooltip: '自動スクロール',
         ),
         IconButton(
-          icon: const Icon(Icons.copy),
+          icon: const Icon(Icons.copy, color: AppTheme.lightTextSecondary),
           onPressed: _copyLogs,
           tooltip: 'コピー',
         ),
         IconButton(
-          icon: const Icon(Icons.delete_outline),
+          icon: const Icon(Icons.delete_outline, color: AppTheme.lightTextSecondary),
           onPressed: _clearLogs,
           tooltip: 'クリア',
         ),
       ],
       body: Container(
-        decoration: AppTheme.backgroundGradient,
+        decoration: AppTheme.lightBackgroundGradient,
         child: Column(
           children: [
             // Filter input
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: TextField(
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   hintText: 'フィルター...',
-                  prefixIcon: Icon(Icons.search),
+                  hintStyle: TextStyle(color: AppTheme.lightTextSecondary.withValues(alpha: 0.5)),
+                  prefixIcon: const Icon(Icons.search, color: AppTheme.lightTextSecondary),
                   isDense: true,
+                  filled: true,
+                  fillColor: AppTheme.lightSurfaceColor,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide.none,
+                  ),
                 ),
+                style: const TextStyle(color: AppTheme.lightTextPrimary),
                 onChanged: (value) {
                   setState(() {
                     _filter = value;
@@ -158,12 +166,12 @@ class _LogScreenState extends State<LogScreen> {
                     '${logs.length} エントリ',
                     style: TextStyle(
                       fontSize: 12,
-                      color: AppTheme.textSecondary.withValues(alpha: 0.7),
+                      color: AppTheme.lightTextSecondary.withValues(alpha: 0.7),
                     ),
                   ),
                   const Spacer(),
                   // Level legend
-                  _buildLegend('INFO', AppTheme.textPrimary),
+                  _buildLegend('INFO', AppTheme.lightTextPrimary),
                   _buildLegend('WS', Colors.cyan),
                   _buildLegend('WARN', AppTheme.warningColor),
                   _buildLegend('ERR', AppTheme.errorColor),
@@ -178,14 +186,17 @@ class _LogScreenState extends State<LogScreen> {
               child: Container(
                 margin: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.black87,
+                  color: AppTheme.lightSurfaceColor,
                   borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: AppTheme.lightTextSecondary.withValues(alpha: 0.2),
+                  ),
                 ),
                 child: logs.isEmpty
-                    ? const Center(
+                    ? Center(
                         child: Text(
                           'ログがありません',
-                          style: TextStyle(color: Colors.grey),
+                          style: TextStyle(color: AppTheme.lightTextSecondary),
                         ),
                       )
                     : ListView.builder(
@@ -234,7 +245,7 @@ class _LogScreenState extends State<LogScreen> {
             label,
             style: TextStyle(
               fontSize: 10,
-              color: AppTheme.textSecondary.withValues(alpha: 0.7),
+              color: AppTheme.lightTextSecondary.withValues(alpha: 0.7),
             ),
           ),
         ],

@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:record/record.dart';
-import '../services/storage_service.dart';
 import '../services/notepad_service.dart';
 import '../services/audio_recorder_service.dart';
 import '../services/audio_player_service.dart';
@@ -15,13 +14,10 @@ import '../models/notepad_tab.dart';
 import '../models/android_audio_config.dart';
 import '../models/call_session.dart';
 import '../models/speed_dial.dart';
+import '../repositories/repository_factory.dart';
+import 'repository_providers.dart';
 
 // Core providers
-
-/// Provider for the storage service
-final storageServiceProvider = Provider<StorageService>((ref) {
-  return StorageService();
-});
 
 /// Provider for the artifact service
 final notepadServiceProvider = Provider<NotepadService>((ref) {
@@ -32,14 +28,14 @@ final notepadServiceProvider = Provider<NotepadService>((ref) {
 
 /// Provider for checking if API key exists
 final hasApiKeyProvider = FutureProvider<bool>((ref) async {
-  final storage = ref.read(storageServiceProvider);
-  return await storage.hasApiKey();
+  final config = ref.read(configRepositoryProvider);
+  return await config.hasApiKey();
 });
 
 /// Provider for the API key
 final apiKeyProvider = FutureProvider<String?>((ref) async {
-  final storage = ref.read(storageServiceProvider);
-  return await storage.getApiKey();
+  final config = ref.read(configRepositoryProvider);
+  return await config.getApiKey();
 });
 
 // Audio providers
@@ -93,9 +89,8 @@ final realtimeApiClientProvider = Provider<RealtimeApiClient>((ref) {
 
 /// Provider for the tool service
 final toolServiceProvider = Provider<ToolService>((ref) {
-  final storage = ref.read(storageServiceProvider);
   final notepadService = ref.read(notepadServiceProvider);
-  return ToolService(storage: storage, notepadService: notepadService);
+  return ToolService(notepadService: notepadService);
 });
 
 /// Provider for the haptic service
@@ -109,7 +104,7 @@ final callServiceProvider = Provider<CallService>((ref) {
     recorder: ref.read(audioRecorderServiceProvider),
     player: ref.read(audioPlayerServiceProvider),
     apiClient: ref.read(realtimeApiClientProvider),
-    storage: ref.read(storageServiceProvider),
+    config: ref.read(configRepositoryProvider),
     toolService: ref.read(toolServiceProvider),
     hapticService: ref.read(hapticServiceProvider),
     notepadService: ref.read(notepadServiceProvider),
@@ -234,11 +229,11 @@ final androidAudioConfigProvider =
 class AndroidAudioConfigNotifier extends AsyncNotifier<AndroidAudioConfig> {
   @override
   Future<AndroidAudioConfig> build() async {
-    final storage = ref.read(storageServiceProvider);
-    final config = await storage.getAndroidAudioConfig();
+    final config = ref.read(configRepositoryProvider);
+    final audioConfig = await config.getAndroidAudioConfig();
     // Apply config to recorder service
-    ref.read(audioRecorderServiceProvider).setAndroidAudioConfig(config);
-    return config;
+    ref.read(audioRecorderServiceProvider).setAndroidAudioConfig(audioConfig);
+    return audioConfig;
   }
 
   /// Update the audio source
@@ -257,8 +252,8 @@ class AndroidAudioConfigNotifier extends AsyncNotifier<AndroidAudioConfig> {
 
   /// Save and apply the configuration
   Future<void> _saveAndApply(AndroidAudioConfig config) async {
-    final storage = ref.read(storageServiceProvider);
-    await storage.saveAndroidAudioConfig(config);
+    final configRepo = ref.read(configRepositoryProvider);
+    await configRepo.saveAndroidAudioConfig(config);
     ref.read(audioRecorderServiceProvider).setAndroidAudioConfig(config);
     state = AsyncData(config);
   }
@@ -286,40 +281,36 @@ final selectedNotepadTabIdProvider = StreamProvider<String?>((ref) {
 
 // Speed Dial providers
 
-/// Provider for speed dials
+/// Provider for speed dials (uses repository)
 final speedDialsProvider = FutureProvider<List<SpeedDial>>((ref) async {
-  final storage = ref.read(storageServiceProvider);
-  return await storage.getSpeedDials();
+  return await RepositoryFactory.speedDials.getAll();
 });
 
 /// Provider to refresh speed dials
 final speedDialsRefreshProvider = NotifierProvider<RefreshNotifier, int>(RefreshNotifier.new);
 
-/// Provider for speed dials that auto-refreshes
+/// Provider for speed dials that auto-refreshes (uses repository)
 final refreshableSpeedDialsProvider = FutureProvider<List<SpeedDial>>((ref) async {
   // Watch the refresh trigger
   ref.watch(speedDialsRefreshProvider);
-  final storage = ref.read(storageServiceProvider);
-  return await storage.getSpeedDials();
+  return await RepositoryFactory.speedDials.getAll();
 });
 
 // Call Session providers
 
-/// Provider for call sessions
+/// Provider for call sessions (uses repository)
 final callSessionsProvider = FutureProvider<List<CallSession>>((ref) async {
-  final storage = ref.read(storageServiceProvider);
-  return await storage.getCallSessions();
+  return await RepositoryFactory.callSessions.getAll();
 });
 
 /// Provider to refresh call sessions
 final callSessionsRefreshProvider = NotifierProvider<RefreshNotifier, int>(RefreshNotifier.new);
 
-/// Provider for call sessions that auto-refreshes
+/// Provider for call sessions that auto-refreshes (uses repository)
 final refreshableCallSessionsProvider = FutureProvider<List<CallSession>>((ref) async {
   // Watch the refresh trigger
   ref.watch(callSessionsRefreshProvider);
-  final storage = ref.read(storageServiceProvider);
-  return await storage.getCallSessions();
+  return await RepositoryFactory.callSessions.getAll();
 });
 
 /// Simple refresh notifier
@@ -329,5 +320,23 @@ class RefreshNotifier extends Notifier<int> {
 
   void refresh() {
     state++;
+  }
+}
+
+/// Provider for Cupertino style preference (Material vs Cupertino widgets)
+final useCupertinoStyleProvider = NotifierProvider<CupertinoStyleNotifier, bool>(
+  CupertinoStyleNotifier.new,
+);
+
+class CupertinoStyleNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+  
+  void toggle() {
+    state = !state;
+  }
+  
+  void set(bool value) {
+    state = value;
   }
 }

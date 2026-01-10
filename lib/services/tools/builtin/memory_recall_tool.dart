@@ -1,11 +1,11 @@
 import '../base_tool.dart';
-import '../../storage_service.dart';
+import '../../../interfaces/memory_repository.dart';
 
 /// Tool for recalling information from long-term memory
 class MemoryRecallTool extends BaseTool {
-  final StorageService _storage;
+  final MemoryRepository _memoryRepo;
   
-  MemoryRecallTool({required StorageService storage}) : _storage = storage;
+  MemoryRecallTool({required MemoryRepository memoryRepository}) : _memoryRepo = memoryRepository;
   
   @override
   String get name => 'memory_recall';
@@ -31,14 +31,14 @@ class MemoryRecallTool extends BaseTool {
     final key = arguments['key'] as String;
     
     if (key == 'all') {
-      final allMemories = await _storage.getAllMemories();
+      final allMemories = await _memoryRepo.getAll();
       return {
         'success': true,
         'memories': allMemories,
       };
     }
     
-    final value = await _storage.getMemory(key);
+    final value = await _memoryRepo.get(key);
     if (value == null) {
       return {
         'success': false,

@@ -1,27 +1,75 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/app_theme.dart';
 import '../models/call_session.dart';
 import '../components/historical_chat_view.dart';
 import '../components/historical_notepad_view.dart';
+import '../repositories/repository_factory.dart';
 
 /// Session detail screen showing chat and notepad from a past session
-class SessionDetailScreen extends StatefulWidget {
-  final CallSession session;
+class SessionDetailScreen extends ConsumerStatefulWidget {
+  final String sessionId;
 
   const SessionDetailScreen({
     super.key,
-    required this.session,
+    required this.sessionId,
   });
 
   @override
-  State<SessionDetailScreen> createState() => _SessionDetailScreenState();
+  ConsumerState<SessionDetailScreen> createState() => _SessionDetailScreenState();
 }
 
-class _SessionDetailScreenState extends State<SessionDetailScreen> {
+class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
   int _selectedSegment = 0; // 0: Chat, 1: Notepad
 
   @override
   Widget build(BuildContext context) {
+    return FutureBuilder<CallSession?>(
+      future: _loadSession(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Scaffold(
+            appBar: AppBar(
+              title: const Text('セッション詳細'),
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+            ),
+            body: Container(
+              decoration: AppTheme.lightBackgroundGradient,
+              child: const Center(
+                child: CircularProgressIndicator(),
+              ),
+            ),
+          );
+        }
+        
+        if (snapshot.hasError || !snapshot.hasData || snapshot.data == null) {
+          return Scaffold(
+            appBar: AppBar(
+              title: const Text('セッション詳細'),
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+            ),
+            body: Container(
+              decoration: AppTheme.lightBackgroundGradient,
+              child: const Center(
+                child: Text('セッションが見つかりません'),
+              ),
+            ),
+          );
+        }
+        
+        final session = snapshot.data!;
+        return _buildSessionDetail(session);
+      },
+    );
+  }
+  
+  Future<CallSession?> _loadSession() async {
+    return await RepositoryFactory.callSessions.getById(widget.sessionId);
+  }
+  
+  Widget _buildSessionDetail(CallSession session) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('セッション詳細'),
@@ -39,7 +87,7 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    _formatDateTime(widget.session.startTime),
+                    _formatDateTime(session.startTime),
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -48,7 +96,7 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    _formatDuration(widget.session.duration),
+                    _formatDuration(session.duration),
                     style: TextStyle(
                       fontSize: 14,
                       color: AppTheme.lightTextSecondary,
@@ -58,37 +106,28 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
               ),
             ),
 
-            // Segmented control
+            // Segmented control - using SegmentedButton
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: AppTheme.lightSurfaceColor,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: AppTheme.lightTextSecondary.withValues(alpha: 0.2),
+              child: SegmentedButton<int>(
+                segments: const [
+                  ButtonSegment<int>(
+                    value: 0,
+                    label: Text('チャット'),
+                    icon: Icon(Icons.chat_bubble_outline),
                   ),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _buildSegmentButton(
-                        label: 'チャット',
-                        icon: Icons.chat_bubble_outline,
-                        isSelected: _selectedSegment == 0,
-                        onTap: () => setState(() => _selectedSegment = 0),
-                      ),
-                    ),
-                    Expanded(
-                      child: _buildSegmentButton(
-                        label: 'ノートパッド',
-                        icon: Icons.article_outlined,
-                        isSelected: _selectedSegment == 1,
-                        onTap: () => setState(() => _selectedSegment = 1),
-                      ),
-                    ),
-                  ],
-                ),
+                  ButtonSegment<int>(
+                    value: 1,
+                    label: Text('ノートパッド'),
+                    icon: Icon(Icons.article_outlined),
+                  ),
+                ],
+                selected: {_selectedSegment},
+                onSelectionChanged: (Set<int> newSelection) {
+                  setState(() {
+                    _selectedSegment = newSelection.first;
+                  });
+                },
               ),
             ),
 
@@ -96,48 +135,11 @@ class _SessionDetailScreenState extends State<SessionDetailScreen> {
             Expanded(
               child: _selectedSegment == 0
                   ? HistoricalChatView(
-                      chatMessages: widget.session.chatMessages,
+                      chatMessages: session.chatMessages,
                     )
                   : HistoricalNotepadView(
-                      notepadContent: widget.session.notepadContent,
+                      notepadTabs: session.notepadTabs,
                     ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSegmentButton({
-    required String label,
-    required IconData icon,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          color: isSelected ? AppTheme.primaryColor : Colors.transparent,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 20,
-              color: isSelected ? Colors.white : AppTheme.lightTextSecondary,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                color: isSelected ? Colors.white : AppTheme.lightTextSecondary,
-              ),
             ),
           ],
         ),

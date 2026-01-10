@@ -2,12 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/app_theme.dart';
 import '../../components/title_bar.dart';
-import '../../components/emoji_picker.dart';
-import '../../providers/providers.dart';
-import '../../models/speed_dial.dart';
 import '../settings_screen.dart';
 import '../about_screen.dart';
 import '../call/call_screen.dart';
+import '../speed_dial_config_screen.dart';
 import 'speed_dial_tab.dart';
 import 'sessions_tab.dart';
 import 'tools_tab.dart';
@@ -96,138 +94,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Future<void> _addSpeedDial() async {
-    String? selectedEmoji;
-
-    // Show emoji picker first
-    await showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        contentPadding: EdgeInsets.zero,
-        content: SizedBox(
-          width: double.maxFinite,
-          child: EmojiPicker(
-            selectedEmoji: selectedEmoji,
-            onEmojiSelected: (emoji) {
-              selectedEmoji = emoji;
-              Navigator.of(context).pop();
-            },
-          ),
-        ),
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const SpeedDialConfigScreen(),
       ),
     );
-
-    if (selectedEmoji == null || !mounted) return;
-
-    // Then show the main form dialog
-    final formKey = GlobalKey<FormState>();
-    String name = '';
-    String systemPrompt = '';
-    String voice = 'alloy';
-    final iconEmoji = selectedEmoji!;
-
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Text(iconEmoji, style: const TextStyle(fontSize: 32)),
-            const SizedBox(width: 12),
-            const Text('スピードダイヤルを追加'),
-          ],
-        ),
-        content: SingleChildScrollView(
-          child: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  decoration: const InputDecoration(
-                    labelText: '名前',
-                    hintText: '例: アシスタント',
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return '名前を入力してください';
-                    }
-                    return null;
-                  },
-                  onSaved: (value) => name = value!,
-                  autofocus: true,
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  decoration: const InputDecoration(
-                    labelText: 'システムプロンプト',
-                    hintText: '例: あなたは親切なアシスタントです',
-                  ),
-                  maxLines: 3,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'システムプロンプトを入力してください';
-                    }
-                    return null;
-                  },
-                  onSaved: (value) => systemPrompt = value!,
-                ),
-                const SizedBox(height: 16),
-                DropdownButtonFormField<String>(
-                  decoration: const InputDecoration(
-                    labelText: '音声',
-                  ),
-                  initialValue: voice,
-                  items: const [
-                    DropdownMenuItem(value: 'alloy', child: Text('Alloy')),
-                    DropdownMenuItem(value: 'echo', child: Text('Echo')),
-                    DropdownMenuItem(value: 'shimmer', child: Text('Shimmer')),
-                  ],
-                  onChanged: (value) => voice = value ?? 'alloy',
-                  onSaved: (value) => voice = value ?? 'alloy',
-                ),
-              ],
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('キャンセル'),
-          ),
-          TextButton(
-            onPressed: () {
-              if (formKey.currentState!.validate()) {
-                formKey.currentState!.save();
-                Navigator.of(context).pop(true);
-              }
-            },
-            child: const Text('追加'),
-          ),
-        ],
-      ),
-    );
-
-    if (result == true && mounted) {
-      final speedDial = SpeedDial(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        name: name,
-        systemPrompt: systemPrompt,
-        voice: voice,
-        iconEmoji: iconEmoji,
-        createdAt: DateTime.now(),
-      );
-
-      final storage = ref.read(storageServiceProvider);
-      await storage.saveSpeedDial(speedDial);
-
-      // Refresh the speed dials list
-      ref.invalidate(refreshableSpeedDialsProvider);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('スピードダイヤルを追加しました')),
-        );
-      }
-    }
   }
 
   Future<void> _handleCallButton() async {

@@ -8,6 +8,7 @@ import 'settings/azure_config_section.dart';
 import 'settings/voice_settings_section.dart';
 import 'settings/android_audio_section.dart';
 import 'settings/developer_section.dart';
+import 'settings/ui_preferences_section.dart';
 
 /// Settings screen for API configuration
 class SettingsScreen extends ConsumerWidget {
@@ -46,6 +47,12 @@ class SettingsScreen extends ConsumerWidget {
                   
                   // PiP Settings removed - PiP button is now in call screen control panel
                   // Window settings removed - always-on-top is now in title bar
+                  const SizedBox(height: 24),
+                  
+                  // UI Preferences Section
+                  const SectionHeader(title: 'UI設定'),
+                  const SizedBox(height: 12),
+                  const UiPreferencesSection(),
                   const SizedBox(height: 24),
                   
                   // Developer Section

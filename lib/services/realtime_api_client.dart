@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
-import '../config/app_config.dart';
 import '../models/realtime_events.dart';
 import '../models/realtime_session_config.dart';
 import 'websocket_service.dart';
@@ -187,6 +186,14 @@ class RealtimeApiClient {
     _tools = tools;
   }
 
+  /// Set voice and instructions for the session
+  void setVoiceAndInstructions(String voice, String instructions) {
+    _sessionConfig = _sessionConfig.copyWith(
+      voice: voice,
+      instructions: instructions,
+    );
+  }
+
   /// Connect to Azure OpenAI using a full Realtime URL and API key
   /// URL format: https://{resource}.openai.azure.com/openai/realtime?api-version=YYYY-MM-DD&deployment=...
   Future<void> connect(String realtimeUrl, String apiKey) async {
@@ -255,13 +262,13 @@ class RealtimeApiClient {
   String get noiseReduction => _sessionConfig.noiseReduction;
 
   Future<void> _configureSession() async {
-    // Update session config with current tools
+    // Update session config with current tools (voice and instructions already set via setVoiceAndInstructions)
     _sessionConfig = _sessionConfig.copyWith(
-      voice: AppConfig.defaultVoice,
       tools: _tools,
     );
     
     logService.info(_tag, 'Configuring session with voice: ${_sessionConfig.voice}, tools: ${_sessionConfig.tools.length}, noise_reduction: ${_sessionConfig.noiseReduction}');
+    logService.debug(_tag, 'Instructions: ${_sessionConfig.instructions}');
     
     // Send session update with configuration
     _webSocket.send({

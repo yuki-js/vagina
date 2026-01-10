@@ -2,50 +2,192 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/app_theme.dart';
 import '../../providers/providers.dart';
+import '../../repositories/repository_factory.dart';
 
-/// Provider for tool enabled states
+/// Provider for tool enabled states (uses repository)
 final toolEnabledProvider = FutureProvider.family<bool, String>((ref, toolName) async {
-  final storage = ref.watch(storageServiceProvider);
-  return await storage.isToolEnabled(toolName);
+  return await RepositoryFactory.config.isToolEnabled(toolName);
 });
 
 /// Tools tab - shows available tools with enable/disable toggle via long press
-class ToolsTab extends ConsumerWidget {
+class ToolsTab extends ConsumerStatefulWidget {
   const ToolsTab({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ToolsTab> createState() => _ToolsTabState();
+}
+
+class _ToolsTabState extends ConsumerState<ToolsTab> {
+  bool _isSelectionMode = false;
+  final Set<String> _selectedTools = {};
+
+  void _toggleSelectionMode() {
+    setState(() {
+      _isSelectionMode = !_isSelectionMode;
+      if (!_isSelectionMode) {
+        _selectedTools.clear();
+      }
+    });
+  }
+
+  void _toggleSelection(String toolName) {
+    setState(() {
+      if (_selectedTools.contains(toolName)) {
+        _selectedTools.remove(toolName);
+      } else {
+        _selectedTools.add(toolName);
+      }
+    });
+  }
+
+  void _selectAll(List<Map<String, dynamic>> tools) {
+    setState(() {
+      _selectedTools.clear();
+      _selectedTools.addAll(tools.map((t) => t['name'] as String));
+    });
+  }
+
+  void _invertSelection(List<Map<String, dynamic>> tools) {
+    setState(() {
+      final allNames = tools.map((t) => t['name'] as String).toSet();
+      final newSelection = allNames.difference(_selectedTools);
+      _selectedTools.clear();
+      _selectedTools.addAll(newSelection);
+    });
+  }
+
+  Future<void> _enableSelected() async {
+    if (_selectedTools.isEmpty) return;
+
+    final configRepo = RepositoryFactory.config;
+    for (final toolName in _selectedTools) {
+      final isEnabled = await configRepo.isToolEnabled(toolName);
+      if (!isEnabled) {
+        await configRepo.toggleTool(toolName);
+        ref.invalidate(toolEnabledProvider(toolName));
+      }
+    }
+
+    setState(() {
+      _selectedTools.clear();
+      _isSelectionMode = false;
+    });
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('選択したツールを有効にしました')),
+      );
+    }
+  }
+
+  Future<void> _disableSelected() async {
+    if (_selectedTools.isEmpty) return;
+
+    final configRepo = RepositoryFactory.config;
+    for (final toolName in _selectedTools) {
+      final isEnabled = await configRepo.isToolEnabled(toolName);
+      if (isEnabled) {
+        await configRepo.toggleTool(toolName);
+        ref.invalidate(toolEnabledProvider(toolName));
+      }
+    }
+
+    setState(() {
+      _selectedTools.clear();
+      _isSelectionMode = false;
+    });
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('選択したツールを無効にしました')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final toolService = ref.watch(toolServiceProvider);
     final tools = toolService.toolDefinitions;
 
-    return ListView(
-      padding: const EdgeInsets.all(16),
+    return Column(
       children: [
-        const Text(
-          'ツール',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: AppTheme.lightTextPrimary,
+        if (_isSelectionMode)
+          Container(
+            padding: const EdgeInsets.all(16),
+            color: AppTheme.primaryColor.withValues(alpha: 0.1),
+            child: Row(
+              children: [
+                Text(
+                  '${_selectedTools.length}件選択中',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.primaryColor,
+                  ),
+                ),
+                const Spacer(),
+                TextButton.icon(
+                  onPressed: () => _selectAll(tools),
+                  icon: const Icon(Icons.select_all, size: 18),
+                  label: const Text('全選択'),
+                ),
+                TextButton.icon(
+                  onPressed: () => _invertSelection(tools),
+                  icon: const Icon(Icons.swap_vert, size: 18),
+                  label: const Text('反転'),
+                ),
+                IconButton(
+                  onPressed: _selectedTools.isNotEmpty ? _enableSelected : null,
+                  icon: const Icon(Icons.check_circle),
+                  color: AppTheme.successColor,
+                  tooltip: '有効化',
+                ),
+                IconButton(
+                  onPressed: _selectedTools.isNotEmpty ? _disableSelected : null,
+                  icon: const Icon(Icons.cancel),
+                  color: AppTheme.errorColor,
+                  tooltip: '無効化',
+                ),
+                IconButton(
+                  onPressed: _toggleSelectionMode,
+                  icon: const Icon(Icons.close),
+                ),
+              ],
+            ),
+          ),
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              const Text(
+                'ツール',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.lightTextPrimary,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'ツールを長押しして選択モードを開始',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: AppTheme.lightTextSecondary,
+                ),
+              ),
+              const SizedBox(height: 24),
+              // Tools list
+              ...tools.map((tool) => _buildToolItem(context, tool)),
+            ],
           ),
         ),
-        const SizedBox(height: 8),
-        Text(
-          'ツールを長押しして有効・無効を切り替え',
-          style: TextStyle(
-            fontSize: 14,
-            color: AppTheme.lightTextSecondary,
-          ),
-        ),
-        const SizedBox(height: 24),
-        // Tools list
-        ...tools.map((tool) => _buildToolItem(context, ref, tool)),
       ],
     );
   }
 
-  Widget _buildToolItem(BuildContext context, WidgetRef ref, Map<String, dynamic> tool) {
+  Widget _buildToolItem(BuildContext context, Map<String, dynamic> tool) {
     final name = tool['name'] as String;
+    final isSelected = _selectedTools.contains(name);
     
     // Map tool names to friendly Japanese names and icons
     final toolInfo = _getToolInfo(name);
@@ -55,29 +197,29 @@ class ToolsTab extends ConsumerWidget {
       data: (isEnabled) => Card(
         margin: const EdgeInsets.only(bottom: 12),
         child: InkWell(
-          onLongPress: () async {
-            // Toggle tool on long press
-            final storage = ref.read(storageServiceProvider);
-            await storage.toggleTool(name);
-            ref.invalidate(toolEnabledProvider(name));
-            
-            // Show snackbar
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    isEnabled ? '${toolInfo.displayName}を無効にしました' : '${toolInfo.displayName}を有効にしました',
-                  ),
-                  duration: const Duration(seconds: 2),
-                ),
-              );
+          onTap: () {
+            if (_isSelectionMode) {
+              _toggleSelection(name);
+            }
+          },
+          onLongPress: () {
+            if (!_isSelectionMode) {
+              setState(() {
+                _isSelectionMode = true;
+                _selectedTools.add(name);
+              });
             }
           },
           child: ListTile(
-            leading: Icon(
-              toolInfo.icon,
-              color: isEnabled ? AppTheme.primaryColor : Colors.grey,
-            ),
+            leading: _isSelectionMode
+                ? Checkbox(
+                    value: isSelected,
+                    onChanged: (_) => _toggleSelection(name),
+                  )
+                : Icon(
+                    toolInfo.icon,
+                    color: isEnabled ? AppTheme.primaryColor : Colors.grey,
+                  ),
             title: Text(
               toolInfo.displayName,
               style: TextStyle(
@@ -92,23 +234,25 @@ class ToolsTab extends ConsumerWidget {
                 color: isEnabled ? AppTheme.lightTextSecondary : Colors.grey,
               ),
             ),
-            trailing: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: isEnabled
-                    ? AppTheme.successColor.withValues(alpha: 0.1)
-                    : Colors.grey.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                isEnabled ? '有効' : '無効',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: isEnabled ? AppTheme.successColor : Colors.grey,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
+            trailing: _isSelectionMode
+                ? null
+                : Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: isEnabled
+                          ? AppTheme.successColor.withValues(alpha: 0.1)
+                          : Colors.grey.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      isEnabled ? '有効' : '無効',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isEnabled ? AppTheme.successColor : Colors.grey,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
           ),
         ),
       ),

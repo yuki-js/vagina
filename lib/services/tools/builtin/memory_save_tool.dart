@@ -1,11 +1,11 @@
 import '../base_tool.dart';
-import '../../storage_service.dart';
+import '../../../interfaces/memory_repository.dart';
 
 /// Tool for saving information to long-term memory
 class MemorySaveTool extends BaseTool {
-  final StorageService _storage;
+  final MemoryRepository _memoryRepo;
   
-  MemorySaveTool({required StorageService storage}) : _storage = storage;
+  MemorySaveTool({required MemoryRepository memoryRepository}) : _memoryRepo = memoryRepository;
   
   @override
   String get name => 'memory_save';
@@ -35,7 +35,7 @@ class MemorySaveTool extends BaseTool {
     final key = arguments['key'] as String;
     final value = arguments['value'] as String;
     
-    await _storage.saveMemory(key, value);
+    await _memoryRepo.save(key, value);
     
     return {
       'success': true,
