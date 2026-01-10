@@ -17,7 +17,6 @@ class _ConstellationGameState extends State<ConstellationGame>
   final List<Offset> _stars = [];
   final List<List<int>> _connections = [];
   int? _selectedStarIndex;
-  bool _isDrawing = false;
 
   @override
   void initState() {
@@ -70,18 +69,18 @@ class _ConstellationGameState extends State<ConstellationGame>
     }
 
     if (nearestStar != null) {
+      final star = nearestStar; // Capture as non-nullable int
       setState(() {
         if (_selectedStarIndex == null) {
           // First star selected
-          _selectedStarIndex = nearestStar;
-          _isDrawing = true;
-        } else if (_selectedStarIndex == nearestStar) {
+          _selectedStarIndex = star;
+        } else if (_selectedStarIndex == star) {
           // Same star tapped - deselect
           _selectedStarIndex = null;
-          _isDrawing = false;
         } else {
           // Second star - create connection
-          final connection = [_selectedStarIndex!, nearestStar];
+          final firstStar = _selectedStarIndex!;
+          final connection = <int>[firstStar, star];
           // Check if connection already exists
           final exists = _connections.any(
             (c) =>
@@ -92,7 +91,6 @@ class _ConstellationGameState extends State<ConstellationGame>
             _connections.add(connection);
           }
           _selectedStarIndex = null;
-          _isDrawing = false;
         }
       });
     }
@@ -102,7 +100,6 @@ class _ConstellationGameState extends State<ConstellationGame>
     setState(() {
       _connections.clear();
       _selectedStarIndex = null;
-      _isDrawing = false;
     });
   }
 
@@ -111,7 +108,6 @@ class _ConstellationGameState extends State<ConstellationGame>
       _generateStars();
       _connections.clear();
       _selectedStarIndex = null;
-      _isDrawing = false;
     });
   }
 
