@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import 'constellation_game.dart';
-import 'voice_echo_game.dart';
+import 'voice_visualizer_game.dart';
 
 /// About page with app information and philosophy
 class AboutScreen extends StatefulWidget {
@@ -30,7 +30,7 @@ class _AboutScreenState extends State<AboutScreen> {
       // Alternate between the two easter eggs
       final easterEgg = _easterEggIndex % 2 == 0
           ? const ConstellationGame()
-          : const VoiceEchoGame();
+          : const VoiceVisualizerGame();
       
       _easterEggIndex++;
       

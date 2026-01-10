@@ -149,34 +149,32 @@ class _DiveInScreenState extends State<DiveInScreen>
 
                   const SizedBox(height: 64),
 
-                  // Start button (FAB style for smooth morphing transition)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 48),
-                    child: SizedBox(
-                      width: double.infinity,
-                      height: 64,
-                      child: FloatingActionButton.extended(
-                        onPressed: widget.onStart,
-                        backgroundColor: AppTheme.successColor,
-                        elevation: 6,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(32),
-                        ),
-                        icon: const Icon(
+                  // Start button (FAB for smooth morphing transition)
+                  FloatingActionButton(
+                    onPressed: widget.onStart,
+                    backgroundColor: AppTheme.successColor,
+                    elevation: 6,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(28),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Icon(
                           Icons.phone,
-                          size: 28,
+                          size: 24,
                           color: Colors.white,
                         ),
-                        label: const Text(
+                        SizedBox(width: 8),
+                        Text(
                           'はじめる',
                           style: TextStyle(
-                            fontSize: 20,
+                            fontSize: 18,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
-                            letterSpacing: 1,
                           ),
                         ),
-                      ),
+                      ],
                     ),
                   ),
 
