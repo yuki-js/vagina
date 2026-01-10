@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import '../theme/app_theme.dart';
-import 'voice_visualizer_demo.dart';
+import '../../theme/app_theme.dart';
+import 'constellation_game.dart';
+import 'voice_visualizer_game.dart';
 
 /// About page with app information and philosophy
 class AboutScreen extends StatefulWidget {
@@ -13,6 +14,7 @@ class AboutScreen extends StatefulWidget {
 class _AboutScreenState extends State<AboutScreen> {
   int _tapCount = 0;
   static const int _requiredTaps = 7;
+  int _easterEggIndex = 0; // Alternates between easter eggs
 
   void _handleTitleTap() {
     setState(() {
@@ -20,13 +22,21 @@ class _AboutScreenState extends State<AboutScreen> {
     });
 
     if (_tapCount >= _requiredTaps) {
-      // Reset counter and navigate to hidden demo
+      // Reset counter and navigate to hidden easter egg
       setState(() {
         _tapCount = 0;
       });
+      
+      // Alternate between the two easter eggs
+      final easterEgg = _easterEggIndex % 2 == 0
+          ? const ConstellationGame()
+          : const VoiceVisualizerGame();
+      
+      _easterEggIndex++;
+      
       Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (context) => const VoiceVisualizerDemo(),
+          builder: (context) => easterEgg,
         ),
       );
     }
@@ -53,33 +63,18 @@ class _AboutScreenState extends State<AboutScreen> {
                 padding: const EdgeInsets.all(24),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
-                    // Title with fancy animation-ready styling and hidden tap counter
+                    // Title with hidden easter egg trigger
                     GestureDetector(
                       onTap: _handleTitleTap,
-                      child: Column(
-                        children: [
-                          Text(
-                            'VAGINA',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 48,
-                              fontWeight: FontWeight.bold,
-                              color: AppTheme.primaryColor,
-                              letterSpacing: 8,
-                            ),
-                          ),
-                          if (_tapCount > 0 && _tapCount < _requiredTaps)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 4),
-                              child: Text(
-                                '${_requiredTaps - _tapCount}',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  color: AppTheme.lightTextSecondary.withValues(alpha: 0.5),
-                                ),
-                              ),
-                            ),
-                        ],
+                      child: Text(
+                        'VAGINA',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 48,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.primaryColor,
+                          letterSpacing: 8,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 8),

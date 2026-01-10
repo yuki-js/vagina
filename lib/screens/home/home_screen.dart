@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/app_theme.dart';
 import '../../components/title_bar.dart';
 import '../settings_screen.dart';
-import '../about_screen.dart';
+import '../about/about_screen.dart';
 import '../call/call_screen.dart';
 import '../speed_dial_config_screen.dart';
 import 'speed_dial_tab.dart';
