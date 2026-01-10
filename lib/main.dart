@@ -4,8 +4,10 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:window_manager/window_manager.dart';
 import 'screens/home/home_screen.dart';
+import 'screens/oobe/oobe_flow.dart';
 import 'theme/app_theme.dart';
 import 'repositories/repository_factory.dart';
+import 'repositories/preferences_repository.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -41,8 +43,40 @@ void main() async {
 }
 
 /// Main application widget
-class VaginaApp extends StatelessWidget {
+class VaginaApp extends StatefulWidget {
   const VaginaApp({super.key});
+
+  @override
+  State<VaginaApp> createState() => _VaginaAppState();
+}
+
+class _VaginaAppState extends State<VaginaApp> {
+  bool _isFirstLaunch = true;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkFirstLaunch();
+  }
+
+  Future<void> _checkFirstLaunch() async {
+    final prefs = PreferencesRepository();
+    await prefs.initialize();
+    final isFirst = await prefs.isFirstLaunch();
+    
+    if (mounted) {
+      setState(() {
+        _isFirstLaunch = isFirst;
+        _isLoading = false;
+      });
+    }
+
+    // If first launch, mark as completed when OOBE flow finishes
+    if (isFirst) {
+      await prefs.markFirstLaunchCompleted();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -59,7 +93,16 @@ class VaginaApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      home: const HomeScreen(),
+      home: _isLoading
+          ? const Scaffold(
+              backgroundColor: Colors.black,
+              body: Center(
+                child: CircularProgressIndicator(),
+              ),
+            )
+          : _isFirstLaunch
+              ? const OOBEFlow()
+              : const HomeScreen(),
     );
   }
 }
