@@ -16,6 +16,7 @@ import '../models/call_session.dart';
 import '../models/speed_dial.dart';
 import '../repositories/repository_factory.dart';
 import 'repository_providers.dart';
+import '../services/log_service.dart';
 
 // ============================================================================
 // コアプロバイダ
