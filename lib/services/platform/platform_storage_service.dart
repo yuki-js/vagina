@@ -9,9 +9,13 @@ import '../../data/permission_manager.dart';
 class PlatformStorageService {
   static const _tag = 'PlatformStorage';
   final PermissionManager _permissionManager;
+  final LogService _logService;
 
-  PlatformStorageService({PermissionManager? permissionManager})
-      : _permissionManager = permissionManager ?? PermissionManager();
+  PlatformStorageService({
+    PermissionManager? permissionManager,
+    LogService? logService,
+  })  : _permissionManager = permissionManager ?? PermissionManager(),
+        _logService = logService ?? LogService();
 
   /// Get the appropriate storage directory for the platform
   /// 
@@ -35,13 +39,13 @@ class PlatformStorageService {
           if (!await directory.exists()) {
             await directory.create(recursive: true);
           }
-          logService.info(_tag, 'Using Android external storage: ${directory.path}');
+          _logService.info(_tag, 'Using Android external storage: ${directory.path}');
           return directory;
         } catch (e) {
-          logService.warn(_tag, 'Cannot access Android external storage: $e');
+          _logService.warn(_tag, 'Cannot access Android external storage: $e');
         }
       } else {
-        logService.info(_tag, 'Storage permission not granted, using app directory');
+        _logService.info(_tag, 'Storage permission not granted, using app directory');
       }
     }
 
@@ -56,7 +60,7 @@ class PlatformStorageService {
       }
     }
 
-    logService.info(_tag, 'Using app directory: ${directory.path}');
+    _logService.info(_tag, 'Using app directory: ${directory.path}');
     return directory;
   }
 

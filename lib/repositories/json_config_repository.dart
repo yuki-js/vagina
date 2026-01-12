@@ -14,14 +14,16 @@ class JsonConfigRepository implements ConfigRepository {
   static const _toolsKey = 'tools';
   
   final KeyValueStore _store;
+  final LogService _logService;
 
-  JsonConfigRepository(this._store);
+  JsonConfigRepository(this._store, {LogService? logService})
+      : _logService = logService ?? LogService();
 
   // Azure OpenAI Configuration
   
   @override
   Future<void> saveApiKey(String apiKey) async {
-    logService.debug(_tag, 'Saving API key');
+    _logService.debug(_tag, 'Saving API key');
     await _store.set(_apiKeyKey, apiKey);
   }
 
@@ -32,7 +34,7 @@ class JsonConfigRepository implements ConfigRepository {
 
   @override
   Future<void> deleteApiKey() async {
-    logService.debug(_tag, 'Deleting API key');
+    _logService.debug(_tag, 'Deleting API key');
     await _store.delete(_apiKeyKey);
   }
 
@@ -44,7 +46,7 @@ class JsonConfigRepository implements ConfigRepository {
 
   @override
   Future<void> saveRealtimeUrl(String url) async {
-    logService.debug(_tag, 'Saving realtime URL');
+    _logService.debug(_tag, 'Saving realtime URL');
     await _store.set(_realtimeUrlKey, url);
   }
 
@@ -55,7 +57,7 @@ class JsonConfigRepository implements ConfigRepository {
 
   @override
   Future<void> deleteRealtimeUrl() async {
-    logService.debug(_tag, 'Deleting realtime URL');
+    _logService.debug(_tag, 'Deleting realtime URL');
     await _store.delete(_realtimeUrlKey);
   }
 
@@ -70,7 +72,7 @@ class JsonConfigRepository implements ConfigRepository {
   
   @override
   Future<void> saveAndroidAudioConfig(AndroidAudioConfig config) async {
-    logService.debug(_tag, 'Saving Android audio config');
+    _logService.debug(_tag, 'Saving Android audio config');
     await _store.set(_androidAudioConfigKey, config.toJson());
   }
 
@@ -95,14 +97,14 @@ class JsonConfigRepository implements ConfigRepository {
 
   @override
   Future<void> toggleTool(String toolName) async {
-    logService.debug(_tag, 'Toggling tool: $toolName');
+    _logService.debug(_tag, 'Toggling tool: $toolName');
     
     final tools = await _getToolsConfig();
     final isCurrentlyEnabled = tools[toolName] ?? true;
     tools[toolName] = !isCurrentlyEnabled;
     
     await _store.set(_toolsKey, tools);
-    logService.info(_tag, 'Tool $toolName ${!isCurrentlyEnabled ? "enabled" : "disabled"}');
+    _logService.info(_tag, 'Tool $toolName ${!isCurrentlyEnabled ? "enabled" : "disabled"}');
   }
 
   @override
@@ -141,7 +143,7 @@ class JsonConfigRepository implements ConfigRepository {
   
   @override
   Future<void> clearAll() async {
-    logService.info(_tag, 'Clearing all configuration');
+    _logService.info(_tag, 'Clearing all configuration');
     await _store.clear();
   }
 

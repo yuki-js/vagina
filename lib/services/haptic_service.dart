@@ -9,6 +9,11 @@ import 'log_service.dart';
 /// - Selection click: When VAD detects speech events
 class HapticService {
   static const _tag = 'HapticService';
+  
+  final LogService _logService;
+
+  HapticService({LogService? logService})
+      : _logService = logService ?? LogService();
 
   /// Heavy impact haptic feedback
   /// 
@@ -17,9 +22,9 @@ class HapticService {
   Future<void> heavyImpact() async {
     try {
       await HapticFeedback.heavyImpact();
-      logService.debug(_tag, 'Heavy impact haptic triggered');
+      __logService.debug(_tag, 'Heavy impact haptic triggered');
     } catch (e) {
-      logService.warn(_tag, 'Failed to trigger heavy impact haptic: $e');
+      __logService.warn(_tag, 'Failed to trigger heavy impact haptic: $e');
     }
   }
 
@@ -31,9 +36,9 @@ class HapticService {
   Future<void> selectionClick() async {
     try {
       await HapticFeedback.selectionClick();
-      logService.debug(_tag, 'Selection click haptic triggered');
+      __logService.debug(_tag, 'Selection click haptic triggered');
     } catch (e) {
-      logService.warn(_tag, 'Failed to trigger selection click haptic: $e');
+      __logService.warn(_tag, 'Failed to trigger selection click haptic: $e');
     }
   }
 }

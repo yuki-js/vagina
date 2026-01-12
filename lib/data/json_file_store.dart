@@ -16,6 +16,7 @@ class JsonFileStore implements KeyValueStore {
   final String fileName;
   final String? folderName;
   final PlatformStorageService _storageService;
+  final LogService _logService;
   File? _file;
   Map<String, dynamic> _cache = {};
   bool _initialized = false;
@@ -24,7 +25,9 @@ class JsonFileStore implements KeyValueStore {
     required this.fileName,
     this.folderName,
     PlatformStorageService? storageService,
-  }) : _storageService = storageService ?? PlatformStorageService();
+    LogService? logService,
+  })  : _storageService = storageService ?? PlatformStorageService(),
+        _logService = logService ?? LogService();
 
   @override
   Future<void> initialize() async {
@@ -34,7 +37,7 @@ class JsonFileStore implements KeyValueStore {
     _cache = await _loadFromFile();
     _initialized = true;
     
-    logService.debug(_tag, 'Initialized with ${_cache.keys.length} keys');
+    _logService.debug(_tag, 'Initialized with ${_cache.keys.length} keys');
   }
 
   Future<File> _getFile() async {
@@ -45,7 +48,7 @@ class JsonFileStore implements KeyValueStore {
 
     final directory = await _storageService.getStorageDirectory(folderName: folderName);
     final file = File('${directory.path}/$fileName');
-    logService.info(_tag, 'Storage file: ${file.path}');
+    _logService.info(_tag, 'Storage file: ${file.path}');
     return file;
   }
 
@@ -63,10 +66,10 @@ class JsonFileStore implements KeyValueStore {
       if (contents.isEmpty) return {};
       
       final data = jsonDecode(contents) as Map<String, dynamic>;
-      logService.debug(_tag, 'Loaded ${data.keys.length} keys from file');
+      _logService.debug(_tag, 'Loaded ${data.keys.length} keys from file');
       return data;
     } catch (e) {
-      logService.error(_tag, 'Error loading file: $e');
+      _logService.error(_tag, 'Error loading file: $e');
       return {};
     }
   }
@@ -82,9 +85,9 @@ class JsonFileStore implements KeyValueStore {
     try {
       final json = jsonEncode(data);
       await _file!.writeAsString(json);
-      logService.debug(_tag, 'Saved ${data.keys.length} keys to file');
+      _logService.debug(_tag, 'Saved ${data.keys.length} keys to file');
     } catch (e) {
-      logService.error(_tag, 'Error saving file: $e');
+      _logService.error(_tag, 'Error saving file: $e');
       rethrow;
     }
   }
@@ -98,15 +101,15 @@ class JsonFileStore implements KeyValueStore {
       final value = storage[key];
       
       if (value == null || value.isEmpty) {
-        logService.debug(_tag, 'No web storage data found');
+        _logService.debug(_tag, 'No web storage data found');
         return {};
       }
       
       final data = jsonDecode(value) as Map<String, dynamic>;
-      logService.debug(_tag, 'Loaded ${data.keys.length} keys from web storage');
+      _logService.debug(_tag, 'Loaded ${data.keys.length} keys from web storage');
       return data;
     } catch (e) {
-      logService.error(_tag, 'Error loading from web storage: $e');
+      _logService.error(_tag, 'Error loading from web storage: $e');
       return {};
     }
   }
@@ -120,9 +123,9 @@ class JsonFileStore implements KeyValueStore {
       final json = jsonEncode(data);
       storage[key] = json;
       
-      logService.debug(_tag, 'Saved ${data.keys.length} keys to web storage');
+      _logService.debug(_tag, 'Saved ${data.keys.length} keys to web storage');
     } catch (e) {
-      logService.error(_tag, 'Error saving to web storage: $e');
+      _logService.error(_tag, 'Error saving to web storage: $e');
       rethrow;
     }
   }

@@ -9,12 +9,14 @@ class JsonCallSessionRepository implements CallSessionRepository {
   static const _sessionsKey = 'call_sessions';
   
   final KeyValueStore _store;
+  final LogService _logService;
 
-  JsonCallSessionRepository(this._store);
+  JsonCallSessionRepository(this._store, {LogService? logService})
+      : _logService = logService ?? LogService();
 
   @override
   Future<void> save(CallSession session) async {
-    logService.debug(_tag, 'Saving session: ${session.id}');
+    _logService.debug(_tag, 'Saving session: ${session.id}');
     
     final sessions = await getAll();
     sessions.add(session);
@@ -22,7 +24,7 @@ class JsonCallSessionRepository implements CallSessionRepository {
     final sessionsJson = sessions.map((s) => s.toJson()).toList();
     await _store.set(_sessionsKey, sessionsJson);
     
-    logService.info(_tag, 'Session saved: ${session.id}');
+    _logService.info(_tag, 'Session saved: ${session.id}');
   }
 
   @override
@@ -34,7 +36,7 @@ class JsonCallSessionRepository implements CallSessionRepository {
     }
     
     if (data is! List) {
-      logService.warn(_tag, 'Invalid sessions data type');
+      _logService.warn(_tag, 'Invalid sessions data type');
       return [];
     }
     
@@ -55,27 +57,27 @@ class JsonCallSessionRepository implements CallSessionRepository {
 
   @override
   Future<bool> delete(String id) async {
-    logService.debug(_tag, 'Deleting session: $id');
+    _logService.debug(_tag, 'Deleting session: $id');
     
     final sessions = await getAll();
     final initialLength = sessions.length;
     sessions.removeWhere((s) => s.id == id);
     
     if (sessions.length == initialLength) {
-      logService.warn(_tag, 'Session not found: $id');
+      _logService.warn(_tag, 'Session not found: $id');
       return false;
     }
     
     final sessionsJson = sessions.map((s) => s.toJson()).toList();
     await _store.set(_sessionsKey, sessionsJson);
     
-    logService.info(_tag, 'Session deleted: $id');
+    _logService.info(_tag, 'Session deleted: $id');
     return true;
   }
 
   @override
   Future<void> deleteAll() async {
-    logService.info(_tag, 'Deleting all sessions');
+    _logService.info(_tag, 'Deleting all sessions');
     await _store.delete(_sessionsKey);
   }
 }

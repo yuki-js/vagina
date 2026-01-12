@@ -8,18 +8,20 @@ class JsonMemoryRepository implements MemoryRepository {
   static const _memoriesKey = 'memories';
   
   final KeyValueStore _store;
+  final LogService _logService;
 
-  JsonMemoryRepository(this._store);
+  JsonMemoryRepository(this._store, {LogService? logService})
+      : _logService = logService ?? LogService();
 
   @override
   Future<void> save(String key, String value) async {
-    logService.debug(_tag, 'Saving memory: $key');
+    _logService.debug(_tag, 'Saving memory: $key');
     
     final memories = await getAll();
     memories[key] = value;
     
     await _store.set(_memoriesKey, memories);
-    logService.info(_tag, 'Memory saved: $key');
+    _logService.info(_tag, 'Memory saved: $key');
   }
 
   @override
@@ -37,7 +39,7 @@ class JsonMemoryRepository implements MemoryRepository {
     }
     
     if (data is! Map) {
-      logService.warn(_tag, 'Invalid memories data type');
+      _logService.warn(_tag, 'Invalid memories data type');
       return {};
     }
     
@@ -46,25 +48,25 @@ class JsonMemoryRepository implements MemoryRepository {
 
   @override
   Future<bool> delete(String key) async {
-    logService.debug(_tag, 'Deleting memory: $key');
+    _logService.debug(_tag, 'Deleting memory: $key');
     
     final memories = await getAll();
     
     if (!memories.containsKey(key)) {
-      logService.warn(_tag, 'Memory not found: $key');
+      _logService.warn(_tag, 'Memory not found: $key');
       return false;
     }
     
     memories.remove(key);
     await _store.set(_memoriesKey, memories);
     
-    logService.info(_tag, 'Memory deleted: $key');
+    _logService.info(_tag, 'Memory deleted: $key');
     return true;
   }
 
   @override
   Future<void> deleteAll() async {
-    logService.info(_tag, 'Deleting all memories');
+    _logService.info(_tag, 'Deleting all memories');
     await _store.delete(_memoriesKey);
   }
 }
