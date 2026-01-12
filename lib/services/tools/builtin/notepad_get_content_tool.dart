@@ -1,7 +1,9 @@
+import 'package:flutter/material.dart';
 import '../base_tool.dart';
+import '../tool_metadata.dart';
 import '../../notepad_service.dart';
 
-/// Tool for getting content of a specific artifact tab
+/// ノートパッドコンテンツ取得ツール
 class NotepadGetContentTool extends BaseTool {
   final NotepadService _notepadService;
   
@@ -26,6 +28,16 @@ class NotepadGetContentTool extends BaseTool {
     },
     'required': ['tabId'],
   };
+  
+  @override
+  ToolMetadata get metadata => const ToolMetadata(
+    name: 'notepad_get_content',
+    displayName: 'ノートパッド読取',
+    displayDescription: 'ノートパッドの内容を読み取ります',
+    description: 'Get the content of a specific artifact tab by its ID.',
+    icon: Icons.article,
+    category: ToolCategory.notepad,
+  );
 
   @override
   Future<Map<String, dynamic>> execute(Map<String, dynamic> arguments) async {

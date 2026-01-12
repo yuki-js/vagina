@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 
-/// Fifth and final OOBE screen - Ready to begin experience
+/// OOBE 最終画面 - 準備完了
 class DiveInScreen extends StatefulWidget {
   final VoidCallback onStart;
   final VoidCallback onBack;
@@ -47,71 +47,64 @@ class _DiveInScreenState extends State<DiveInScreen>
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: Column(
+      child: Stack(
         children: [
-          // Back button
-          Align(
-            alignment: Alignment.topLeft,
-            child: IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.white),
-              onPressed: widget.onBack,
-            ),
-          ),
-
-          Expanded(
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Animated checkmark icon
-                  AnimatedBuilder(
-                    animation: _scaleAnimation,
-                    builder: (context, child) {
-                      return Transform.scale(
-                        scale: _scaleAnimation.value,
-                        child: Container(
-                          width: 120,
-                          height: 120,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: RadialGradient(
-                              colors: [
-                                AppTheme.successColor,
-                                AppTheme.successColor.withValues(alpha: 0.3),
-                                Colors.transparent,
-                              ],
-                              stops: const [0.0, 0.7, 1.0],
+          // メインコンテンツ - 中央寄せ
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // アニメーションチェックマーク
+                    AnimatedBuilder(
+                      animation: _scaleAnimation,
+                      builder: (context, child) {
+                        return Transform.scale(
+                          scale: _scaleAnimation.value,
+                          child: Container(
+                            width: 120,
+                            height: 120,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: RadialGradient(
+                                colors: [
+                                  AppTheme.successColor,
+                                  AppTheme.successColor.withValues(alpha: 0.3),
+                                  Colors.transparent,
+                                ],
+                                stops: const [0.0, 0.7, 1.0],
+                              ),
+                            ),
+                            child: const Icon(
+                              Icons.check_circle,
+                              size: 80,
+                              color: Colors.white,
                             ),
                           ),
-                          child: const Icon(
-                            Icons.check_circle,
-                            size: 80,
-                            color: Colors.white,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-
-                  const SizedBox(height: 48),
-
-                  // Main message
-                  const Text(
-                    '準備完了！',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                      letterSpacing: 2,
+                        );
+                      },
                     ),
-                  ),
 
-                  const SizedBox(height: 16),
+                    const SizedBox(height: 48),
 
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 48),
-                    child: Text(
+                    // メインメッセージ
+                    const Text(
+                      '準備完了！',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        letterSpacing: 2,
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    Text(
                       'これで、VAGINAを使い始める\n準備が整いました',
                       textAlign: TextAlign.center,
                       style: TextStyle(
@@ -120,14 +113,11 @@ class _DiveInScreenState extends State<DiveInScreen>
                         height: 1.6,
                       ),
                     ),
-                  ),
 
-                  const SizedBox(height: 64),
+                    const SizedBox(height: 64),
 
-                  // Motivational message
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 48),
-                    child: Column(
+                    // 機能ポイント
+                    Column(
                       children: [
                         _buildFeaturePoint(
                           '声で思考を整理',
@@ -145,32 +135,52 @@ class _DiveInScreenState extends State<DiveInScreen>
                         ),
                       ],
                     ),
-                  ),
 
-                  const SizedBox(height: 64),
+                    const SizedBox(height: 64),
 
-                  // Start button (FAB for smooth morphing transition)
-                  FloatingActionButton.extended(
-                    onPressed: widget.onStart,
-                    backgroundColor: AppTheme.successColor,
-                    elevation: 6,
-                    icon: const Icon(
-                      Icons.phone,
-                      size: 24,
-                      color: Colors.white,
-                    ),
-                    label: const Text(
-                      'はじめる',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                    // 円形スタートボタン - インラインで記述（モーフィング対応）
+                    SizedBox(
+                      width: 80,
+                      height: 80,
+                      child: FloatingActionButton(
+                        heroTag: 'call_fab',
+                        onPressed: widget.onStart,
+                        backgroundColor: AppTheme.successColor,
+                        elevation: 8,
+                        shape: const CircleBorder(),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.phone,
+                              size: 28,
+                              color: Colors.white,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'はじめる',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white.withValues(alpha: 0.9),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-
-                ],
+                  ],
+                ),
               ),
+            ),
+          ),
+          // 戻るボタン - 常に左上に固定
+          Positioned(
+            top: 0,
+            left: 0,
+            child: IconButton(
+              icon: const Icon(Icons.arrow_back, color: Colors.white),
+              onPressed: widget.onBack,
             ),
           ),
         ],

@@ -1,6 +1,8 @@
+import 'package:flutter/material.dart';
 import '../base_tool.dart';
+import '../tool_metadata.dart';
 
-/// Tool for performing arithmetic calculations
+/// 計算機ツール
 class CalculatorTool extends BaseTool {
   final _ExpressionEvaluator _evaluator = _ExpressionEvaluator();
   
@@ -22,6 +24,16 @@ class CalculatorTool extends BaseTool {
     },
     'required': ['expression'],
   };
+  
+  @override
+  ToolMetadata get metadata => const ToolMetadata(
+    name: 'calculator',
+    displayName: '計算機',
+    displayDescription: '数式を計算します',
+    description: 'Perform basic arithmetic calculations. Use this for mathematical operations.',
+    icon: Icons.calculate,
+    category: ToolCategory.calculation,
+  );
 
   @override
   Future<Map<String, dynamic>> execute(Map<String, dynamic> arguments) async {

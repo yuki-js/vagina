@@ -1,7 +1,9 @@
+import 'package:flutter/material.dart';
 import '../base_tool.dart';
+import '../tool_metadata.dart';
 import '../../../interfaces/memory_repository.dart';
 
-/// Tool for deleting information from long-term memory
+/// メモリ削除ツール
 class MemoryDeleteTool extends BaseTool {
   final MemoryRepository _memoryRepo;
   
@@ -25,6 +27,16 @@ class MemoryDeleteTool extends BaseTool {
     },
     'required': ['key'],
   };
+  
+  @override
+  ToolMetadata get metadata => const ToolMetadata(
+    name: 'memory_delete',
+    displayName: 'メモリ削除',
+    displayDescription: '記憶した情報を削除します',
+    description: 'Delete information from long-term memory.',
+    icon: Icons.delete,
+    category: ToolCategory.memory,
+  );
 
   @override
   Future<Map<String, dynamic>> execute(Map<String, dynamic> arguments) async {

@@ -1,7 +1,9 @@
+import 'package:flutter/material.dart';
 import '../base_tool.dart';
+import '../tool_metadata.dart';
 import '../../../interfaces/memory_repository.dart';
 
-/// Tool for recalling information from long-term memory
+/// メモリ検索ツール
 class MemoryRecallTool extends BaseTool {
   final MemoryRepository _memoryRepo;
   
@@ -25,6 +27,16 @@ class MemoryRecallTool extends BaseTool {
     },
     'required': ['key'],
   };
+  
+  @override
+  ToolMetadata get metadata => const ToolMetadata(
+    name: 'memory_recall',
+    displayName: 'メモリ検索',
+    displayDescription: '記憶した情報を検索します',
+    description: 'Recall information from long-term memory.',
+    icon: Icons.search,
+    category: ToolCategory.memory,
+  );
 
   @override
   Future<Map<String, dynamic>> execute(Map<String, dynamic> arguments) async {

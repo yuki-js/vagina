@@ -1,7 +1,9 @@
+import 'package:flutter/material.dart';
 import '../base_tool.dart';
+import '../tool_metadata.dart';
 import '../../notepad_service.dart';
 
-/// Tool for closing an artifact tab
+/// ノートパッドタブクローズツール
 class NotepadCloseTabTool extends BaseTool {
   final NotepadService _notepadService;
   
@@ -26,6 +28,16 @@ class NotepadCloseTabTool extends BaseTool {
     },
     'required': ['tabId'],
   };
+  
+  @override
+  ToolMetadata get metadata => const ToolMetadata(
+    name: 'notepad_close_tab',
+    displayName: 'ノートパッド閉じる',
+    displayDescription: 'ノートパッドのタブを閉じます',
+    description: 'Close an artifact tab by its ID.',
+    icon: Icons.close,
+    category: ToolCategory.notepad,
+  );
 
   @override
   Future<Map<String, dynamic>> execute(Map<String, dynamic> arguments) async {

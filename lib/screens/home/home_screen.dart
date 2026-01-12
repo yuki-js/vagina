@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/app_theme.dart';
 import '../../components/title_bar.dart';
-import '../settings_screen.dart';
+import '../settings/settings_screen.dart';
 import '../about/about_screen.dart';
 import '../call/call_screen.dart';
-import '../speed_dial_config_screen.dart';
+import '../speed_dial/speed_dial_config_screen.dart';
 import 'speed_dial_tab.dart';
 import 'sessions_tab.dart';
 import 'tools_tab.dart';
@@ -244,6 +244,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         height: 64,
         width: 64,
         child: FloatingActionButton(
+          heroTag: 'call_fab',
           shape: const CircleBorder(),
           onPressed: _handleCallButton,
           backgroundColor: AppTheme.successColor,

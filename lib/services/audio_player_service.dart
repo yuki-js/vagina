@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:taudio/taudio.dart';
 import 'audio_player_service_windows.dart';
 import 'log_service.dart';
+import '../config/app_config.dart';
 
 /// Service for playing streaming PCM audio from Azure OpenAI Realtime API
 ///
@@ -23,11 +24,6 @@ class AudioPlayerService {
   bool _isProcessingQueue = false;
   Completer<void>? _processingCompleter;
   bool _isStartingPlayback = false;
-
-  // Audio format settings
-  static const int _sampleRate = 24000;
-  static const int _numChannels = 1;
-  static const int _minBufferSizeBeforeStart = 4800;
 
   bool get isPlaying => _isPlaying;
 
@@ -73,8 +69,8 @@ class AudioPlayerService {
 
         await (_playerImpl as FlutterSoundPlayer).startPlayerFromStream(
           codec: Codec.pcm16,
-          sampleRate: _sampleRate,
-          numChannels: _numChannels,
+          sampleRate: AppConfig.sampleRate,
+          numChannels: AppConfig.channels,
           bufferSize: 8192,
           interleaved: true,
         );
@@ -119,7 +115,7 @@ class AudioPlayerService {
       if (!_isPlaying && !_isStartingPlayback) {
         int totalBuffered =
             _audioQueue.fold(0, (sum, chunk) => sum + chunk.length);
-        if (totalBuffered >= _minBufferSizeBeforeStart) {
+        if (totalBuffered >= AppConfig.minAudioBufferSizeBeforeStart) {
           await _startPlayback();
         } else {
           _isProcessingQueue = false;
@@ -174,7 +170,10 @@ class AudioPlayerService {
           const Duration(seconds: 2),
           onTimeout: () {},
         );
-      } catch (e) {}
+      } on TimeoutException {
+        // Timeout is expected during stop - we're stopping anyway
+        logService.debug(_tag, 'Queue processing timed out during stop');
+      }
     }
 
     if (_isInitialized && wasPlaying) {

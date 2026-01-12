@@ -7,7 +7,6 @@ import 'screens/home/home_screen.dart';
 import 'screens/oobe/oobe_flow.dart';
 import 'theme/app_theme.dart';
 import 'repositories/repository_factory.dart';
-import 'repositories/preferences_repository.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -61,9 +60,8 @@ class _VaginaAppState extends State<VaginaApp> {
   }
 
   Future<void> _checkFirstLaunch() async {
-    final prefs = PreferencesRepository();
-    await prefs.initialize();
-    final isFirst = await prefs.isFirstLaunch();
+    // Use RepositoryFactory.preferences which shares the common KeyValueStore
+    final isFirst = await RepositoryFactory.preferences.isFirstLaunch();
     
     if (mounted) {
       setState(() {

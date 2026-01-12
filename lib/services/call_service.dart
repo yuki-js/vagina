@@ -66,6 +66,8 @@ class CallService {
       StreamController<int>.broadcast();
   final StreamController<String> _errorController =
       StreamController<String>.broadcast();
+  final StreamController<String> _sessionSavedController =
+      StreamController<String>.broadcast();
 
   CallState _currentState = CallState.idle;
   int _callDuration = 0;
@@ -104,6 +106,9 @@ class CallService {
   /// Stream of error messages
   Stream<String> get errorStream => _errorController.stream;
   
+  /// セッション保存完了通知ストリーム（セッションID）
+  Stream<String> get sessionSavedStream => _sessionSavedController.stream;
+  
   /// Stream of chat messages
   Stream<List<ChatMessage>> get chatStream => _chatManager.chatStream;
   
@@ -128,6 +133,9 @@ class CallService {
       _amplitudeController.add(0.0);
     }
   }
+
+  /// Get the current speed dial ID
+  String? get currentSpeedDialId => _currentSpeedDialId;
 
   /// Set the current speed dial ID (call before startCall)
   void setSpeedDialId(String? speedDialId) {
@@ -165,6 +173,7 @@ class CallService {
 
     logService.info(_tag, 'Starting call');
     _chatManager.clearChat();
+    _notepadService.clearTabs(); // 前のセッションのノートパッドをクリア
 
     try {
       _setState(CallState.connecting);
@@ -400,7 +409,7 @@ class CallService {
     }
 
     try {
-      // Convert chat messages to JSON strings
+      // チャットメッセージをJSON文字列に変換
       final chatMessagesJson = _chatManager.chatMessages
           .map((msg) => jsonEncode({
                 'role': msg.role,
@@ -409,12 +418,12 @@ class CallService {
               }))
           .toList();
 
-      // Collect all notepad content
+      // ノートパッドの内容を収集
       final notepadTabs = _notepadService.tabs;
       List<SessionNotepadTab>? notepadTabsData;
       
       if (notepadTabs.isNotEmpty) {
-        // Save tabs as structured data
+        // タブを構造化データとして保存
         notepadTabsData = notepadTabs.map((tab) {
           return SessionNotepadTab(
             title: tab.title,
@@ -434,14 +443,17 @@ class CallService {
       );
 
       await RepositoryFactory.callSessions.save(session);
-      logService.info(_tag, 'Session saved: ${session.id}');
+      logService.info(_tag, 'セッション保存完了: ${session.id}');
+      
+      // セッション保存完了を通知（UIの更新用）
+      _sessionSavedController.add(session.id);
     } catch (e) {
-      logService.error(_tag, 'Failed to save session: $e');
+      logService.error(_tag, 'セッション保存失敗: $e');
     }
   }
 
   Future<void> _cleanup() async {
-    logService.debug(_tag, 'Cleaning up call resources');
+    logService.debug(_tag, 'リソースのクリーンアップ');
     
     _callTimer?.cancel();
     _callTimer = null;
@@ -542,6 +554,7 @@ class CallService {
     await _amplitudeController.close();
     await _durationController.close();
     await _errorController.close();
+    await _sessionSavedController.close();
     await _chatManager.dispose();
   }
 }

@@ -2,8 +2,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 
-/// Animated background for OOBE screens with stars and wave motifs
-/// Fixed to bright/active state for elegant presentation
+/// OOBEスクリーン用のアニメーション背景（星と波のモチーフ）
+/// 背景アニメーションのみを提供し、レイアウトは各画面が担当
 class OOBEBackground extends StatefulWidget {
   final Widget child;
 
@@ -49,7 +49,7 @@ class _OOBEBackgroundState extends State<OOBEBackground>
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // Animated background particles
+          // アニメーション背景パーティクル
           Positioned.fill(
             child: AnimatedBuilder(
               animation: _rotationController,
@@ -63,7 +63,7 @@ class _OOBEBackgroundState extends State<OOBEBackground>
               },
             ),
           ),
-          // Child content
+          // 子コンテンツをそのまま配置（レイアウトは各画面が担当）
           widget.child,
         ],
       ),

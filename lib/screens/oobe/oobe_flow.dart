@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../components/oobe_background.dart';
+import '../../repositories/repository_factory.dart';
 import 'welcome_screen.dart';
 import 'authentication_screen.dart';
 import 'manual_setup_screen.dart';
 import 'permissions_screen.dart';
 import 'dive_in_screen.dart';
 import '../home/home_screen.dart';
-import '../../repositories/preferences_repository.dart';
 
 /// Main OOBE flow coordinator with navigation and page management
 class OOBEFlow extends ConsumerStatefulWidget {
@@ -35,10 +35,8 @@ class _OOBEFlowState extends ConsumerState<OOBEFlow> {
   }
 
   void _completeOOBE() async {
-    // Mark first launch as completed
-    final prefs = PreferencesRepository();
-    await prefs.initialize();
-    await prefs.markFirstLaunchCompleted();
+    // Mark first launch as completed using RepositoryFactory
+    await RepositoryFactory.preferences.markFirstLaunchCompleted();
     
     if (!mounted) return;
 

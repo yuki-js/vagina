@@ -8,14 +8,19 @@ import 'json_call_session_repository.dart';
 import 'json_speed_dial_repository.dart';
 import 'json_memory_repository.dart';
 import 'json_config_repository.dart';
+import 'preferences_repository.dart';
 
 /// Factory for creating repository instances
+/// 
+/// All repositories share a common KeyValueStore for consistent
+/// data storage location and initialization.
 class RepositoryFactory {
   static KeyValueStore? _store;
   static CallSessionRepository? _callSessionRepo;
   static SpeedDialRepository? _speedDialRepo;
   static MemoryRepository? _memoryRepo;
   static ConfigRepository? _configRepo;
+  static PreferencesRepository? _preferencesRepo;
 
   /// Initialize the repositories with a key-value store
   static Future<void> initialize() async {
@@ -28,34 +33,39 @@ class RepositoryFactory {
 
   /// Get the CallSession repository
   static CallSessionRepository get callSessions {
-    if (_store == null) {
-      throw StateError('RepositoryFactory not initialized. Call initialize() first.');
-    }
+    _ensureInitialized();
     return _callSessionRepo ??= JsonCallSessionRepository(_store!);
   }
 
   /// Get the SpeedDial repository
   static SpeedDialRepository get speedDials {
-    if (_store == null) {
-      throw StateError('RepositoryFactory not initialized. Call initialize() first.');
-    }
+    _ensureInitialized();
     return _speedDialRepo ??= JsonSpeedDialRepository(_store!);
   }
 
   /// Get the Memory repository
   static MemoryRepository get memory {
-    if (_store == null) {
-      throw StateError('RepositoryFactory not initialized. Call initialize() first.');
-    }
+    _ensureInitialized();
     return _memoryRepo ??= JsonMemoryRepository(_store!);
   }
 
   /// Get the Config repository
   static ConfigRepository get config {
+    _ensureInitialized();
+    return _configRepo ??= JsonConfigRepository(_store!);
+  }
+
+  /// Get the Preferences repository
+  static PreferencesRepository get preferences {
+    _ensureInitialized();
+    return _preferencesRepo ??= PreferencesRepository(_store!);
+  }
+
+  /// Helper to ensure initialization
+  static void _ensureInitialized() {
     if (_store == null) {
       throw StateError('RepositoryFactory not initialized. Call initialize() first.');
     }
-    return _configRepo ??= JsonConfigRepository(_store!);
   }
 
   /// Reset all repositories (for testing)
@@ -65,5 +75,6 @@ class RepositoryFactory {
     _speedDialRepo = null;
     _memoryRepo = null;
     _configRepo = null;
+    _preferencesRepo = null;
   }
 }

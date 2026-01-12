@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../theme/app_theme.dart';
-import '../providers/providers.dart';
-import '../models/speed_dial.dart';
-import '../components/emoji_picker.dart';
-import '../repositories/repository_factory.dart';
+import '../../theme/app_theme.dart';
+import '../../providers/providers.dart';
+import '../../models/speed_dial.dart';
+import '../../components/emoji_picker.dart';
+import '../../repositories/repository_factory.dart';
 
 /// Speed dial configuration screen
 /// Accessed from speed dial tab when tapping on a speed dial
@@ -285,7 +285,7 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
-                      initialValue: _selectedVoice,
+                      value: _selectedVoice,
                       decoration: InputDecoration(
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),

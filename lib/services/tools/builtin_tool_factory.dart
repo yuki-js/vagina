@@ -3,7 +3,7 @@ import 'builtin/builtin_tools.dart';
 import '../notepad_service.dart';
 import '../../interfaces/memory_repository.dart';
 
-/// Factory for creating built-in tools
+/// ビルトインツールのファクトリ
 class BuiltinToolFactory {
   final MemoryRepository _memoryRepo;
   final NotepadService _notepadService;
@@ -13,7 +13,7 @@ class BuiltinToolFactory {
     required NotepadService notepadService,
   }) : _memoryRepo = memoryRepository, _notepadService = notepadService;
   
-  /// Get all built-in tool names (for configuration)
+  /// すべてのビルトインツール名（設定用）
   static const List<String> allToolNames = [
     'get_current_time',
     'memory_save',
@@ -29,7 +29,7 @@ class BuiltinToolFactory {
     'document_read',
   ];
   
-  /// Create all built-in tools
+  /// すべてのビルトインツールを生成
   List<BaseTool> createBuiltinTools() {
     return [
       GetCurrentTimeTool(),
@@ -37,12 +37,12 @@ class BuiltinToolFactory {
       MemoryRecallTool(memoryRepository: _memoryRepo),
       MemoryDeleteTool(memoryRepository: _memoryRepo),
       CalculatorTool(),
-      // Artifact management tools
+      // ノートパッド管理ツール
       NotepadListTabsTool(notepadService: _notepadService),
       NotepadGetMetadataTool(notepadService: _notepadService),
       NotepadGetContentTool(notepadService: _notepadService),
       NotepadCloseTabTool(notepadService: _notepadService),
-      // Document creation tools
+      // ドキュメント作成ツール
       DocumentOverwriteTool(notepadService: _notepadService),
       DocumentPatchTool(notepadService: _notepadService),
       DocumentReadTool(notepadService: _notepadService),
