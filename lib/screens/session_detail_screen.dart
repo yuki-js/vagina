@@ -5,6 +5,7 @@ import '../models/call_session.dart';
 import '../components/historical_chat_view.dart';
 import '../components/historical_notepad_view.dart';
 import '../repositories/repository_factory.dart';
+import '../utils/duration_formatter.dart';
 
 /// Session detail screen showing chat and notepad from a past session
 class SessionDetailScreen extends ConsumerStatefulWidget {
@@ -87,7 +88,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    _formatDateTime(session.startTime),
+                    DurationFormatter.formatRelativeDate(session.startTime, includeTime: true),
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -96,7 +97,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    _formatDuration(session.duration),
+                    DurationFormatter.formatCallDuration(session.duration),
                     style: TextStyle(
                       fontSize: 14,
                       color: AppTheme.lightTextSecondary,
@@ -145,24 +146,5 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
         ),
       ),
     );
-  }
-
-  String _formatDateTime(DateTime dateTime) {
-    final now = DateTime.now();
-    final difference = now.difference(dateTime);
-
-    if (difference.inDays == 0) {
-      return '今日 ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}';
-    } else if (difference.inDays == 1) {
-      return '昨日 ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}';
-    } else {
-      return '${dateTime.year}/${dateTime.month}/${dateTime.day} ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}';
-    }
-  }
-
-  String _formatDuration(int seconds) {
-    final minutes = seconds ~/ 60;
-    final remainingSeconds = seconds % 60;
-    return '通話時間: $minutes分$remainingSeconds秒';
   }
 }

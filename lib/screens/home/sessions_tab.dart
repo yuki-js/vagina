@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/app_theme.dart';
 import '../../models/call_session.dart';
 import '../../providers/providers.dart';
+import '../../utils/duration_formatter.dart';
 import '../session_detail_screen.dart';
 import '../../repositories/repository_factory.dart';
 
@@ -213,8 +214,8 @@ class _SessionsTabState extends ConsumerState<SessionsTab> {
                 onChanged: (_) => _toggleSelection(session.id),
               )
             : const Icon(Icons.phone, color: AppTheme.primaryColor),
-        title: Text(_formatDateTime(session.startTime)),
-        subtitle: Text(_formatDuration(session.duration)),
+        title: Text(DurationFormatter.formatRelativeDate(session.startTime, includeTime: true)),
+        subtitle: Text(DurationFormatter.formatDurationCompact(session.duration)),
         trailing: _isSelectionMode ? null : const Icon(Icons.chevron_right),
         onTap: () {
           if (_isSelectionMode) {
@@ -237,24 +238,5 @@ class _SessionsTabState extends ConsumerState<SessionsTab> {
         },
       ),
     );
-  }
-
-  String _formatDateTime(DateTime dateTime) {
-    final now = DateTime.now();
-    final difference = now.difference(dateTime);
-
-    if (difference.inDays == 0) {
-      return '今日 ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}';
-    } else if (difference.inDays == 1) {
-      return '昨日 ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}';
-    } else {
-      return '${dateTime.year}/${dateTime.month}/${dateTime.day}';
-    }
-  }
-
-  String _formatDuration(int seconds) {
-    final minutes = seconds ~/ 60;
-    final secs = seconds % 60;
-    return '$minutes:${secs.toString().padLeft(2, '0')}';
   }
 }
