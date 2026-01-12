@@ -1,18 +1,29 @@
 import 'notepad_service.dart';
 import 'tools/tool_manager.dart';
+import 'tools/tool_registry.dart';
+import 'tools/tool_metadata.dart';
 import 'tools/builtin_tool_factory.dart';
+import 'tools/builtin_tool_metadata.dart';
 import '../repositories/repository_factory.dart';
 
 export 'tools/base_tool.dart' show BaseTool, ToolExecutionResult, ToolManagerRef;
 export 'tools/tool_manager.dart' show ToolManager;
+export 'tools/tool_registry.dart' show ToolRegistry, ToolRegistryEvent, ToolRegistryEventType;
+export 'tools/tool_metadata.dart' show ToolMetadata, ToolCategory, ToolSource;
+export 'tools/builtin_tool_metadata.dart' show BuiltinToolMetadata;
 
-/// Factory for creating session-scoped ToolManager instances
+/// ツールサービス
 /// 
-/// The ToolService itself is application-scoped but creates
-/// session-scoped ToolManager instances for each call.
+/// アプリケーション全体のツール管理を担当する。
+/// - ビルトインツールの初期化
+/// - セッションスコープのToolManager生成
+/// - ツールの有効/無効管理
+/// - 将来のMCP対応の基盤
 class ToolService {
   final NotepadService _notepadService;
   late final BuiltinToolFactory _builtinFactory;
+  final ToolRegistry _registry = ToolRegistry();
+  bool _initialized = false;
   
   ToolService({
     required NotepadService notepadService,
@@ -23,35 +34,83 @@ class ToolService {
     );
   }
   
-  /// Create a new session-scoped ToolManager
-  /// Called when starting a call - only registers enabled tools
+  /// ツールレジストリを取得
+  ToolRegistry get registry => _registry;
+  
+  /// サービスを初期化（ビルトインツールを登録）
+  void initialize() {
+    if (_initialized) return;
+    
+    // ビルトインツールを登録
+    final tools = _builtinFactory.createBuiltinTools();
+    for (final tool in tools) {
+      final metadata = BuiltinToolMetadata.getMetadata(tool.name);
+      if (metadata != null) {
+        _registry.registerTool(tool, metadata);
+      }
+    }
+    
+    _initialized = true;
+  }
+  
+  /// セッションスコープのToolManagerを生成
+  /// 通話開始時に呼び出される
   Future<ToolManager> createToolManager({void Function()? onToolsChanged}) async {
+    // 未初期化なら初期化
+    if (!_initialized) initialize();
+    
     final manager = ToolManager(onToolsChanged: onToolsChanged);
-    final allTools = _builtinFactory.createBuiltinTools();
+    final allTools = _registry.getAllTools();
     final enabledTools = await RepositoryFactory.config.getEnabledTools();
     
-    // Filter tools based on user preferences
-    final toolsToRegister = enabledTools.isEmpty
-        ? allTools // If no preferences, enable all
-        : allTools.where((tool) => enabledTools.contains(tool.name)).toList();
+    // 有効なツールのみを登録
+    for (final entry in allTools) {
+      final isEnabled = enabledTools.isEmpty || enabledTools.contains(entry.tool.name);
+      if (isEnabled) {
+        manager.registerTool(entry.tool);
+      }
+    }
     
-    manager.registerTools(toolsToRegister);
     return manager;
   }
   
-  /// Get all tool definitions (regardless of enabled state)
+  /// すべてのツール定義を取得（有効/無効問わず）
   List<Map<String, dynamic>> get toolDefinitions {
-    final tools = _builtinFactory.createBuiltinTools();
-    return tools.map((t) => t.toJson()).toList();
+    if (!_initialized) initialize();
+    return _registry.getToolDefinitions();
   }
   
-  /// Get enabled status for a tool
+  /// すべてのツールとメタデータを取得
+  List<({String name, ToolMetadata metadata})> get allToolsWithMetadata {
+    if (!_initialized) initialize();
+    return _registry.getAllTools()
+        .map((t) => (name: t.tool.name, metadata: t.metadata))
+        .toList();
+  }
+  
+  /// カテゴリ別にグループ化したツールを取得
+  Map<ToolCategory, List<ToolMetadata>> get toolsByCategory {
+    if (!_initialized) initialize();
+    final result = <ToolCategory, List<ToolMetadata>>{};
+    for (final entry in _registry.getAllTools()) {
+      result.putIfAbsent(entry.metadata.category, () => []).add(entry.metadata);
+    }
+    return result;
+  }
+  
+  /// ツールの有効状態を取得
   Future<bool> isToolEnabled(String toolName) async {
     return await RepositoryFactory.config.isToolEnabled(toolName);
   }
   
-  /// Toggle a tool's enabled state
+  /// ツールの有効/無効を切り替え
   Future<void> toggleTool(String toolName) async {
     await RepositoryFactory.config.toggleTool(toolName);
+  }
+  
+  /// ツールメタデータを取得
+  ToolMetadata? getToolMetadata(String name) {
+    if (!_initialized) initialize();
+    return _registry.getMetadata(name);
   }
 }

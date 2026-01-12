@@ -3,13 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/app_theme.dart';
 import '../../providers/providers.dart';
 import '../../repositories/repository_factory.dart';
+import '../../services/tool_service.dart';
+import '../../services/tools/tool_metadata.dart';
 
-/// Provider for tool enabled states (uses repository)
+/// ツール有効状態のプロバイダー（リポジトリ使用）
 final toolEnabledProvider = FutureProvider.family<bool, String>((ref, toolName) async {
   return await RepositoryFactory.config.isToolEnabled(toolName);
 });
 
-/// Tools tab - shows available tools with enable/disable toggle via long press
+/// ツールタブ - 利用可能なツールを表示し、長押しで有効/無効を切り替え
 class ToolsTab extends ConsumerStatefulWidget {
   const ToolsTab({super.key});
 
@@ -40,16 +42,16 @@ class _ToolsTabState extends ConsumerState<ToolsTab> {
     });
   }
 
-  void _selectAll(List<Map<String, dynamic>> tools) {
+  void _selectAll(List<ToolMetadata> tools) {
     setState(() {
       _selectedTools.clear();
-      _selectedTools.addAll(tools.map((t) => t['name'] as String));
+      _selectedTools.addAll(tools.map((t) => t.name));
     });
   }
 
-  void _invertSelection(List<Map<String, dynamic>> tools) {
+  void _invertSelection(List<ToolMetadata> tools) {
     setState(() {
-      final allNames = tools.map((t) => t['name'] as String).toSet();
+      final allNames = tools.map((t) => t.name).toSet();
       final newSelection = allNames.difference(_selectedTools);
       _selectedTools.clear();
       _selectedTools.addAll(newSelection);
@@ -107,54 +109,15 @@ class _ToolsTabState extends ConsumerState<ToolsTab> {
   @override
   Widget build(BuildContext context) {
     final toolService = ref.watch(toolServiceProvider);
-    final tools = toolService.toolDefinitions;
+    final toolsByCategory = toolService.toolsByCategory;
 
     return Column(
       children: [
+        // 選択モードのヘッダー
         if (_isSelectionMode)
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: AppTheme.primaryColor.withValues(alpha: 0.1),
-            child: Row(
-              children: [
-                Text(
-                  '${_selectedTools.length}件選択中',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.primaryColor,
-                  ),
-                ),
-                const Spacer(),
-                TextButton.icon(
-                  onPressed: () => _selectAll(tools),
-                  icon: const Icon(Icons.select_all, size: 18),
-                  label: const Text('全選択'),
-                ),
-                TextButton.icon(
-                  onPressed: () => _invertSelection(tools),
-                  icon: const Icon(Icons.swap_vert, size: 18),
-                  label: const Text('反転'),
-                ),
-                IconButton(
-                  onPressed: _selectedTools.isNotEmpty ? _enableSelected : null,
-                  icon: const Icon(Icons.check_circle),
-                  color: AppTheme.successColor,
-                  tooltip: '有効化',
-                ),
-                IconButton(
-                  onPressed: _selectedTools.isNotEmpty ? _disableSelected : null,
-                  icon: const Icon(Icons.cancel),
-                  color: AppTheme.errorColor,
-                  tooltip: '無効化',
-                ),
-                IconButton(
-                  onPressed: _toggleSelectionMode,
-                  icon: const Icon(Icons.close),
-                ),
-              ],
-            ),
-          ),
+          _buildSelectionHeader(toolsByCategory),
+        
+        // ツールリスト
         Expanded(
           child: ListView(
             padding: const EdgeInsets.all(16),
@@ -176,8 +139,9 @@ class _ToolsTabState extends ConsumerState<ToolsTab> {
                 ),
               ),
               const SizedBox(height: 24),
-              // Tools list
-              ...tools.map((tool) => _buildToolItem(context, tool)),
+              
+              // カテゴリ別にツールを表示
+              ...toolsByCategory.entries.map((entry) => _buildCategorySection(entry.key, entry.value)),
             ],
           ),
         ),
@@ -185,13 +149,103 @@ class _ToolsTabState extends ConsumerState<ToolsTab> {
     );
   }
 
-  Widget _buildToolItem(BuildContext context, Map<String, dynamic> tool) {
-    final name = tool['name'] as String;
-    final isSelected = _selectedTools.contains(name);
+  Widget _buildSelectionHeader(Map<ToolCategory, List<ToolMetadata>> toolsByCategory) {
+    final allTools = toolsByCategory.values.expand((list) => list).toList();
     
-    // Map tool names to friendly Japanese names and icons
-    final toolInfo = _getToolInfo(name);
-    final enabledAsync = ref.watch(toolEnabledProvider(name));
+    return Container(
+      padding: const EdgeInsets.all(16),
+      color: AppTheme.primaryColor.withValues(alpha: 0.1),
+      child: Row(
+        children: [
+          Text(
+            '${_selectedTools.length}件選択中',
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.primaryColor,
+            ),
+          ),
+          const Spacer(),
+          TextButton.icon(
+            onPressed: () => _selectAll(allTools),
+            icon: const Icon(Icons.select_all, size: 18),
+            label: const Text('全選択'),
+          ),
+          TextButton.icon(
+            onPressed: () => _invertSelection(allTools),
+            icon: const Icon(Icons.swap_vert, size: 18),
+            label: const Text('反転'),
+          ),
+          IconButton(
+            onPressed: _selectedTools.isNotEmpty ? _enableSelected : null,
+            icon: const Icon(Icons.check_circle),
+            color: AppTheme.successColor,
+            tooltip: '有効化',
+          ),
+          IconButton(
+            onPressed: _selectedTools.isNotEmpty ? _disableSelected : null,
+            icon: const Icon(Icons.cancel),
+            color: AppTheme.errorColor,
+            tooltip: '無効化',
+          ),
+          IconButton(
+            onPressed: _toggleSelectionMode,
+            icon: const Icon(Icons.close),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCategorySection(ToolCategory category, List<ToolMetadata> tools) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // カテゴリヘッダー
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Row(
+            children: [
+              Icon(category.icon, size: 20, color: AppTheme.primaryColor),
+              const SizedBox(width: 8),
+              Text(
+                category.displayName,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.lightTextPrimary,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '${tools.length}',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppTheme.primaryColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        
+        // ツールアイテム
+        ...tools.map((metadata) => _buildToolItem(context, metadata)),
+        
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+
+  Widget _buildToolItem(BuildContext context, ToolMetadata metadata) {
+    final isSelected = _selectedTools.contains(metadata.name);
+    final enabledAsync = ref.watch(toolEnabledProvider(metadata.name));
 
     return enabledAsync.when(
       data: (isEnabled) => Card(
@@ -199,14 +253,14 @@ class _ToolsTabState extends ConsumerState<ToolsTab> {
         child: InkWell(
           onTap: () {
             if (_isSelectionMode) {
-              _toggleSelection(name);
+              _toggleSelection(metadata.name);
             }
           },
           onLongPress: () {
             if (!_isSelectionMode) {
               setState(() {
                 _isSelectionMode = true;
-                _selectedTools.add(name);
+                _selectedTools.add(metadata.name);
               });
             }
           },
@@ -214,21 +268,21 @@ class _ToolsTabState extends ConsumerState<ToolsTab> {
             leading: _isSelectionMode
                 ? Checkbox(
                     value: isSelected,
-                    onChanged: (_) => _toggleSelection(name),
+                    onChanged: (_) => _toggleSelection(metadata.name),
                   )
                 : Icon(
-                    toolInfo.icon,
+                    metadata.icon,
                     color: isEnabled ? AppTheme.primaryColor : Colors.grey,
                   ),
             title: Text(
-              toolInfo.displayName,
+              metadata.displayName,
               style: TextStyle(
                 fontWeight: FontWeight.w600,
                 color: isEnabled ? AppTheme.lightTextPrimary : Colors.grey,
               ),
             ),
             subtitle: Text(
-              toolInfo.displayDescription,
+              metadata.displayDescription,
               style: TextStyle(
                 fontSize: 12,
                 color: isEnabled ? AppTheme.lightTextSecondary : Colors.grey,
@@ -259,9 +313,9 @@ class _ToolsTabState extends ConsumerState<ToolsTab> {
       loading: () => Card(
         margin: const EdgeInsets.only(bottom: 12),
         child: ListTile(
-          leading: Icon(toolInfo.icon, color: Colors.grey),
-          title: Text(toolInfo.displayName),
-          subtitle: Text(toolInfo.displayDescription),
+          leading: Icon(metadata.icon, color: Colors.grey),
+          title: Text(metadata.displayName),
+          subtitle: Text(metadata.displayDescription),
           trailing: const SizedBox(
             width: 20,
             height: 20,
@@ -272,99 +326,4 @@ class _ToolsTabState extends ConsumerState<ToolsTab> {
       error: (_, __) => const SizedBox(),
     );
   }
-
-  _ToolInfo _getToolInfo(String toolName) {
-    switch (toolName) {
-      case 'get_current_time':
-        return const _ToolInfo(
-          icon: Icons.access_time,
-          displayName: '現在時刻',
-          displayDescription: '現在の日時を取得',
-        );
-      case 'memory_save':
-        return const _ToolInfo(
-          icon: Icons.save,
-          displayName: 'メモリ保存',
-          displayDescription: '重要な情報を記憶',
-        );
-      case 'memory_recall':
-        return const _ToolInfo(
-          icon: Icons.search,
-          displayName: 'メモリ検索',
-          displayDescription: '記憶した情報を検索',
-        );
-      case 'memory_delete':
-        return const _ToolInfo(
-          icon: Icons.delete,
-          displayName: 'メモリ削除',
-          displayDescription: '記憶した情報を削除',
-        );
-      case 'calculator':
-        return const _ToolInfo(
-          icon: Icons.calculate,
-          displayName: '計算機',
-          displayDescription: '数式を計算',
-        );
-      case 'notepad_list_tabs':
-        return const _ToolInfo(
-          icon: Icons.list,
-          displayName: 'ノートパッド一覧',
-          displayDescription: 'ノートパッドのタブ一覧を取得',
-        );
-      case 'notepad_get_metadata':
-        return const _ToolInfo(
-          icon: Icons.info,
-          displayName: 'ノートパッド情報',
-          displayDescription: 'ノートパッドの詳細情報を取得',
-        );
-      case 'notepad_get_content':
-        return const _ToolInfo(
-          icon: Icons.article,
-          displayName: 'ノートパッド読取',
-          displayDescription: 'ノートパッドの内容を読み取り',
-        );
-      case 'notepad_close_tab':
-        return const _ToolInfo(
-          icon: Icons.close,
-          displayName: 'ノートパッド閉じる',
-          displayDescription: 'ノートパッドのタブを閉じる',
-        );
-      case 'document_overwrite':
-        return const _ToolInfo(
-          icon: Icons.edit_document,
-          displayName: 'ドキュメント作成',
-          displayDescription: '新しいドキュメントを作成または上書き',
-        );
-      case 'document_patch':
-        return const _ToolInfo(
-          icon: Icons.edit,
-          displayName: 'ドキュメント編集',
-          displayDescription: 'ドキュメントの一部を編集',
-        );
-      case 'document_read':
-        return const _ToolInfo(
-          icon: Icons.visibility,
-          displayName: 'ドキュメント表示',
-          displayDescription: 'ドキュメントの内容を表示',
-        );
-      default:
-        return _ToolInfo(
-          icon: Icons.extension,
-          displayName: toolName,
-          displayDescription: 'ツール',
-        );
-    }
-  }
-}
-
-class _ToolInfo {
-  final IconData icon;
-  final String displayName;
-  final String displayDescription;
-
-  const _ToolInfo({
-    required this.icon,
-    required this.displayName,
-    required this.displayDescription,
-  });
 }
