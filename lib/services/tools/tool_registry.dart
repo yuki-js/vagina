@@ -80,9 +80,10 @@ class ToolRegistry {
   
   /// すべてのツールとメタデータを取得
   List<({BaseTool tool, ToolMetadata metadata})> getAllTools() {
-    return _tools.entries.map((e) {
-      return (tool: e.value, metadata: _metadata[e.key]!);
-    }).toList();
+    return _tools.entries
+        .where((e) => _metadata.containsKey(e.key))
+        .map((e) => (tool: e.value, metadata: _metadata[e.key]!))
+        .toList();
   }
   
   /// カテゴリでツールをフィルタ
