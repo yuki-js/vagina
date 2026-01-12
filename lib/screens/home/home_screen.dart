@@ -244,6 +244,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         height: 64,
         width: 64,
         child: FloatingActionButton(
+          heroTag: 'call_fab',
           shape: const CircleBorder(),
           onPressed: _handleCallButton,
           backgroundColor: AppTheme.successColor,

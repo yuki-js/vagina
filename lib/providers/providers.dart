@@ -317,19 +317,6 @@ final refreshableSpeedDialsProvider = FutureProvider<List<SpeedDial>>((ref) asyn
   return await RepositoryFactory.speedDials.getAll();
 });
 
-/// 現在使用中のスピードダイヤルのプロバイダ
-final currentSpeedDialProvider = Provider<SpeedDial?>((ref) {
-  final callService = ref.watch(callServiceProvider);
-  final speedDialId = callService.currentSpeedDialId;
-  if (speedDialId == null) return null;
-  
-  final speedDialsAsync = ref.watch(refreshableSpeedDialsProvider);
-  return speedDialsAsync.maybeWhen(
-    data: (speedDials) => speedDials.where((sd) => sd.id == speedDialId).firstOrNull,
-    orElse: () => null,
-  );
-});
-
 // ============================================================================
 // セッション履歴プロバイダ
 // ============================================================================

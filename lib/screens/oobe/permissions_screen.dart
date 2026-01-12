@@ -160,117 +160,121 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
     }
 
     return SafeArea(
-      child: Column(
+      child: Stack(
         children: [
-          // Back button
-          Align(
-            alignment: Alignment.topLeft,
+          // メインコンテンツ - 中央寄せ
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 24),
+
+                    // Title
+                    const Text(
+                      '権限の設定',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        letterSpacing: 1,
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    Text(
+                      'VAGINAを最大限に活用するために、\nいくつかの権限が必要です',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.white.withValues(alpha: 0.7),
+                        height: 1.5,
+                      ),
+                    ),
+
+                    const SizedBox(height: 48),
+
+                    // Permission items
+                    ..._permissions.map((permission) => Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: PermissionCard(
+                            permission: permission,
+                            onRequest: () => _handlePermissionRequest(permission),
+                          ),
+                        )),
+
+                    const SizedBox(height: 32),
+
+                    // Continue button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _canContinue ? widget.onContinue : null,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primaryColor,
+                          foregroundColor: Colors.white,
+                          disabledBackgroundColor:
+                              Colors.white.withValues(alpha: 0.1),
+                          disabledForegroundColor:
+                              Colors.white.withValues(alpha: 0.3),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          '続ける',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    if (!_canContinue) ...[
+                      const SizedBox(height: 12),
+                      Text(
+                        '※必須の権限を許可してください',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppTheme.warningColor.withValues(alpha: 0.8),
+                        ),
+                      ),
+                    ],
+
+                    const SizedBox(height: 16),
+
+                    // Skip button
+                    Center(
+                      child: TextButton(
+                        onPressed: widget.onContinue,
+                        child: Text(
+                          'あとで設定する',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.white.withValues(alpha: 0.6),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 32),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          // 戻るボタン - 常に左上に固定
+          Positioned(
+            top: 0,
+            left: 0,
             child: IconButton(
               icon: const Icon(Icons.arrow_back, color: Colors.white),
               onPressed: widget.onBack,
-            ),
-          ),
-
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 32),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 24),
-
-                  // Title
-                  const Text(
-                    '権限の設定',
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                      letterSpacing: 1,
-                    ),
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  Text(
-                    'VAGINAを最大限に活用するために、\nいくつかの権限が必要です',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.white.withValues(alpha: 0.7),
-                      height: 1.5,
-                    ),
-                  ),
-
-                  const SizedBox(height: 48),
-
-                  // Permission items
-                  ..._permissions.map((permission) => Padding(
-                        padding: const EdgeInsets.only(bottom: 16),
-                        child: PermissionCard(
-                          permission: permission,
-                          onRequest: () => _handlePermissionRequest(permission),
-                        ),
-                      )),
-
-                  const SizedBox(height: 32),
-
-                  // Continue button
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _canContinue ? widget.onContinue : null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primaryColor,
-                        foregroundColor: Colors.white,
-                        disabledBackgroundColor:
-                            Colors.white.withValues(alpha: 0.1),
-                        disabledForegroundColor:
-                            Colors.white.withValues(alpha: 0.3),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text(
-                        '続ける',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  if (!_canContinue) ...[
-                    const SizedBox(height: 12),
-                    Text(
-                      '※必須の権限を許可してください',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppTheme.warningColor.withValues(alpha: 0.8),
-                      ),
-                    ),
-                  ],
-
-                  const SizedBox(height: 16),
-
-                  // Skip button
-                  Center(
-                    child: TextButton(
-                      onPressed: widget.onContinue,
-                      child: Text(
-                        'あとで設定する',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.white.withValues(alpha: 0.6),
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 32),
-                ],
-              ),
             ),
           ),
         ],

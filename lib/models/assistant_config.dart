@@ -16,12 +16,22 @@ class AssistantConfig {
     'shimmer',
   ];
 
+  /// デフォルトのシステムプロンプト - VAGINAキャラクターとしての自覚
+  static const String defaultInstructions = '''あなたは「VAGINA」（Voice AGI Notepad Agent）という名前の音声AIアシスタントです。
+
+あなたの特徴:
+- フレンドリーで親しみやすい
+- 簡潔で自然な日本語で話す
+- ユーザーの思考整理を手助けする
+- アイデアの記録や整理をサポートする
+- 必要に応じてノートパッドにメモを取る
+
+あなたは音声会話を通じてユーザーをサポートします。長すぎる返答は避け、会話のリズムを大切にしてください。
+''';
+
   const AssistantConfig({
-    this.name = 'VAGINA Assistant',
-    this.instructions = '''You are a helpful voice assistant. 
-Be concise and natural in your responses.
-Speak in a friendly and professional manner.
-''',
+    this.name = 'VAGINA',
+    this.instructions = defaultInstructions,
     this.voice = 'alloy',
   });
 
@@ -47,8 +57,8 @@ Speak in a friendly and professional manner.
 
   factory AssistantConfig.fromJson(Map<String, dynamic> json) {
     return AssistantConfig(
-      name: json['name'] as String? ?? 'VAGINA Assistant',
-      instructions: json['instructions'] as String? ?? '',
+      name: json['name'] as String? ?? 'VAGINA',
+      instructions: json['instructions'] as String? ?? defaultInstructions,
       voice: json['voice'] as String? ?? 'alloy',
     );
   }

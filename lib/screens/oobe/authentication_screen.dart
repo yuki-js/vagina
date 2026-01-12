@@ -69,19 +69,12 @@ class AuthenticationScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: Column(
+      child: Stack(
         children: [
-          // Back button
-          Align(
-            alignment: Alignment.topLeft,
-            child: IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.white),
-              onPressed: onBack,
-            ),
-          ),
-
-          Expanded(
-            child: Center(
+          // メインコンテンツ - 中央寄せ
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480),
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 32),
                 child: Column(
@@ -184,6 +177,15 @@ class AuthenticationScreen extends StatelessWidget {
                   ],
                 ),
               ),
+            ),
+          ),
+          // 戻るボタン - 常に左上に固定
+          Positioned(
+            top: 0,
+            left: 0,
+            child: IconButton(
+              icon: const Icon(Icons.arrow_back, color: Colors.white),
+              onPressed: onBack,
             ),
           ),
         ],

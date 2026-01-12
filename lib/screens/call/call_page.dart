@@ -5,7 +5,6 @@ import '../../providers/providers.dart';
 import '../../services/call_service.dart';
 import '../../components/audio_level_visualizer.dart';
 import '../../utils/duration_formatter.dart';
-import '../../models/speed_dial.dart';
 import 'control_panel.dart';
 
 /// 通話ページウィジェット - 通話UIとコントロールを表示
@@ -29,7 +28,8 @@ class CallPage extends ConsumerWidget {
     final amplitudeAsync = ref.watch(amplitudeProvider);
     final durationAsync = ref.watch(durationProvider);
     final isMuted = ref.watch(isMutedProvider);
-    final currentSpeedDial = ref.watch(currentSpeedDialProvider);
+    // アシスタント設定から現在のスピードダイヤル情報を取得
+    final assistantConfig = ref.watch(assistantConfigProvider);
 
     final isCallActive = ref.watch(isCallActiveProvider);
     final callState = callStateAsync.value;
@@ -47,7 +47,7 @@ class CallPage extends ConsumerWidget {
             callDuration: duration,
             inputLevel: amplitude,
             isMuted: isMuted,
-            speedDial: currentSpeedDial,
+            assistantName: assistantConfig.name,
           ),
         ),
 
@@ -71,7 +71,7 @@ class _CallMainContent extends StatelessWidget {
   final int callDuration;
   final double inputLevel;
   final bool isMuted;
-  final SpeedDial? speedDial;
+  final String assistantName;
 
   const _CallMainContent({
     required this.isCallActive,
@@ -80,7 +80,7 @@ class _CallMainContent extends StatelessWidget {
     required this.callDuration,
     required this.inputLevel,
     required this.isMuted,
-    this.speedDial,
+    required this.assistantName,
   });
 
   @override
@@ -144,54 +144,30 @@ class _CallMainContent extends StatelessWidget {
           ),
         ],
         
-        // スピードダイヤル情報（通話中のみ、さりげなく表示）
-        if (isCallActive && speedDial != null) ...[
+        // アシスタント名表示（デフォルトでない場合のみ、さりげなく表示）
+        if (isCallActive && assistantName != 'VAGINA') ...[
           const SizedBox(height: 24),
-          _SpeedDialIndicator(speedDial: speedDial!),
-        ],
-      ],
-    );
-  }
-}
-
-/// スピードダイヤルインジケーター - 現在使用中のスピードダイヤルをさりげなく表示
-class _SpeedDialIndicator extends StatelessWidget {
-  final SpeedDial speedDial;
-  
-  const _SpeedDialIndicator({required this.speedDial});
-  
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceColor.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppTheme.primaryColor.withValues(alpha: 0.3),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (speedDial.iconEmoji != null) ...[
-            Text(
-              speedDial.iconEmoji!,
-              style: const TextStyle(fontSize: 16),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppTheme.surfaceColor.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: AppTheme.primaryColor.withValues(alpha: 0.3),
+                width: 1,
+              ),
             ),
-            const SizedBox(width: 6),
-          ],
-          Text(
-            speedDial.name,
-            style: TextStyle(
-              fontSize: 12,
-              color: AppTheme.textSecondary,
-              fontWeight: FontWeight.w500,
+            child: Text(
+              assistantName,
+              style: TextStyle(
+                fontSize: 12,
+                color: AppTheme.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
         ],
-      ),
+      ],
     );
   }
 }

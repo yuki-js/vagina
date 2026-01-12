@@ -3,17 +3,13 @@ import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 
 /// OOBEスクリーン用のアニメーション背景（星と波のモチーフ）
-/// 大画面でのコンテンツ幅制限と中央配置を提供
+/// 背景アニメーションのみを提供し、レイアウトは各画面が担当
 class OOBEBackground extends StatefulWidget {
   final Widget child;
-  
-  /// コンテンツの最大幅（デフォルト: 480px）
-  final double maxContentWidth;
 
   const OOBEBackground({
     super.key,
     required this.child,
-    this.maxContentWidth = 480,
   });
 
   @override
@@ -67,13 +63,8 @@ class _OOBEBackgroundState extends State<OOBEBackground>
               },
             ),
           ),
-          // 子コンテンツを中央配置・幅制限
-          Center(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: widget.maxContentWidth),
-              child: widget.child,
-            ),
-          ),
+          // 子コンテンツをそのまま配置（レイアウトは各画面が担当）
+          widget.child,
         ],
       ),
     );
