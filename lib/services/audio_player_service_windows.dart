@@ -69,7 +69,7 @@ class AudioPlayerServiceWindows {
         wavFile.deleteSync();
       });
     } catch (e) {
-      __logService.error('AudioPlayerWindows', 'Error playing audio: $e');
+      _logService.error('AudioPlayerWindows', 'Error playing audio: $e');
       _isPlaying = false;
       // Try next in queue
       await _playNextInQueue();

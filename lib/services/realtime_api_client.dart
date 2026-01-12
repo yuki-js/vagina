@@ -259,9 +259,6 @@ class RealtimeApiClient {
     }
   }
 
-  /// Session configuration
-  RealtimeSessionConfig _sessionConfig = const RealtimeSessionConfig();
-  
   /// Set noise reduction type ('far' or 'near')
   void setNoiseReduction(String type) {
     if (type == 'far' || type == 'near') {

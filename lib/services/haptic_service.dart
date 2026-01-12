@@ -22,9 +22,9 @@ class HapticService {
   Future<void> heavyImpact() async {
     try {
       await HapticFeedback.heavyImpact();
-      __logService.debug(_tag, 'Heavy impact haptic triggered');
+      _logService.debug(_tag, 'Heavy impact haptic triggered');
     } catch (e) {
-      __logService.warn(_tag, 'Failed to trigger heavy impact haptic: $e');
+      _logService.warn(_tag, 'Failed to trigger heavy impact haptic: $e');
     }
   }
 
@@ -36,9 +36,9 @@ class HapticService {
   Future<void> selectionClick() async {
     try {
       await HapticFeedback.selectionClick();
-      __logService.debug(_tag, 'Selection click haptic triggered');
+      _logService.debug(_tag, 'Selection click haptic triggered');
     } catch (e) {
-      __logService.warn(_tag, 'Failed to trigger selection click haptic: $e');
+      _logService.warn(_tag, 'Failed to trigger selection click haptic: $e');
     }
   }
 }
