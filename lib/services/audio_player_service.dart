@@ -170,9 +170,9 @@ class AudioPlayerService {
           const Duration(seconds: 2),
           onTimeout: () {},
         );
-      } catch (e) {
-        // Ignore timeout errors during stop - we're stopping anyway
-        logService.debug(_tag, 'Queue processing timeout during stop: $e');
+      } on TimeoutException {
+        // Timeout is expected during stop - we're stopping anyway
+        logService.debug(_tag, 'Queue processing timed out during stop');
       }
     }
 
