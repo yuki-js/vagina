@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/app_theme.dart';
 import '../../providers/providers.dart';
 import '../../services/pip_service.dart';
+import '../../components/control_button.dart';
 
 /// Galaxy-style control panel with button grid and call button
 class ControlPanel extends ConsumerWidget {
@@ -42,7 +43,7 @@ class ControlPanel extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 Expanded(
-                  child: _ControlButton(
+                  child: ControlButton(
                     icon: Icons.chat_bubble_outline,
                     label: 'チャット',
                     onTap: onChatPressed,
@@ -50,7 +51,7 @@ class ControlPanel extends ConsumerWidget {
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: _ControlButton(
+                  child: ControlButton(
                     icon: Icons.article_outlined,
                     label: 'ノートパッド',
                     onTap: onNotepadPressed,
@@ -67,7 +68,7 @@ class ControlPanel extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 Expanded(
-                  child: _ControlButton(
+                  child: ControlButton(
                     icon: speakerMuted ? Icons.volume_off : Icons.volume_up,
                     label: 'スピーカー',
                     onTap: () => _handleSpeakerToggle(ref),
@@ -77,7 +78,7 @@ class ControlPanel extends ConsumerWidget {
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: _ControlButton(
+                  child: ControlButton(
                     icon: isMuted ? Icons.mic_off : Icons.mic,
                     label: '消音',
                     onTap: () => _handleMuteToggle(ref),
@@ -92,7 +93,7 @@ class ControlPanel extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 Expanded(
-                  child: _ControlButton(
+                  child: ControlButton(
                     icon: Icons.front_hand,
                     label: '割込み',
                     onTap: () => _handleInterrupt(ref),
@@ -103,7 +104,7 @@ class ControlPanel extends ConsumerWidget {
                 // PiP button for mobile only when in standalone call screen
                 Expanded(
                   child: (PlatformCompat.isAndroid || PlatformCompat.isIOS)
-                      ? _ControlButton(
+                      ? ControlButton(
                           icon: Icons.picture_in_picture_alt,
                           label: 'PiP',
                           onTap: () => _handlePiPToggle(context),
@@ -117,7 +118,7 @@ class ControlPanel extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 Expanded(
-                  child: _ControlButton(
+                  child: ControlButton(
                     icon: speakerMuted ? Icons.volume_off : Icons.volume_up,
                     label: 'スピーカー',
                     onTap: () => _handleSpeakerToggle(ref),
@@ -127,7 +128,7 @@ class ControlPanel extends ConsumerWidget {
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: _ControlButton(
+                  child: ControlButton(
                     icon: isMuted ? Icons.mic_off : Icons.mic,
                     label: '消音',
                     onTap: () => _handleMuteToggle(ref),
@@ -137,7 +138,7 @@ class ControlPanel extends ConsumerWidget {
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: _ControlButton(
+                  child: ControlButton(
                     icon: Icons.front_hand,
                     label: '割込み',
                     onTap: () => _handleInterrupt(ref),
@@ -233,66 +234,5 @@ class ControlPanel extends ConsumerWidget {
         );
       }
     }
-  }
-}
-
-/// Individual control button widget
-class _ControlButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  final bool enabled;
-  final bool isActive;
-  final Color? activeColor;
-
-  const _ControlButton({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    this.enabled = true,
-    this.isActive = false,
-    this.activeColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final color = !enabled
-        ? AppTheme.textSecondary.withValues(alpha: 0.3)
-        : isActive
-            ? (activeColor ?? AppTheme.primaryColor)
-            : AppTheme.textSecondary;
-
-    return GestureDetector(
-      onTap: enabled ? onTap : null,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: isActive
-                  ? (activeColor ?? AppTheme.primaryColor)
-                      .withValues(alpha: 0.2)
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Icon(icon, color: color, size: 28),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              color: color,
-            ),
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ),
-    );
   }
 }

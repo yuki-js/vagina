@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/app_theme.dart';
 import '../../components/settings_card.dart';
+import '../../components/adaptive_widgets.dart';
 import '../../providers/providers.dart';
 
 /// UI preferences section for Material/Cupertino style selection
@@ -30,19 +30,12 @@ class UiPreferencesSection extends ConsumerWidget {
                 fontSize: 12,
               ),
             ),
-            trailing: useCupertinoStyle
-                ? CupertinoSwitch(
-                    value: useCupertinoStyle,
-                    onChanged: (value) {
-                      ref.read(useCupertinoStyleProvider.notifier).set(value);
-                    },
-                  )
-                : Switch(
-                    value: useCupertinoStyle,
-                    onChanged: (value) {
-                      ref.read(useCupertinoStyleProvider.notifier).set(value);
-                    },
-                  ),
+            trailing: AdaptiveSwitch(
+              value: useCupertinoStyle,
+              onChanged: (value) {
+                ref.read(useCupertinoStyleProvider.notifier).set(value);
+              },
+            ),
           ),
         ],
       ),

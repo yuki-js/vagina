@@ -5,6 +5,7 @@ import '../../models/call_session.dart';
 import '../../models/speed_dial.dart';
 import '../../components/historical_chat_view.dart';
 import '../../components/historical_notepad_view.dart';
+import '../../components/adaptive_widgets.dart';
 import '../../repositories/repository_factory.dart';
 import '../../utils/duration_formatter.dart';
 
@@ -39,7 +40,9 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
             body: Container(
               decoration: AppTheme.lightBackgroundGradient,
               child: const Center(
-                child: CircularProgressIndicator(),
+                child: AdaptiveProgressIndicator(
+                  color: AppTheme.primaryColor,
+                ),
               ),
             ),
           );
@@ -108,31 +111,49 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
               ),
             ),
 
-            // セグメントコントロール - SegmentedButtonを使用
+            // セグメントコントロール - アダプティブウィジェットを使用
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: SegmentedButton<int>(
-                segments: const [
-                  ButtonSegment<int>(
-                    value: 0,
-                    label: Text('詳細'),
-                    icon: Icon(Icons.info_outline),
+              child: AdaptiveSegmentedControl<int>(
+                children: const {
+                  0: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 8),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.info_outline, size: 16),
+                        SizedBox(width: 4),
+                        Text('詳細'),
+                      ],
+                    ),
                   ),
-                  ButtonSegment<int>(
-                    value: 1,
-                    label: Text('チャット'),
-                    icon: Icon(Icons.chat_bubble_outline),
+                  1: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 8),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.chat_bubble_outline, size: 16),
+                        SizedBox(width: 4),
+                        Text('チャット'),
+                      ],
+                    ),
                   ),
-                  ButtonSegment<int>(
-                    value: 2,
-                    label: Text('ノートパッド'),
-                    icon: Icon(Icons.article_outlined),
+                  2: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 8),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.article_outlined, size: 16),
+                        SizedBox(width: 4),
+                        Text('ノートパッド'),
+                      ],
+                    ),
                   ),
-                ],
-                selected: {_selectedSegment},
-                onSelectionChanged: (Set<int> newSelection) {
+                },
+                groupValue: _selectedSegment,
+                onValueChanged: (value) {
                   setState(() {
-                    _selectedSegment = newSelection.first;
+                    _selectedSegment = value;
                   });
                 },
               ),
