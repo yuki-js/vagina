@@ -4,7 +4,7 @@ import '../../theme/app_theme.dart';
 import '../../providers/providers.dart';
 import '../../models/speed_dial.dart';
 import '../call/call_screen.dart';
-import '../speed_dial_config_screen.dart';
+import '../speed_dial/speed_dial_config_screen.dart';
 
 /// Speed dial tab - shows saved character presets for quick call start
 class SpeedDialTab extends ConsumerWidget {

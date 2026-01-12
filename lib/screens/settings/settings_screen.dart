@@ -1,14 +1,14 @@
-import '../utils/platform_compat.dart';
+import '../../utils/platform_compat.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../theme/app_theme.dart';
-import '../components/settings_card.dart';
-import '../components/app_scaffold.dart';
-import 'settings/azure_config_section.dart';
-import 'settings/voice_settings_section.dart';
-import 'settings/android_audio_section.dart';
-import 'settings/developer_section.dart';
-import 'settings/ui_preferences_section.dart';
+import '../../theme/app_theme.dart';
+import '../../components/settings_card.dart';
+import '../../components/app_scaffold.dart';
+import 'azure_config_section.dart';
+import 'voice_settings_section.dart';
+import 'android_audio_section.dart';
+import 'developer_section.dart';
+import 'ui_preferences_section.dart';
 
 /// Settings screen for API configuration
 class SettingsScreen extends ConsumerWidget {

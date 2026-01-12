@@ -4,7 +4,7 @@ import '../../theme/app_theme.dart';
 import '../../models/call_session.dart';
 import '../../providers/providers.dart';
 import '../../utils/duration_formatter.dart';
-import '../session_detail_screen.dart';
+import '../session/session_detail_screen.dart';
 import '../../repositories/repository_factory.dart';
 
 /// Sessions tab - shows call history

@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../theme/app_theme.dart';
-import '../services/log_service.dart';
-import '../components/app_scaffold.dart';
+import '../../theme/app_theme.dart';
+import '../../services/log_service.dart';
+import '../../components/app_scaffold.dart';
 
 /// Screen for viewing trace logs
 class LogScreen extends StatefulWidget {

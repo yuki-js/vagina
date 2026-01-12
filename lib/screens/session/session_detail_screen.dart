@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../theme/app_theme.dart';
-import '../models/call_session.dart';
-import '../components/historical_chat_view.dart';
-import '../components/historical_notepad_view.dart';
-import '../repositories/repository_factory.dart';
-import '../utils/duration_formatter.dart';
+import '../../theme/app_theme.dart';
+import '../../models/call_session.dart';
+import '../../components/historical_chat_view.dart';
+import '../../components/historical_notepad_view.dart';
+import '../../repositories/repository_factory.dart';
+import '../../utils/duration_formatter.dart';
 
 /// Session detail screen showing chat and notepad from a past session
 class SessionDetailScreen extends ConsumerStatefulWidget {

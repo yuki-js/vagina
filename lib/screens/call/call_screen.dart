@@ -5,7 +5,7 @@ import '../../providers/providers.dart';
 import '../../components/title_bar.dart';
 import '../chat/chat_page.dart';
 import '../notepad/notepad_page.dart';
-import '../settings_screen.dart';
+import '../settings/settings_screen.dart';
 import 'call_page.dart';
 
 /// Call screen with PageView for swipe navigation between chat, call, and notepad
