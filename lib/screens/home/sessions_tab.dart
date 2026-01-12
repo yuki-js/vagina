@@ -7,7 +7,7 @@ import '../../utils/duration_formatter.dart';
 import '../session/session_detail_screen.dart';
 import '../../repositories/repository_factory.dart';
 
-/// Sessions tab - shows call history
+/// セッション履歴タブ - 通話履歴を表示
 class SessionsTab extends ConsumerStatefulWidget {
   const SessionsTab({super.key});
 
@@ -102,6 +102,13 @@ class _SessionsTabState extends ConsumerState<SessionsTab> {
   @override
   Widget build(BuildContext context) {
     final sessionsAsync = ref.watch(refreshableCallSessionsProvider);
+    
+    // セッション保存完了通知を監視してリストを自動更新
+    ref.listen<AsyncValue<String>>(sessionSavedProvider, (_, state) {
+      state.whenData((_) {
+        ref.invalidate(refreshableCallSessionsProvider);
+      });
+    });
 
     return sessionsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),

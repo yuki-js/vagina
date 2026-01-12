@@ -149,6 +149,13 @@ final callErrorProvider = StreamProvider<String>((ref) {
   return callService.errorStream;
 });
 
+/// セッション保存完了通知のプロバイダ
+/// セッション保存後にセッション履歴を自動更新するために使用
+final sessionSavedProvider = StreamProvider<String>((ref) {
+  final callService = ref.read(callServiceProvider);
+  return callService.sessionSavedStream;
+});
+
 /// 通話アクティブ状態のプロバイダ
 final isCallActiveProvider = Provider<bool>((ref) {
   final callState = ref.watch(callStateProvider);
