@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
+import '../config/app_config.dart';
 import '../models/realtime_events.dart';
 import '../models/realtime_session_config.dart';
 import 'websocket_service.dart';
@@ -61,9 +62,6 @@ import 'log_service.dart';
 /// - error - Returned when an error occurs
 class RealtimeApiClient {
   static const _tag = 'RealtimeAPI';
-  
-  /// Log audio chunks sent every N chunks to avoid log explosion
-  static const int _logAudioChunkInterval = 50;
   
   final WebSocketService _webSocket = WebSocketService();
   
@@ -818,8 +816,8 @@ class RealtimeApiClient {
         logService.info(_tag, 'AI audio response started (first chunk received)');
       }
       
-      // Only log every 50th chunk to reduce log noise
-      if (_audioChunksReceived % _logAudioChunkInterval == 0) {
+      // Only log periodically to reduce log noise
+      if (_audioChunksReceived % AppConfig.logAudioChunkInterval == 0) {
         logService.debug(_tag, 'Audio delta received (chunk #$_audioChunksReceived, '
             '${audioData.length} bytes)');
       }
@@ -933,7 +931,7 @@ class RealtimeApiClient {
     }
 
     _audioChunksSent++;
-    if (_audioChunksSent % _logAudioChunkInterval == 0) {
+    if (_audioChunksSent % AppConfig.logAudioChunkInterval == 0) {
       logService.debug(_tag, 'Sent $_audioChunksSent audio chunks');
     }
 
