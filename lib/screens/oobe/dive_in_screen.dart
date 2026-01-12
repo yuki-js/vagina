@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 
-/// Fifth and final OOBE screen - Ready to begin experience
+/// OOBE 最終画面 - 準備完了
 class DiveInScreen extends StatefulWidget {
   final VoidCallback onStart;
   final VoidCallback onBack;
@@ -49,7 +49,7 @@ class _DiveInScreenState extends State<DiveInScreen>
     return SafeArea(
       child: Column(
         children: [
-          // Back button
+          // 戻るボタン
           Align(
             alignment: Alignment.topLeft,
             child: IconButton(
@@ -63,7 +63,7 @@ class _DiveInScreenState extends State<DiveInScreen>
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Animated checkmark icon
+                  // アニメーションチェックマーク
                   AnimatedBuilder(
                     animation: _scaleAnimation,
                     builder: (context, child) {
@@ -95,7 +95,7 @@ class _DiveInScreenState extends State<DiveInScreen>
 
                   const SizedBox(height: 48),
 
-                  // Main message
+                  // メインメッセージ
                   const Text(
                     '準備完了！',
                     textAlign: TextAlign.center,
@@ -124,7 +124,7 @@ class _DiveInScreenState extends State<DiveInScreen>
 
                   const SizedBox(height: 64),
 
-                  // Motivational message
+                  // 機能ポイント
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 48),
                     child: Column(
@@ -149,26 +149,8 @@ class _DiveInScreenState extends State<DiveInScreen>
 
                   const SizedBox(height: 64),
 
-                  // Start button (FAB for smooth morphing transition)
-                  FloatingActionButton.extended(
-                    onPressed: widget.onStart,
-                    backgroundColor: AppTheme.successColor,
-                    elevation: 6,
-                    icon: const Icon(
-                      Icons.phone,
-                      size: 24,
-                      color: Colors.white,
-                    ),
-                    label: const Text(
-                      'はじめる',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-
+                  // 円形スタートボタン（通話ボタンをオマージュ）
+                  _StartButton(onPressed: widget.onStart),
                 ],
               ),
             ),
@@ -194,6 +176,50 @@ class _DiveInScreenState extends State<DiveInScreen>
             fontSize: 15,
             color: Colors.white.withValues(alpha: 0.9),
             fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// 円形スタートボタン - ホーム画面の通話ボタンとモーフィングできるデザイン
+class _StartButton extends StatelessWidget {
+  final VoidCallback onPressed;
+  
+  const _StartButton({required this.onPressed});
+  
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // 大きな円形FAB
+        SizedBox(
+          width: 80,
+          height: 80,
+          child: FloatingActionButton(
+            heroTag: 'start_call_fab',
+            onPressed: onPressed,
+            backgroundColor: AppTheme.successColor,
+            elevation: 8,
+            shape: const CircleBorder(),
+            child: const Icon(
+              Icons.phone,
+              size: 36,
+              color: Colors.white,
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        // キャプション
+        Text(
+          'はじめる',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.white.withValues(alpha: 0.9),
+            letterSpacing: 1,
           ),
         ),
       ],

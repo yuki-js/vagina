@@ -134,6 +134,9 @@ class CallService {
     }
   }
 
+  /// Get the current speed dial ID
+  String? get currentSpeedDialId => _currentSpeedDialId;
+
   /// Set the current speed dial ID (call before startCall)
   void setSpeedDialId(String? speedDialId) {
     _currentSpeedDialId = speedDialId;
@@ -170,6 +173,7 @@ class CallService {
 
     logService.info(_tag, 'Starting call');
     _chatManager.clearChat();
+    _notepadService.clearTabs(); // 前のセッションのノートパッドをクリア
 
     try {
       _setState(CallState.connecting);
