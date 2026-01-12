@@ -368,3 +368,12 @@ class CupertinoStyleNotifier extends Notifier<bool> {
     state = value;
   }
 }
+
+// ============================================================================
+// ロギングプロバイダ
+// ============================================================================
+
+/// ログサービスのプロバイダ
+final logServiceProvider = Provider<LogService>((ref) {
+  return logService; // Use existing singleton for backward compatibility
+});
