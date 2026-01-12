@@ -1,11 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
-import 'package:path_provider/path_provider.dart';
 import '../interfaces/key_value_store.dart';
-import '../utils/platform_compat.dart';
 import '../services/log_service.dart';
-import 'permission_manager.dart';
+import '../services/platform/platform_storage_service.dart';
 
 // Conditional import for web support
 import 'web_storage_stub.dart'
@@ -17,7 +15,7 @@ class JsonFileStore implements KeyValueStore {
   
   final String fileName;
   final String? folderName;
-  final PermissionManager _permissionManager;
+  final PlatformStorageService _storageService;
   File? _file;
   Map<String, dynamic> _cache = {};
   bool _initialized = false;
@@ -25,8 +23,8 @@ class JsonFileStore implements KeyValueStore {
   JsonFileStore({
     required this.fileName,
     this.folderName,
-    PermissionManager? permissionManager,
-  }) : _permissionManager = permissionManager ?? PermissionManager();
+    PlatformStorageService? storageService,
+  }) : _storageService = storageService ?? PlatformStorageService();
 
   @override
   Future<void> initialize() async {
@@ -40,51 +38,12 @@ class JsonFileStore implements KeyValueStore {
   }
 
   Future<File> _getFile() async {
-    Directory? directory;
-    
-    if (PlatformCompat.isAndroid && folderName != null) {
-      // Check permission first
-      final hasPermission = await _permissionManager.hasStoragePermission();
-      
-      if (hasPermission) {
-        // Try to use external storage for persistence
-        try {
-          directory = Directory('/storage/emulated/0/Documents/$folderName');
-          if (!await directory.exists()) {
-            await directory.create(recursive: true);
-          }
-          logService.info(_tag, 'Using external directory: ${directory.path}');
-        } catch (e) {
-          logService.warn(_tag, 'Cannot access external storage: $e');
-          directory = null;
-        }
-      } else {
-        logService.info(_tag, 'Storage permission not granted, using app directory');
-      }
+    if (kIsWeb) {
+      // Web doesn't use files
+      return File('');
     }
-    
-    if (directory == null) {
-      // Fallback to app documents directory
-      if (kIsWeb) {
-        // Web doesn't use files
-        return File('');
-      } else if (PlatformCompat.isIOS || PlatformCompat.isMacOS) {
-        directory = await getApplicationDocumentsDirectory();
-      } else {
-        directory = await getApplicationDocumentsDirectory();
-      }
-      
-      // Create subfolder if specified
-      if (folderName != null && !kIsWeb) {
-        directory = Directory('${directory.path}/$folderName');
-        if (!await directory.exists()) {
-          await directory.create(recursive: true);
-        }
-      }
-      
-      logService.info(_tag, 'Using app directory: ${directory.path}');
-    }
-    
+
+    final directory = await _storageService.getStorageDirectory(folderName: folderName);
     final file = File('${directory.path}/$fileName');
     logService.info(_tag, 'Storage file: ${file.path}');
     return file;
