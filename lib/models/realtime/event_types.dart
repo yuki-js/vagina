@@ -1,5 +1,6 @@
 /// Event type enumerations for Azure OpenAI Realtime API
 /// Reference: https://platform.openai.com/docs/api-reference/realtime
+library;
 
 /// Events sent by the client to the Azure OpenAI Realtime API
 /// Total: 12 client events
