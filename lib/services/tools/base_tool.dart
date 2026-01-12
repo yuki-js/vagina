@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'tool_metadata.dart';
 
 /// ツールの基底クラス
 /// 
@@ -7,6 +8,7 @@ import 'dart:convert';
 /// - [description]: ツールの説明（AI向け、英語）
 /// - [parameters]: パラメータのJSONスキーマ
 /// - [execute]: ツールの実際の処理
+/// - [metadata]: ツールのUIメタデータ
 abstract class BaseTool {
   /// ツールの一意識別子
   String get name;
@@ -16,6 +18,9 @@ abstract class BaseTool {
   
   /// パラメータのJSONスキーマ
   Map<String, dynamic> get parameters;
+  
+  /// ツールのUIメタデータ（表示名、アイコン、カテゴリなど）
+  ToolMetadata get metadata;
   
   /// ツールを実行する
   /// 戻り値はJSON形式でエンコードされて返される

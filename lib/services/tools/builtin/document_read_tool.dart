@@ -1,7 +1,9 @@
+import 'package:flutter/material.dart';
 import '../base_tool.dart';
+import '../tool_metadata.dart';
 import '../../notepad_service.dart';
 
-/// Tool for reading a document's content
+/// ドキュメント読取ツール
 class DocumentReadTool extends BaseTool {
   final NotepadService _notepadService;
   
@@ -26,6 +28,16 @@ class DocumentReadTool extends BaseTool {
     },
     'required': ['tabId'],
   };
+  
+  @override
+  ToolMetadata get metadata => const ToolMetadata(
+    name: 'document_read',
+    displayName: 'ドキュメント表示',
+    displayDescription: 'ドキュメントの内容を表示します',
+    description: 'Read the content of a document from an artifact tab.',
+    icon: Icons.visibility,
+    category: ToolCategory.document,
+  );
 
   @override
   Future<Map<String, dynamic>> execute(Map<String, dynamic> arguments) async {

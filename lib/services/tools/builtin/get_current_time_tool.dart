@@ -1,7 +1,9 @@
+import 'package:flutter/material.dart';
 import '../base_tool.dart';
+import '../tool_metadata.dart';
 import '../../../utils/duration_formatter.dart';
 
-/// Tool for getting the current date and time
+/// 現在時刻取得ツール
 class GetCurrentTimeTool extends BaseTool {
   @override
   String get name => 'get_current_time';
@@ -21,6 +23,16 @@ class GetCurrentTimeTool extends BaseTool {
     },
     'required': [],
   };
+  
+  @override
+  ToolMetadata get metadata => const ToolMetadata(
+    name: 'get_current_time',
+    displayName: '現在時刻',
+    displayDescription: '現在の日時を取得します',
+    description: 'Get the current date and time. Use this when the user asks about the current time or date.',
+    icon: Icons.access_time,
+    category: ToolCategory.system,
+  );
 
   @override
   Future<Map<String, dynamic>> execute(Map<String, dynamic> arguments) async {

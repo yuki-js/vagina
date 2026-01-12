@@ -3,14 +3,12 @@ import 'tools/tool_manager.dart';
 import 'tools/tool_registry.dart';
 import 'tools/tool_metadata.dart';
 import 'tools/builtin_tool_factory.dart';
-import 'tools/builtin_tool_metadata.dart';
 import '../repositories/repository_factory.dart';
 
 export 'tools/base_tool.dart' show BaseTool, ToolExecutionResult, ToolManagerRef;
 export 'tools/tool_manager.dart' show ToolManager;
 export 'tools/tool_registry.dart' show ToolRegistry, ToolRegistryEvent, ToolRegistryEventType;
 export 'tools/tool_metadata.dart' show ToolMetadata, ToolCategory, ToolSource;
-export 'tools/builtin_tool_metadata.dart' show BuiltinToolMetadata;
 
 /// ツールサービス
 /// 
@@ -42,12 +40,10 @@ class ToolService {
     if (_initialized) return;
     
     // ビルトインツールを登録
+    // 各ツールは自身のmetadataゲッターを持つため、それを使用
     final tools = _builtinFactory.createBuiltinTools();
     for (final tool in tools) {
-      final metadata = BuiltinToolMetadata.getMetadata(tool.name);
-      if (metadata != null) {
-        _registry.registerTool(tool, metadata);
-      }
+      _registry.registerTool(tool, tool.metadata);
     }
     
     _initialized = true;

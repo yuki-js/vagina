@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../components/settings_card.dart';
-import '../log/log_screen.dart';
+import 'log_screen.dart';
 
-/// Developer settings section widget
+/// 開発者向け設定セクション
 class DeveloperSection extends StatelessWidget {
   const DeveloperSection({super.key});
 

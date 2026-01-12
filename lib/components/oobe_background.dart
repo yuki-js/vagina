@@ -2,14 +2,18 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 
-/// Animated background for OOBE screens with stars and wave motifs
-/// Fixed to bright/active state for elegant presentation
+/// OOBEスクリーン用のアニメーション背景（星と波のモチーフ）
+/// 大画面でのコンテンツ幅制限と中央配置を提供
 class OOBEBackground extends StatefulWidget {
   final Widget child;
+  
+  /// コンテンツの最大幅（デフォルト: 480px）
+  final double maxContentWidth;
 
   const OOBEBackground({
     super.key,
     required this.child,
+    this.maxContentWidth = 480,
   });
 
   @override
@@ -49,7 +53,7 @@ class _OOBEBackgroundState extends State<OOBEBackground>
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // Animated background particles
+          // アニメーション背景パーティクル
           Positioned.fill(
             child: AnimatedBuilder(
               animation: _rotationController,
@@ -63,8 +67,13 @@ class _OOBEBackgroundState extends State<OOBEBackground>
               },
             ),
           ),
-          // Child content
-          widget.child,
+          // 子コンテンツを中央配置・幅制限
+          Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: widget.maxContentWidth),
+              child: widget.child,
+            ),
+          ),
         ],
       ),
     );

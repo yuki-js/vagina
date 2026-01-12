@@ -1,12 +1,14 @@
+import 'package:flutter/material.dart';
 import 'package:diff_match_patch/diff_match_patch.dart';
 import '../base_tool.dart';
+import '../tool_metadata.dart';
 import '../../notepad_service.dart';
 
-/// Converts a plain unified diff format patch to the format expected by diff_match_patch.
+/// unified diff形式のパッチをdiff_match_patchライブラリの形式に変換
 /// 
-/// The diff_match_patch library can work with two types of patches:
-/// 1. Library-generated patches: may have URL-encoded content (%0A, %E3, etc.)
-/// 2. AI-generated patches: plain text that needs encoding for non-ASCII
+/// diff_match_patchライブラリは2種類のパッチを処理できる：
+/// 1. ライブラリ生成パッチ: URLエンコードされたコンテンツ (%0A, %E3など)
+/// 2. AI生成パッチ: 非ASCIIにはエンコードが必要なプレーンテキスト
 ///
 /// This function:
 /// - If patch already has URL-encoding, returns as-is
@@ -114,7 +116,7 @@ String _encodePatchText(String patchText) {
   return encodedSections.join('\n');
 }
 
-/// Tool for patching a document using unified diff format
+/// ドキュメントパッチツール（unified diff形式）
 class DocumentPatchTool extends BaseTool {
   final NotepadService _notepadService;
   
@@ -143,6 +145,16 @@ class DocumentPatchTool extends BaseTool {
     },
     'required': ['tabId', 'patch'],
   };
+  
+  @override
+  ToolMetadata get metadata => const ToolMetadata(
+    name: 'document_patch',
+    displayName: 'ドキュメント編集',
+    displayDescription: 'ドキュメントの一部を編集します',
+    description: 'Apply a unified diff patch to an existing document.',
+    icon: Icons.edit,
+    category: ToolCategory.document,
+  );
 
   @override
   Future<Map<String, dynamic>> execute(Map<String, dynamic> arguments) async {
