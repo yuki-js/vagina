@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/app_theme.dart';
 import '../../components/settings_card.dart';
-import '../../components/app_scaffold.dart';
 import '../oobe/oobe_flow.dart';
 import 'azure_config_section.dart';
 import 'voice_settings_section.dart';
@@ -17,8 +16,12 @@ class SettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return AppScaffold(
-      title: '設定',
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('設定'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+      ),
       body: Container(
         decoration: AppTheme.lightBackgroundGradient,
         child: CustomScrollView(

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/app_theme.dart';
-import '../../components/title_bar.dart';
 import '../settings/settings_screen.dart';
 import '../about/about_screen.dart';
 import '../call/call_screen.dart';
@@ -117,8 +116,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return Scaffold(
       body: Column(
         children: [
-          // Custom title bar for desktop
-          const CustomTitleBar(),
           // App bar
           Container(
             decoration: AppTheme.lightBackgroundGradient,

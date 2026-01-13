@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/app_theme.dart';
 import '../../providers/providers.dart';
-import '../../components/title_bar.dart';
 import '../chat/chat_page.dart';
 import '../notepad/notepad_page.dart';
 import '../settings/settings_screen.dart';
@@ -158,8 +157,6 @@ class _CallScreenState extends ConsumerState<CallScreen> {
         child: Scaffold(
           body: Column(
             children: [
-              // Custom title bar for desktop platforms
-              const CustomTitleBar(),
               Expanded(
                 child: Container(
                   decoration: AppTheme.backgroundGradient,

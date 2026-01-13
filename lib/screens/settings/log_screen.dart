@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../theme/app_theme.dart';
 import '../../services/log_service.dart';
-import '../../components/app_scaffold.dart';
 
 /// Screen for viewing trace logs
 class LogScreen extends StatefulWidget {
@@ -99,33 +98,37 @@ class _LogScreenState extends State<LogScreen> {
   Widget build(BuildContext context) {
     final logs = _filteredLogs;
 
-    return AppScaffold(
-      title: 'ログ',
-      actions: [
-        // Auto-scroll toggle
-        IconButton(
-          icon: Icon(
-            _autoScroll ? Icons.vertical_align_bottom : Icons.vertical_align_center,
-            color: _autoScroll ? AppTheme.primaryColor : AppTheme.lightTextSecondary,
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('ログ'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        actions: [
+          // Auto-scroll toggle
+          IconButton(
+            icon: Icon(
+              _autoScroll ? Icons.vertical_align_bottom : Icons.vertical_align_center,
+              color: _autoScroll ? AppTheme.primaryColor : AppTheme.lightTextSecondary,
+            ),
+            onPressed: () {
+              setState(() {
+                _autoScroll = !_autoScroll;
+              });
+            },
+            tooltip: '自動スクロール',
           ),
-          onPressed: () {
-            setState(() {
-              _autoScroll = !_autoScroll;
-            });
-          },
-          tooltip: '自動スクロール',
-        ),
-        IconButton(
-          icon: const Icon(Icons.copy, color: AppTheme.lightTextSecondary),
-          onPressed: _copyLogs,
-          tooltip: 'コピー',
-        ),
-        IconButton(
-          icon: const Icon(Icons.delete_outline, color: AppTheme.lightTextSecondary),
-          onPressed: _clearLogs,
-          tooltip: 'クリア',
-        ),
-      ],
+          IconButton(
+            icon: const Icon(Icons.copy, color: AppTheme.lightTextSecondary),
+            onPressed: _copyLogs,
+            tooltip: 'コピー',
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete_outline, color: AppTheme.lightTextSecondary),
+            onPressed: _clearLogs,
+            tooltip: 'クリア',
+          ),
+        ],
+      ),
       body: Container(
         decoration: AppTheme.lightBackgroundGradient,
         child: Column(
