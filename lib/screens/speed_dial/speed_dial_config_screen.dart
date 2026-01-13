@@ -123,6 +123,14 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
 
   Future<void> _deleteSpeedDial() async {
     if (_isNewSpeedDial) return;
+    
+    // Prevent deletion of default speed dial
+    if (widget.speedDial!.id == SpeedDial.defaultId) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('デフォルトのスピードダイヤルは削除できません')),
+      );
+      return;
+    }
 
     final confirmed = await showDialog<bool>(
       context: context,
@@ -168,7 +176,8 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
         foregroundColor: AppTheme.lightTextPrimary,
         elevation: 0,
         actions: [
-          if (!_isNewSpeedDial)
+          // Hide delete button for default speed dial
+          if (!_isNewSpeedDial && widget.speedDial!.id != SpeedDial.defaultId)
             IconButton(
               icon: const Icon(Icons.delete),
               onPressed: _deleteSpeedDial,
@@ -253,6 +262,7 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
                     const SizedBox(height: 12),
                     TextField(
                       controller: _nameController,
+                      enabled: _isNewSpeedDial || widget.speedDial!.id != SpeedDial.defaultId, // Disable for default speed dial
                       decoration: InputDecoration(
                         hintText: '例: アシスタント',
                         border: OutlineInputBorder(
@@ -260,6 +270,9 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
                         ),
                         filled: true,
                         fillColor: Colors.grey[50],
+                        helperText: (!_isNewSpeedDial && widget.speedDial!.id == SpeedDial.defaultId) 
+                            ? 'デフォルトのスピードダイヤルは名前を変更できません' 
+                            : null,
                       ),
                       style: const TextStyle(color: AppTheme.lightTextPrimary),
                     ),

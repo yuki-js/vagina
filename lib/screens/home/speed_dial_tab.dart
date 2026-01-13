@@ -210,8 +210,8 @@ class SpeedDialTab extends ConsumerWidget {
     ref.read(assistantConfigProvider.notifier).updateInstructions(originalConfig.instructions);
     ref.read(assistantConfigProvider.notifier).updateVoice(originalConfig.voice);
     
-    // Clear speed dial ID after call
-    callService.setSpeedDialId(null);
+    // Reset to default speed dial ID after call
+    callService.setSpeedDialId('default');
   }
 
   Future<void> _editSpeedDial(

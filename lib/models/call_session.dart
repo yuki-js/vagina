@@ -31,7 +31,7 @@ class CallSession {
   final int duration; // in seconds
   final List<String> chatMessages; // JSON-encoded messages
   final List<SessionNotepadTab>? notepadTabs; // Structured notepad tabs
-  final String? speedDialId; // Reference to speed dial if used
+  final String speedDialId; // Reference to speed dial used (non-nullable)
 
   const CallSession({
     required this.id,
@@ -40,7 +40,7 @@ class CallSession {
     this.duration = 0,
     this.chatMessages = const [],
     this.notepadTabs,
-    this.speedDialId,
+    required this.speedDialId,
   });
 
   CallSession copyWith({
@@ -71,7 +71,7 @@ class CallSession {
       'duration': duration,
       'chatMessages': chatMessages,
       if (notepadTabs != null) 'notepadTabs': notepadTabs!.map((t) => t.toJson()).toList(),
-      if (speedDialId != null) 'speedDialId': speedDialId,
+      'speedDialId': speedDialId,
     };
   }
 
@@ -90,7 +90,7 @@ class CallSession {
       notepadTabs: (json['notepadTabs'] as List<dynamic>?)
               ?.map((e) => SessionNotepadTab.fromJson(e as Map<String, dynamic>))
               .toList(),
-      speedDialId: json['speedDialId'] as String?,
+      speedDialId: json['speedDialId'] as String? ?? 'default',
     );
   }
 }

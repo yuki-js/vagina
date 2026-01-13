@@ -74,7 +74,7 @@ class CallService {
   int _callDuration = 0;
   bool _isMuted = false;
   DateTime? _callStartTime;
-  String? _currentSpeedDialId;
+  String _currentSpeedDialId = 'default'; // Default to 'default' speed dial
 
   CallService({
     required AudioRecorderService recorder,
@@ -138,10 +138,10 @@ class CallService {
   }
 
   /// Get the current speed dial ID
-  String? get currentSpeedDialId => _currentSpeedDialId;
+  String get currentSpeedDialId => _currentSpeedDialId;
 
   /// Set the current speed dial ID (call before startCall)
-  void setSpeedDialId(String? speedDialId) {
+  void setSpeedDialId(String speedDialId) {
     _currentSpeedDialId = speedDialId;
   }
 
