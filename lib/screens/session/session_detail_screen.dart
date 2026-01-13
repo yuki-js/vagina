@@ -194,7 +194,8 @@ class _SessionInfoView extends StatelessWidget {
               const SizedBox(height: 8),
               if (speedDial != null)
                 _buildSpeedDialCard(speedDial)
-              else
+              else if (session.speedDialId != SpeedDial.defaultId)
+                // Non-default SpeedDial was deleted
                 _buildInfoCard([
                   _buildInfoRow('ID', session.speedDialId),
                   const Padding(
@@ -204,6 +205,21 @@ class _SessionInfoView extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.orange,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ),
+                ])
+              else
+                // Default SpeedDial should always exist - show error if it doesn't
+                _buildInfoCard([
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                    child: Text(
+                      'エラー: デフォルトスピードダイヤルが見つかりません',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.red,
                         fontStyle: FontStyle.italic,
                       ),
                     ),
