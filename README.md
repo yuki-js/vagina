@@ -1,15 +1,15 @@
 # VAGINA
 
-**V**oice **AGI** as **N**ative **A**pp
+**V**oice **AGI** as **N**otepad **A**gent
 
-Azure OpenAI Realtime API を使用したリアルタイム音声 AI アシスタント Flutter アプリ。
+ノートパッド・リアルタイム音声・汎用人工知能・Flutter アプリ。
 
 ## 特徴
 
 - 🎤 リアルタイム音声会話
-- 🤖 Azure OpenAI GPT-4o Realtime API 連携
+- 🤖 汎用人工知能
+- 📒 ノートパッド機能でハンズフリー文書作成
 - 📱 Android / iOS / Windows クロスプラットフォーム
-- 🔒 セキュアな API キー管理
 - 🎨 スタイリッシュな UI
 
 ## スクリーンショット
