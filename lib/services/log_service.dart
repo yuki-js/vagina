@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import '../utils/duration_formatter.dart';
 
 /// Log entry with timestamp and message
@@ -143,9 +144,11 @@ class LogService {
       // Notify listeners of the update
       _logController.add(similarEntry);
       
-      // Also print to console for debugging
-      // ignore: avoid_print
-      print(similarEntry.toString());
+      // Also print to console for debugging (only in debug mode)
+      if (kDebugMode) {
+        // ignore: avoid_print
+        print(similarEntry.toString());
+      }
       return;
     }
     
@@ -170,9 +173,11 @@ class LogService {
     
     _logController.add(entry);
     
-    // Also print to console for debugging
-    // ignore: avoid_print
-    print(entry.toString());
+    // Also print to console for debugging (only in debug mode)
+    if (kDebugMode) {
+      // ignore: avoid_print
+      print(entry.toString());
+    }
   }
   
   /// Clean up old entries from _recentLogs map

@@ -2,8 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/app_theme.dart';
-import '../../providers/providers.dart';
-import '../../services/storage_service.dart';
+import '../../providers/repository_providers.dart';
+import '../../utils/url_utils.dart';
 import '../../services/realtime_api_client.dart';
 import '../../components/settings_card.dart';
 
@@ -38,15 +38,10 @@ class _AzureConfigSectionState extends ConsumerState<AzureConfigSection> {
 
   Future<void> _loadSettings() async {
     try {
-      final storage = ref.read(storageServiceProvider);
+      final config = ref.read(configRepositoryProvider);
       
-      final hasPermission = await storage.requestStoragePermission();
-      if (!hasPermission && mounted) {
-        _showSnackBar('ストレージの権限がありません。アプリ内にデータを保存します', isWarning: true);
-      }
-      
-      final realtimeUrl = await storage.getRealtimeUrl();
-      final apiKey = await storage.getApiKey();
+      final realtimeUrl = await config.getRealtimeUrl();
+      final apiKey = await config.getApiKey();
       
       if (realtimeUrl != null) {
         _realtimeUrlController.text = realtimeUrl;
@@ -87,7 +82,7 @@ class _AzureConfigSectionState extends ConsumerState<AzureConfigSection> {
       return;
     }
     
-    final parsed = StorageService.parseRealtimeUrl(_realtimeUrlController.text.trim());
+    final parsed = UrlUtils.parseAzureRealtimeUrl(_realtimeUrlController.text.trim());
     if (parsed == null) {
       _showSnackBar('Realtime URLの形式が正しくありません', isError: true);
       return;
@@ -101,9 +96,9 @@ class _AzureConfigSectionState extends ConsumerState<AzureConfigSection> {
     setState(() => _isSaving = true);
 
     try {
-      final storage = ref.read(storageServiceProvider);
-      await storage.saveRealtimeUrl(_realtimeUrlController.text.trim());
-      await storage.saveApiKey(_apiKeyController.text.trim());
+      final config = ref.read(configRepositoryProvider);
+      await config.saveRealtimeUrl(_realtimeUrlController.text.trim());
+      await config.saveApiKey(_apiKeyController.text.trim());
       _showSnackBar('設定を保存しました');
     } catch (e) {
       _showSnackBar('保存に失敗しました: $e', isError: true);
@@ -124,7 +119,7 @@ class _AzureConfigSectionState extends ConsumerState<AzureConfigSection> {
       return;
     }
 
-    final parsed = StorageService.parseRealtimeUrl(_realtimeUrlController.text.trim());
+    final parsed = UrlUtils.parseAzureRealtimeUrl(_realtimeUrlController.text.trim());
     if (parsed == null) {
       _showSnackBar('Realtime URLの形式が正しくありません', isError: true);
       return;
@@ -150,9 +145,9 @@ class _AzureConfigSectionState extends ConsumerState<AzureConfigSection> {
       await apiClient.dispose();
       apiClient = null;
       
-      final storage = ref.read(storageServiceProvider);
-      await storage.saveRealtimeUrl(_realtimeUrlController.text.trim());
-      await storage.saveApiKey(_apiKeyController.text.trim());
+      final config = ref.read(configRepositoryProvider);
+      await config.saveRealtimeUrl(_realtimeUrlController.text.trim());
+      await config.saveApiKey(_apiKeyController.text.trim());
       _showSnackBar('接続テスト成功');
     } catch (e) {
       _showSnackBar('接続テスト失敗: $e', isError: true);
@@ -169,7 +164,7 @@ class _AzureConfigSectionState extends ConsumerState<AzureConfigSection> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AppTheme.surfaceColor,
+        backgroundColor: AppTheme.lightSurfaceColor,
         title: const Text('設定をクリア?'),
         content: const Text('保存済みのAPI設定をすべて削除しますか？'),
         actions: [
@@ -188,8 +183,8 @@ class _AzureConfigSectionState extends ConsumerState<AzureConfigSection> {
 
     if (confirmed == true) {
       try {
-        final storage = ref.read(storageServiceProvider);
-        await storage.clearAll();
+        final config = ref.read(configRepositoryProvider);
+        await config.clearAll();
         _realtimeUrlController.clear();
         _apiKeyController.clear();
         _showSnackBar('設定をクリアしました', isWarning: true);

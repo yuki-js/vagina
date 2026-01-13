@@ -13,7 +13,7 @@ class AboutSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           InfoRow(label: 'バージョン', value: '1.0.0'),
-          Divider(color: AppTheme.surfaceColor),
+          Divider(color: AppTheme.lightSurfaceColor),
           InfoRow(label: 'Powered by', value: 'Azure OpenAI Realtime API'),
         ],
       ),

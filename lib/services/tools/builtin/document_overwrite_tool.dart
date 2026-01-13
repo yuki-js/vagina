@@ -1,7 +1,9 @@
+import 'package:flutter/material.dart';
 import '../base_tool.dart';
+import '../tool_metadata.dart';
 import '../../notepad_service.dart';
 
-/// Tool for creating or overwriting a document
+/// ドキュメント作成/上書きツール
 class DocumentOverwriteTool extends BaseTool {
   final NotepadService _notepadService;
   
@@ -38,6 +40,16 @@ class DocumentOverwriteTool extends BaseTool {
     },
     'required': ['content'],
   };
+  
+  @override
+  ToolMetadata get metadata => const ToolMetadata(
+    name: 'document_overwrite',
+    displayName: 'ドキュメント作成',
+    displayDescription: '新しいドキュメントを作成または上書きします',
+    description: 'Create a new document or overwrite an existing one.',
+    icon: Icons.edit_document,
+    category: ToolCategory.document,
+  );
 
   @override
   Future<Map<String, dynamic>> execute(Map<String, dynamic> arguments) async {
@@ -48,7 +60,7 @@ class DocumentOverwriteTool extends BaseTool {
     
     try {
       if (tabId != null) {
-        // Update existing tab
+        // 既存タブを更新
         final success = _notepadService.updateTab(
           tabId, 
           content: content, 
@@ -69,7 +81,7 @@ class DocumentOverwriteTool extends BaseTool {
           'message': 'Document updated successfully',
         };
       } else {
-        // Create new tab
+        // 新規タブを作成
         final newTabId = _notepadService.createTab(
           content: content,
           mimeType: mime,

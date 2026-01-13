@@ -9,6 +9,8 @@ import 'log_service.dart';
 class NotepadService {
   static const _tag = 'NotepadService';
   
+  final LogService _logService;
+  
   /// Internal list of artifact tabs
   final List<NotepadTab> _tabs = [];
   
@@ -23,6 +25,9 @@ class NotepadService {
   
   /// Counter for generating unique IDs
   int _idCounter = 0;
+
+  NotepadService({LogService? logService})
+      : _logService = logService ?? LogService();
 
   /// Stream of artifact tabs
   Stream<List<NotepadTab>> get tabsStream => _tabsController.stream;
@@ -74,7 +79,7 @@ class NotepadService {
     _notifyTabsChanged();
     _notifySelectedTabChanged();
     
-    logService.info(_tag, 'Created tab: $id (${tab.title})');
+    _logService.info(_tag, 'Created tab: $id (${tab.title})');
     return id;
   }
 
@@ -83,7 +88,7 @@ class NotepadService {
   bool updateTab(String tabId, {String? content, String? title, String? mimeType}) {
     final index = _tabs.indexWhere((t) => t.id == tabId);
     if (index == -1) {
-      logService.warn(_tag, 'Tab not found: $tabId');
+      _logService.warn(_tag, 'Tab not found: $tabId');
       return false;
     }
     
@@ -116,7 +121,7 @@ class NotepadService {
     );
     
     _notifyTabsChanged();
-    logService.info(_tag, 'Updated tab: $tabId');
+    _logService.info(_tag, 'Updated tab: $tabId');
     return true;
   }
   
@@ -125,13 +130,13 @@ class NotepadService {
   bool undo(String tabId) {
     final index = _tabs.indexWhere((t) => t.id == tabId);
     if (index == -1) {
-      logService.warn(_tag, 'Tab not found: $tabId');
+      _logService.warn(_tag, 'Tab not found: $tabId');
       return false;
     }
     
     final tab = _tabs[index];
     if (!tab.canUndo) {
-      logService.warn(_tag, 'Cannot undo: at beginning of history');
+      _logService.warn(_tag, 'Cannot undo: at beginning of history');
       return false;
     }
     
@@ -145,7 +150,7 @@ class NotepadService {
     );
     
     _notifyTabsChanged();
-    logService.info(_tag, 'Undone edit for tab: $tabId');
+    _logService.info(_tag, 'Undone edit for tab: $tabId');
     return true;
   }
   
@@ -154,13 +159,13 @@ class NotepadService {
   bool redo(String tabId) {
     final index = _tabs.indexWhere((t) => t.id == tabId);
     if (index == -1) {
-      logService.warn(_tag, 'Tab not found: $tabId');
+      _logService.warn(_tag, 'Tab not found: $tabId');
       return false;
     }
     
     final tab = _tabs[index];
     if (!tab.canRedo) {
-      logService.warn(_tag, 'Cannot redo: at end of history');
+      _logService.warn(_tag, 'Cannot redo: at end of history');
       return false;
     }
     
@@ -174,7 +179,7 @@ class NotepadService {
     );
     
     _notifyTabsChanged();
-    logService.info(_tag, 'Redone edit for tab: $tabId');
+    _logService.info(_tag, 'Redone edit for tab: $tabId');
     return true;
   }
 
@@ -183,7 +188,7 @@ class NotepadService {
   bool closeTab(String tabId) {
     final index = _tabs.indexWhere((t) => t.id == tabId);
     if (index == -1) {
-      logService.warn(_tag, 'Tab not found: $tabId');
+      _logService.warn(_tag, 'Tab not found: $tabId');
       return false;
     }
     
@@ -201,14 +206,14 @@ class NotepadService {
     }
     
     _notifyTabsChanged();
-    logService.info(_tag, 'Closed tab: $tabId');
+    _logService.info(_tag, 'Closed tab: $tabId');
     return true;
   }
 
   /// Select a tab
   void selectTab(String? tabId) {
     if (tabId != null && !_tabs.any((t) => t.id == tabId)) {
-      logService.warn(_tag, 'Cannot select non-existent tab: $tabId');
+      _logService.warn(_tag, 'Cannot select non-existent tab: $tabId');
       return;
     }
     
@@ -248,7 +253,7 @@ class NotepadService {
     _selectedTabId = null;
     _notifyTabsChanged();
     _notifySelectedTabChanged();
-    logService.info(_tag, 'Cleared all tabs');
+    _logService.info(_tag, 'Cleared all tabs');
   }
 
   void _notifyTabsChanged() {
@@ -296,6 +301,6 @@ class NotepadService {
   void dispose() {
     _tabsController.close();
     _selectedTabController.close();
-    logService.info(_tag, 'NotepadService disposed');
+    _logService.info(_tag, 'NotepadService disposed');
   }
 }

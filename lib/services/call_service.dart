@@ -1,19 +1,23 @@
 import 'dart:async';
 import 'dart:typed_data';
+import 'dart:convert';
 import 'package:record/record.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'audio_recorder_service.dart';
 import 'audio_player_service.dart';
 import 'realtime_api_client.dart';
-import 'storage_service.dart';
 import 'tool_service.dart';
 import 'haptic_service.dart';
+import 'notepad_service.dart';
 import 'log_service.dart';
 import 'chat/chat_message_manager.dart';
 import '../config/app_config.dart';
 import '../models/chat_message.dart';
+import '../models/call_session.dart';
 import '../models/realtime_events.dart';
 import '../utils/audio_utils.dart';
+import '../repositories/repository_factory.dart';
+import '../interfaces/config_repository.dart';
 
 /// Enum representing the current state of the call
 enum CallState {
@@ -31,9 +35,11 @@ class CallService {
   final AudioRecorderService _recorder;
   final AudioPlayerService _player;
   final RealtimeApiClient _apiClient;
-  final StorageService _storage;
+  final ConfigRepository _config;
   final ToolService _toolService;
   final HapticService _hapticService;
+  final NotepadService _notepadService;
+  final LogService _logService;
   final ChatMessageManager _chatManager = ChatMessageManager();
   
   /// Session-scoped tool manager (created on call start, disposed on call end)
@@ -61,24 +67,32 @@ class CallService {
       StreamController<int>.broadcast();
   final StreamController<String> _errorController =
       StreamController<String>.broadcast();
+  final StreamController<String> _sessionSavedController =
+      StreamController<String>.broadcast();
 
   CallState _currentState = CallState.idle;
   int _callDuration = 0;
   bool _isMuted = false;
+  DateTime? _callStartTime;
+  String? _currentSpeedDialId;
 
   CallService({
     required AudioRecorderService recorder,
     required AudioPlayerService player,
     required RealtimeApiClient apiClient,
-    required StorageService storage,
+    required ConfigRepository config,
     required ToolService toolService,
     required HapticService hapticService,
+    required NotepadService notepadService,
+    LogService? logService,
   })  : _recorder = recorder,
         _player = player,
         _apiClient = apiClient,
-        _storage = storage,
+        _config = config,
         _toolService = toolService,
-        _hapticService = hapticService;
+        _hapticService = hapticService,
+        _notepadService = notepadService,
+        _logService = logService ?? LogService();
 
   /// Current call state
   CallState get currentState => _currentState;
@@ -94,6 +108,9 @@ class CallService {
 
   /// Stream of error messages
   Stream<String> get errorStream => _errorController.stream;
+  
+  /// セッション保存完了通知ストリーム（セッションID）
+  Stream<String> get sessionSavedStream => _sessionSavedController.stream;
   
   /// Stream of chat messages
   Stream<List<ChatMessage>> get chatStream => _chatManager.chatStream;
@@ -120,9 +137,22 @@ class CallService {
     }
   }
 
+  /// Get the current speed dial ID
+  String? get currentSpeedDialId => _currentSpeedDialId;
+
+  /// Set the current speed dial ID (call before startCall)
+  void setSpeedDialId(String? speedDialId) {
+    _currentSpeedDialId = speedDialId;
+  }
+
+  /// Set assistant configuration (voice and instructions) before starting a call
+  void setAssistantConfig(String voice, String instructions) {
+    _apiClient.setVoiceAndInstructions(voice, instructions);
+  }
+
   /// Check if Azure configuration exists
   Future<bool> hasAzureConfig() async {
-    return await _storage.hasAzureConfig();
+    return await _config.hasAzureConfig();
   }
 
   /// Check microphone permission
@@ -140,70 +170,74 @@ class CallService {
   /// Start a call
   Future<void> startCall() async {
     if (isCallActive) {
-      logService.warn(_tag, 'Call already active, ignoring startCall');
+      _logService.warn(_tag, 'Call already active, ignoring startCall');
       return;
     }
 
-    logService.info(_tag, 'Starting call');
+    _logService.info(_tag, 'Starting call');
     _chatManager.clearChat();
+    _notepadService.clearTabs(); // 前のセッションのノートパッドをクリア
 
     try {
       _setState(CallState.connecting);
 
-      logService.debug(_tag, 'Checking Azure config');
-      final hasConfig = await _storage.hasAzureConfig();
+      _logService.debug(_tag, 'Checking Azure config');
+      final hasConfig = await hasAzureConfig();
       if (!hasConfig) {
-        logService.error(_tag, 'Azure config not found');
+        _logService.error(_tag, 'Azure config not found');
         _emitError('Azure OpenAI設定を先に行ってください');
         _setState(CallState.idle);
         return;
       }
 
-      logService.debug(_tag, 'Checking microphone permission');
+      _logService.debug(_tag, 'Checking microphone permission');
       final hasPermission = await _recorder.hasPermission();
       if (!hasPermission) {
-        logService.error(_tag, 'Microphone permission denied');
+        _logService.error(_tag, 'Microphone permission denied');
         _emitError('マイクの使用を許可してください');
         _setState(CallState.idle);
         return;
       }
 
-      final realtimeUrl = await _storage.getRealtimeUrl();
-      final apiKey = await _storage.getApiKey();
+      final realtimeUrl = await _config.getRealtimeUrl();
+      final apiKey = await _config.getApiKey();
 
       if (realtimeUrl == null || apiKey == null) {
-        logService.error(_tag, 'Azure credentials not found');
+        _logService.error(_tag, 'Azure credentials not found');
         _emitError('Azure OpenAI設定が見つかりません');
         _setState(CallState.idle);
         return;
       }
 
-      // Create session-scoped tool manager
-      _toolManager = _toolService.createToolManager(
+      // Create session-scoped tool manager (async now)
+      _toolManager = await _toolService.createToolManager(
         onToolsChanged: _onToolsChanged,
       );
       _apiClient.setTools(_toolManager!.toolDefinitions);
 
-      logService.info(_tag, 'Connecting to Azure OpenAI');
+      _logService.info(_tag, 'Connecting to Azure OpenAI');
       await _apiClient.connect(realtimeUrl, apiKey);
 
       _setupApiSubscriptions();
 
-      logService.info(_tag, 'Starting microphone recording');
+      _logService.info(_tag, 'Starting microphone recording');
       final audioStream = await _recorder.startRecording();
 
       _setupAudioStream(audioStream);
       _setupAmplitudeMonitoring();
       _startCallTimer();
+      
+      // Track call start time for session saving
+      _callStartTime = DateTime.now();
 
       // Enable wake lock to prevent device sleep during call
       await _enableWakeLock();
 
       _setState(CallState.connected);
       _resetSilenceTimer(); // Start silence detection
-      logService.info(_tag, 'Call connected successfully');
+      _logService.info(_tag, 'Call connected successfully');
     } catch (e) {
-      logService.error(_tag, 'Failed to start call: $e');
+      _logService.error(_tag, 'Failed to start call: $e');
       _emitError('接続に失敗しました: $e');
       _setState(CallState.error);
       await _cleanup();
@@ -215,23 +249,23 @@ class CallService {
     if (_toolManager != null && _currentState == CallState.connected) {
       _apiClient.setTools(_toolManager!.toolDefinitions);
       _apiClient.updateSessionConfig();
-      logService.info(_tag, 'Tools updated, session config refreshed');
+      _logService.info(_tag, 'Tools updated, session config refreshed');
     }
   }
 
   void _setupApiSubscriptions() {
     _errorSubscription = _apiClient.errorStream.listen((error) {
-      logService.error(_tag, 'API error received: $error');
+      _logService.error(_tag, 'API error received: $error');
       _emitError('API エラー: $error');
     });
 
     _responseAudioSubscription = _apiClient.audioStream.listen((audioData) async {
-      logService.debug(_tag, 'Received audio from API: ${audioData.length} bytes');
+      _logService.debug(_tag, 'Received audio from API: ${audioData.length} bytes');
       await _player.addAudioData(audioData);
     });
     
     _audioDoneSubscription = _apiClient.audioDoneStream.listen((_) async {
-      logService.info(_tag, 'Audio done event received, marking response complete');
+      _logService.info(_tag, 'Audio done event received, marking response complete');
       await _player.markResponseComplete();
       _chatManager.completeCurrentAssistantMessage();
       // Haptic feedback: AI response ended, user's turn
@@ -245,20 +279,20 @@ class CallService {
     _speechStartedSubscription = _apiClient.speechStartedStream.listen((_) {
       _chatManager.createUserMessagePlaceholder();
       _resetSilenceTimer(); // User started speaking, reset silence timer
-      logService.debug(_tag, 'Created user message placeholder');
+      _logService.debug(_tag, 'Created user message placeholder');
       // Haptic feedback: VAD detected user speech started (fire-and-forget)
       unawaited(_hapticService.selectionClick());
     });
     
     _userTranscriptSubscription = _apiClient.userTranscriptStream.listen((transcript) {
       _chatManager.updateUserMessagePlaceholder(transcript);
-      logService.debug(_tag, 'Updated user message placeholder with transcript');
+      _logService.debug(_tag, 'Updated user message placeholder with transcript');
     });
     
     _functionCallSubscription = _apiClient.functionCallStream.listen((functionCall) async {
-      logService.info(_tag, 'Handling function call: ${functionCall.name}');
+      _logService.info(_tag, 'Handling function call: ${functionCall.name}');
       if (_toolManager == null) {
-        logService.error(_tag, 'Tool manager not available');
+        _logService.error(_tag, 'Tool manager not available');
         return;
       }
       final result = await _toolManager!.executeTool(
@@ -271,7 +305,7 @@ class CallService {
     });
     
     _responseStartedSubscription = _apiClient.responseStartedStream.listen((_) async {
-      logService.info(_tag, 'User speech detected, stopping audio for interrupt');
+      _logService.info(_tag, 'User speech detected, stopping audio for interrupt');
       await _player.stop();
       _chatManager.completeCurrentAssistantMessage();
     });
@@ -296,7 +330,7 @@ class CallService {
         }
       },
       onError: (error) {
-        logService.error(_tag, 'Recording error: $error');
+        _logService.error(_tag, 'Recording error: $error');
         _emitError('録音エラー: $error');
         endCall();
       },
@@ -337,7 +371,7 @@ class CallService {
       return;
     }
     
-    logService.debug(_tag, 'Resetting silence timer (${AppConfig.silenceTimeoutSeconds}s)');
+    _logService.debug(_tag, 'Resetting silence timer (${AppConfig.silenceTimeoutSeconds}s)');
     
     _silenceTimer = Timer(
       Duration(seconds: AppConfig.silenceTimeoutSeconds),
@@ -351,7 +385,7 @@ class CallService {
       return;
     }
     
-    logService.info(_tag, 'Silence timeout reached (${AppConfig.silenceTimeoutSeconds}s), ending call');
+    _logService.info(_tag, 'Silence timeout reached (${AppConfig.silenceTimeoutSeconds}s), ending call');
     _emitError('無音状態が続いたため通話を終了しました');
     endCall();
   }
@@ -359,17 +393,70 @@ class CallService {
   /// End the call
   Future<void> endCall() async {
     if (!isCallActive && _currentState != CallState.error) {
-      logService.debug(_tag, 'Call not active, ignoring endCall');
+      _logService.debug(_tag, 'Call not active, ignoring endCall');
       return;
     }
 
+    // Save session before cleanup
+    await _saveSession();
+    
     await _cleanup();
     _setState(CallState.idle);
-    logService.info(_tag, 'Call ended');
+    _logService.info(_tag, 'Call ended');
+  }
+
+  Future<void> _saveSession() async {
+    if (_callStartTime == null || _callDuration == 0) {
+      _logService.debug(_tag, 'Skipping session save (no meaningful data)');
+      return;
+    }
+
+    try {
+      // チャットメッセージをJSON文字列に変換
+      final chatMessagesJson = _chatManager.chatMessages
+          .map((msg) => jsonEncode({
+                'role': msg.role,
+                'content': msg.content,
+                'timestamp': msg.timestamp.toIso8601String(),
+              }))
+          .toList();
+
+      // ノートパッドの内容を収集
+      final notepadTabs = _notepadService.tabs;
+      List<SessionNotepadTab>? notepadTabsData;
+      
+      if (notepadTabs.isNotEmpty) {
+        // タブを構造化データとして保存
+        notepadTabsData = notepadTabs.map((tab) {
+          return SessionNotepadTab(
+            title: tab.title,
+            content: tab.content,
+          );
+        }).toList();
+      }
+
+      final session = CallSession(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        startTime: _callStartTime!,
+        endTime: DateTime.now(),
+        duration: _callDuration,
+        chatMessages: chatMessagesJson,
+        notepadTabs: notepadTabsData,
+        speedDialId: _currentSpeedDialId,
+      );
+
+      await RepositoryFactory.callSessions.save(session);
+      _logService.info(_tag, 'セッション保存完了: ${session.id}');
+      
+      // セッション保存完了を通知（UIの更新用）
+      _sessionSavedController.add(session.id);
+    } catch (e) {
+      _logService.error(_tag, 'セッション保存失敗: $e');
+    }
   }
 
   Future<void> _cleanup() async {
-    logService.debug(_tag, 'Cleaning up call resources');
+    _logService.debug(_tag, 'リソースのクリーンアップ');
     
     _callTimer?.cancel();
     _callTimer = null;
@@ -425,11 +512,11 @@ class CallService {
     _durationController.add(0);
     _amplitudeController.add(0.0);
     
-    logService.debug(_tag, 'Cleanup complete');
+    _logService.debug(_tag, 'Cleanup complete');
   }
 
   void _setState(CallState state) {
-    logService.info(_tag, 'State changed: $_currentState -> $state');
+    _logService.info(_tag, 'State changed: $_currentState -> $state');
     _currentState = state;
     _stateController.add(state);
   }
@@ -442,9 +529,9 @@ class CallService {
   Future<void> _enableWakeLock() async {
     try {
       await WakelockPlus.enable();
-      logService.info(_tag, 'Wake lock enabled');
+      _logService.info(_tag, 'Wake lock enabled');
     } catch (e) {
-      logService.error(_tag, 'Failed to enable wake lock: $e');
+      _logService.error(_tag, 'Failed to enable wake lock: $e');
     }
   }
 
@@ -452,9 +539,9 @@ class CallService {
   Future<void> _disableWakeLock() async {
     try {
       await WakelockPlus.disable();
-      logService.info(_tag, 'Wake lock disabled');
+      _logService.info(_tag, 'Wake lock disabled');
     } catch (e) {
-      logService.error(_tag, 'Failed to disable wake lock: $e');
+      _logService.error(_tag, 'Failed to disable wake lock: $e');
     }
   }
   
@@ -470,6 +557,7 @@ class CallService {
     await _amplitudeController.close();
     await _durationController.close();
     await _errorController.close();
+    await _sessionSavedController.close();
     await _chatManager.dispose();
   }
 }

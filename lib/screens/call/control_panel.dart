@@ -3,9 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/app_theme.dart';
 import '../../providers/providers.dart';
-import '../../components/call_button.dart';
-import '../../services/call_service.dart';
 import '../../services/pip_service.dart';
+import '../../components/control_button.dart';
 
 /// Galaxy-style control panel with button grid and call button
 class ControlPanel extends ConsumerWidget {
@@ -27,7 +26,7 @@ class ControlPanel extends ConsumerWidget {
     final isMuted = ref.watch(isMutedProvider);
     final speakerMuted = ref.watch(speakerMutedProvider);
     final isCallActive = ref.watch(isCallActiveProvider);
-    
+
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(20),
@@ -44,7 +43,7 @@ class ControlPanel extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 Expanded(
-                  child: _ControlButton(
+                  child: ControlButton(
                     icon: Icons.chat_bubble_outline,
                     label: 'チャット',
                     onTap: onChatPressed,
@@ -52,20 +51,13 @@ class ControlPanel extends ConsumerWidget {
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: _ControlButton(
+                  child: ControlButton(
                     icon: Icons.article_outlined,
                     label: 'ノートパッド',
                     onTap: onNotepadPressed,
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _ControlButton(
-                    icon: Icons.settings,
-                    label: '設定',
-                    onTap: onSettingsPressed,
-                  ),
-                ),
+                // Settings button removed - only accessible from home screen
               ],
             ),
           if (!hideNavigationButtons) const SizedBox(height: 16),
@@ -76,7 +68,7 @@ class ControlPanel extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 Expanded(
-                  child: _ControlButton(
+                  child: ControlButton(
                     icon: speakerMuted ? Icons.volume_off : Icons.volume_up,
                     label: 'スピーカー',
                     onTap: () => _handleSpeakerToggle(ref),
@@ -86,7 +78,7 @@ class ControlPanel extends ConsumerWidget {
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: _ControlButton(
+                  child: ControlButton(
                     icon: isMuted ? Icons.mic_off : Icons.mic,
                     label: '消音',
                     onTap: () => _handleMuteToggle(ref),
@@ -101,7 +93,7 @@ class ControlPanel extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 Expanded(
-                  child: _ControlButton(
+                  child: ControlButton(
                     icon: Icons.front_hand,
                     label: '割込み',
                     onTap: () => _handleInterrupt(ref),
@@ -109,19 +101,15 @@ class ControlPanel extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-                // PiP button for mobile, Settings for desktop
+                // PiP button for mobile only when in standalone call screen
                 Expanded(
                   child: (PlatformCompat.isAndroid || PlatformCompat.isIOS)
-                      ? _ControlButton(
+                      ? ControlButton(
                           icon: Icons.picture_in_picture_alt,
                           label: 'PiP',
                           onTap: () => _handlePiPToggle(context),
                         )
-                      : _ControlButton(
-                          icon: Icons.settings,
-                          label: '設定',
-                          onTap: onSettingsPressed,
-                        ),
+                      : const SizedBox(), // No settings button in standalone call
                 ),
               ],
             ),
@@ -130,7 +118,7 @@ class ControlPanel extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 Expanded(
-                  child: _ControlButton(
+                  child: ControlButton(
                     icon: speakerMuted ? Icons.volume_off : Icons.volume_up,
                     label: 'スピーカー',
                     onTap: () => _handleSpeakerToggle(ref),
@@ -140,7 +128,7 @@ class ControlPanel extends ConsumerWidget {
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: _ControlButton(
+                  child: ControlButton(
                     icon: isMuted ? Icons.mic_off : Icons.mic,
                     label: '消音',
                     onTap: () => _handleMuteToggle(ref),
@@ -150,7 +138,7 @@ class ControlPanel extends ConsumerWidget {
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: _ControlButton(
+                  child: ControlButton(
                     icon: Icons.front_hand,
                     label: '割込み',
                     onTap: () => _handleInterrupt(ref),
@@ -160,11 +148,20 @@ class ControlPanel extends ConsumerWidget {
               ],
             ),
           const SizedBox(height: 24),
-          // Main call button
-          CallButton(
-            isCallActive: isCallActive,
-            size: 72,
-            onPressed: () => _handleCallButton(ref),
+          // Main call button - always shows as end call (red) since start is from home screen
+          SizedBox(
+            height: 72,
+            width: 72,
+            child: FloatingActionButton(
+              onPressed: () => _handleCallButton(context, ref),
+              backgroundColor: AppTheme.errorColor,
+              shape: const CircleBorder(),
+              child: const Icon(
+                Icons.call_end,
+                color: Colors.white,
+                size: 40,
+              ),
+            ),
           ),
         ],
       ),
@@ -188,32 +185,31 @@ class ControlPanel extends ConsumerWidget {
   void _handleInterrupt(WidgetRef ref) {
     final isCallActive = ref.read(isCallActiveProvider);
     if (!isCallActive) return;
-    
+
     final audioPlayer = ref.read(audioPlayerServiceProvider);
     final apiClient = ref.read(realtimeApiClientProvider);
-    
+
     audioPlayer.stop();
     apiClient.cancelResponse();
   }
 
-  Future<void> _handleCallButton(WidgetRef ref) async {
+  Future<void> _handleCallButton(BuildContext context, WidgetRef ref) async {
     final callService = ref.read(callServiceProvider);
-    final callStateAsync = ref.read(callStateProvider);
-    final callState = callStateAsync.value ?? CallState.idle;
-    
-    if (callState == CallState.idle || callState == CallState.error) {
-      await callService.startCall();
-    } else {
-      await callService.endCall();
+    // Only end call functionality - start is triggered from home screen
+    await callService.endCall();
+
+    // Navigate back to home screen after ending call
+    if (context.mounted) {
+      Navigator.of(context).pop();
     }
   }
 
   Future<void> _handlePiPToggle(BuildContext context) async {
     if (!PlatformCompat.isAndroid && !PlatformCompat.isIOS) return;
-    
+
     final pipService = PiPService();
     final isAvailable = await pipService.isPiPAvailable();
-    
+
     if (!isAvailable) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -225,7 +221,7 @@ class ControlPanel extends ConsumerWidget {
       }
       return;
     }
-    
+
     try {
       await pipService.enterPiPMode();
     } catch (e) {
@@ -238,65 +234,5 @@ class ControlPanel extends ConsumerWidget {
         );
       }
     }
-  }
-}
-
-/// Individual control button widget
-class _ControlButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  final bool enabled;
-  final bool isActive;
-  final Color? activeColor;
-
-  const _ControlButton({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    this.enabled = true,
-    this.isActive = false,
-    this.activeColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final color = !enabled 
-        ? AppTheme.textSecondary.withValues(alpha: 0.3)
-        : isActive 
-            ? (activeColor ?? AppTheme.primaryColor)
-            : AppTheme.textSecondary;
-
-    return GestureDetector(
-      onTap: enabled ? onTap : null,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: isActive 
-                  ? (activeColor ?? AppTheme.primaryColor).withValues(alpha: 0.2)
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Icon(icon, color: color, size: 28),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              color: color,
-            ),
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ),
-    );
   }
 }

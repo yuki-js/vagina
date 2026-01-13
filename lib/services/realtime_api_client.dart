@@ -63,10 +63,8 @@ import 'log_service.dart';
 class RealtimeApiClient {
   static const _tag = 'RealtimeAPI';
   
-  /// Log audio chunks sent every N chunks to avoid log explosion
-  static const int _logAudioChunkInterval = 50;
-  
-  final WebSocketService _webSocket = WebSocketService();
+  final WebSocketService _webSocket;
+  final LogService _logService;
   
   // Stream controllers for various event types
   final StreamController<Uint8List> _audioController =
@@ -119,6 +117,18 @@ class RealtimeApiClient {
   /// Accumulated function call arguments (function calls come in deltas)
   final Map<String, StringBuffer> _pendingFunctionCalls = {};
   final Map<String, String> _pendingFunctionNames = {};
+
+  /// Session configuration
+  RealtimeSessionConfig _sessionConfig = const RealtimeSessionConfig();
+  
+  /// Noise reduction type ('near', 'far', or null for disabled)
+  String? _noiseReduction;
+
+  RealtimeApiClient({
+    WebSocketService? webSocket,
+    LogService? logService,
+  })  : _webSocket = webSocket ?? WebSocketService(),
+        _logService = logService ?? LogService();
 
   // Getters for connection state and streams
   bool get isConnected => _webSocket.isConnected;
@@ -187,10 +197,18 @@ class RealtimeApiClient {
     _tools = tools;
   }
 
+  /// Set voice and instructions for the session
+  void setVoiceAndInstructions(String voice, String instructions) {
+    _sessionConfig = _sessionConfig.copyWith(
+      voice: voice,
+      instructions: instructions,
+    );
+  }
+
   /// Connect to Azure OpenAI using a full Realtime URL and API key
   /// URL format: https://{resource}.openai.azure.com/openai/realtime?api-version=YYYY-MM-DD&deployment=...
   Future<void> connect(String realtimeUrl, String apiKey) async {
-    logService.info(_tag, 'Connecting to Azure OpenAI Realtime API');
+    _logService.info(_tag, 'Connecting to Azure OpenAI Realtime API');
     _audioChunksReceived = 0;
     _audioChunksSent = 0;
     _pendingFunctionCalls.clear();
@@ -224,7 +242,7 @@ class RealtimeApiClient {
       _messageSubscription = _webSocket.messages.listen(
         _handleMessage,
         onError: (error) {
-          logService.error(_tag, 'WebSocket error: $error');
+          _logService.error(_tag, 'WebSocket error: $error');
           _lastError = error.toString();
           _errorController.add(_lastError!);
         },
@@ -232,18 +250,15 @@ class RealtimeApiClient {
 
       // Session will be configured when session.created event is received
       _lastError = null;
-      logService.info(_tag, 'Connected, waiting for session.created event');
+      _logService.info(_tag, 'Connected, waiting for session.created event');
     } catch (e) {
-      logService.error(_tag, 'Connection failed: $e');
+      _logService.error(_tag, 'Connection failed: $e');
       _lastError = e.toString();
       _errorController.add(_lastError!);
       rethrow;
     }
   }
 
-  /// Session configuration
-  RealtimeSessionConfig _sessionConfig = const RealtimeSessionConfig();
-  
   /// Set noise reduction type ('far' or 'near')
   void setNoiseReduction(String type) {
     if (type == 'far' || type == 'near') {
@@ -255,13 +270,13 @@ class RealtimeApiClient {
   String get noiseReduction => _sessionConfig.noiseReduction;
 
   Future<void> _configureSession() async {
-    // Update session config with current tools
+    // Update session config with current tools (voice and instructions already set via setVoiceAndInstructions)
     _sessionConfig = _sessionConfig.copyWith(
-      voice: AppConfig.defaultVoice,
       tools: _tools,
     );
     
-    logService.info(_tag, 'Configuring session with voice: ${_sessionConfig.voice}, tools: ${_sessionConfig.tools.length}, noise_reduction: ${_sessionConfig.noiseReduction}');
+    _logService.info(_tag, 'Configuring session with voice: ${_sessionConfig.voice}, tools: ${_sessionConfig.tools.length}, noise_reduction: ${_sessionConfig.noiseReduction}');
+    _logService.debug(_tag, 'Instructions: ${_sessionConfig.instructions}');
     
     // Send session update with configuration
     _webSocket.send({
@@ -404,9 +419,9 @@ class RealtimeApiClient {
         // Unknown event type - could be a new event type added by OpenAI
         // or a malformed message. Log for debugging but don't error.
         if (type == null || type.isEmpty) {
-          logService.warn(_tag, 'Received message without event type');
+          _logService.warn(_tag, 'Received message without event type');
         } else {
-          logService.warn(_tag, 'Unknown/unhandled event type received: $type');
+          _logService.warn(_tag, 'Unknown/unhandled event type received: $type');
         }
     }
   }
@@ -418,13 +433,13 @@ class RealtimeApiClient {
   /// Handle session.created event
   /// Emitted automatically when a new connection is established as the first server event.
   void _handleSessionCreated(Map<String, dynamic> message, String eventId) {
-    logService.info(_tag, 'Session created, sending session.update');
+    _logService.info(_tag, 'Session created, sending session.update');
     
     final sessionJson = message['session'] as Map<String, dynamic>?;
     if (sessionJson != null) {
       final session = RealtimeSession.fromJson(sessionJson);
       _sessionCreatedController.add(session);
-      logService.debug(_tag, 'Session ID: ${session.id}, Model: ${session.model}');
+      _logService.debug(_tag, 'Session ID: ${session.id}, Model: ${session.model}');
     }
     
     // Send session.update after session is created
@@ -442,17 +457,17 @@ class RealtimeApiClient {
       final turnDetection = sessionJson['turn_detection'] as Map<String, dynamic>?;
       final transcription = sessionJson['input_audio_transcription'] as Map<String, dynamic>?;
       final tools = sessionJson['tools'] as List?;
-      logService.info(_tag, 'Session updated - turn_detection: ${turnDetection?['type']}, '
+      _logService.info(_tag, 'Session updated - turn_detection: ${turnDetection?['type']}, '
           'transcription: ${transcription?['model']}, tools: ${tools?.length ?? 0}');
     } else {
-      logService.info(_tag, 'Session updated');
+      _logService.info(_tag, 'Session updated');
     }
   }
   
   /// Handle transcription_session.updated event
   /// Returned when a transcription session is updated.
   void _handleTranscriptionSessionUpdated(Map<String, dynamic> message, String eventId) {
-    logService.info(_tag, 'Transcription session updated');
+    _logService.info(_tag, 'Transcription session updated');
     // This is for transcription-only sessions, which we don't currently use
     // but we handle it for completeness
   }
@@ -468,9 +483,9 @@ class RealtimeApiClient {
     if (conversationJson != null) {
       final conversation = RealtimeConversation.fromJson(conversationJson);
       _conversationCreatedController.add(conversation);
-      logService.info(_tag, 'Conversation created: ${conversation.id}');
+      _logService.info(_tag, 'Conversation created: ${conversation.id}');
     } else {
-      logService.info(_tag, 'Conversation created');
+      _logService.info(_tag, 'Conversation created');
     }
   }
   
@@ -483,7 +498,7 @@ class RealtimeApiClient {
     if (itemJson != null) {
       final item = ConversationItem.fromJson(itemJson);
       _conversationItemCreatedController.add(item);
-      logService.debug(_tag, 'Conversation item created: ${item.id} (type: ${item.type}, '
+      _logService.debug(_tag, 'Conversation item created: ${item.id} (type: ${item.type}, '
           'role: ${item.role}, previous: $previousItemId)');
     }
   }
@@ -494,7 +509,7 @@ class RealtimeApiClient {
     final itemId = message['item_id'] as String?;
     if (itemId != null) {
       _conversationItemDeletedController.add(itemId);
-      logService.info(_tag, 'Conversation item deleted: $itemId');
+      _logService.info(_tag, 'Conversation item deleted: $itemId');
     }
   }
   
@@ -504,7 +519,7 @@ class RealtimeApiClient {
     final itemId = message['item_id'] as String?;
     final contentIndex = message['content_index'] as int?;
     final audioEndMs = message['audio_end_ms'] as int?;
-    logService.info(_tag, 'Conversation item truncated: $itemId '
+    _logService.info(_tag, 'Conversation item truncated: $itemId '
         '(content_index: $contentIndex, audio_end_ms: $audioEndMs)');
   }
   
@@ -514,7 +529,7 @@ class RealtimeApiClient {
     final itemJson = message['item'] as Map<String, dynamic>?;
     if (itemJson != null) {
       final item = ConversationItem.fromJson(itemJson);
-      logService.info(_tag, 'Conversation item retrieved: ${item.id}');
+      _logService.info(_tag, 'Conversation item retrieved: ${item.id}');
     }
   }
 
@@ -529,10 +544,10 @@ class RealtimeApiClient {
     final itemId = message['item_id'] as String?;
     
     if (transcript != null && transcript.isNotEmpty) {
-      logService.info(_tag, 'User transcript completed: $transcript');
+      _logService.info(_tag, 'User transcript completed: $transcript');
       _userTranscriptController.add(transcript);
     } else {
-      logService.warn(_tag, 'User transcript received but empty (item_id: $itemId)');
+      _logService.warn(_tag, 'User transcript received but empty (item_id: $itemId)');
     }
   }
   
@@ -542,7 +557,7 @@ class RealtimeApiClient {
     final delta = message['delta'] as String?;
     
     if (delta != null && delta.isNotEmpty) {
-      logService.debug(_tag, 'User transcript delta: $delta');
+      _logService.debug(_tag, 'User transcript delta: $delta');
       _userTranscriptDeltaController.add(delta);
     }
   }
@@ -555,10 +570,10 @@ class RealtimeApiClient {
     
     if (errorJson != null) {
       final error = RealtimeError.fromJson(errorJson);
-      logService.error(_tag, 'User transcription failed (item_id: $itemId): '
+      _logService.error(_tag, 'User transcription failed (item_id: $itemId): '
           '[${error.code}] ${error.message}');
     } else {
-      logService.error(_tag, 'User transcription failed (item_id: $itemId): unknown error');
+      _logService.error(_tag, 'User transcription failed (item_id: $itemId): unknown error');
     }
   }
 
@@ -571,13 +586,13 @@ class RealtimeApiClient {
   void _handleInputAudioBufferCommitted(Map<String, dynamic> message, String eventId) {
     final previousItemId = message['previous_item_id'] as String?;
     final itemId = message['item_id'] as String?;
-    logService.info(_tag, 'Audio buffer committed (item_id: $itemId, previous: $previousItemId)');
+    _logService.info(_tag, 'Audio buffer committed (item_id: $itemId, previous: $previousItemId)');
   }
   
   /// Handle input_audio_buffer.cleared event
   /// Audio buffer was cleared.
   void _handleInputAudioBufferCleared(Map<String, dynamic> message, String eventId) {
-    logService.info(_tag, 'Audio buffer cleared');
+    _logService.info(_tag, 'Audio buffer cleared');
   }
   
   /// Handle input_audio_buffer.speech_started event
@@ -586,7 +601,7 @@ class RealtimeApiClient {
     final audioStartMs = message['audio_start_ms'] as int?;
     final itemId = message['item_id'] as String?;
     
-    logService.info(_tag, 'Speech started (VAD detected) at ${audioStartMs}ms, item_id: $itemId');
+    _logService.info(_tag, 'Speech started (VAD detected) at ${audioStartMs}ms, item_id: $itemId');
     
     // Notify that user speech started (for creating placeholder message)
     _speechStartedController.add(null);
@@ -599,7 +614,7 @@ class RealtimeApiClient {
   void _handleInputAudioBufferSpeechStopped(Map<String, dynamic> message, String eventId) {
     final audioEndMs = message['audio_end_ms'] as int?;
     final itemId = message['item_id'] as String?;
-    logService.info(_tag, 'Speech stopped (VAD detected) at ${audioEndMs}ms, item_id: $itemId');
+    _logService.info(_tag, 'Speech stopped (VAD detected) at ${audioEndMs}ms, item_id: $itemId');
   }
 
   // =============================================================================
@@ -610,7 +625,7 @@ class RealtimeApiClient {
   /// Server began streaming audio (WebRTC only).
   void _handleOutputAudioBufferStarted(Map<String, dynamic> message, String eventId) {
     final responseId = message['response_id'] as String?;
-    logService.debug(_tag, 'Output audio buffer started (response_id: $responseId) [WebRTC only]');
+    _logService.debug(_tag, 'Output audio buffer started (response_id: $responseId) [WebRTC only]');
     // This event is for WebRTC connections, not WebSocket
     // We log it but take no action in our WebSocket-based implementation
   }
@@ -619,7 +634,7 @@ class RealtimeApiClient {
   /// Audio buffer drained (WebRTC only).
   void _handleOutputAudioBufferStopped(Map<String, dynamic> message, String eventId) {
     final responseId = message['response_id'] as String?;
-    logService.debug(_tag, 'Output audio buffer stopped (response_id: $responseId) [WebRTC only]');
+    _logService.debug(_tag, 'Output audio buffer stopped (response_id: $responseId) [WebRTC only]');
     // This event is for WebRTC connections, not WebSocket
   }
   
@@ -627,7 +642,7 @@ class RealtimeApiClient {
   /// Audio buffer was cleared (WebRTC only).
   void _handleOutputAudioBufferCleared(Map<String, dynamic> message, String eventId) {
     final responseId = message['response_id'] as String?;
-    logService.debug(_tag, 'Output audio buffer cleared (response_id: $responseId) [WebRTC only]');
+    _logService.debug(_tag, 'Output audio buffer cleared (response_id: $responseId) [WebRTC only]');
     // This event is for WebRTC connections, not WebSocket
   }
 
@@ -640,12 +655,12 @@ class RealtimeApiClient {
   void _handleResponseCreated(Map<String, dynamic> message, String eventId) {
     final responseJson = message['response'] as Map<String, dynamic>?;
     
-    logService.info(_tag, 'Response created - AI is generating response');
+    _logService.info(_tag, 'Response created - AI is generating response');
     _audioChunksReceived = 0; // Reset audio chunk counter for new response
     
     if (responseJson != null) {
       final response = RealtimeResponse.fromJson(responseJson);
-      logService.debug(_tag, 'Response ID: ${response.id}, Status: ${response.status}');
+      _logService.debug(_tag, 'Response ID: ${response.id}, Status: ${response.status}');
     }
     // Don't stop audio here - let it play until speech_started interrupts
   }
@@ -661,13 +676,13 @@ class RealtimeApiClient {
       
       final usage = response.usage;
       if (usage != null) {
-        logService.info(_tag, 'Response complete - Status: ${response.status}, '
+        _logService.info(_tag, 'Response complete - Status: ${response.status}, '
             'Tokens: ${usage.totalTokens} (in: ${usage.inputTokens}, out: ${usage.outputTokens})');
       } else {
-        logService.info(_tag, 'Response complete - Status: ${response.status}');
+        _logService.info(_tag, 'Response complete - Status: ${response.status}');
       }
     } else {
-      logService.info(_tag, 'Response complete');
+      _logService.info(_tag, 'Response complete');
     }
   }
 
@@ -691,9 +706,9 @@ class RealtimeApiClient {
         final name = item.name ?? '';
         _pendingFunctionCalls[callId] = StringBuffer();
         _pendingFunctionNames[callId] = name;
-        logService.info(_tag, 'Function call started: $name (call_id: $callId)');
+        _logService.info(_tag, 'Function call started: $name (call_id: $callId)');
       } else {
-        logService.debug(_tag, 'Output item added: ${item.id} (type: ${item.type}, '
+        _logService.debug(_tag, 'Output item added: ${item.id} (type: ${item.type}, '
             'response_id: $responseId, index: $outputIndex)');
       }
     }
@@ -706,7 +721,7 @@ class RealtimeApiClient {
     
     if (itemJson != null) {
       final item = ConversationItem.fromJson(itemJson);
-      logService.debug(_tag, 'Output item done: ${item.id} (status: ${item.status})');
+      _logService.debug(_tag, 'Output item done: ${item.id} (status: ${item.status})');
     }
   }
 
@@ -723,7 +738,7 @@ class RealtimeApiClient {
     
     if (partJson != null) {
       final partType = partJson['type'] as String?;
-      logService.debug(_tag, 'Content part added: $partType (item_id: $itemId, index: $contentIndex)');
+      _logService.debug(_tag, 'Content part added: $partType (item_id: $itemId, index: $contentIndex)');
     }
   }
   
@@ -735,7 +750,7 @@ class RealtimeApiClient {
     
     if (partJson != null) {
       final partType = partJson['type'] as String?;
-      logService.debug(_tag, 'Content part done: $partType (item_id: $itemId)');
+      _logService.debug(_tag, 'Content part done: $partType (item_id: $itemId)');
     }
   }
 
@@ -763,7 +778,7 @@ class RealtimeApiClient {
     
     if (text != null) {
       _textDoneController.add(text);
-      logService.debug(_tag, 'Text response complete (item_id: $itemId): ${text.length} chars');
+      _logService.debug(_tag, 'Text response complete (item_id: $itemId): ${text.length} chars');
     }
   }
 
@@ -788,7 +803,7 @@ class RealtimeApiClient {
     final transcript = message['transcript'] as String?;
     final itemId = message['item_id'] as String?;
     
-    logService.debug(_tag, 'Audio transcript complete (item_id: $itemId): '
+    _logService.debug(_tag, 'Audio transcript complete (item_id: $itemId): '
         '${transcript?.length ?? 0} chars');
   }
 
@@ -808,12 +823,12 @@ class RealtimeApiClient {
       // Emit event when first audio chunk of a response arrives
       if (_audioChunksReceived == 1) {
         _responseAudioStartedController.add(null);
-        logService.info(_tag, 'AI audio response started (first chunk received)');
+        _logService.info(_tag, 'AI audio response started (first chunk received)');
       }
       
-      // Only log every 50th chunk to reduce log noise
-      if (_audioChunksReceived % _logAudioChunkInterval == 0) {
-        logService.debug(_tag, 'Audio delta received (chunk #$_audioChunksReceived, '
+      // Only log periodically to reduce log noise
+      if (_audioChunksReceived % AppConfig.logAudioChunkInterval == 0) {
+        _logService.debug(_tag, 'Audio delta received (chunk #$_audioChunksReceived, '
             '${audioData.length} bytes)');
       }
       
@@ -824,7 +839,7 @@ class RealtimeApiClient {
   /// Handle response.audio.done event
   /// Audio streaming is complete.
   void _handleResponseAudioDone(Map<String, dynamic> message, String eventId) {
-    logService.info(_tag, 'Audio response complete. Total chunks received: $_audioChunksReceived');
+    _logService.info(_tag, 'Audio response complete. Total chunks received: $_audioChunksReceived');
     _audioDoneController.add(null);
   }
 
@@ -840,7 +855,7 @@ class RealtimeApiClient {
     
     if (callId != null && delta != null) {
       _pendingFunctionCalls[callId]?.write(delta);
-      logService.debug(_tag, 'Function call arguments delta: $delta');
+      _logService.debug(_tag, 'Function call arguments delta: $delta');
     }
   }
   
@@ -853,7 +868,7 @@ class RealtimeApiClient {
       final arguments = _pendingFunctionCalls[callId]!.toString();
       final name = _pendingFunctionNames[callId] ?? 'unknown';
       
-      logService.info(_tag, 'Function call complete: $name with args: $arguments');
+      _logService.info(_tag, 'Function call complete: $name with args: $arguments');
       
       _functionCallController.add(FunctionCall(
         callId: callId,
@@ -885,7 +900,7 @@ class RealtimeApiClient {
       
       // Log rate limits for monitoring
       for (final limit in rateLimits) {
-        logService.debug(_tag, 'Rate limit ${limit.name}: ${limit.remaining}/${limit.limit} '
+        _logService.debug(_tag, 'Rate limit ${limit.name}: ${limit.remaining}/${limit.limit} '
             '(resets in ${limit.resetSeconds.toStringAsFixed(1)}s)');
       }
     }
@@ -906,12 +921,12 @@ class RealtimeApiClient {
           ? '[${error.code}] ${error.message}' 
           : error.message;
       
-      logService.error(_tag, 'API error: $fullError');
+      _logService.error(_tag, 'API error: $fullError');
       _lastError = fullError;
       _errorController.add(fullError);
     } else {
       const unknownError = 'Unknown error';
-      logService.error(_tag, 'API error: $unknownError');
+      _logService.error(_tag, 'API error: $unknownError');
       _lastError = unknownError;
       _errorController.add(unknownError);
     }
@@ -920,14 +935,14 @@ class RealtimeApiClient {
   /// Send audio data to the API
   void sendAudio(Uint8List audioData) {
     if (!isConnected) {
-      logService.warn(_tag, 'Cannot send audio: not connected');
+      _logService.warn(_tag, 'Cannot send audio: not connected');
       _errorController.add('Cannot send audio: not connected');
       return;
     }
 
     _audioChunksSent++;
-    if (_audioChunksSent % _logAudioChunkInterval == 0) {
-      logService.debug(_tag, 'Sent $_audioChunksSent audio chunks');
+    if (_audioChunksSent % AppConfig.logAudioChunkInterval == 0) {
+      _logService.debug(_tag, 'Sent $_audioChunksSent audio chunks');
     }
 
     final base64Audio = base64Encode(audioData);
@@ -965,7 +980,7 @@ class RealtimeApiClient {
       return;
     }
 
-    logService.info(_tag, 'Sending text message: $text');
+    _logService.info(_tag, 'Sending text message: $text');
 
     _webSocket.send({
       'type': ClientEventType.conversationItemCreate.value,
@@ -993,7 +1008,7 @@ class RealtimeApiClient {
       return;
     }
 
-    logService.info(_tag, 'Sending function call result for $callId');
+    _logService.info(_tag, 'Sending function call result for $callId');
 
     _webSocket.send({
       'type': ClientEventType.conversationItemCreate.value,

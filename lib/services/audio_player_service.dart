@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:taudio/taudio.dart';
 import 'audio_player_service_windows.dart';
 import 'log_service.dart';
+import '../config/app_config.dart';
 
 /// Service for playing streaming PCM audio from Azure OpenAI Realtime API
 ///
@@ -13,6 +14,7 @@ import 'log_service.dart';
 class AudioPlayerService {
   static const _tag = 'AudioPlayer';
 
+  final LogService _logService;
   dynamic _playerImpl;
   bool _isPlaying = false;
   bool _isInitialized = false;
@@ -24,16 +26,12 @@ class AudioPlayerService {
   Completer<void>? _processingCompleter;
   bool _isStartingPlayback = false;
 
-  // Audio format settings
-  static const int _sampleRate = 24000;
-  static const int _numChannels = 1;
-  static const int _minBufferSizeBeforeStart = 4800;
-
   bool get isPlaying => _isPlaying;
 
-  AudioPlayerService() {
+  AudioPlayerService({LogService? logService})
+      : _logService = logService ?? LogService() {
     if (PlatformCompat.isWindows) {
-      _playerImpl = AudioPlayerServiceWindows();
+      _playerImpl = AudioPlayerServiceWindows(logService: _logService);
     } else {
       _playerImpl = FlutterSoundPlayer();
     }
@@ -42,7 +40,7 @@ class AudioPlayerService {
   Future<void> _ensureInitialized() async {
     if (_isInitialized || _isDisposed) return;
 
-    logService.info(_tag, 'Initializing audio player');
+    _logService.info(_tag, 'Initializing audio player');
 
     if (PlatformCompat.isWindows) {
       await (_playerImpl as AudioPlayerServiceWindows).initialize();
@@ -51,7 +49,7 @@ class AudioPlayerService {
     }
 
     _isInitialized = true;
-    logService.info(_tag, 'Audio player initialized');
+    _logService.info(_tag, 'Audio player initialized');
   }
 
   Future<void> _startPlayback() async {
@@ -73,8 +71,8 @@ class AudioPlayerService {
 
         await (_playerImpl as FlutterSoundPlayer).startPlayerFromStream(
           codec: Codec.pcm16,
-          sampleRate: _sampleRate,
-          numChannels: _numChannels,
+          sampleRate: AppConfig.sampleRate,
+          numChannels: AppConfig.channels,
           bufferSize: 8192,
           interleaved: true,
         );
@@ -82,9 +80,9 @@ class AudioPlayerService {
         _isPlaying = true;
       }
 
-      logService.info(_tag, 'Streaming playback started');
+      _logService.info(_tag, 'Streaming playback started');
     } catch (e) {
-      logService.error(_tag, 'Error starting playback: $e');
+      _logService.error(_tag, 'Error starting playback: $e');
       _isPlaying = false;
     } finally {
       _isStartingPlayback = false;
@@ -96,7 +94,7 @@ class AudioPlayerService {
       return;
     }
 
-    logService.debug(_tag, 'Queuing audio data: ${pcmData.length} bytes');
+    _logService.debug(_tag, 'Queuing audio data: ${pcmData.length} bytes');
 
     if (PlatformCompat.isWindows) {
       await _ensureInitialized();
@@ -119,7 +117,7 @@ class AudioPlayerService {
       if (!_isPlaying && !_isStartingPlayback) {
         int totalBuffered =
             _audioQueue.fold(0, (sum, chunk) => sum + chunk.length);
-        if (totalBuffered >= _minBufferSizeBeforeStart) {
+        if (totalBuffered >= AppConfig.minAudioBufferSizeBeforeStart) {
           await _startPlayback();
         } else {
           _isProcessingQueue = false;
@@ -137,13 +135,13 @@ class AudioPlayerService {
                 .feedUint8FromStream(chunk);
           }
         } catch (e) {
-          logService.error(_tag, 'Error feeding audio chunk: $e');
+          _logService.error(_tag, 'Error feeding audio chunk: $e');
         }
 
         await Future.delayed(const Duration(milliseconds: 1));
       }
     } catch (e) {
-      logService.error(_tag, 'Error processing audio queue: $e');
+      _logService.error(_tag, 'Error processing audio queue: $e');
     } finally {
       _isProcessingQueue = false;
       _processingCompleter?.complete();
@@ -151,7 +149,7 @@ class AudioPlayerService {
   }
 
   Future<void> markResponseComplete() async {
-    logService.info(_tag, 'Response marked complete');
+    _logService.info(_tag, 'Response marked complete');
 
     if (_isProcessingQueue && _processingCompleter != null) {
       await _processingCompleter!.future.timeout(
@@ -162,7 +160,7 @@ class AudioPlayerService {
   }
 
   Future<void> stop() async {
-    logService.info(_tag, 'Stopping playback');
+    _logService.info(_tag, 'Stopping playback');
 
     _audioQueue.clear();
     final wasPlaying = _isPlaying;
@@ -174,7 +172,10 @@ class AudioPlayerService {
           const Duration(seconds: 2),
           onTimeout: () {},
         );
-      } catch (e) {}
+      } on TimeoutException {
+        // Timeout is expected during stop - we're stopping anyway
+        _logService.debug(_tag, 'Queue processing timed out during stop');
+      }
     }
 
     if (_isInitialized && wasPlaying) {
@@ -184,9 +185,9 @@ class AudioPlayerService {
         } else if (_playerImpl != null) {
           await (_playerImpl as FlutterSoundPlayer).stopPlayer();
         }
-        logService.info(_tag, 'Player stopped');
+        _logService.info(_tag, 'Player stopped');
       } catch (e) {
-        logService.warn(_tag, 'Error stopping player: $e');
+        _logService.warn(_tag, 'Error stopping player: $e');
       }
     }
   }
@@ -204,7 +205,7 @@ class AudioPlayerService {
   Future<void> dispose() async {
     if (_isDisposed) return;
 
-    logService.info(_tag, 'Disposing AudioPlayerService');
+    _logService.info(_tag, 'Disposing AudioPlayerService');
     _isDisposed = true;
 
     await stop();
@@ -217,12 +218,12 @@ class AudioPlayerService {
           await (_playerImpl as FlutterSoundPlayer).closePlayer();
         }
       } catch (e) {
-        logService.warn(_tag, 'Error closing player: $e');
+        _logService.warn(_tag, 'Error closing player: $e');
       }
       _playerImpl = null;
       _isInitialized = false;
     }
 
-    logService.info(_tag, 'AudioPlayerService disposed');
+    _logService.info(_tag, 'AudioPlayerService disposed');
   }
 }

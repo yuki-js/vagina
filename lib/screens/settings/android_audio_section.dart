@@ -31,7 +31,7 @@ class AndroidAudioSection extends ConsumerWidget {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
-                color: AppTheme.textSecondary,
+                color: AppTheme.lightTextSecondary,
               ),
             ),
             const SizedBox(height: 4),
@@ -39,7 +39,7 @@ class AndroidAudioSection extends ConsumerWidget {
               'マイク入力に使用するオーディオソースを選択します',
               style: TextStyle(
                 fontSize: 12,
-                color: AppTheme.textSecondary.withValues(alpha: 0.7),
+                color: AppTheme.lightTextSecondary.withValues(alpha: 0.7),
               ),
             ),
             const SizedBox(height: 8),
@@ -48,13 +48,13 @@ class AndroidAudioSection extends ConsumerWidget {
               decoration: const InputDecoration(
                 contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               ),
-              dropdownColor: AppTheme.surfaceColor,
+              dropdownColor: AppTheme.lightSurfaceColor,
               items: AndroidAudioSource.values.map((source) {
                 return DropdownMenuItem(
                   value: source,
                   child: Text(
                     AndroidAudioConfig.audioSourceDisplayNames[source] ?? source.name,
-                    style: const TextStyle(color: AppTheme.textPrimary),
+                    style: const TextStyle(color: AppTheme.lightTextPrimary),
                   ),
                 );
               }).toList(),
@@ -72,7 +72,7 @@ class AndroidAudioSection extends ConsumerWidget {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
-                color: AppTheme.textSecondary,
+                color: AppTheme.lightTextSecondary,
               ),
             ),
             const SizedBox(height: 4),
@@ -80,7 +80,7 @@ class AndroidAudioSection extends ConsumerWidget {
               '音声処理モードを選択します（エコーキャンセルに影響）',
               style: TextStyle(
                 fontSize: 12,
-                color: AppTheme.textSecondary.withValues(alpha: 0.7),
+                color: AppTheme.lightTextSecondary.withValues(alpha: 0.7),
               ),
             ),
             const SizedBox(height: 8),
@@ -89,13 +89,13 @@ class AndroidAudioSection extends ConsumerWidget {
               decoration: const InputDecoration(
                 contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               ),
-              dropdownColor: AppTheme.surfaceColor,
+              dropdownColor: AppTheme.lightSurfaceColor,
               items: AudioManagerMode.values.map((mode) {
                 return DropdownMenuItem(
                   value: mode,
                   child: Text(
                     AndroidAudioConfig.audioModeDisplayNames[mode] ?? mode.name,
-                    style: const TextStyle(color: AppTheme.textPrimary),
+                    style: const TextStyle(color: AppTheme.lightTextPrimary),
                   ),
                 );
               }).toList(),
@@ -142,7 +142,7 @@ class AndroidAudioSection extends ConsumerWidget {
                     'Voice Communication + In Communication 以外の設定ではエコーが発生し、AIが自分の声に誤って反応する可能性があります。',
                     style: TextStyle(
                       fontSize: 11,
-                      color: AppTheme.textSecondary.withValues(alpha: 0.9),
+                      color: AppTheme.lightTextSecondary.withValues(alpha: 0.9),
                     ),
                   ),
                   const SizedBox(height: 4),

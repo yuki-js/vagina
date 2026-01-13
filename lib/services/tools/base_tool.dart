@@ -1,39 +1,44 @@
 import 'dart:convert';
+import 'tool_metadata.dart';
 
-/// Abstract base class for all tools
+/// ツールの基底クラス
 /// 
-/// Each tool must extend this class and implement:
-/// - [name]: Unique identifier for the tool
-/// - [description]: Description of what the tool does (used by AI)
-/// - [parameters]: JSON Schema for the tool's parameters
-/// - [execute]: The actual implementation of the tool
+/// すべてのツールはこのクラスを継承し、以下を実装する必要がある：
+/// - [name]: ツールの一意識別子
+/// - [description]: ツールの説明（AI向け、英語）
+/// - [parameters]: パラメータのJSONスキーマ
+/// - [execute]: ツールの実際の処理
+/// - [metadata]: ツールのUIメタデータ
 abstract class BaseTool {
-  /// Unique name for this tool
+  /// ツールの一意識別子
   String get name;
   
-  /// Description of what this tool does (shown to AI)
+  /// ツールの説明（AI向け）
   String get description;
   
-  /// JSON Schema for the tool's parameters
+  /// パラメータのJSONスキーマ
   Map<String, dynamic> get parameters;
   
-  /// Execute the tool with the given arguments
-  /// Returns a map that will be JSON-encoded as the result
+  /// ツールのUIメタデータ（表示名、アイコン、カテゴリなど）
+  ToolMetadata get metadata;
+  
+  /// ツールを実行する
+  /// 戻り値はJSON形式でエンコードされて返される
   Future<Map<String, dynamic>> execute(Map<String, dynamic> arguments);
   
-  /// Reference to the tool manager (set when tool is registered)
+  /// ツールマネージャへの参照（登録時に設定される）
   ToolManagerRef? _managerRef;
   
-  /// Get access to the tool manager
-  /// Allows tools to register/unregister other tools dynamically
+  /// ツールマネージャを取得
+  /// 他のツールを動的に登録/解除する際に使用
   ToolManagerRef? get manager => _managerRef;
   
-  /// Called internally when tool is registered to a manager
+  /// ツールマネージャへの参照を設定（内部使用）
   void setManagerRef(ToolManagerRef ref) {
     _managerRef = ref;
   }
   
-  /// Generate the JSON definition for the Realtime API
+  /// Realtime API用のJSON定義を生成
   Map<String, dynamic> toJson() {
     return {
       'type': 'function',
@@ -43,7 +48,7 @@ abstract class BaseTool {
     };
   }
   
-  /// Execute the tool and return a formatted result
+  /// ツールを実行し、結果をフォーマットして返す
   Future<ToolExecutionResult> executeWithResult(String callId, String argumentsJson) async {
     try {
       final arguments = jsonDecode(argumentsJson) as Map<String, dynamic>;
@@ -63,7 +68,7 @@ abstract class BaseTool {
   }
 }
 
-/// Result of a tool execution
+/// ツール実行結果
 class ToolExecutionResult {
   final String callId;
   final String output;
@@ -76,18 +81,18 @@ class ToolExecutionResult {
   });
 }
 
-/// Reference to the tool manager that tools can use
-/// This provides a limited interface for tools to interact with the manager
+/// ツールマネージャへの参照インターフェース
+/// ツールがマネージャと対話するための限定的なインターフェースを提供
 abstract class ToolManagerRef {
-  /// Register a new tool
+  /// ツールを登録する
   void registerTool(BaseTool tool);
   
-  /// Unregister a tool by name
+  /// ツールを登録解除する
   void unregisterTool(String name);
   
-  /// Check if a tool is registered
+  /// ツールが登録されているか確認する
   bool hasTool(String name);
   
-  /// Get a list of all registered tool names
+  /// 登録されたツール名の一覧を取得
   List<String> get registeredToolNames;
 }

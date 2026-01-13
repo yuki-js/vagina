@@ -1,11 +1,13 @@
+import 'package:flutter/material.dart';
 import '../base_tool.dart';
-import '../../storage_service.dart';
+import '../tool_metadata.dart';
+import '../../../interfaces/memory_repository.dart';
 
-/// Tool for saving information to long-term memory
+/// メモリ保存ツール
 class MemorySaveTool extends BaseTool {
-  final StorageService _storage;
+  final MemoryRepository _memoryRepo;
   
-  MemorySaveTool({required StorageService storage}) : _storage = storage;
+  MemorySaveTool({required MemoryRepository memoryRepository}) : _memoryRepo = memoryRepository;
   
   @override
   String get name => 'memory_save';
@@ -29,13 +31,23 @@ class MemorySaveTool extends BaseTool {
     },
     'required': ['key', 'value'],
   };
+  
+  @override
+  ToolMetadata get metadata => const ToolMetadata(
+    name: 'memory_save',
+    displayName: 'メモリ保存',
+    displayDescription: '重要な情報を記憶します',
+    description: 'Save information to long-term memory that persists across sessions.',
+    icon: Icons.save,
+    category: ToolCategory.memory,
+  );
 
   @override
   Future<Map<String, dynamic>> execute(Map<String, dynamic> arguments) async {
     final key = arguments['key'] as String;
     final value = arguments['value'] as String;
     
-    await _storage.saveMemory(key, value);
+    await _memoryRepo.save(key, value);
     
     return {
       'success': true,

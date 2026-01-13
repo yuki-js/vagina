@@ -12,12 +12,14 @@ import 'log_service.dart';
 /// where flutter_sound is not supported. It uses just_audio which has
 /// full Windows support through its platform implementation.
 class AudioPlayerServiceWindows {
+  final LogService _logService;
   final AudioPlayer _player = AudioPlayer();
   final List<Uint8List> _audioQueue = [];
   bool _isPlaying = false;
   int _currentFileIndex = 0;
 
-  AudioPlayerServiceWindows() {
+  AudioPlayerServiceWindows({LogService? logService})
+      : _logService = logService ?? LogService() {
     _player.playerStateStream.listen((state) {
       if (state.processingState == ProcessingState.completed) {
         _playNextInQueue();
@@ -67,7 +69,7 @@ class AudioPlayerServiceWindows {
         wavFile.deleteSync();
       });
     } catch (e) {
-      logService.error('AudioPlayerWindows', 'Error playing audio: $e');
+      _logService.error('AudioPlayerWindows', 'Error playing audio: $e');
       _isPlaying = false;
       // Try next in queue
       await _playNextInQueue();

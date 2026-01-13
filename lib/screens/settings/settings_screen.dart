@@ -1,16 +1,17 @@
-import '../utils/platform_compat.dart';
+import '../../utils/platform_compat.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../theme/app_theme.dart';
-import '../components/settings_card.dart';
-import '../components/app_scaffold.dart';
-import 'settings/azure_config_section.dart';
-import 'settings/voice_settings_section.dart';
-import 'settings/android_audio_section.dart';
-import 'settings/developer_section.dart';
-import 'settings/about_section.dart';
+import '../../theme/app_theme.dart';
+import '../../components/settings_card.dart';
+import '../../components/app_scaffold.dart';
+import '../oobe/oobe_flow.dart';
+import 'azure_config_section.dart';
+import 'voice_settings_section.dart';
+import 'android_audio_section.dart';
+import 'developer_section.dart';
+import 'ui_preferences_section.dart';
 
-/// Settings screen for API configuration
+/// 設定画面 - API設定など
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
@@ -19,7 +20,7 @@ class SettingsScreen extends ConsumerWidget {
     return AppScaffold(
       title: '設定',
       body: Container(
-        decoration: AppTheme.backgroundGradient,
+        decoration: AppTheme.lightBackgroundGradient,
         child: CustomScrollView(
           slivers: [
             SliverPadding(
@@ -49,22 +50,64 @@ class SettingsScreen extends ConsumerWidget {
                   // Window settings removed - always-on-top is now in title bar
                   const SizedBox(height: 24),
                   
+                  // UI Preferences Section
+                  const SectionHeader(title: 'UI設定'),
+                  const SizedBox(height: 12),
+                  const UiPreferencesSection(),
+                  const SizedBox(height: 24),
+                  
                   // Developer Section
                   const SectionHeader(title: '開発者向け'),
                   const SizedBox(height: 12),
                   const DeveloperSection(),
                   const SizedBox(height: 24),
                   
-                  // About Section
-                  const SectionHeader(title: 'このアプリについて'),
+                  // Setup Section
+                  const SectionHeader(title: 'セットアップ'),
                   const SizedBox(height: 12),
-                  const AboutSection(),
+                  _SetupSection(),
                   const SizedBox(height: 32),
                 ]),
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// セットアップセクション - OOBEの再開始など
+class _SetupSection extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return SettingsCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ListTile(
+            leading: const Icon(Icons.refresh, color: AppTheme.lightTextSecondary),
+            title: const Text(
+              '初期設定をやり直す',
+              style: TextStyle(color: AppTheme.lightTextPrimary),
+            ),
+            subtitle: Text(
+              'ウェルカム画面から初期設定を再実行',
+              style: TextStyle(
+                color: AppTheme.lightTextSecondary.withValues(alpha: 0.7),
+                fontSize: 12,
+              ),
+            ),
+            trailing: const Icon(Icons.chevron_right, color: AppTheme.lightTextSecondary),
+            onTap: () {
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(
+                  builder: (context) => const OOBEFlow(),
+                ),
+              );
+            },
+          ),
+        ],
       ),
     );
   }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
-/// Reusable card widget for settings sections
+/// Reusable card widget for settings sections (light theme)
 class SettingsCard extends StatelessWidget {
   final Widget child;
 
@@ -15,15 +15,22 @@ class SettingsCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.surfaceColor.withValues(alpha: 0.6),
+        color: AppTheme.lightSurfaceColor,
         borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: child,
     );
   }
 }
 
-/// Section header widget
+/// Section header widget (light theme)
 class SectionHeader extends StatelessWidget {
   final String title;
 
@@ -39,13 +46,13 @@ class SectionHeader extends StatelessWidget {
       style: const TextStyle(
         fontSize: 18,
         fontWeight: FontWeight.w600,
-        color: AppTheme.textPrimary,
+        color: AppTheme.lightTextPrimary,
       ),
     );
   }
 }
 
-/// Info row widget for key-value display
+/// Info row widget for key-value display (light theme)
 class InfoRow extends StatelessWidget {
   final String label;
   final String value;
@@ -66,14 +73,14 @@ class InfoRow extends StatelessWidget {
           Text(
             label,
             style: const TextStyle(
-              color: AppTheme.textSecondary,
+              color: AppTheme.lightTextSecondary,
               fontSize: 14,
             ),
           ),
           Text(
             value,
             style: const TextStyle(
-              color: AppTheme.textPrimary,
+              color: AppTheme.lightTextPrimary,
               fontSize: 14,
               fontWeight: FontWeight.w500,
             ),
