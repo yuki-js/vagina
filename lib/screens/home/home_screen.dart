@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/app_theme.dart';
-import '../../services/call_initiation_service.dart';
+import '../../utils/call_navigation_utils.dart';
 import '../settings/settings_screen.dart';
 import '../about/about_screen.dart';
 import '../speed_dial/speed_dial_config_screen.dart';
@@ -101,7 +101,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Future<void> _handleCallButton() async {
-    await CallInitiationService.startCallWithDefault(
+    await CallNavigationUtils.navigateToCallWithDefault(
       context: context,
       ref: ref,
     );

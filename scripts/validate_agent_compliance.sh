@@ -51,6 +51,15 @@ fi
 # Runtime self-inspection: Check AI agent's own environment
 echo "=== Runtime Self-Inspection ==="
 
+# MANDATORY: Process tree inspection with ps -ef
+echo "Process tree (ps -ef):"
+if command -v ps &> /dev/null; then
+    ps -ef | head -50 || ps aux | head -50
+else
+    echo "ERROR: ps command not available - cannot perform mandatory self-inspection"
+    exit 1
+fi
+
 # Check if running in GitHub Actions
 if [ -n "$GITHUB_ACTIONS" ]; then
     echo "✓ Running in GitHub Actions environment"
@@ -71,13 +80,15 @@ if [ -n "$GITHUB_ACTIONS" ]; then
         echo "  ℹ Standard input is NOT a terminal (expected in CI)"
     fi
     
-    # Process tree inspection
-    echo "  Current process tree:"
-    ps -ef --forest 2>/dev/null | grep -E "runner|github|copilot|bash|sh" | head -20 || ps aux | grep -E "runner|github|copilot|bash" | head -20 || echo "  Unable to inspect process tree"
+    # Focused process inspection for agent-related processes
+    echo "  Agent-related processes:"
+    ps -ef 2>/dev/null | grep -E "runner|github|copilot|node|bash" | grep -v grep | head -30 || \
+    ps aux 2>/dev/null | grep -E "runner|github|copilot|node|bash" | grep -v grep | head -30 || \
+    echo "  Unable to filter agent processes"
     
     # Check available environment variables related to agent
     echo "  Agent-related environment variables:"
-    env | grep -iE "copilot|github|runner|agent" | head -20 || echo "  None found"
+    env | grep -iE "copilot|github|runner|agent" | head -30 || echo "  None found"
 else
     echo "ℹ Not running in GitHub Actions (local execution)"
 fi
@@ -85,6 +96,8 @@ fi
 # Check shell capabilities
 echo "  Shell: $SHELL"
 echo "  Bash version: ${BASH_VERSION:-unknown}"
+echo "  Current PID: $$"
+echo "  Parent PID: $PPID"
 
 # Memory and resource check
 if command -v free &> /dev/null; then

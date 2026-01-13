@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/app_theme.dart';
 import '../../providers/providers.dart';
 import '../../models/speed_dial.dart';
-import '../../services/call_initiation_service.dart';
+import '../../utils/call_navigation_utils.dart';
 import '../speed_dial/speed_dial_config_screen.dart';
 
 /// Speed dial tab - shows saved character presets for quick call start
@@ -186,7 +186,7 @@ class SpeedDialTab extends ConsumerWidget {
     WidgetRef ref,
     SpeedDial speedDial,
   ) async {
-    await CallInitiationService.startCallWithSpeedDial(
+    await CallNavigationUtils.navigateToCallWithSpeedDial(
       context: context,
       ref: ref,
       speedDial: speedDial,

@@ -4,18 +4,18 @@ import '../models/speed_dial.dart';
 import '../providers/providers.dart';
 import '../screens/call/call_screen.dart';
 
-/// Centralized service for initiating calls with SpeedDial configuration
-/// This ensures consistent behavior across all call entry points (FAB, SpeedDial list, etc.)
-class CallInitiationService {
-  /// Start a call with the specified SpeedDial configuration
+/// Utility functions for initiating calls with SpeedDial configuration
+/// These are navigation/UI helpers, not service methods
+class CallNavigationUtils {
+  /// Navigate to call screen with the specified SpeedDial configuration
   /// 
-  /// This method:
+  /// This utility:
   /// 1. Saves the current assistant config
   /// 2. Applies the SpeedDial settings (name, system prompt, voice)
   /// 3. Sets the SpeedDial ID for session tracking
   /// 4. Navigates to the call screen
   /// 5. Restores the original config after the call ends
-  static Future<void> startCallWithSpeedDial({
+  static Future<void> navigateToCallWithSpeedDial({
     required BuildContext context,
     required WidgetRef ref,
     required SpeedDial speedDial,
@@ -48,15 +48,15 @@ class CallInitiationService {
     callService.setSpeedDialId(SpeedDial.defaultId);
   }
 
-  /// Start a call with the Default SpeedDial
+  /// Navigate to call screen with the Default SpeedDial
   /// 
   /// This is used by the FAB button and other entry points that should
   /// use the default character configuration
-  static Future<void> startCallWithDefault({
+  static Future<void> navigateToCallWithDefault({
     required BuildContext context,
     required WidgetRef ref,
   }) async {
-    await startCallWithSpeedDial(
+    await navigateToCallWithSpeedDial(
       context: context,
       ref: ref,
       speedDial: SpeedDial.defaultSpeedDial,

@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/app_theme.dart';
 import '../../providers/providers.dart';
-import '../chat/chat_page.dart';
-import '../notepad/notepad_page.dart';
+import 'chat_page.dart';
+import 'notepad_page.dart';
 import '../settings/settings_screen.dart';
 import 'call_page.dart';
 
