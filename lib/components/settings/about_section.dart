@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
-import '../../components/settings_card.dart';
+import '../settings_card.dart';
 
 /// About section widget for app information
 class AboutSection extends StatelessWidget {

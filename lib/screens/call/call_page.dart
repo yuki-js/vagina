@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/providers.dart';
 import '../../services/call_service.dart';
 import '../../components/call_main_content.dart';
-import 'control_panel.dart';
+import '../../components/control_panel.dart';
 
 /// 通話ページウィジェット - 通話UIとコントロールを表示
 class CallPage extends ConsumerWidget {

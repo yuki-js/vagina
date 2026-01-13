@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../models/notepad_tab.dart';
+import '../models/notepad_tab.dart';
 import 'notepad_markdown_content.dart';
 import 'notepad_plain_text_content.dart';
 import 'notepad_html_content.dart';

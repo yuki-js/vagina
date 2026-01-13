@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
-import '../../components/settings_card.dart';
-import 'log_screen.dart';
+import '../settings_card.dart';
+import '../../screens/settings/log_screen.dart';
 
 /// 開発者向け設定セクション
 class DeveloperSection extends StatelessWidget {
