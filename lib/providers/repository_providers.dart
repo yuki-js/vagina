@@ -5,6 +5,7 @@ import '../interfaces/speed_dial_repository.dart';
 import '../interfaces/memory_repository.dart';
 import '../interfaces/config_repository.dart';
 import '../data/permission_manager.dart';
+import 'providers.dart'; // For logServiceProvider
 
 /// Provider for CallSessionRepository
 final callSessionRepositoryProvider = Provider<CallSessionRepository>((ref) {
@@ -28,5 +29,7 @@ final configRepositoryProvider = Provider<ConfigRepository>((ref) {
 
 /// Provider for PermissionManager
 final permissionManagerProvider = Provider<PermissionManager>((ref) {
-  return PermissionManager();
+  return PermissionManager(
+    logService: ref.read(logServiceProvider),
+  );
 });

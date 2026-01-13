@@ -9,6 +9,7 @@ import 'json_speed_dial_repository.dart';
 import 'json_memory_repository.dart';
 import 'json_config_repository.dart';
 import 'preferences_repository.dart';
+import '../services/log_service.dart';
 
 /// Factory for creating repository instances
 /// 
@@ -21,12 +22,15 @@ class RepositoryFactory {
   static MemoryRepository? _memoryRepo;
   static ConfigRepository? _configRepo;
   static PreferencesRepository? _preferencesRepo;
+  static LogService? _logService;
 
   /// Initialize the repositories with a key-value store
-  static Future<void> initialize() async {
+  static Future<void> initialize({LogService? logService}) async {
+    _logService = logService ?? LogService();
     _store ??= JsonFileStore(
       fileName: 'vagina_config.json',
       folderName: 'VAGINA',
+      logService: _logService,
     );
     await _store!.initialize();
   }
@@ -34,25 +38,25 @@ class RepositoryFactory {
   /// Get the CallSession repository
   static CallSessionRepository get callSessions {
     _ensureInitialized();
-    return _callSessionRepo ??= JsonCallSessionRepository(_store!);
+    return _callSessionRepo ??= JsonCallSessionRepository(_store!, logService: _logService);
   }
 
   /// Get the SpeedDial repository
   static SpeedDialRepository get speedDials {
     _ensureInitialized();
-    return _speedDialRepo ??= JsonSpeedDialRepository(_store!);
+    return _speedDialRepo ??= JsonSpeedDialRepository(_store!, logService: _logService);
   }
 
   /// Get the Memory repository
   static MemoryRepository get memory {
     _ensureInitialized();
-    return _memoryRepo ??= JsonMemoryRepository(_store!);
+    return _memoryRepo ??= JsonMemoryRepository(_store!, logService: _logService);
   }
 
   /// Get the Config repository
   static ConfigRepository get config {
     _ensureInitialized();
-    return _configRepo ??= JsonConfigRepository(_store!);
+    return _configRepo ??= JsonConfigRepository(_store!, logService: _logService);
   }
 
   /// Get the Preferences repository
@@ -76,5 +80,6 @@ class RepositoryFactory {
     _memoryRepo = null;
     _configRepo = null;
     _preferencesRepo = null;
+    _logService = null;
   }
 }

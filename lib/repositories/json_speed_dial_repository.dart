@@ -9,12 +9,14 @@ class JsonSpeedDialRepository implements SpeedDialRepository {
   static const _speedDialsKey = 'speed_dials';
   
   final KeyValueStore _store;
+  final LogService _logService;
 
-  JsonSpeedDialRepository(this._store);
+  JsonSpeedDialRepository(this._store, {LogService? logService})
+      : _logService = logService ?? LogService();
 
   @override
   Future<void> save(SpeedDial speedDial) async {
-    logService.debug(_tag, 'Saving speed dial: ${speedDial.id}');
+    _logService.debug(_tag, 'Saving speed dial: ${speedDial.id}');
     
     final speedDials = await getAll();
     speedDials.add(speedDial);
@@ -22,7 +24,7 @@ class JsonSpeedDialRepository implements SpeedDialRepository {
     final speedDialsJson = speedDials.map((s) => s.toJson()).toList();
     await _store.set(_speedDialsKey, speedDialsJson);
     
-    logService.info(_tag, 'Speed dial saved: ${speedDial.id}');
+    _logService.info(_tag, 'Speed dial saved: ${speedDial.id}');
   }
 
   @override
@@ -34,7 +36,7 @@ class JsonSpeedDialRepository implements SpeedDialRepository {
     }
     
     if (data is! List) {
-      logService.warn(_tag, 'Invalid speed dials data type');
+      _logService.warn(_tag, 'Invalid speed dials data type');
       return [];
     }
     
@@ -55,13 +57,13 @@ class JsonSpeedDialRepository implements SpeedDialRepository {
 
   @override
   Future<bool> update(SpeedDial speedDial) async {
-    logService.debug(_tag, 'Updating speed dial: ${speedDial.id}');
+    _logService.debug(_tag, 'Updating speed dial: ${speedDial.id}');
     
     final speedDials = await getAll();
     final index = speedDials.indexWhere((s) => s.id == speedDial.id);
     
     if (index == -1) {
-      logService.warn(_tag, 'Speed dial not found for update: ${speedDial.id}');
+      _logService.warn(_tag, 'Speed dial not found for update: ${speedDial.id}');
       return false;
     }
     
@@ -70,27 +72,27 @@ class JsonSpeedDialRepository implements SpeedDialRepository {
     final speedDialsJson = speedDials.map((s) => s.toJson()).toList();
     await _store.set(_speedDialsKey, speedDialsJson);
     
-    logService.info(_tag, 'Speed dial updated: ${speedDial.id}');
+    _logService.info(_tag, 'Speed dial updated: ${speedDial.id}');
     return true;
   }
 
   @override
   Future<bool> delete(String id) async {
-    logService.debug(_tag, 'Deleting speed dial: $id');
+    _logService.debug(_tag, 'Deleting speed dial: $id');
     
     final speedDials = await getAll();
     final initialLength = speedDials.length;
     speedDials.removeWhere((s) => s.id == id);
     
     if (speedDials.length == initialLength) {
-      logService.warn(_tag, 'Speed dial not found: $id');
+      _logService.warn(_tag, 'Speed dial not found: $id');
       return false;
     }
     
     final speedDialsJson = speedDials.map((s) => s.toJson()).toList();
     await _store.set(_speedDialsKey, speedDialsJson);
     
-    logService.info(_tag, 'Speed dial deleted: $id');
+    _logService.info(_tag, 'Speed dial deleted: $id');
     return true;
   }
 }

@@ -16,6 +16,7 @@ import '../models/call_session.dart';
 import '../models/speed_dial.dart';
 import '../repositories/repository_factory.dart';
 import 'repository_providers.dart';
+import '../services/log_service.dart';
 
 // ============================================================================
 // コアプロバイダ
@@ -23,7 +24,9 @@ import 'repository_providers.dart';
 
 /// ノートパッドサービスのプロバイダ
 final notepadServiceProvider = Provider<NotepadService>((ref) {
-  final service = NotepadService();
+  final service = NotepadService(
+    logService: ref.read(logServiceProvider),
+  );
   ref.onDispose(() => service.dispose());
   return service;
 });
@@ -53,7 +56,9 @@ final audioRecorderServiceProvider = Provider<AudioRecorderService>((ref) {
 
 /// 音声再生サービスのプロバイダ
 final audioPlayerServiceProvider = Provider<AudioPlayerService>((ref) {
-  final player = AudioPlayerService();
+  final player = AudioPlayerService(
+    logService: ref.read(logServiceProvider),
+  );
   ref.onDispose(() => player.dispose());
   return player;
 });
@@ -81,14 +86,19 @@ class IsMutedNotifier extends Notifier<bool> {
 
 /// WebSocketサービスのプロバイダ
 final webSocketServiceProvider = Provider<WebSocketService>((ref) {
-  final service = WebSocketService();
+  final service = WebSocketService(
+    logService: ref.read(logServiceProvider),
+  );
   ref.onDispose(() => service.dispose());
   return service;
 });
 
 /// Realtime APIクライアントのプロバイダ
 final realtimeApiClientProvider = Provider<RealtimeApiClient>((ref) {
-  final client = RealtimeApiClient();
+  final client = RealtimeApiClient(
+    webSocket: ref.read(webSocketServiceProvider),
+    logService: ref.read(logServiceProvider),
+  );
   ref.onDispose(() => client.dispose());
   return client;
 });
@@ -101,7 +111,9 @@ final toolServiceProvider = Provider<ToolService>((ref) {
 
 /// ハプティックフィードバックサービスのプロバイダ
 final hapticServiceProvider = Provider<HapticService>((ref) {
-  return HapticService();
+  return HapticService(
+    logService: ref.read(logServiceProvider),
+  );
 });
 
 /// 通話サービスのプロバイダ
@@ -114,6 +126,7 @@ final callServiceProvider = Provider<CallService>((ref) {
     toolService: ref.read(toolServiceProvider),
     hapticService: ref.read(hapticServiceProvider),
     notepadService: ref.read(notepadServiceProvider),
+    logService: ref.read(logServiceProvider),
   );
   ref.onDispose(() => service.dispose());
   return service;
@@ -368,3 +381,12 @@ class CupertinoStyleNotifier extends Notifier<bool> {
     state = value;
   }
 }
+
+// ============================================================================
+// ロギングプロバイダ
+// ============================================================================
+
+/// ログサービスのプロバイダ
+final logServiceProvider = Provider<LogService>((ref) {
+  return logService; // Use existing singleton for backward compatibility
+});
