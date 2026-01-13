@@ -85,32 +85,6 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
         decoration: AppTheme.lightBackgroundGradient,
         child: Column(
           children: [
-            // セッション情報ヘッダー
-            Container(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    DurationFormatter.formatRelativeDate(session.startTime, includeTime: true),
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.lightTextPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    DurationFormatter.formatCallDuration(session.duration),
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppTheme.lightTextSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
             // セグメントコントロール - アダプティブウィジェットを使用
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

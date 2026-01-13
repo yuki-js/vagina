@@ -54,7 +54,7 @@ class DurationFormatter {
   static String formatCallDuration(int seconds) {
     final minutes = seconds ~/ 60;
     final secs = seconds % 60;
-    return '通話時間: $minutes分$secs秒';
+    return '$minutes分$secs秒';
   }
 
   /// Format duration as M:SS (compact format)
