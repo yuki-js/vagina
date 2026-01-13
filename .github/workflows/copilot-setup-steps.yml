@@ -70,3 +70,13 @@ jobs:
           flutter --version
           flutter analyze --no-fatal-infos || true
           flutter test || true
+      
+      - name: Validate Agent Compliance
+        run: |
+          echo "Running agent compliance validation..."
+          if [ -f scripts/validate_agent_compliance.sh ]; then
+            chmod +x scripts/validate_agent_compliance.sh
+            ./scripts/validate_agent_compliance.sh || true
+          else
+            echo "Agent compliance script not found, skipping validation"
+          fi
