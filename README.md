@@ -1,6 +1,6 @@
 # VAGINA
 
-**V**oice **AGI** as **N**otepad **A**gent
+**V**oice **AGI** **N**otepad **A**gent
 
 ノートパッド・リアルタイム音声・汎用人工知能・Flutter アプリ。
 
