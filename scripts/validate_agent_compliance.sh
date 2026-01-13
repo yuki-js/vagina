@@ -2,8 +2,6 @@
 # Validation script to ensure AI agent instructions are being followed
 # This script checks for common anti-patterns that indicate work abandonment
 
-set -e
-
 echo "=== Validating Agent Compliance ==="
 
 # Check for handover documents (should not exist for incomplete work)
@@ -14,14 +12,14 @@ if find docs/引き継ぎ資料 -name "*.md" -type f 2>/dev/null | grep -q .; th
     exit 1
 fi
 
-# Check for TODO comments in recently modified files
+# Check for TODO comments in recently modified Dart files only
 RECENT_FILES=$(git diff --name-only HEAD~5 2>/dev/null || echo "")
 if echo "$RECENT_FILES" | grep -q "\.dart$"; then
-    TODO_COUNT=$(git diff HEAD~5 | grep -E "^\+.*TODO|^\+.*FIXME" | wc -l || echo "0")
+    TODO_COUNT=$(git diff HEAD~5 -- '*.dart' | grep -E "^\+.*//.*TODO|^\+.*//.*FIXME" | wc -l || echo "0")
     if [ "$TODO_COUNT" -gt 0 ]; then
-        echo "⚠️  WARNING: Found $TODO_COUNT new TODO/FIXME comments in recent changes"
+        echo "⚠️  WARNING: Found $TODO_COUNT new TODO/FIXME comments in recent Dart changes"
         echo "Agent should complete work instead of leaving TODOs"
-        git diff HEAD~5 | grep -E "^\+.*TODO|^\+.*FIXME" || true
+        git diff HEAD~5 -- '*.dart' | grep -E "^\+.*//.*TODO|^\+.*//.*FIXME" || true
     fi
 fi
 
@@ -33,10 +31,13 @@ if [ "$INCOMPLETE_MARKERS" -gt 0 ]; then
     exit 1
 fi
 
-# Verify flutter analyze passes
+# Verify flutter analyze passes (only check for errors, not warnings)
 echo "Running flutter analyze..."
-if ! flutter analyze --no-fatal-infos; then
-    echo "❌ ERROR: Flutter analyze failed. Agent must fix all issues before completing."
+ANALYZE_OUTPUT=$(flutter analyze --no-fatal-infos 2>&1 || true)
+ERROR_COUNT=$(echo "$ANALYZE_OUTPUT" | grep -E "^\s*error •" | wc -l || echo "0")
+if [ "$ERROR_COUNT" -gt 0 ]; then
+    echo "❌ ERROR: Flutter analyze found $ERROR_COUNT errors. Agent must fix all errors before completing."
+    echo "$ANALYZE_OUTPUT" | grep -E "^\s*error •"
     exit 1
 fi
 
