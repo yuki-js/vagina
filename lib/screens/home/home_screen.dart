@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/app_theme.dart';
-import '../../models/speed_dial.dart';
-import '../../providers/providers.dart';
+import '../../services/call_initiation_service.dart';
 import '../settings/settings_screen.dart';
 import '../about/about_screen.dart';
-import '../call/call_screen.dart';
 import '../speed_dial/speed_dial_config_screen.dart';
 import 'speed_dial_tab.dart';
 import 'sessions_tab.dart';
@@ -103,32 +101,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Future<void> _handleCallButton() async {
-    // Load Default SpeedDial and apply its settings
-    final defaultSpeedDial = SpeedDial.defaultSpeedDial;
-    
-    // Save current assistant config to restore after call
-    final originalConfig = ref.read(assistantConfigProvider);
-    
-    // Update assistant config with Default SpeedDial settings
-    ref.read(assistantConfigProvider.notifier).updateName(defaultSpeedDial.name);
-    ref.read(assistantConfigProvider.notifier).updateInstructions(defaultSpeedDial.systemPrompt);
-    ref.read(assistantConfigProvider.notifier).updateVoice(defaultSpeedDial.voice);
-
-    // Set speed dial ID for session tracking (always 'default')
-    final callService = ref.read(callServiceProvider);
-    callService.setSpeedDialId(SpeedDial.defaultId);
-
-    // Navigate to call screen
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const CallScreen(),
-      ),
+    await CallInitiationService.startCallWithDefault(
+      context: context,
+      ref: ref,
     );
-    
-    // Restore original config after call ends
-    ref.read(assistantConfigProvider.notifier).updateName(originalConfig.name);
-    ref.read(assistantConfigProvider.notifier).updateInstructions(originalConfig.instructions);
-    ref.read(assistantConfigProvider.notifier).updateVoice(originalConfig.voice);
   }
 
   @override
