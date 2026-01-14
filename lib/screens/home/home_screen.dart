@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/app_theme.dart';
-import '../../components/title_bar.dart';
+import '../../utils/call_navigation_utils.dart';
 import '../settings/settings_screen.dart';
 import '../about/about_screen.dart';
-import '../call/call_screen.dart';
 import '../speed_dial/speed_dial_config_screen.dart';
 import 'speed_dial_tab.dart';
 import 'sessions_tab.dart';
@@ -102,11 +101,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Future<void> _handleCallButton() async {
-    // Navigate to call screen
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const CallScreen(),
-      ),
+    await CallNavigationUtils.navigateToCallWithDefault(
+      context: context,
+      ref: ref,
     );
   }
 
@@ -117,8 +114,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return Scaffold(
       body: Column(
         children: [
-          // Custom title bar for desktop
-          const CustomTitleBar(),
           // App bar
           Container(
             decoration: AppTheme.lightBackgroundGradient,

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../theme/app_theme.dart';
-import '../../models/chat_message.dart';
+import '../theme/app_theme.dart';
+import '../models/chat_message.dart';
 
 /// Shows tool details in a bottom sheet
 void showToolDetailsSheet(BuildContext context, ToolCallInfo toolCall) {

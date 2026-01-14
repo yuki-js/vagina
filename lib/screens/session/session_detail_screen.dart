@@ -85,32 +85,6 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
         decoration: AppTheme.lightBackgroundGradient,
         child: Column(
           children: [
-            // セッション情報ヘッダー
-            Container(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    DurationFormatter.formatRelativeDate(session.startTime, includeTime: true),
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.lightTextPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    DurationFormatter.formatCallDuration(session.duration),
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppTheme.lightTextSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
             // セグメントコントロール - アダプティブウィジェットを使用
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -220,9 +194,10 @@ class _SessionInfoView extends StatelessWidget {
               const SizedBox(height: 8),
               if (speedDial != null)
                 _buildSpeedDialCard(speedDial)
-              else if (session.speedDialId != null)
+              else if (session.speedDialId != SpeedDial.defaultId)
+                // Non-default SpeedDial was deleted
                 _buildInfoCard([
-                  _buildInfoRow('ID', session.speedDialId!),
+                  _buildInfoRow('ID', session.speedDialId),
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 8),
                     child: Text(
@@ -236,14 +211,16 @@ class _SessionInfoView extends StatelessWidget {
                   ),
                 ])
               else
+                // Default SpeedDial should always exist - show error if it doesn't
                 _buildInfoCard([
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 8),
                     child: Text(
-                      'デフォルト設定を使用',
+                      'エラー: デフォルトスピードダイヤルが見つかりません',
                       style: TextStyle(
-                        fontSize: 14,
-                        color: AppTheme.lightTextSecondary,
+                        fontSize: 12,
+                        color: Colors.red,
+                        fontStyle: FontStyle.italic,
                       ),
                     ),
                   ),
@@ -263,8 +240,7 @@ class _SessionInfoView extends StatelessWidget {
   }
   
   Future<SpeedDial?> _loadSpeedDial() async {
-    if (session.speedDialId == null) return null;
-    return await RepositoryFactory.speedDials.getById(session.speedDialId!);
+    return await RepositoryFactory.speedDials.getById(session.speedDialId);
   }
   
   Widget _buildSectionHeader(String title) {

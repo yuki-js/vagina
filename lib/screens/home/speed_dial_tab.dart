@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/app_theme.dart';
 import '../../providers/providers.dart';
 import '../../models/speed_dial.dart';
-import '../call/call_screen.dart';
+import '../../utils/call_navigation_utils.dart';
 import '../speed_dial/speed_dial_config_screen.dart';
 
 /// Speed dial tab - shows saved character presets for quick call start
@@ -186,32 +186,11 @@ class SpeedDialTab extends ConsumerWidget {
     WidgetRef ref,
     SpeedDial speedDial,
   ) async {
-    // Save current assistant config to restore after call
-    final originalConfig = ref.read(assistantConfigProvider);
-    
-    // Temporarily update assistant config with speed dial settings
-    ref.read(assistantConfigProvider.notifier).updateName(speedDial.name);
-    ref.read(assistantConfigProvider.notifier).updateInstructions(speedDial.systemPrompt);
-    ref.read(assistantConfigProvider.notifier).updateVoice(speedDial.voice);
-
-    // Set speed dial ID for session tracking
-    final callService = ref.read(callServiceProvider);
-    callService.setSpeedDialId(speedDial.id);
-
-    // Navigate to call screen
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const CallScreen(),
-      ),
+    await CallNavigationUtils.navigateToCallWithSpeedDial(
+      context: context,
+      ref: ref,
+      speedDial: speedDial,
     );
-    
-    // Restore original config after call ends
-    ref.read(assistantConfigProvider.notifier).updateName(originalConfig.name);
-    ref.read(assistantConfigProvider.notifier).updateInstructions(originalConfig.instructions);
-    ref.read(assistantConfigProvider.notifier).updateVoice(originalConfig.voice);
-    
-    // Clear speed dial ID after call
-    callService.setSpeedDialId(null);
   }
 
   Future<void> _editSpeedDial(

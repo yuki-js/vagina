@@ -1,7 +1,7 @@
-import '../../utils/platform_compat.dart';
+import '../utils/platform_compat.dart';
 import 'package:flutter/material.dart';
-import '../../theme/app_theme.dart';
-import '../../services/log_service.dart';
+import '../theme/app_theme.dart';
+import '../services/log_service.dart';
 
 /// Plain text content renderer with edit/preview toggle
 class PlainTextContent extends StatefulWidget {

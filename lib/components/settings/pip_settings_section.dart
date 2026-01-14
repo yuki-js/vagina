@@ -2,7 +2,7 @@ import '../../utils/platform_compat.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../services/pip_service.dart';
-import '../../components/settings_card.dart';
+import '../settings_card.dart';
 
 /// PiP settings section for mobile platforms
 class PiPSettingsSection extends ConsumerStatefulWidget {

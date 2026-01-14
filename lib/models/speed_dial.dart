@@ -1,11 +1,25 @@
 /// Represents a speed dial entry (character preset with custom system prompt)
 class SpeedDial {
+  /// ID for the default speed dial (non-deletable, non-renameable)
+  static const String defaultId = 'default';
+  
+  /// Default speed dial instance
+  static SpeedDial get defaultSpeedDial => SpeedDial(
+    id: defaultId,
+    name: 'Default',
+    systemPrompt: 'You are a helpful AI assistant.',
+    voice: 'alloy',
+  );
+  
   final String id;
   final String name;
   final String systemPrompt;
   final String? iconEmoji; // Optional emoji icon
   final String voice;
   final DateTime? createdAt;
+  
+  /// Returns true if this is the default speed dial
+  bool get isDefault => id == defaultId;
 
   const SpeedDial({
     required this.id,

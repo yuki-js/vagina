@@ -3,9 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/app_theme.dart';
 import '../../providers/providers.dart';
 import '../../models/notepad_tab.dart';
-import 'notepad_content_renderer.dart';
-import 'notepad_empty_state.dart';
-import 'notepad_action_bar.dart';
+import '../../components/notepad_content_renderer.dart';
+import '../../components/notepad_empty_state.dart';
+import '../../components/notepad_action_bar.dart';
 
 /// Artifact page widget - displays artifact tabs and their content
 class NotepadPage extends ConsumerStatefulWidget {

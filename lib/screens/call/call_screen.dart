@@ -2,17 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/app_theme.dart';
 import '../../providers/providers.dart';
-import '../../components/title_bar.dart';
-import '../chat/chat_page.dart';
-import '../notepad/notepad_page.dart';
-import '../settings/settings_screen.dart';
+import '../../models/speed_dial.dart';
+import 'chat_page.dart';
+import 'notepad_page.dart';
 import 'call_page.dart';
 
 /// Call screen with PageView for swipe navigation between chat, call, and notepad
 /// Layout: Chat (left) ← Call (center) → Notepad (right)
 /// Dark theme for focused calling experience
 class CallScreen extends ConsumerStatefulWidget {
-  const CallScreen({super.key});
+  final SpeedDial speedDial;
+
+  const CallScreen({
+    super.key,
+    required this.speedDial,
+  });
 
   @override
   ConsumerState<CallScreen> createState() => _CallScreenState();
@@ -35,8 +39,12 @@ class _CallScreenState extends ConsumerState<CallScreen> {
     _pageController = PageController(initialPage: _callPageIndex);
     _pageController.addListener(_onPageChanged);
     
-    // Auto-start call when screen opens
+    // Apply SpeedDial configuration and auto-start call when screen opens
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(assistantConfigProvider.notifier).updateName(widget.speedDial.name);
+      ref.read(assistantConfigProvider.notifier).updateInstructions(widget.speedDial.systemPrompt);
+      ref.read(assistantConfigProvider.notifier).updateVoice(widget.speedDial.voice);
+      
       _startCallIfNeeded();
     });
   }
@@ -100,12 +108,6 @@ class _CallScreenState extends ConsumerState<CallScreen> {
     );
   }
 
-  void _openSettings() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) => const SettingsScreen()),
-    );
-  }
-
   void _showSnackBar(String message, {bool isError = false}) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -158,8 +160,6 @@ class _CallScreenState extends ConsumerState<CallScreen> {
         child: Scaffold(
           body: Column(
             children: [
-              // Custom title bar for desktop platforms
-              const CustomTitleBar(),
               Expanded(
                 child: Container(
                   decoration: AppTheme.backgroundGradient,
@@ -197,7 +197,6 @@ class _CallScreenState extends ConsumerState<CallScreen> {
         CallPage(
           onChatPressed: _goToChat,
           onNotepadPressed: _goToNotepad,
-          onSettingsPressed: _openSettings,
         ),
         // Notepad on right (swipe left to go to call)
         NotepadPage(
@@ -241,7 +240,6 @@ class _CallScreenState extends ConsumerState<CallScreen> {
             child: CallPage(
               onChatPressed: () {}, // No navigation needed in 3-column layout
               onNotepadPressed: () {}, // No navigation needed in 3-column layout
-              onSettingsPressed: _openSettings,
               hideNavigationButtons: true, // Hide chat/notepad buttons in 3-column layout
             ),
           ),

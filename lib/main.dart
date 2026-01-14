@@ -25,7 +25,6 @@ void main() async {
       center: true,
       backgroundColor: Colors.transparent,
       skipTaskbar: false,
-      titleBarStyle: TitleBarStyle.hidden, // Hide native title bar for custom immersive UI
     );
     
     await windowManager.waitUntilReadyToShow(windowOptions, () async {

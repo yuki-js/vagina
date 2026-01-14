@@ -1,23 +1,21 @@
-import '../../utils/platform_compat.dart';
+import '../utils/platform_compat.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../theme/app_theme.dart';
-import '../../providers/providers.dart';
-import '../../services/pip_service.dart';
-import '../../components/control_button.dart';
+import '../theme/app_theme.dart';
+import '../providers/providers.dart';
+import '../services/pip_service.dart';
+import '../components/control_button.dart';
 
 /// Galaxy-style control panel with button grid and call button
 class ControlPanel extends ConsumerWidget {
   final VoidCallback onChatPressed;
   final VoidCallback onNotepadPressed;
-  final VoidCallback onSettingsPressed;
   final bool hideNavigationButtons;
 
   const ControlPanel({
     super.key,
     required this.onChatPressed,
     required this.onNotepadPressed,
-    required this.onSettingsPressed,
     this.hideNavigationButtons = false,
   });
 
@@ -153,6 +151,7 @@ class ControlPanel extends ConsumerWidget {
             height: 72,
             width: 72,
             child: FloatingActionButton(
+              heroTag: 'call_fab',
               onPressed: () => _handleCallButton(context, ref),
               backgroundColor: AppTheme.errorColor,
               shape: const CircleBorder(),

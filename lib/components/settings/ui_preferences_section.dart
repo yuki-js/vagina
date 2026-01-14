@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/app_theme.dart';
-import '../../components/settings_card.dart';
-import '../../components/adaptive_widgets.dart';
+import '../settings_card.dart';
+import '../adaptive_widgets.dart';
 import '../../providers/providers.dart';
 
 /// UI preferences section for Material/Cupertino style selection
