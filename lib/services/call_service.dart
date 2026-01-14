@@ -14,6 +14,7 @@ import 'chat/chat_message_manager.dart';
 import '../config/app_config.dart';
 import '../models/chat_message.dart';
 import '../models/call_session.dart';
+import '../models/speed_dial.dart';
 import '../models/realtime_events.dart';
 import '../utils/audio_utils.dart';
 import '../repositories/repository_factory.dart';
@@ -74,7 +75,7 @@ class CallService {
   int _callDuration = 0;
   bool _isMuted = false;
   DateTime? _callStartTime;
-  String _currentSpeedDialId = 'default'; // Default to 'default' speed dial
+  String _currentSpeedDialId = SpeedDial.defaultId;
 
   CallService({
     required AudioRecorderService recorder,

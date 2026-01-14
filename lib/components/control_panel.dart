@@ -10,14 +10,12 @@ import '../components/control_button.dart';
 class ControlPanel extends ConsumerWidget {
   final VoidCallback onChatPressed;
   final VoidCallback onNotepadPressed;
-  final VoidCallback onSettingsPressed;
   final bool hideNavigationButtons;
 
   const ControlPanel({
     super.key,
     required this.onChatPressed,
     required this.onNotepadPressed,
-    required this.onSettingsPressed,
     this.hideNavigationButtons = false,
   });
 

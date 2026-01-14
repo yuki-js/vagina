@@ -9,40 +9,23 @@ import '../screens/call/call_screen.dart';
 class CallNavigationUtils {
   /// Navigate to call screen with the specified SpeedDial configuration
   /// 
-  /// This utility:
-  /// 1. Saves the current assistant config
-  /// 2. Applies the SpeedDial settings (name, system prompt, voice)
-  /// 3. Sets the SpeedDial ID for session tracking
-  /// 4. Navigates to the call screen
-  /// 5. Restores the original config after the call ends
+  /// Passes the SpeedDial directly via navigation parameters instead of
+  /// going through the global store, following Flutter navigation best practices
   static Future<void> navigateToCallWithSpeedDial({
     required BuildContext context,
     required WidgetRef ref,
     required SpeedDial speedDial,
   }) async {
-    // Save current assistant config to restore after call
-    final originalConfig = ref.read(assistantConfigProvider);
-    
-    // Update assistant config with speed dial settings
-    ref.read(assistantConfigProvider.notifier).updateName(speedDial.name);
-    ref.read(assistantConfigProvider.notifier).updateInstructions(speedDial.systemPrompt);
-    ref.read(assistantConfigProvider.notifier).updateVoice(speedDial.voice);
-
     // Set speed dial ID for session tracking
     final callService = ref.read(callServiceProvider);
     callService.setSpeedDialId(speedDial.id);
 
-    // Navigate to call screen
+    // Navigate to call screen, passing SpeedDial configuration directly
     await Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => const CallScreen(),
+        builder: (context) => CallScreen(speedDial: speedDial),
       ),
     );
-    
-    // Restore original config after call ends
-    ref.read(assistantConfigProvider.notifier).updateName(originalConfig.name);
-    ref.read(assistantConfigProvider.notifier).updateInstructions(originalConfig.instructions);
-    ref.read(assistantConfigProvider.notifier).updateVoice(originalConfig.voice);
     
     // Reset to default speed dial ID after call
     callService.setSpeedDialId(SpeedDial.defaultId);

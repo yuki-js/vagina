@@ -9,14 +9,12 @@ import '../../components/control_panel.dart';
 class CallPage extends ConsumerWidget {
   final VoidCallback onChatPressed;
   final VoidCallback onNotepadPressed;
-  final VoidCallback onSettingsPressed;
   final bool hideNavigationButtons;
 
   const CallPage({
     super.key,
     required this.onChatPressed,
     required this.onNotepadPressed,
-    required this.onSettingsPressed,
     this.hideNavigationButtons = false,
   });
 
@@ -53,7 +51,6 @@ class CallPage extends ConsumerWidget {
         ControlPanel(
           onChatPressed: onChatPressed,
           onNotepadPressed: onNotepadPressed,
-          onSettingsPressed: onSettingsPressed,
           hideNavigationButtons: hideNavigationButtons,
         ),
       ],

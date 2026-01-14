@@ -90,7 +90,7 @@ class CallSession {
       notepadTabs: (json['notepadTabs'] as List<dynamic>?)
               ?.map((e) => SessionNotepadTab.fromJson(e as Map<String, dynamic>))
               .toList(),
-      speedDialId: json['speedDialId'] as String? ?? 'default',
+      speedDialId: json['speedDialId'] as String,
     );
   }
 }
