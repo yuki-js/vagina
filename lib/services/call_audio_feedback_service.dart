@@ -35,10 +35,15 @@ class CallAudioFeedbackService {
   /// Stop dial tone
   Future<void> stopDialTone() async {
     if (_dialTonePlayer != null) {
-      _logService.debug(_tag, 'Stopping dial tone');
-      await _dialTonePlayer!.stop();
-      await _dialTonePlayer!.dispose();
-      _dialTonePlayer = null;
+      try {
+        _logService.debug(_tag, 'Stopping dial tone');
+        await _dialTonePlayer!.stop();
+        await _dialTonePlayer!.dispose();
+      } catch (e) {
+        _logService.error(_tag, 'Error stopping dial tone: $e');
+      } finally {
+        _dialTonePlayer = null;
+      }
     }
   }
 
@@ -67,8 +72,13 @@ class CallAudioFeedbackService {
   Future<void> dispose() async {
     await stopDialTone();
     if (_endTonePlayer != null) {
-      await _endTonePlayer!.dispose();
-      _endTonePlayer = null;
+      try {
+        await _endTonePlayer!.dispose();
+      } catch (e) {
+        _logService.error(_tag, 'Error disposing end tone player: $e');
+      } finally {
+        _endTonePlayer = null;
+      }
     }
   }
 }
