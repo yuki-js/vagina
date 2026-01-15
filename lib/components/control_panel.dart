@@ -2,7 +2,8 @@ import '../utils/platform_compat.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/app_theme.dart';
-import '../providers/providers.dart';
+import '../providers/audio_providers.dart';
+import '../screens/call/providers.dart';
 import '../services/pip_service.dart';
 import '../components/control_button.dart';
 

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:record/record.dart';
 import '../../theme/app_theme.dart';
-import '../../providers/providers.dart';
+import '../../screens/settings/providers.dart';
 import '../../models/android_audio_config.dart';
 import '../../components/settings_card.dart';
 

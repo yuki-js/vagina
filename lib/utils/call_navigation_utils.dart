@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/speed_dial.dart';
-import '../providers/providers.dart';
+import '../screens/call/providers.dart';
 import '../screens/call/call_screen.dart';
 
 /// Utility functions for initiating calls with SpeedDial configuration

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/app_theme.dart';
 import '../../providers/ui_providers.dart';
+import '../../providers/core_providers.dart';
+import '../../services/tool_service.dart';
 import 'providers.dart';
 import '../../repositories/repository_factory.dart';
 import '../../services/tools/tool_metadata.dart';
@@ -108,7 +110,8 @@ class _ToolsTabState extends ConsumerState<ToolsTab> {
 
   @override
   Widget build(BuildContext context) {
-    final toolService = ref.watch(toolServiceProvider);
+    final notepadService = ref.watch(notepadServiceProvider);
+    final toolService = ToolService(notepadService: notepadService);
     final toolsByCategory = toolService.toolsByCategory;
 
     return Column(

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/app_theme.dart';
-import '../../providers/providers.dart';
+import '../../providers/audio_providers.dart';
+import '../../screens/settings/providers.dart';
+import '../../screens/call/providers.dart';
 import '../../models/assistant_config.dart';
 import '../../components/settings_card.dart';
 

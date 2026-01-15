@@ -63,3 +63,12 @@ final isCallActiveProvider = Provider<bool>((ref) {
 
 final notepadTabsProvider = StreamProvider<List<NotepadTab>>((ref) => ref.read(notepadServiceProvider).tabsStream);
 final selectedNotepadTabIdProvider = StreamProvider<String?>((ref) => ref.read(notepadServiceProvider).selectedTabStream);
+
+// Expose realtimeApiClient for settings that need to configure it
+final realtimeApiClientProvider = Provider<RealtimeApiClient>((ref) {
+  final webSocket = WebSocketService(logService: ref.read(logServiceProvider));
+  return RealtimeApiClient(
+    webSocket: webSocket,
+    logService: ref.read(logServiceProvider),
+  );
+});

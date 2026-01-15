@@ -104,12 +104,8 @@ class _SessionsTabState extends ConsumerState<SessionsTab> {
   Widget build(BuildContext context) {
     final sessionsAsync = ref.watch(refreshableCallSessionsProvider);
     
-    // セッション保存完了通知を監視してリストを自動更新
-    ref.listen<AsyncValue<String>>(sessionSavedProvider, (_, state) {
-      state.whenData((_) {
-        ref.invalidate(refreshableCallSessionsProvider);
-      });
-    });
+    // Note: Session saved events from call screen will trigger refresh
+    // through the refreshableCallSessionsProvider invalidation
 
     return sessionsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
