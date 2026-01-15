@@ -11,6 +11,17 @@ class MockKeyValueStore implements KeyValueStore {
   Future<void> initialize() async {}
 
   @override
+  Future<Map<String, dynamic>> load() async {
+    return Map<String, dynamic>.from(_data);
+  }
+
+  @override
+  Future<void> save(Map<String, dynamic> data) async {
+    _data.clear();
+    _data.addAll(data);
+  }
+
+  @override
   Future<void> set(String key, dynamic value) async {
     _data[key] = value;
   }
@@ -26,8 +37,18 @@ class MockKeyValueStore implements KeyValueStore {
   }
 
   @override
+  Future<bool> contains(String key) async {
+    return _data.containsKey(key);
+  }
+
+  @override
   Future<void> clear() async {
     _data.clear();
+  }
+
+  @override
+  Future<String> getFilePath() async {
+    return 'mock://test.json';
   }
 }
 
