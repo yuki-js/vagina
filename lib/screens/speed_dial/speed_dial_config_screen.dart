@@ -262,7 +262,7 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
                     const SizedBox(height: 12),
                     TextField(
                       controller: _nameController,
-                      enabled: false, // 名前フィールドは全てのスピードダイヤルで無効化（識別子として）
+                      enabled: _isNewSpeedDial || widget.speedDial!.id != SpeedDial.defaultId, // Disable for default speed dial
                       decoration: InputDecoration(
                         hintText: '例: アシスタント',
                         border: OutlineInputBorder(
@@ -270,7 +270,9 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
                         ),
                         filled: true,
                         fillColor: Colors.grey[50],
-                        helperText: '名前は作成後に変更できません',
+                        helperText: (!_isNewSpeedDial && widget.speedDial!.id == SpeedDial.defaultId) 
+                            ? 'デフォルトのスピードダイヤルは名前を変更できません' 
+                            : null,
                       ),
                       style: const TextStyle(color: AppTheme.lightTextPrimary),
                     ),

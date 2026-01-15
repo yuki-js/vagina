@@ -142,7 +142,7 @@ class SpeedDialTab extends ConsumerWidget {
       ),
       child: InkWell(
         onTap: () => _startCall(context, ref, speedDial),
-        onLongPress: isDefault ? null : () => _editSpeedDial(context, speedDial),
+        onLongPress: () => _editSpeedDial(context, speedDial),
         borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: const EdgeInsets.all(16),
