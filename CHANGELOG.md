@@ -8,10 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Unified Feedback Service**: CallFeedbackService combines audio and haptic feedback
+  - Cleaner API with combined `callEnded()` method
+  - Replaces separate HapticService and CallAudioFeedbackService
+  
 - **Audio Feedback** (#98): Call lifecycle audio feedback
-  - Dual-frequency dial tone (350Hz + 440Hz) during connection
-  - Three-tone "piron" sound (C5→E5→G5) on call end
-  - CallAudioFeedbackService for managing audio playback
+  - Japanese PSTN-style dial tone (400Hz pure tone) during connection
+  - Descending arpeggio "piron" sound (G5→E5→C5) on call end
   - Proper error handling and resource cleanup
 
 - **PWA Support** (#95): Progressive Web App capabilities
@@ -25,9 +28,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Character System Refactoring** (#89): Non-nullable character architecture
   - Default character is now a first-class entity
   - Visual distinction: headset icon for default, emoji for custom
-  - Protected operations: cannot delete/rename default character
+  - Default character fully editable (voice, prompt, emoji) except name
+  - Name field protected as identifier for all speed dials
   - Improved UI display logic in call screen
   - Backward compatibility for old sessions without speedDialId
+
+- **App Name Configuration**: Centralized display name management
+  - AppConfig.appName and AppConfig.appSubtitle constants
+  - Easy rebranding without code changes
+  - Codename "vagina" preserved in codebase
+
+- **Type Safety Improvements**:
+  - SpeedDial parameters now required (non-nullable) in CallPage and CallMainContent
+  - Cleaner null safety throughout call flow
 
 - **Agent Compliance System** (#93): AI agent supervision
   - Enhanced validation script with comprehensive checks
