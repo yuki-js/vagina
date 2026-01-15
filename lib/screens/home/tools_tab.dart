@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/app_theme.dart';
-import '../../providers/providers.dart';
+import '../../providers/ui_providers.dart';
+import 'providers.dart';
 import '../../repositories/repository_factory.dart';
 import '../../services/tools/tool_metadata.dart';
 

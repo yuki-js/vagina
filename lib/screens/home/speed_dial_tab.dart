@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/app_theme.dart';
-import '../../providers/providers.dart';
+import '../../providers/ui_providers.dart';
+import 'providers.dart';
 import '../../models/speed_dial.dart';
 import '../../utils/call_navigation_utils.dart';
 import '../speed_dial/speed_dial_config_screen.dart';

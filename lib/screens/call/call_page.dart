@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../providers/providers.dart';
+import '../../providers/core_providers.dart';
+import '../../providers/audio_providers.dart';
+import '../../providers/repository_providers.dart';
+import 'providers.dart';
 import '../../services/call_service.dart';
 import '../../models/speed_dial.dart';
 import '../../components/call/call_main_content.dart';

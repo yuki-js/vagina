@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/app_theme.dart';
-import '../../providers/providers.dart';
+import '../../providers/core_providers.dart';
+import '../../providers/audio_providers.dart';
+import '../../providers/repository_providers.dart';
+import 'providers.dart';
 import '../../models/notepad_tab.dart';
 import '../../components/notepad/notepad_content_renderer.dart';
 import '../../components/notepad/notepad_empty_state.dart';
