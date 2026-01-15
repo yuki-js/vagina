@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/app_theme.dart';
 import '../../providers/providers.dart';
 import '../../models/speed_dial.dart';
-import '../../components/emoji_picker.dart';
+import '../../components/common/emoji_picker.dart';
 import '../../repositories/repository_factory.dart';
 
 /// Speed dial configuration screen

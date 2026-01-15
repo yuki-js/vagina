@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
-import '../theme/app_theme.dart';
-import '../models/call_session.dart';
+import '../../theme/app_theme.dart';
+import '../../models/call_session.dart';
 
 /// Read-only notepad viewer for session detail screen
 class HistoricalNotepadView extends StatelessWidget {

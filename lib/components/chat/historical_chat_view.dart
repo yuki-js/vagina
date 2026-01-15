@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import '../theme/app_theme.dart';
-import '../models/chat_message.dart';
+import '../../theme/app_theme.dart';
+import '../../models/chat_message.dart';
 import 'chat_bubble.dart';
 
 /// Read-only chat history viewer for session detail screen

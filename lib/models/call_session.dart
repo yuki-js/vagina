@@ -34,6 +34,7 @@ class CallSession {
   final List<String> chatMessages; // JSON-encoded messages
   final List<SessionNotepadTab>? notepadTabs; // Structured notepad tabs
   final String speedDialId; // Reference to speed dial used (non-nullable)
+  final Map<String, dynamic>? endContext; // Context information when call ended
 
   const CallSession({
     required this.id,
@@ -43,6 +44,7 @@ class CallSession {
     this.chatMessages = const [],
     this.notepadTabs,
     required this.speedDialId,
+    this.endContext,
   });
 
   CallSession copyWith({
@@ -53,6 +55,7 @@ class CallSession {
     List<String>? chatMessages,
     List<SessionNotepadTab>? notepadTabs,
     String? speedDialId,
+    Map<String, dynamic>? endContext,
   }) {
     return CallSession(
       id: id ?? this.id,
@@ -62,6 +65,7 @@ class CallSession {
       chatMessages: chatMessages ?? this.chatMessages,
       notepadTabs: notepadTabs ?? this.notepadTabs,
       speedDialId: speedDialId ?? this.speedDialId,
+      endContext: endContext ?? this.endContext,
     );
   }
 
@@ -74,6 +78,7 @@ class CallSession {
       'chatMessages': chatMessages,
       if (notepadTabs != null) 'notepadTabs': notepadTabs!.map((t) => t.toJson()).toList(),
       'speedDialId': speedDialId,
+      if (endContext != null) 'endContext': endContext,
     };
   }
 
@@ -93,6 +98,7 @@ class CallSession {
               ?.map((e) => SessionNotepadTab.fromJson(e as Map<String, dynamic>))
               .toList(),
       speedDialId: json['speedDialId'] as String? ?? SpeedDial.defaultId,
+      endContext: json['endContext'] as Map<String, dynamic>?,
     );
   }
 }

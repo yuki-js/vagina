@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/providers.dart';
 import '../../services/call_service.dart';
 import '../../models/speed_dial.dart';
-import '../../components/call_main_content.dart';
+import '../../components/call/call_main_content.dart';
 import '../../components/control_panel.dart';
 
 /// 通話ページウィジェット - 通話UIとコントロールを表示

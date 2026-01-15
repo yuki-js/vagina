@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/app_theme.dart';
 import '../../providers/providers.dart';
-import '../../components/chat_bubble.dart';
-import '../../components/chat_input.dart';
-import '../../components/chat_empty_state.dart';
+import '../../components/chat/chat_bubble.dart';
+import '../../components/chat/chat_input.dart';
+import '../../components/chat/chat_empty_state.dart';
 
 /// Chat page widget - displays chat history and input
 class ChatPage extends ConsumerStatefulWidget {

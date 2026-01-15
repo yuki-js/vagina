@@ -1,12 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vagina/services/call_audio_feedback_service.dart';
+import 'package:vagina/services/call_feedback_service.dart';
 
 void main() {
-  group('CallAudioFeedbackService', () {
-    late CallAudioFeedbackService service;
+  group('CallFeedbackService', () {
+    late CallFeedbackService service;
 
     setUp(() {
-      service = CallAudioFeedbackService();
+      service = CallFeedbackService();
     });
 
     tearDown(() async {

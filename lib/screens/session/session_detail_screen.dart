@@ -3,9 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/app_theme.dart';
 import '../../models/call_session.dart';
 import '../../models/speed_dial.dart';
-import '../../components/historical_chat_view.dart';
-import '../../components/historical_notepad_view.dart';
-import '../../components/adaptive_widgets.dart';
+import '../../components/chat/historical_chat_view.dart';
+import '../../components/notepad/historical_notepad_view.dart';
+import '../../components/common/adaptive_widgets.dart';
 import '../../repositories/repository_factory.dart';
 import '../../utils/duration_formatter.dart';
 

@@ -76,6 +76,7 @@ class CallService {
   bool _isMuted = false;
   DateTime? _callStartTime;
   String _currentSpeedDialId = SpeedDial.defaultId;
+  Map<String, dynamic>? _endContext;
 
   CallService({
     required AudioRecorderService recorder,
@@ -403,11 +404,14 @@ class CallService {
   }
 
   /// End the call
-  Future<void> endCall() async {
+  Future<void> endCall({Map<String, dynamic>? endContext}) async {
     if (!isCallActive && _currentState != CallState.error) {
       _logService.debug(_tag, 'Call not active, ignoring endCall');
       return;
     }
+
+    // Store end context for session save
+    _endContext = endContext;
 
     // Play call end tone
     await _feedback.playCallEndTone();
@@ -417,7 +421,7 @@ class CallService {
     
     await _cleanup();
     _setState(CallState.idle);
-    _logService.info(_tag, 'Call ended');
+    _logService.info(_tag, 'Call ended${endContext != null ? " with context" : ""}');
   }
 
   Future<void> _saveSession() async {
@@ -458,6 +462,7 @@ class CallService {
         chatMessages: chatMessagesJson,
         notepadTabs: notepadTabsData,
         speedDialId: _currentSpeedDialId,
+        endContext: _endContext,
       );
 
       await RepositoryFactory.callSessions.save(session);
@@ -526,6 +531,7 @@ class CallService {
     _callDuration = 0;
     _durationController.add(0);
     _amplitudeController.add(0.0);
+    _endContext = null;
     
     _logService.debug(_tag, 'Cleanup complete');
   }

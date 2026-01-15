@@ -1,9 +1,9 @@
-import '../utils/platform_compat.dart';
+import '../../utils/platform_compat.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../theme/app_theme.dart';
-import '../providers/providers.dart';
-import '../services/log_service.dart';
+import '../../theme/app_theme.dart';
+import '../../providers/providers.dart';
+import '../../services/log_service.dart';
 
 /// Chat input area widget
 class ChatInput extends ConsumerStatefulWidget {

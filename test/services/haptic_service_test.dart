@@ -1,23 +1,27 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vagina/services/haptic_service.dart';
+import 'package:vagina/services/call_feedback_service.dart';
 
 void main() {
-  group('HapticService', () {
-    late HapticService hapticService;
+  group('CallFeedbackService (Haptic)', () {
+    late CallFeedbackService service;
 
     setUp(() {
-      hapticService = HapticService();
+      service = CallFeedbackService();
+    });
+
+    tearDown(() async {
+      await service.dispose();
     });
 
     test('can be instantiated', () {
-      expect(hapticService, isNotNull);
+      expect(service, isNotNull);
     });
 
     testWidgets('heavyImpact can be called without throwing', (WidgetTester tester) async {
       // HapticFeedback requires a platform channel, so in tests it may fail silently
       // We just verify it doesn't throw an unhandled exception
       await expectLater(
-        () async => await hapticService.heavyImpact(),
+        () async => await service.heavyImpact(),
         returnsNormally,
       );
     });
@@ -26,7 +30,7 @@ void main() {
       // HapticFeedback requires a platform channel, so in tests it may fail silently
       // We just verify it doesn't throw an unhandled exception
       await expectLater(
-        () async => await hapticService.selectionClick(),
+        () async => await service.selectionClick(),
         returnsNormally,
       );
     });

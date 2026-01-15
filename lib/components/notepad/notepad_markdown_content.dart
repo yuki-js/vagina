@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
-import '../theme/app_theme.dart';
+import '../../theme/app_theme.dart';
 
 /// Markdown content renderer with edit/preview toggle
 class MarkdownContent extends StatefulWidget {

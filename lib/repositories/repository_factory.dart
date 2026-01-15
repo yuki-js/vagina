@@ -4,11 +4,13 @@ import '../interfaces/call_session_repository.dart';
 import '../interfaces/speed_dial_repository.dart';
 import '../interfaces/memory_repository.dart';
 import '../interfaces/config_repository.dart';
+import '../interfaces/text_agent_repository.dart';
 import 'json_call_session_repository.dart';
 import 'json_speed_dial_repository.dart';
 import 'json_memory_repository.dart';
 import 'json_config_repository.dart';
 import 'preferences_repository.dart';
+import 'local_text_agent_repository.dart';
 import '../services/log_service.dart';
 
 /// Factory for creating repository instances
@@ -22,6 +24,7 @@ class RepositoryFactory {
   static MemoryRepository? _memoryRepo;
   static ConfigRepository? _configRepo;
   static PreferencesRepository? _preferencesRepo;
+  static TextAgentRepository? _textAgentRepo;
   static LogService? _logService;
 
   /// Initialize the repositories with a key-value store
@@ -65,6 +68,12 @@ class RepositoryFactory {
     return _preferencesRepo ??= PreferencesRepository(_store!);
   }
 
+  /// Get the TextAgent repository
+  static TextAgentRepository get textAgents {
+    _ensureInitialized();
+    return _textAgentRepo ??= LocalTextAgentRepository(logService: _logService);
+  }
+
   /// Helper to ensure initialization
   static void _ensureInitialized() {
     if (_store == null) {
@@ -80,6 +89,7 @@ class RepositoryFactory {
     _memoryRepo = null;
     _configRepo = null;
     _preferencesRepo = null;
+    _textAgentRepo = null;
     _logService = null;
   }
 }

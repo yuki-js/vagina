@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../theme/app_theme.dart';
-import '../models/speed_dial.dart';
-import '../config/app_config.dart';
+import '../../theme/app_theme.dart';
+import '../../models/speed_dial.dart';
+import '../../config/app_config.dart';
 import 'audio_level_visualizer.dart';
-import '../utils/duration_formatter.dart';
+import '../../utils/duration_formatter.dart';
 
 /// 通話メインコンテンツ - アプリロゴ、通話時間、ビジュアライザーを表示
 /// call_page.dartから切り出されたコンポーネント

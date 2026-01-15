@@ -1,6 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
-import '../theme/app_theme.dart';
+import '../../theme/app_theme.dart';
 
 /// Audio level visualizer with bouncing bars
 class AudioLevelVisualizer extends StatelessWidget {

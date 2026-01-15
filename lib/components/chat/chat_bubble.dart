@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../theme/app_theme.dart';
-import '../models/chat_message.dart';
-import 'tool_details_sheet.dart';
+import '../../theme/app_theme.dart';
+import '../../models/chat_message.dart';
+import '../tool_details_sheet.dart';
 
 /// Chat bubble widget for displaying messages
 class ChatBubble extends StatelessWidget {

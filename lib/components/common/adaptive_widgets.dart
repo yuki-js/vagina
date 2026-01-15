@@ -1,8 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../providers/providers.dart';
-import '../theme/app_theme.dart';
+import '../../providers/providers.dart';
+import '../../theme/app_theme.dart';
 
 /// Material/Cupertino共通化のためのアダプティブウィジェット
 /// useCupertinoStyleProviderの値に応じてMaterialまたはCupertinoウィジェットを返す
