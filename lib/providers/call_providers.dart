@@ -1,108 +1,98 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../services/websocket_service.dart';
-import '../services/realtime_api_client.dart';
 import '../services/call_service.dart';
+import '../services/audio_recorder_service.dart';
+import '../services/audio_player_service.dart';
+import '../services/realtime_api_client.dart';
+import '../services/websocket_service.dart';
 import '../services/tool_service.dart';
 import '../services/call_feedback_service.dart';
 import '../models/chat_message.dart';
-import 'audio_providers.dart';
 import 'core_providers.dart';
 import 'repository_providers.dart';
+import 'audio_providers.dart';
 
 // ============================================================================
-// Call & Realtime API Providers
+// Call Providers - Simplified with minimal exposure
 // ============================================================================
-
-/// WebSocketサービスのプロバイダ
-final webSocketServiceProvider = Provider<WebSocketService>((ref) {
-  final service = WebSocketService(
-    logService: ref.read(logServiceProvider),
-  );
-  ref.onDispose(() => service.dispose());
-  return service;
-});
-
-/// Realtime APIクライアントのプロバイダ
-final realtimeApiClientProvider = Provider<RealtimeApiClient>((ref) {
-  final client = RealtimeApiClient(
-    webSocket: ref.read(webSocketServiceProvider),
-    logService: ref.read(logServiceProvider),
-  );
-  ref.onDispose(() => client.dispose());
-  return client;
-});
-
-/// ツールサービスのプロバイダ
-final toolServiceProvider = Provider<ToolService>((ref) {
-  final notepadService = ref.read(notepadServiceProvider);
-  return ToolService(notepadService: notepadService);
-});
-
-/// コールフィードバックサービスのプロバイダ (audio + haptic統合)
-final callFeedbackServiceProvider = Provider<CallFeedbackService>((ref) {
-  return CallFeedbackService(
-    logService: ref.read(logServiceProvider),
-  );
-});
 
 /// 通話サービスのプロバイダ
+/// Internal services are created here and not exposed separately
 final callServiceProvider = Provider<CallService>((ref) {
+  // Create internal dependencies
+  final recorder = AudioRecorderService();
+  final player = ref.read(audioPlayerServiceProvider);
+  final webSocket = WebSocketService(logService: ref.read(logServiceProvider));
+  final apiClient = RealtimeApiClient(
+    webSocket: webSocket,
+    logService: ref.read(logServiceProvider),
+  );
+  final toolService = ToolService(notepadService: ref.read(notepadServiceProvider));
+  final feedbackService = CallFeedbackService(logService: ref.read(logServiceProvider));
+  
   final service = CallService(
-    recorder: ref.read(audioRecorderServiceProvider),
-    player: ref.read(audioPlayerServiceProvider),
-    apiClient: ref.read(realtimeApiClientProvider),
+    recorder: recorder,
+    player: player,
+    apiClient: apiClient,
     config: ref.read(configRepositoryProvider),
-    toolService: ref.read(toolServiceProvider),
+    toolService: toolService,
     notepadService: ref.read(notepadServiceProvider),
     logService: ref.read(logServiceProvider),
-    feedbackService: ref.read(callFeedbackServiceProvider),
+    feedbackService: feedbackService,
   );
-  ref.onDispose(() => service.dispose());
+  
+  ref.onDispose(() {
+    service.dispose();
+    recorder.dispose();
+    webSocket.dispose();
+    apiClient.dispose();
+  });
+  
   return service;
 });
 
-/// チャットメッセージのプロバイダ
+// Stream providers for call state
 final chatMessagesProvider = StreamProvider<List<ChatMessage>>((ref) {
-  final callService = ref.read(callServiceProvider);
-  return callService.chatStream;
+  return ref.read(callServiceProvider).chatStream;
 });
 
-/// 通話状態のプロバイダ（ストリームベース）
 final callStateProvider = StreamProvider<CallState>((ref) {
-  final callService = ref.read(callServiceProvider);
-  return callService.stateStream;
+  return ref.read(callServiceProvider).stateStream;
 });
 
-/// 音声振幅レベルのプロバイダ（ストリームベース）
 final amplitudeProvider = StreamProvider<double>((ref) {
-  final callService = ref.read(callServiceProvider);
-  return callService.amplitudeStream;
+  return ref.read(callServiceProvider).amplitudeStream;
 });
 
-/// 通話時間のプロバイダ（ストリームベース）
 final durationProvider = StreamProvider<int>((ref) {
-  final callService = ref.read(callServiceProvider);
-  return callService.durationStream;
+  return ref.read(callServiceProvider).durationStream;
 });
 
-/// 通話エラーのプロバイダ（ストリームベース）
 final callErrorProvider = StreamProvider<String>((ref) {
-  final callService = ref.read(callServiceProvider);
-  return callService.errorStream;
+  return ref.read(callServiceProvider).errorStream;
 });
 
-/// セッション保存完了通知のプロバイダ
-/// セッション保存後にセッション履歴を自動更新するために使用
 final sessionSavedProvider = StreamProvider<String>((ref) {
-  final callService = ref.read(callServiceProvider);
-  return callService.sessionSavedStream;
+  return ref.read(callServiceProvider).sessionSavedStream;
 });
 
-/// 通話アクティブ状態のプロバイダ
 final isCallActiveProvider = Provider<bool>((ref) {
   final callState = ref.watch(callStateProvider);
   return callState.maybeWhen(
     data: (state) => state == CallState.connecting || state == CallState.connected,
     orElse: () => false,
+  );
+});
+
+// Reexport ToolService provider for tools_tab
+final toolServiceProvider = Provider<ToolService>((ref) {
+  return ToolService(notepadService: ref.read(notepadServiceProvider));
+});
+
+// Reexport RealtimeApiClient provider for settings
+final realtimeApiClientProvider = Provider<RealtimeApiClient>((ref) {
+  final webSocket = WebSocketService(logService: ref.read(logServiceProvider));
+  return RealtimeApiClient(
+    webSocket: webSocket,
+    logService: ref.read(logServiceProvider),
   );
 });
