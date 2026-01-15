@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../models/speed_dial.dart';
+import '../config/app_config.dart';
 import 'audio_level_visualizer.dart';
 import '../utils/duration_formatter.dart';
 
@@ -13,7 +14,7 @@ class CallMainContent extends StatelessWidget {
   final int callDuration;
   final double inputLevel;
   final bool isMuted;
-  final SpeedDial? speedDial;
+  final SpeedDial speedDial;
 
   const CallMainContent({
     super.key,
@@ -23,21 +24,21 @@ class CallMainContent extends StatelessWidget {
     required this.callDuration,
     required this.inputLevel,
     required this.isMuted,
-    this.speedDial,
+    required this.speedDial,
   });
 
   @override
   Widget build(BuildContext context) {
-    final isDefault = speedDial?.isDefault ?? true;
+    final isDefault = speedDial.isDefault;
     final displayIcon = isDefault 
         ? Icons.headset_mic 
         : null;
-    final displayEmoji = !isDefault && speedDial?.iconEmoji != null
-        ? speedDial!.iconEmoji!
+    final displayEmoji = !isDefault && speedDial.iconEmoji != null
+        ? speedDial.iconEmoji!
         : null;
     final displayName = isDefault
-        ? 'VAGINA'
-        : (speedDial?.name ?? 'VAGINA');
+        ? AppConfig.appName
+        : speedDial.name;
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -73,7 +74,7 @@ class CallMainContent extends StatelessWidget {
         const SizedBox(height: 4),
         if (isDefault)
           Text(
-            'Voice AGI Notepad Agent',
+            AppConfig.appSubtitle,
             style: TextStyle(
               fontSize: 14,
               color: AppTheme.textSecondary,

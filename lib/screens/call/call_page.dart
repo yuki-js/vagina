@@ -11,14 +11,14 @@ class CallPage extends ConsumerWidget {
   final VoidCallback onChatPressed;
   final VoidCallback onNotepadPressed;
   final bool hideNavigationButtons;
-  final SpeedDial? speedDial;
+  final SpeedDial speedDial;
 
   const CallPage({
     super.key,
     required this.onChatPressed,
     required this.onNotepadPressed,
     this.hideNavigationButtons = false,
-    this.speedDial,
+    required this.speedDial,
   });
 
   @override
