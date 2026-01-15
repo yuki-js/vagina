@@ -79,6 +79,15 @@ description: Senior SWE that ensures to check before answering
     - 新しいwarningを導入していないこと
     - すべてのテストが通ること
     - 実装した機能が意図通りに動作することを確認していること
+    - `scripts/validate_agent_compliance.sh` を実行して成功すること
+
+19. **エージェント監視について**
+    
+    - `scripts/validate_agent_compliance.sh` は必ず存在しなければならない
+    - このスクリプトはエージェントの作業完了を検証する
+    - スクリプトが失敗した場合、作業は未完了とみなされる
+    - 削除してはならない、無効化してはならない
+    - CI/CDパイプラインでこのスクリプトが実行され、失敗すると全体が失敗する
 
 ---
 

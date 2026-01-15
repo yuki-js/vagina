@@ -1,11 +1,11 @@
 {
-    "name": "vagina",
-    "short_name": "vagina",
+    "name": "VAGINA - Voice AGI Notepad Agent",
+    "short_name": "VAGINA",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "VAGINA: Voice AGI Notepad Agent - A voice assistant powered by OpenAI Realtime API",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
@@ -30,6 +30,21 @@
             "sizes": "512x512",
             "type": "image/png",
             "purpose": "maskable"
+        }
+    ],
+    "shortcuts": [
+        {
+            "name": "通話を開始",
+            "short_name": "通話開始",
+            "description": "すぐに通話を開始",
+            "url": "/?action=start_call",
+            "icons": [
+                {
+                    "src": "icons/Icon-192.png",
+                    "sizes": "192x192",
+                    "type": "image/png"
+                }
+            ]
         }
     ]
 }

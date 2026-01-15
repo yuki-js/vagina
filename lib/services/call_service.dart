@@ -10,6 +10,7 @@ import 'tool_service.dart';
 import 'haptic_service.dart';
 import 'notepad_service.dart';
 import 'log_service.dart';
+import 'call_audio_feedback_service.dart';
 import 'chat/chat_message_manager.dart';
 import '../config/app_config.dart';
 import '../models/chat_message.dart';
@@ -41,6 +42,7 @@ class CallService {
   final HapticService _hapticService;
   final NotepadService _notepadService;
   final LogService _logService;
+  final CallAudioFeedbackService _audioFeedback;
   final ChatMessageManager _chatManager = ChatMessageManager();
   
   /// Session-scoped tool manager (created on call start, disposed on call end)
@@ -86,6 +88,7 @@ class CallService {
     required HapticService hapticService,
     required NotepadService notepadService,
     LogService? logService,
+    CallAudioFeedbackService? audioFeedback,
   })  : _recorder = recorder,
         _player = player,
         _apiClient = apiClient,
@@ -93,7 +96,8 @@ class CallService {
         _toolService = toolService,
         _hapticService = hapticService,
         _notepadService = notepadService,
-        _logService = logService ?? LogService();
+        _logService = logService ?? LogService(),
+        _audioFeedback = audioFeedback ?? CallAudioFeedbackService(logService: logService);
 
   /// Current call state
   CallState get currentState => _currentState;
@@ -181,12 +185,16 @@ class CallService {
 
     try {
       _setState(CallState.connecting);
+      
+      // Play dial tone while connecting
+      await _audioFeedback.playDialTone();
 
       _logService.debug(_tag, 'Checking Azure config');
       final hasConfig = await hasAzureConfig();
       if (!hasConfig) {
         _logService.error(_tag, 'Azure config not found');
         _emitError('Azure OpenAI設定を先に行ってください');
+        await _audioFeedback.stopDialTone();
         _setState(CallState.idle);
         return;
       }
@@ -196,6 +204,7 @@ class CallService {
       if (!hasPermission) {
         _logService.error(_tag, 'Microphone permission denied');
         _emitError('マイクの使用を許可してください');
+        await _audioFeedback.stopDialTone();
         _setState(CallState.idle);
         return;
       }
@@ -206,6 +215,7 @@ class CallService {
       if (realtimeUrl == null || apiKey == null) {
         _logService.error(_tag, 'Azure credentials not found');
         _emitError('Azure OpenAI設定が見つかりません');
+        await _audioFeedback.stopDialTone();
         _setState(CallState.idle);
         return;
       }
@@ -235,11 +245,16 @@ class CallService {
       await _enableWakeLock();
 
       _setState(CallState.connected);
+      
+      // Stop dial tone when connected
+      await _audioFeedback.stopDialTone();
+      
       _resetSilenceTimer(); // Start silence detection
       _logService.info(_tag, 'Call connected successfully');
     } catch (e) {
       _logService.error(_tag, 'Failed to start call: $e');
       _emitError('接続に失敗しました: $e');
+      await _audioFeedback.stopDialTone();
       _setState(CallState.error);
       await _cleanup();
     }
@@ -398,6 +413,9 @@ class CallService {
       return;
     }
 
+    // Play call end tone
+    await _audioFeedback.playCallEndTone();
+
     // Save session before cleanup
     await _saveSession();
     
@@ -554,6 +572,7 @@ class CallService {
   /// Dispose the service
   Future<void> dispose() async {
     await _cleanup();
+    await _audioFeedback.dispose();
     await _stateController.close();
     await _amplitudeController.close();
     await _durationController.close();

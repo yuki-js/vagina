@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import '../models/speed_dial.dart';
 import 'audio_level_visualizer.dart';
 import '../utils/duration_formatter.dart';
 
@@ -12,7 +13,7 @@ class CallMainContent extends StatelessWidget {
   final int callDuration;
   final double inputLevel;
   final bool isMuted;
-  final String assistantName;
+  final SpeedDial? speedDial;
 
   const CallMainContent({
     super.key,
@@ -22,24 +23,47 @@ class CallMainContent extends StatelessWidget {
     required this.callDuration,
     required this.inputLevel,
     required this.isMuted,
-    required this.assistantName,
+    this.speedDial,
   });
 
   @override
   Widget build(BuildContext context) {
+    final isDefault = speedDial?.isDefault ?? true;
+    final displayIcon = isDefault 
+        ? Icons.headset_mic 
+        : null;
+    final displayEmoji = !isDefault && speedDial?.iconEmoji != null
+        ? speedDial!.iconEmoji!
+        : null;
+    final displayName = isDefault
+        ? 'VAGINA'
+        : (speedDial?.name ?? 'VAGINA');
+
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        // アプリロゴ/タイトル
-        const Icon(
-          Icons.headset_mic,
-          size: 80,
-          color: AppTheme.primaryColor,
-        ),
+        // アプリロゴ/アイコン (デフォルトはヘッドセット、カスタムは絵文字)
+        if (displayIcon != null)
+          Icon(
+            displayIcon,
+            size: 80,
+            color: AppTheme.primaryColor,
+          )
+        else if (displayEmoji != null)
+          Text(
+            displayEmoji,
+            style: const TextStyle(fontSize: 80),
+          )
+        else
+          const Icon(
+            Icons.headset_mic,
+            size: 80,
+            color: AppTheme.primaryColor,
+          ),
         const SizedBox(height: 16),
-        const Text(
-          'VAGINA',
-          style: TextStyle(
+        Text(
+          displayName,
+          style: const TextStyle(
             fontSize: 32,
             fontWeight: FontWeight.bold,
             color: AppTheme.textPrimary,
@@ -47,14 +71,15 @@ class CallMainContent extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 4),
-        Text(
-          'Voice AGI Notepad Agent',
-          style: TextStyle(
-            fontSize: 14,
-            color: AppTheme.textSecondary,
-            letterSpacing: 1,
+        if (isDefault)
+          Text(
+            'Voice AGI Notepad Agent',
+            style: TextStyle(
+              fontSize: 14,
+              color: AppTheme.textSecondary,
+              letterSpacing: 1,
+            ),
           ),
-        ),
 
         const SizedBox(height: 32),
 
@@ -83,30 +108,6 @@ class CallMainContent extends StatelessWidget {
           const SizedBox(height: 16),
           const CircularProgressIndicator(
             color: AppTheme.primaryColor,
-          ),
-        ],
-        
-        // アシスタント名表示（デフォルトでない場合のみ、さりげなく表示）
-        if (isCallActive && assistantName != 'VAGINA') ...[
-          const SizedBox(height: 24),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: AppTheme.surfaceColor.withValues(alpha: 0.3),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: AppTheme.primaryColor.withValues(alpha: 0.3),
-                width: 1,
-              ),
-            ),
-            child: Text(
-              assistantName,
-              style: TextStyle(
-                fontSize: 12,
-                color: AppTheme.textSecondary,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
           ),
         ],
       ],

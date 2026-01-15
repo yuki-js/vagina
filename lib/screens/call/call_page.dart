@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/providers.dart';
 import '../../services/call_service.dart';
+import '../../models/speed_dial.dart';
 import '../../components/call_main_content.dart';
 import '../../components/control_panel.dart';
 
@@ -10,12 +11,14 @@ class CallPage extends ConsumerWidget {
   final VoidCallback onChatPressed;
   final VoidCallback onNotepadPressed;
   final bool hideNavigationButtons;
+  final SpeedDial? speedDial;
 
   const CallPage({
     super.key,
     required this.onChatPressed,
     required this.onNotepadPressed,
     this.hideNavigationButtons = false,
+    this.speedDial,
   });
 
   @override
@@ -24,8 +27,6 @@ class CallPage extends ConsumerWidget {
     final amplitudeAsync = ref.watch(amplitudeProvider);
     final durationAsync = ref.watch(durationProvider);
     final isMuted = ref.watch(isMutedProvider);
-    // アシスタント設定から現在のスピードダイヤル情報を取得
-    final assistantConfig = ref.watch(assistantConfigProvider);
 
     final isCallActive = ref.watch(isCallActiveProvider);
     final callState = callStateAsync.value;
@@ -43,7 +44,7 @@ class CallPage extends ConsumerWidget {
             callDuration: duration,
             inputLevel: amplitude,
             isMuted: isMuted,
-            assistantName: assistantConfig.name,
+            speedDial: speedDial,
           ),
         ),
 

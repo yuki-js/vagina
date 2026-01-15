@@ -80,6 +80,9 @@ class _CallScreenState extends ConsumerState<CallScreen> {
         assistantConfig.instructions,
       );
       
+      // Set the speed dial ID for session tracking
+      callService.setSpeedDialId(widget.speedDial.id);
+      
       await callService.startCall();
     }
   }
@@ -197,6 +200,7 @@ class _CallScreenState extends ConsumerState<CallScreen> {
         CallPage(
           onChatPressed: _goToChat,
           onNotepadPressed: _goToNotepad,
+          speedDial: widget.speedDial,
         ),
         // Notepad on right (swipe left to go to call)
         NotepadPage(
@@ -241,6 +245,7 @@ class _CallScreenState extends ConsumerState<CallScreen> {
               onChatPressed: () {}, // No navigation needed in 3-column layout
               onNotepadPressed: () {}, // No navigation needed in 3-column layout
               hideNavigationButtons: true, // Hide chat/notepad buttons in 3-column layout
+              speedDial: widget.speedDial,
             ),
           ),
         ),

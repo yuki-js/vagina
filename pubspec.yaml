@@ -54,6 +54,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/fonts/
+    - assets/audio/
   fonts:
     - family: NotoSansJP
       fonts:

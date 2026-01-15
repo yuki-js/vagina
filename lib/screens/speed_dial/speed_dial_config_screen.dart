@@ -203,21 +203,22 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            // Emoji selection
-            Card(
-              child: InkWell(
-                onTap: _selectEmoji,
-                borderRadius: BorderRadius.circular(12),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'アイコン',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
+            // Emoji selection (hide for default speed dial)
+            if (_isNewSpeedDial || widget.speedDial!.id != SpeedDial.defaultId)
+              Card(
+                child: InkWell(
+                  onTap: _selectEmoji,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'アイコン',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
                           color: AppTheme.lightTextSecondary,
                         ),
                       ),
