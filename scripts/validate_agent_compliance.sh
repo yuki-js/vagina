@@ -46,7 +46,13 @@ if [ "$ERROR_COUNT" -gt 0 ]; then
     echo "❌ ERROR: Flutter analyze found $ERROR_COUNT errors. Agent must fix all errors before completing."
     echo "$ANALYZE_OUTPUT" | grep -E "^\s*error •"
     exit 1
+else
+    echo "✅ No analysis errors found"
 fi
+
+# Check warning count to ensure no new warnings were introduced
+WARNING_COUNT=$(echo "$ANALYZE_OUTPUT" | grep -c "warning •" || echo "0")
+echo "Found $WARNING_COUNT warnings (for reference, not failing build)"
 
 # Runtime self-inspection: Check AI agent's own environment
 echo "=== Runtime Self-Inspection ==="

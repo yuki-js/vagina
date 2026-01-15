@@ -7,9 +7,9 @@ import 'audio_recorder_service.dart';
 import 'audio_player_service.dart';
 import 'realtime_api_client.dart';
 import 'tool_service.dart';
-import 'haptic_service.dart';
 import 'notepad_service.dart';
 import 'log_service.dart';
+import 'call_feedback_service.dart';
 import 'chat/chat_message_manager.dart';
 import '../config/app_config.dart';
 import '../models/chat_message.dart';
@@ -38,9 +38,9 @@ class CallService {
   final RealtimeApiClient _apiClient;
   final ConfigRepository _config;
   final ToolService _toolService;
-  final HapticService _hapticService;
   final NotepadService _notepadService;
   final LogService _logService;
+  final CallFeedbackService _feedback;
   final ChatMessageManager _chatManager = ChatMessageManager();
   
   /// Session-scoped tool manager (created on call start, disposed on call end)
@@ -83,17 +83,17 @@ class CallService {
     required RealtimeApiClient apiClient,
     required ConfigRepository config,
     required ToolService toolService,
-    required HapticService hapticService,
     required NotepadService notepadService,
     LogService? logService,
+    CallFeedbackService? feedbackService,
   })  : _recorder = recorder,
         _player = player,
         _apiClient = apiClient,
         _config = config,
         _toolService = toolService,
-        _hapticService = hapticService,
         _notepadService = notepadService,
-        _logService = logService ?? LogService();
+        _logService = logService ?? LogService(),
+        _feedback = feedbackService ?? CallFeedbackService(logService: logService);
 
   /// Current call state
   CallState get currentState => _currentState;
@@ -181,12 +181,16 @@ class CallService {
 
     try {
       _setState(CallState.connecting);
+      
+      // Play dial tone while connecting
+      await _feedback.playDialTone();
 
       _logService.debug(_tag, 'Checking Azure config');
       final hasConfig = await hasAzureConfig();
       if (!hasConfig) {
         _logService.error(_tag, 'Azure config not found');
         _emitError('Azure OpenAI設定を先に行ってください');
+        await _feedback.stopDialTone();
         _setState(CallState.idle);
         return;
       }
@@ -196,6 +200,7 @@ class CallService {
       if (!hasPermission) {
         _logService.error(_tag, 'Microphone permission denied');
         _emitError('マイクの使用を許可してください');
+        await _feedback.stopDialTone();
         _setState(CallState.idle);
         return;
       }
@@ -206,6 +211,7 @@ class CallService {
       if (realtimeUrl == null || apiKey == null) {
         _logService.error(_tag, 'Azure credentials not found');
         _emitError('Azure OpenAI設定が見つかりません');
+        await _feedback.stopDialTone();
         _setState(CallState.idle);
         return;
       }
@@ -235,11 +241,16 @@ class CallService {
       await _enableWakeLock();
 
       _setState(CallState.connected);
+      
+      // Stop dial tone when connected
+      await _feedback.stopDialTone();
+      
       _resetSilenceTimer(); // Start silence detection
       _logService.info(_tag, 'Call connected successfully');
     } catch (e) {
       _logService.error(_tag, 'Failed to start call: $e');
       _emitError('接続に失敗しました: $e');
+      await _feedback.stopDialTone();
       _setState(CallState.error);
       await _cleanup();
     }
@@ -270,7 +281,7 @@ class CallService {
       await _player.markResponseComplete();
       _chatManager.completeCurrentAssistantMessage();
       // Haptic feedback: AI response ended, user's turn
-      await _hapticService.heavyImpact();
+      await _feedback.heavyImpact();
     });
     
     _transcriptSubscription = _apiClient.transcriptStream.listen((delta) {
@@ -282,7 +293,7 @@ class CallService {
       _resetSilenceTimer(); // User started speaking, reset silence timer
       _logService.debug(_tag, 'Created user message placeholder');
       // Haptic feedback: VAD detected user speech started (fire-and-forget)
-      unawaited(_hapticService.selectionClick());
+      unawaited(_feedback.selectionClick());
     });
     
     _userTranscriptSubscription = _apiClient.userTranscriptStream.listen((transcript) {
@@ -314,7 +325,7 @@ class CallService {
     _responseAudioStartedSubscription = _apiClient.responseAudioStartedStream.listen((_) {
       _resetSilenceTimer(); // AI started speaking, reset silence timer
       // Haptic feedback: AI audio response started after user speech ended (fire-and-forget)
-      unawaited(_hapticService.selectionClick());
+      unawaited(_feedback.selectionClick());
     });
   }
 
@@ -397,6 +408,9 @@ class CallService {
       _logService.debug(_tag, 'Call not active, ignoring endCall');
       return;
     }
+
+    // Play call end tone
+    await _feedback.playCallEndTone();
 
     // Save session before cleanup
     await _saveSession();
@@ -554,6 +568,7 @@ class CallService {
   /// Dispose the service
   Future<void> dispose() async {
     await _cleanup();
+    await _feedback.dispose();
     await _stateController.close();
     await _amplitudeController.close();
     await _durationController.close();

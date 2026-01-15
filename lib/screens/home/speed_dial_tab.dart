@@ -133,6 +133,8 @@ class SpeedDialTab extends ConsumerWidget {
     WidgetRef ref,
     SpeedDial speedDial,
   ) {
+    final isDefault = speedDial.isDefault;
+    
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
@@ -147,11 +149,18 @@ class SpeedDialTab extends ConsumerWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Icon/Emoji
-              Text(
-                speedDial.iconEmoji ?? '⭐',
-                style: const TextStyle(fontSize: 48),
-              ),
+              // Icon/Emoji - Headset for default, emoji for custom
+              if (isDefault)
+                const Icon(
+                  Icons.headset_mic,
+                  size: 48,
+                  color: AppTheme.primaryColor,
+                )
+              else
+                Text(
+                  speedDial.iconEmoji ?? '⭐',
+                  style: const TextStyle(fontSize: 48),
+                ),
               const SizedBox(height: 12),
               // Name
               Text(

@@ -7,7 +7,7 @@ import '../services/websocket_service.dart';
 import '../services/realtime_api_client.dart';
 import '../services/call_service.dart';
 import '../services/tool_service.dart';
-import '../services/haptic_service.dart';
+import '../services/call_feedback_service.dart';
 import '../models/assistant_config.dart';
 import '../models/chat_message.dart';
 import '../models/notepad_tab.dart';
@@ -109,9 +109,9 @@ final toolServiceProvider = Provider<ToolService>((ref) {
   return ToolService(notepadService: notepadService);
 });
 
-/// ハプティックフィードバックサービスのプロバイダ
-final hapticServiceProvider = Provider<HapticService>((ref) {
-  return HapticService(
+/// コールフィードバックサービスのプロバイダ (audio + haptic統合)
+final callFeedbackServiceProvider = Provider<CallFeedbackService>((ref) {
+  return CallFeedbackService(
     logService: ref.read(logServiceProvider),
   );
 });
@@ -124,9 +124,9 @@ final callServiceProvider = Provider<CallService>((ref) {
     apiClient: ref.read(realtimeApiClientProvider),
     config: ref.read(configRepositoryProvider),
     toolService: ref.read(toolServiceProvider),
-    hapticService: ref.read(hapticServiceProvider),
     notepadService: ref.read(notepadServiceProvider),
     logService: ref.read(logServiceProvider),
+    feedbackService: ref.read(callFeedbackServiceProvider),
   );
   ref.onDispose(() => service.dispose());
   return service;

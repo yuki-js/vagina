@@ -1,3 +1,5 @@
+import 'speed_dial.dart';
+
 /// Represents a simple notepad tab for session history
 class SessionNotepadTab {
   final String title;
@@ -90,7 +92,7 @@ class CallSession {
       notepadTabs: (json['notepadTabs'] as List<dynamic>?)
               ?.map((e) => SessionNotepadTab.fromJson(e as Map<String, dynamic>))
               .toList(),
-      speedDialId: json['speedDialId'] as String,
+      speedDialId: json['speedDialId'] as String? ?? SpeedDial.defaultId,
     );
   }
 }

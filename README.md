@@ -205,6 +205,12 @@ vagina/
 - [実装サマリー](docs/IMPLEMENTATION_SUMMARY.md) - 実装の詳細
 - [開発者ガイド](docs/DEVELOPMENT.md) - 開発環境セットアップ
 
+### 機能ドキュメント
+- [PWA実装](docs/PWA_IMPLEMENTATION.md) - Progressive Web App対応
+- [音声フィードバック](docs/AUDIO_FEEDBACK.md) - 通話時の音声フィードバック
+- [キャラクターリファクタリング](docs/CHARACTER_REFACTORING.md) - キャラクターシステム
+- [エージェント監視](docs/AGENT_COMPLIANCE.md) - AI エージェント監視システム
+
 ### API仕様
 - [OpenAI Realtime API 仕様](docs/OPENAI_REALTIME_API.md) - API イベント仕様
 - [Realtime イベント](docs/REALTIME_EVENTS.md) - サーバーイベント詳細
@@ -280,11 +286,14 @@ A: プラットフォーム固有の権限設定が必要です。`AndroidManife
 ### 主要機能
 
 - **リアルタイム音声通話**: Azure OpenAI GPT-4o Realtime APIとの双方向音声通信
+- **音声フィードバック**: 通話開始時のダイヤルトーン、終了時の「ピロン」音
 - **チャット履歴**: 会話内容のテキスト表示・保存
 - **ノートパッド**: AIがリアルタイムで編集可能なドキュメント
 - **ツールシステム**: メモリ保存、時刻取得、計算機などのビルトインツール
-- **スピードダイヤル**: カスタム設定を保存して素早く通話開始
+- **スピードダイヤル**: カスタムキャラクター設定を保存して素早く通話開始
+- **キャラクターカスタマイズ**: 絵文字・名前・音声・プロンプトをカスタマイズ
 - **セッション管理**: 過去の会話履歴を保存・閲覧
+- **PWA対応**: Webブラウザからアプリとしてインストール可能
 
 ## 開発
 

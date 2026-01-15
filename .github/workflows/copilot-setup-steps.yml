@@ -76,7 +76,9 @@ jobs:
           echo "Running agent compliance validation..."
           if [ -f scripts/validate_agent_compliance.sh ]; then
             chmod +x scripts/validate_agent_compliance.sh
-            ./scripts/validate_agent_compliance.sh || true
+            ./scripts/validate_agent_compliance.sh
           else
-            echo "Agent compliance script not found, skipping validation"
+            echo "❌ ERROR: Agent compliance script not found!"
+            echo "This is a critical failure - the script must exist to ensure agent instructions are followed."
+            exit 1
           fi

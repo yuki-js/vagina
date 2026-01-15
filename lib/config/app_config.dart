@@ -6,6 +6,18 @@
 class AppConfig {
   const AppConfig._();
 
+  // ==========================================================================
+  // Application Identity
+  // ==========================================================================
+  
+  /// Application display name (shown in UI)
+  /// Note: Codename "vagina" is used throughout codebase but display name
+  /// can be different for branding purposes
+  static const String appName = 'VAGINA';
+  
+  /// Application subtitle/tagline
+  static const String appSubtitle = 'Voice AGI Notepad Agent';
+
   /// Azure OpenAI API version
   static const String azureApiVersion = '2024-10-01-preview';
 
