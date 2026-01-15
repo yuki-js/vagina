@@ -5,10 +5,6 @@ import '../models/notepad_tab.dart';
 import '../repositories/repository_factory.dart';
 import 'core_providers.dart';
 
-// ============================================================================
-// Data Providers - Simplified
-// ============================================================================
-
 class RefreshNotifier extends Notifier<int> {
   @override
   int build() => 0;

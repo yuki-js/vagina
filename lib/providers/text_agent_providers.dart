@@ -1,10 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/text_agent.dart';
 
-// ============================================================================
-// Text Agent Providers - Simplified
-// ============================================================================
-
 final availableTextAgentsProvider = Provider<List<TextAgent>>((ref) {
   return const [
     TextAgent(
@@ -24,16 +20,16 @@ final availableTextAgentsProvider = Provider<List<TextAgent>>((ref) {
     TextAgent(
       id: 'o1',
       name: 'o1',
-      description: 'OpenAI o1 - Advanced reasoning model with deep thinking',
+      description: 'OpenAI o1 - Advanced reasoning model',
       modelIdentifier: 'o1',
-      capabilities: ['reasoning', 'complex-problems', 'deep-thinking'],
+      capabilities: ['reasoning', 'complex-problems'],
     ),
     TextAgent(
       id: 'o1-mini',
       name: 'o1 Mini',
-      description: 'OpenAI o1 Mini - Efficient reasoning for focused tasks',
+      description: 'OpenAI o1 Mini - Efficient reasoning',
       modelIdentifier: 'o1-mini',
-      capabilities: ['reasoning', 'focused-tasks'],
+      capabilities: ['reasoning'],
     ),
   ];
 });
@@ -45,7 +41,6 @@ final selectedTextAgentIdProvider = NotifierProvider<SelectedTextAgentNotifier, 
 class SelectedTextAgentNotifier extends Notifier<String?> {
   @override
   String? build() => 'gpt-4o';
-
   void select(String? agentId) => state = agentId;
   void clear() => state = null;
 }
