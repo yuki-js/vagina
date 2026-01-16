@@ -15,7 +15,7 @@ import 'package:vagina/models/android_audio_config.dart';
 import 'package:vagina/models/call_session.dart';
 import 'package:vagina/models/speed_dial.dart';
 import 'package:vagina/repositories/repository_factory.dart';
-import 'repository_providers.dart';
+import 'package:vagina/core/state/repository_providers.dart';
 import 'package:vagina/services/log_service.dart';
 
 // ============================================================================
@@ -31,17 +31,6 @@ final notepadServiceProvider = Provider<NotepadService>((ref) {
   return service;
 });
 
-/// APIキー存在確認のプロバイダ
-final hasApiKeyProvider = FutureProvider<bool>((ref) async {
-  final config = ref.read(configRepositoryProvider);
-  return await config.hasApiKey();
-});
-
-/// APIキーのプロバイダ
-final apiKeyProvider = FutureProvider<String?>((ref) async {
-  final config = ref.read(configRepositoryProvider);
-  return await config.getApiKey();
-});
 
 // ============================================================================
 // オーディオプロバイダ
