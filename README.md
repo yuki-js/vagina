@@ -111,69 +111,40 @@ vagina/
 ├── lib/
 │   ├── main.dart              # エントリーポイント
 │   ├── config/                # アプリケーション設定
-│   │   └── app_config.dart    # 定数・設定値
-│   ├── models/                # データモデル
-│   │   ├── assistant_config.dart
-│   │   ├── call_session.dart
-│   │   ├── chat_message.dart
-│   │   ├── notepad_tab.dart
-│   │   ├── realtime_events.dart
-│   │   ├── realtime_session_config.dart
-│   │   └── speed_dial.dart
-│   ├── services/              # ビジネスロジック・API
-│   │   ├── call_service.dart  # 通話管理
-│   │   ├── realtime_api_client.dart  # Azure OpenAI Realtime API
-│   │   ├── websocket_service.dart
-│   │   ├── audio_recorder_service.dart
-│   │   ├── audio_player_service.dart
-│   │   ├── notepad_service.dart
-│   │   ├── tool_service.dart  # ツール管理
-│   │   ├── chat/              # チャット関連
-│   │   │   └── chat_message_manager.dart
-│   │   └── tools/             # ビルトインツール
-│   │       ├── tool_manager.dart
-│   │       ├── tool_registry.dart
-│   │       └── builtin/       # ドキュメント・メモリ・時刻等
-│   ├── providers/             # Riverpod プロバイダー
-│   │   ├── providers.dart     # 全プロバイダー定義
-│   │   └── repository_providers.dart
-│   ├── repositories/          # データ永続化
-│   │   ├── repository_factory.dart
-│   │   ├── json_call_session_repository.dart
-│   │   ├── json_config_repository.dart
-│   │   ├── json_memory_repository.dart
-│   │   └── json_speed_dial_repository.dart
-│   ├── data/                  # データストレージ実装
-│   │   └── json_file_store.dart
-│   ├── interfaces/            # リポジトリインターフェース
-│   │   ├── key_value_store.dart
-│   │   ├── config_repository.dart
-│   │   └── memory_repository.dart
-│   ├── screens/               # 画面UI
-│   │   ├── home/              # ホーム画面（タブ）
-│   │   ├── call/              # 通話画面
-│   │   ├── chat/              # チャット画面
-│   │   ├── notepad/           # ノートパッド画面
-│   │   ├── settings/          # 設定画面
+│   ├── core/                  # コア機能
+│   │   └── state/             # 状態管理プロバイダー
+│   ├── feat/                  # 機能別ディレクトリ（Feature-first）
+│   │   ├── home/              # ホーム機能
+│   │   │   ├── screens/       # 画面
+│   │   │   └── tabs/          # タブUI
+│   │   ├── call/              # 通話機能
+│   │   │   ├── screens/       # 画面
+│   │   │   ├── panes/         # ペインUI（Chat/Call/Notepad）
+│   │   │   ├── widgets/       # ウィジェット
+│   │   │   └── state/         # 状態管理
+│   │   ├── session/           # セッション機能
+│   │   │   ├── screens/       # 画面
+│   │   │   ├── segments/      # セグメントUI
+│   │   │   ├── widgets/       # ウィジェット
+│   │   │   └── state/         # 状態管理
+│   │   ├── settings/          # 設定機能
 │   │   ├── oobe/              # 初回起動フロー
-│   │   ├── session/           # セッション詳細
 │   │   ├── speed_dial/        # スピードダイヤル設定
 │   │   └── about/             # アプリについて
-│   ├── components/            # 再利用可能UIコンポーネント
-│   │   ├── app_scaffold.dart
-│   │   ├── title_bar.dart
-│   │   ├── audio_level_visualizer.dart
-│   │   ├── adaptive_widgets.dart
-│   │   └── ...
-│   ├── theme/                 # テーマ・スタイル定義
-│   │   └── app_theme.dart
-│   └── utils/                 # ユーティリティ関数
-│       ├── audio_utils.dart
-│       ├── duration_formatter.dart
-│       ├── platform_compat.dart
-│       └── url_utils.dart
+│   ├── models/                # データモデル
+│   ├── services/              # ビジネスロジック・API
+│   │   ├── call_service.dart
+│   │   ├── realtime_api_client.dart
+│   │   ├── chat/              # チャット関連
+│   │   ├── tools/             # ツールシステム
+│   │   └── platform/          # プラットフォーム固有
+│   ├── repositories/          # データ永続化
+│   ├── data/                  # ストレージ実装
+│   ├── interfaces/            # リポジトリインターフェース
+│   ├── widgets/               # 共有UIコンポーネント
+│   ├── theme/                 # テーマ定義
+│   └── utils/                 # ユーティリティ
 ├── test/                      # テストコード
-│   └── services/
 └── docs/                      # ドキュメント
 ```
 
@@ -208,30 +179,12 @@ vagina/
 
 ## ドキュメント
 
-### アーキテクチャ・設計
-- [アーキテクチャ概要](docs/ARCHITECTURE.md) - システム設計とコンポーネント
-- [実装サマリー](docs/IMPLEMENTATION_SUMMARY.md) - 実装の詳細
-- [開発者ガイド](docs/DEVELOPMENT.md) - 開発環境セットアップ
-
-### 機能ドキュメント
-- [PWA実装](docs/PWA_IMPLEMENTATION.md) - Progressive Web App対応
-- [音声フィードバック](docs/AUDIO_FEEDBACK.md) - 通話時の音声フィードバック
-- [キャラクターリファクタリング](docs/CHARACTER_REFACTORING.md) - キャラクターシステム
-- [エージェント監視](docs/AGENT_COMPLIANCE.md) - AI エージェント監視システム
-
-### API仕様
-- [OpenAI Realtime API 仕様](docs/OPENAI_REALTIME_API.md) - API イベント仕様
-- [Realtime イベント](docs/REALTIME_EVENTS.md) - サーバーイベント詳細
-
-### プラットフォーム固有
-- [Windows ビルドガイド](docs/WINDOWS_BUILD.md) - Windows ビルド手順
-- [Windows テスト手順](docs/WINDOWS_TESTING.md) - Windows テスト方法
-- [Windows 実装ノート](docs/WINDOWS_IMPLEMENTATION_NOTE.md) - Windows 固有実装
-- [Windows Audio制限](docs/WINDOWS_AUDIO_LIMITATION.md) - 音声関連の制限事項
-
-### その他
-- [プライバシーポリシー](docs/PRIVACY.md) - データ取り扱い
-- [WebRTC移行ガイド](docs/WEBRTC_MIGRATION_GUIDE.md) - WebRTC 対応
+- [アーキテクチャ](docs/ARCHITECTURE.md) - システム設計とコンポーネント
+- [開発者ガイド](docs/DEVELOPMENT.md) - 環境セットアップとビルド方法
+- [Realtime API](docs/REALTIME_API.md) - Azure OpenAI API 仕様とイベントリファレンス
+- [Windows 版](docs/WINDOWS.md) - Windows ビルド・テスト・既知の問題
+- [WebRTC 移行](docs/WEBRTC_MIGRATION_GUIDE.md) - WebRTC 対応（将来の音声実装）
+- [プライバシー](docs/PRIVACY.md) - データ取り扱いポリシー
 
 ## コントリビューション
 
@@ -339,7 +292,7 @@ fvm flutter run -d chrome      # Web
 
 #### Windows で音声再生ができない
 - `taudio` パッケージを使用しているため、Windows固有の設定が必要です
-- 詳細は [Windows ビルドガイド](docs/WINDOWS_BUILD.md) を参照
+- 詳細は [Windows 版ガイド](docs/WINDOWS.md) を参照
 
 #### マイクが認識されない
 - Android: マニフェストファイルに録音権限が必要
