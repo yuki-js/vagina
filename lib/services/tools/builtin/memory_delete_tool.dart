@@ -6,42 +6,44 @@ import '../../../interfaces/memory_repository.dart';
 /// メモリ削除ツール
 class MemoryDeleteTool extends BaseTool {
   final MemoryRepository _memoryRepo;
-  
-  MemoryDeleteTool({required MemoryRepository memoryRepository}) : _memoryRepo = memoryRepository;
-  
+
+  MemoryDeleteTool({required MemoryRepository memoryRepository})
+      : _memoryRepo = memoryRepository;
+
   @override
   String get name => 'memory_delete';
-  
+
   @override
-  String get description => 
+  String get description =>
       'Delete information from long-term memory. Use this when the user asks you to forget something.';
-  
+
   @override
   Map<String, dynamic> get parameters => {
-    'type': 'object',
-    'properties': {
-      'key': {
-        'type': 'string',
-        'description': 'The key of the memory to delete. Use "all" to delete all memories.',
-      },
-    },
-    'required': ['key'],
-  };
-  
+        'type': 'object',
+        'properties': {
+          'key': {
+            'type': 'string',
+            'description':
+                'The key of the memory to delete. Use "all" to delete all memories.',
+          },
+        },
+        'required': ['key'],
+      };
+
   @override
   ToolMetadata get metadata => const ToolMetadata(
-    name: 'memory_delete',
-    displayName: 'メモリ削除',
-    displayDescription: '記憶した情報を削除します',
-    description: 'Delete information from long-term memory.',
-    icon: Icons.delete,
-    category: ToolCategory.memory,
-  );
+        name: 'memory_delete',
+        displayName: 'メモリ削除',
+        displayDescription: '記憶した情報を削除します',
+        description: 'Delete information from long-term memory.',
+        icon: Icons.delete,
+        category: ToolCategory.memory,
+      );
 
   @override
   Future<Map<String, dynamic>> execute(Map<String, dynamic> arguments) async {
     final key = arguments['key'] as String;
-    
+
     if (key == 'all') {
       await _memoryRepo.deleteAll();
       return {
@@ -49,7 +51,7 @@ class MemoryDeleteTool extends BaseTool {
         'message': 'All memories deleted successfully',
       };
     }
-    
+
     final existed = await _memoryRepo.delete(key);
     if (!existed) {
       return {
@@ -57,7 +59,7 @@ class MemoryDeleteTool extends BaseTool {
         'message': 'Memory not found for key: $key',
       };
     }
-    
+
     return {
       'success': true,
       'message': 'Memory deleted successfully',

@@ -113,7 +113,7 @@ void main() {
 
     test('selectTab ignores non-existent tab', () {
       final tabId = service.createTab(content: 'Tab', mimeType: 'text/plain');
-      
+
       service.selectTab('non_existent');
 
       expect(service.selectedTabId, equals(tabId));

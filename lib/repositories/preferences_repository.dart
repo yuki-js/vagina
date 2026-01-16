@@ -1,13 +1,13 @@
 import '../interfaces/key_value_store.dart';
 
 /// Repository for app preferences and settings
-/// 
+///
 /// Note: This repository manages app-level preferences like first launch state.
 /// It uses the shared KeyValueStore from RepositoryFactory for consistency
 /// with other repositories.
 class PreferencesRepository {
   static const String _keyFirstLaunch = 'first_launch_completed';
-  
+
   final KeyValueStore _store;
 
   PreferencesRepository(this._store);

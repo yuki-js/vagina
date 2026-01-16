@@ -1,8 +1,8 @@
 /// Azure OpenAI Realtime API Events
-/// 
+///
 /// This library provides event types and data models for the Realtime API.
 /// The API supports 12 client events and 36 server events.
-/// 
+///
 /// Reference: https://platform.openai.com/docs/api-reference/realtime
 library;
 

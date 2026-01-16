@@ -35,7 +35,8 @@ class Utils {
   }
 
   /// Truncate string to max length with ellipsis
-  static String truncate(String text, int maxLength, {String ellipsis = '...'}) {
+  static String truncate(String text, int maxLength,
+      {String ellipsis = '...'}) {
     if (text.length <= maxLength) return text;
     return '${text.substring(0, maxLength - ellipsis.length)}$ellipsis';
   }
@@ -51,7 +52,8 @@ class Utils {
   }
 
   /// Safe division that returns 0 instead of throwing on division by zero
-  static double safeDivide(num numerator, num denominator, {double defaultValue = 0.0}) {
+  static double safeDivide(num numerator, num denominator,
+      {double defaultValue = 0.0}) {
     if (denominator == 0) return defaultValue;
     return numerator / denominator;
   }
@@ -92,7 +94,8 @@ class Utils {
   }
 
   /// Deep copy a List<Map<String, dynamic>> structure
-  static List<Map<String, dynamic>> deepCopyList(List<Map<String, dynamic>> source) {
+  static List<Map<String, dynamic>> deepCopyList(
+      List<Map<String, dynamic>> source) {
     final json = jsonEncode(source);
     return (jsonDecode(json) as List).cast<Map<String, dynamic>>();
   }
@@ -102,7 +105,7 @@ class Utils {
     if (a == null && b == null) return true;
     if (a == null || b == null) return false;
     if (a.length != b.length) return false;
-    
+
     final setA = a.toSet();
     final setB = b.toSet();
     return setA.difference(setB).isEmpty && setB.difference(setA).isEmpty;
@@ -116,10 +119,12 @@ class Utils {
 
   /// Convert camelCase to snake_case
   static String camelToSnake(String text) {
-    return text.replaceAllMapped(
-      RegExp(r'[A-Z]'),
-      (match) => '_${match.group(0)!.toLowerCase()}',
-    ).replaceFirst(RegExp(r'^_'), '');
+    return text
+        .replaceAllMapped(
+          RegExp(r'[A-Z]'),
+          (match) => '_${match.group(0)!.toLowerCase()}',
+        )
+        .replaceFirst(RegExp(r'^_'), '');
   }
 
   /// Convert snake_case to camelCase
@@ -138,18 +143,18 @@ class Utils {
     double backoffMultiplier = 2.0,
   }) async {
     var delay = initialDelay;
-    
+
     for (var attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
         return await operation();
       } catch (e) {
         if (attempt == maxAttempts) rethrow;
-        
+
         await Future.delayed(delay);
         delay *= backoffMultiplier;
       }
     }
-    
+
     throw Exception('Retry failed after $maxAttempts attempts');
   }
 }

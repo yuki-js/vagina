@@ -64,7 +64,7 @@ void main() {
 
     test('should ensure default speed dial exists on first getAll', () async {
       final speedDials = await repository.getAll();
-      
+
       expect(speedDials.length, equals(1));
       expect(speedDials.first.isDefault, isTrue);
       expect(speedDials.first.id, equals(SpeedDial.defaultId));
@@ -73,7 +73,7 @@ void main() {
     test('should not duplicate default speed dial', () async {
       await repository.getAll(); // First call creates default
       final speedDials = await repository.getAll(); // Second call
-      
+
       expect(speedDials.length, equals(1));
       expect(speedDials.first.isDefault, isTrue);
     });
@@ -89,16 +89,16 @@ void main() {
 
       await repository.save(speedDial);
       final speedDials = await repository.getAll();
-      
+
       expect(speedDials.length, equals(2)); // Default + new one
       expect(speedDials.any((s) => s.id == 'test-1'), isTrue);
     });
 
     test('should not allow deleting default speed dial', () async {
       final result = await repository.delete(SpeedDial.defaultId);
-      
+
       expect(result, isFalse);
-      
+
       final speedDials = await repository.getAll();
       expect(speedDials.any((s) => s.isDefault), isTrue);
     });
@@ -112,11 +112,11 @@ void main() {
       );
 
       await repository.save(speedDial);
-      
+
       final result = await repository.delete('test-1');
-      
+
       expect(result, isTrue);
-      
+
       final speedDials = await repository.getAll();
       expect(speedDials.any((s) => s.id == 'test-1'), isFalse);
     });

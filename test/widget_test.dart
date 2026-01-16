@@ -16,7 +16,7 @@ void main() {
       (WidgetTester tester) async {
     // Initialize repository factory before building app
     await RepositoryFactory.initialize();
-    
+
     // Build our app and trigger a frame.
     // This verifies the app can build and initialize without errors
     await tester.pumpWidget(

@@ -7,9 +7,9 @@ import '../utils/url_utils.dart';
 /// Service for WebSocket communication
 class WebSocketService {
   static const _tag = 'WebSocket';
-  
+
   final LogService _logService;
-  
+
   WebSocketChannel? _channel;
   StreamSubscription? _subscription;
   final StreamController<Map<String, dynamic>> _messageController =

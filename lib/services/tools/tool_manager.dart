@@ -2,18 +2,18 @@ import 'base_tool.dart';
 import '../log_service.dart';
 
 /// セッションスコープのツールマネージャ
-/// 
+///
 /// 通話開始時に作成され、通話終了時に破棄される。
 /// ツールの登録/解除を管理し、API用のツール定義を提供する。
 class ToolManager implements ToolManagerRef {
   static const _tag = 'ToolManager';
-  
+
   /// ツール名からツールインスタンスへのマップ
   final Map<String, BaseTool> _tools = {};
-  
+
   /// ツール変更時のコールバック（セッション設定更新用）
   final void Function()? onToolsChanged;
-  
+
   ToolManager({this.onToolsChanged});
 
   @override
@@ -26,7 +26,7 @@ class ToolManager implements ToolManagerRef {
     logService.info(_tag, 'ツール登録: ${tool.name}');
     onToolsChanged?.call();
   }
-  
+
   /// 複数のツールを一度に登録
   void registerTools(List<BaseTool> tools) {
     for (final tool in tools) {
@@ -50,14 +50,15 @@ class ToolManager implements ToolManagerRef {
 
   @override
   List<String> get registeredToolNames => _tools.keys.toList();
-  
+
   /// Realtime APIセッション設定用のツール定義を取得
   List<Map<String, dynamic>> get toolDefinitions {
     return _tools.values.map((t) => t.toJson()).toList();
   }
-  
+
   /// ツールを名前で実行
-  Future<ToolExecutionResult> executeTool(String callId, String name, String argumentsJson) async {
+  Future<ToolExecutionResult> executeTool(
+      String callId, String name, String argumentsJson) async {
     final tool = _tools[name];
     if (tool == null) {
       logService.error(_tag, '不明なツール: $name');
@@ -67,7 +68,7 @@ class ToolManager implements ToolManagerRef {
         success: false,
       );
     }
-    
+
     logService.info(_tag, 'ツール実行: $name');
     final result = await tool.executeWithResult(callId, argumentsJson);
     if (result.success) {
@@ -77,10 +78,10 @@ class ToolManager implements ToolManagerRef {
     }
     return result;
   }
-  
+
   /// 登録されたツール数を取得
   int get toolCount => _tools.length;
-  
+
   /// マネージャを破棄してリソースをクリーンアップ
   void dispose() {
     _tools.clear();

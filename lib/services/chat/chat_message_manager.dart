@@ -10,19 +10,19 @@ class ChatMessageManager {
   int _messageIdCounter = 0;
   String? _currentAssistantMessageId;
   String? _pendingUserMessageId;
-  
+
   /// Content parts for the current assistant message (in order)
   List<ContentPart> _currentContentParts = [];
-  
+
   /// Current text part being streamed (last TextPart in _currentContentParts)
   TextPart? _currentTextPart;
 
   /// Stream of chat messages
   Stream<List<ChatMessage>> get chatStream => _chatController.stream;
-  
+
   /// Get current chat messages
   List<ChatMessage> get chatMessages => List.unmodifiable(_chatMessages);
-  
+
   /// Deep copy content parts to avoid aliasing issues with mutable TextPart
   List<ContentPart> _copyContentParts() {
     return _currentContentParts.map((p) => p.copy()).toList();
@@ -39,7 +39,7 @@ class ChatMessageManager {
     _chatMessages.add(message);
     _chatController.add(List.unmodifiable(_chatMessages));
   }
-  
+
   /// Add a tool call to the current assistant turn
   /// Tool calls are inserted in order within the content parts
   void addToolCall(String toolName, String arguments, String result) {
@@ -49,14 +49,15 @@ class ChatMessageManager {
       result: result,
     );
     final toolPart = ToolCallPart(toolCallInfo);
-    
+
     // End the current text part - next text will be a new part
     _currentTextPart = null;
     _currentContentParts.add(toolPart);
-    
+
     // If there's a current assistant message, update it
     if (_currentAssistantMessageId != null) {
-      final index = _chatMessages.indexWhere((m) => m.id == _currentAssistantMessageId);
+      final index =
+          _chatMessages.indexWhere((m) => m.id == _currentAssistantMessageId);
       if (index >= 0) {
         _chatMessages[index] = _chatMessages[index].copyWith(
           contentParts: _copyContentParts(),
@@ -66,7 +67,7 @@ class ChatMessageManager {
     } else {
       // Create a new assistant message with the tool call
       _currentAssistantMessageId = 'msg_${_messageIdCounter++}';
-      
+
       final message = ChatMessage(
         id: _currentAssistantMessageId!,
         role: 'assistant',
@@ -78,12 +79,12 @@ class ChatMessageManager {
       _chatController.add(List.unmodifiable(_chatMessages));
     }
   }
-  
+
   /// Create a placeholder for user message (called on speech_started)
   /// This ensures the user message appears BEFORE the AI response
   String? createUserMessagePlaceholder() {
     if (_pendingUserMessageId != null) return null;
-    
+
     _pendingUserMessageId = 'msg_${_messageIdCounter++}';
     final message = ChatMessage(
       id: _pendingUserMessageId!,
@@ -96,11 +97,12 @@ class ChatMessageManager {
     _chatController.add(List.unmodifiable(_chatMessages));
     return _pendingUserMessageId;
   }
-  
+
   /// Update the user message placeholder with actual transcript
   void updateUserMessagePlaceholder(String transcript) {
     if (_pendingUserMessageId != null) {
-      final index = _chatMessages.indexWhere((m) => m.id == _pendingUserMessageId);
+      final index =
+          _chatMessages.indexWhere((m) => m.id == _pendingUserMessageId);
       if (index >= 0) {
         _chatMessages[index] = _chatMessages[index].copyWith(
           contentParts: [TextPart(transcript)],
@@ -113,7 +115,7 @@ class ChatMessageManager {
       addChatMessage('user', transcript);
     }
   }
-  
+
   /// Append to the current assistant transcript (streaming)
   void appendAssistantTranscript(String delta) {
     if (_currentAssistantMessageId == null) {
@@ -121,7 +123,7 @@ class ChatMessageManager {
       _currentAssistantMessageId = 'msg_${_messageIdCounter++}';
       _currentTextPart = TextPart(delta);
       _currentContentParts.add(_currentTextPart!);
-      
+
       final message = ChatMessage(
         id: _currentAssistantMessageId!,
         role: 'assistant',
@@ -139,8 +141,9 @@ class ChatMessageManager {
         _currentTextPart = TextPart(delta);
         _currentContentParts.add(_currentTextPart!);
       }
-      
-      final index = _chatMessages.indexWhere((m) => m.id == _currentAssistantMessageId);
+
+      final index =
+          _chatMessages.indexWhere((m) => m.id == _currentAssistantMessageId);
       if (index >= 0) {
         _chatMessages[index] = _chatMessages[index].copyWith(
           contentParts: _copyContentParts(),
@@ -149,11 +152,12 @@ class ChatMessageManager {
     }
     _chatController.add(List.unmodifiable(_chatMessages));
   }
-  
+
   /// Mark the current assistant message as complete
   void completeCurrentAssistantMessage() {
     if (_currentAssistantMessageId != null) {
-      final index = _chatMessages.indexWhere((m) => m.id == _currentAssistantMessageId);
+      final index =
+          _chatMessages.indexWhere((m) => m.id == _currentAssistantMessageId);
       if (index >= 0) {
         _chatMessages[index] = _chatMessages[index].copyWith(
           isComplete: true,
@@ -166,7 +170,7 @@ class ChatMessageManager {
       _currentTextPart = null;
     }
   }
-  
+
   /// Clear chat history
   void clearChat() {
     _chatMessages.clear();

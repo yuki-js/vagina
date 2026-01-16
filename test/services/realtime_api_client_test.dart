@@ -28,7 +28,7 @@ void main() {
           'parameters': {'type': 'object', 'properties': {}}
         }
       ];
-      
+
       client.setTools(tools);
       // Tools are stored internally, no direct getter to verify
       expect(client.isConnected, isFalse);
@@ -43,7 +43,7 @@ void main() {
     test('setNoiseReduction sets valid noise reduction type', () {
       client.setNoiseReduction('far');
       expect(client.noiseReduction, equals('far'));
-      
+
       client.setNoiseReduction('near');
       expect(client.noiseReduction, equals('near'));
     });
@@ -72,9 +72,12 @@ void main() {
 
   group('ServerEventType', () {
     test('fromString returns correct event type', () {
-      expect(ServerEventType.fromString('error'), equals(ServerEventType.error));
-      expect(ServerEventType.fromString('session.created'), equals(ServerEventType.sessionCreated));
-      expect(ServerEventType.fromString('response.done'), equals(ServerEventType.responseDone));
+      expect(
+          ServerEventType.fromString('error'), equals(ServerEventType.error));
+      expect(ServerEventType.fromString('session.created'),
+          equals(ServerEventType.sessionCreated));
+      expect(ServerEventType.fromString('response.done'),
+          equals(ServerEventType.responseDone));
     });
 
     test('fromString returns null for unknown event', () {
@@ -86,7 +89,8 @@ void main() {
   group('ClientEventType', () {
     test('enum has correct values', () {
       expect(ClientEventType.sessionUpdate.value, equals('session.update'));
-      expect(ClientEventType.inputAudioBufferAppend.value, equals('input_audio_buffer.append'));
+      expect(ClientEventType.inputAudioBufferAppend.value,
+          equals('input_audio_buffer.append'));
       expect(ClientEventType.responseCreate.value, equals('response.create'));
     });
   });

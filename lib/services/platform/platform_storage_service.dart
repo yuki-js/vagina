@@ -18,7 +18,7 @@ class PlatformStorageService {
         _logService = logService ?? LogService();
 
   /// Get the appropriate storage directory for the platform
-  /// 
+  ///
   /// On Android with permissions: /storage/emulated/0/Documents/{folderName}
   /// Otherwise: Application documents directory/{folderName}
   Future<Directory> getStorageDirectory({String? folderName}) async {
@@ -39,13 +39,15 @@ class PlatformStorageService {
           if (!await directory.exists()) {
             await directory.create(recursive: true);
           }
-          _logService.info(_tag, 'Using Android external storage: ${directory.path}');
+          _logService.info(
+              _tag, 'Using Android external storage: ${directory.path}');
           return directory;
         } catch (e) {
           _logService.warn(_tag, 'Cannot access Android external storage: $e');
         }
       } else {
-        _logService.info(_tag, 'Storage permission not granted, using app directory');
+        _logService.info(
+            _tag, 'Storage permission not granted, using app directory');
       }
     }
 

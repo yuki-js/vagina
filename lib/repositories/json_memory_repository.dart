@@ -6,7 +6,7 @@ import '../services/log_service.dart';
 class JsonMemoryRepository implements MemoryRepository {
   static const _tag = 'MemoryRepo';
   static const _memoriesKey = 'memories';
-  
+
   final KeyValueStore _store;
   final LogService _logService;
 
@@ -16,10 +16,10 @@ class JsonMemoryRepository implements MemoryRepository {
   @override
   Future<void> save(String key, String value) async {
     _logService.debug(_tag, 'Saving memory: $key');
-    
+
     final memories = await getAll();
     memories[key] = value;
-    
+
     await _store.set(_memoriesKey, memories);
     _logService.info(_tag, 'Memory saved: $key');
   }
@@ -33,33 +33,33 @@ class JsonMemoryRepository implements MemoryRepository {
   @override
   Future<Map<String, dynamic>> getAll() async {
     final data = await _store.get(_memoriesKey);
-    
+
     if (data == null) {
       return {};
     }
-    
+
     if (data is! Map) {
       _logService.warn(_tag, 'Invalid memories data type');
       return {};
     }
-    
+
     return Map<String, dynamic>.from(data);
   }
 
   @override
   Future<bool> delete(String key) async {
     _logService.debug(_tag, 'Deleting memory: $key');
-    
+
     final memories = await getAll();
-    
+
     if (!memories.containsKey(key)) {
       _logService.warn(_tag, 'Memory not found: $key');
       return false;
     }
-    
+
     memories.remove(key);
     await _store.set(_memoriesKey, memories);
-    
+
     _logService.info(_tag, 'Memory deleted: $key');
     return true;
   }

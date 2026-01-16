@@ -20,7 +20,7 @@ void main() {
       // This will throw because the library expects URL-encoded content
       expect(() => patchFromText(plainPatch), throwsA(isA<ArgumentError>()));
     });
-    
+
     test('show proper library patch format', () {
       final dmp = DiffMatchPatch();
       final original = '''【原文】
@@ -29,7 +29,7 @@ void main() {
 【現代語訳】
 春は、夜明けが一番美しい。だんだんと白んでいく山際が、少し明るくなって、ほんのり紫がかった雲が細くたなびいている様子が趣深い。
 ''';
-      
+
       final updated = '''【原文】
 春は、あけぼの。やうやう白くなりゆく山ぎは、少し明かりて、紫だちたる雲の細くたなびきたる。
 夏は、夜（よる）。月のころはさらなり、闇もなお、蛍の多く飛びちがひたる。
@@ -41,7 +41,7 @@ void main() {
 
       final patches = dmp.patch(original, updated);
       final properPatchText = patchToText(patches);
-      
+
       // Now parse it back - this should work
       final parsedPatches = patchFromText(properPatchText);
       expect(parsedPatches, isNotEmpty);
@@ -62,12 +62,12 @@ void main() {
         'content': originalContent,
       });
       final tabId = createResult['tabId'] as String;
-      
+
       final patchResult = await patchTool.execute({
         'tabId': tabId,
         'patch': patch,
       });
-      
+
       if (patchResult['success'] == true) {
         return notepadService.getTabContent(tabId);
       }
@@ -85,7 +85,7 @@ void main() {
     });
 
     // ==================== Japanese Text Tests (Main Issue) ====================
-    
+
     test('1. Japanese: simple replacement with parentheses', () async {
       const input = '夏は、夜。\n';
       const patch = '''@@ -1 +1 @@
@@ -93,9 +93,11 @@ void main() {
 +夏は、夜（よる）。
 ''';
       const expected = '夏は、夜（よる）。\n';
-      
+
       final result = await applyPatchAndGetResult(input, patch);
-      expect(result, equals(expected), reason: 'Input: $input\nPatch applied should produce exact expected output');
+      expect(result, equals(expected),
+          reason:
+              'Input: $input\nPatch applied should produce exact expected output');
     });
 
     test('2. Japanese: add brackets 【】', () async {
@@ -105,7 +107,7 @@ void main() {
 +【原文】
 ''';
       const expected = '【原文】\n';
-      
+
       final result = await applyPatchAndGetResult(input, patch);
       expect(result, equals(expected));
     });
@@ -117,7 +119,7 @@ void main() {
 +夏は、夜。
 ''';
       const expected = '春は、あけぼの。\n夏は、夜。\n';
-      
+
       final result = await applyPatchAndGetResult(input, patch);
       expect(result, equals(expected));
     });
@@ -130,7 +132,7 @@ void main() {
 +さようなら
 ''';
       const expected = 'こんにちは\nお元気ですか\nさようなら\n';
-      
+
       final result = await applyPatchAndGetResult(input, patch);
       expect(result, equals(expected));
     });
@@ -143,7 +145,7 @@ void main() {
  行3
 ''';
       const expected = '行1\n行3\n';
-      
+
       final result = await applyPatchAndGetResult(input, patch);
       expect(result, equals(expected));
     });
@@ -158,7 +160,7 @@ void main() {
  冬
 ''';
       const expected = '春\n夏（なつ）\n秋\n冬\n';
-      
+
       final result = await applyPatchAndGetResult(input, patch);
       expect(result, equals(expected));
     });
@@ -171,7 +173,7 @@ void main() {
  段落2
 ''';
       const expected = '段落1\n\n段落2\n';
-      
+
       final result = await applyPatchAndGetResult(input, patch);
       expect(result, equals(expected));
     });
@@ -185,7 +187,7 @@ void main() {
  終了
 ''';
       const expected = '開始\n\n\n終了\n';
-      
+
       final result = await applyPatchAndGetResult(input, patch);
       expect(result, equals(expected));
     });
@@ -197,7 +199,7 @@ void main() {
 +今日は良い天気☀️
 ''';
       const expected = '今日は良い天気☀️\n';
-      
+
       final result = await applyPatchAndGetResult(input, patch);
       expect(result, equals(expected));
     });
@@ -209,14 +211,15 @@ void main() {
 +2024年12月31日
 ''';
       const expected = '2024年12月31日\n';
-      
+
       final result = await applyPatchAndGetResult(input, patch);
       expect(result, equals(expected));
     });
 
     // ==================== Issue Reproduction Tests ====================
-    
-    test('11. Issue case 1: Makura no Soshi addition without blank lines', () async {
+
+    test('11. Issue case 1: Makura no Soshi addition without blank lines',
+        () async {
       const input = '''【原文】
 春は、あけぼの。やうやう白くなりゆく山ぎは、少し明かりて、紫だちたる雲の細くたなびきたる。
 
@@ -240,12 +243,13 @@ void main() {
 春は、夜明けが一番美しい。だんだんと白んでいく山際が、少し明るくなって、ほんのり紫がかった雲が細くたなびいている様子が趣深い。
 夏は、夜が良い。月の出ている時は言うまでもなく、闇夜でもなお、多くの蛍が飛び交っている様子が風情を感じさせる。
 ''';
-      
+
       final result = await applyPatchAndGetResult(input, patch);
       expect(result, equals(expected));
     });
 
-    test('12. Issue case 2: Makura no Soshi addition with blank lines', () async {
+    test('12. Issue case 2: Makura no Soshi addition with blank lines',
+        () async {
       const input = '''【原文】
 春は、あけぼの。やうやう白くなりゆく山ぎは、少し明かりて、紫だちたる雲の細くたなびきたる。
 
@@ -273,13 +277,13 @@ void main() {
 
 夏は、夜が良い。月の出ている時は言うまでもなく、闇夜でもなお、多くの蛍が飛び交っている様子が風情を感じさせる。
 ''';
-      
+
       final result = await applyPatchAndGetResult(input, patch);
       expect(result, equals(expected));
     });
 
     // ==================== Multi-byte Character Tests ====================
-    
+
     test('13. Chinese: simple replacement', () async {
       const input = '你好世界\n';
       const patch = '''@@ -1 +1 @@
@@ -287,7 +291,7 @@ void main() {
 +你好中国
 ''';
       const expected = '你好中国\n';
-      
+
       final result = await applyPatchAndGetResult(input, patch);
       expect(result, equals(expected));
     });
@@ -299,7 +303,7 @@ void main() {
 +감사합니다
 ''';
       const expected = '안녕하세요\n감사합니다\n';
-      
+
       final result = await applyPatchAndGetResult(input, patch);
       expect(result, equals(expected));
     });
@@ -311,7 +315,7 @@ void main() {
 +Привет мир
 ''';
       const expected = 'Привет мир\n';
-      
+
       final result = await applyPatchAndGetResult(input, patch);
       expect(result, equals(expected));
     });
@@ -323,7 +327,7 @@ void main() {
 +شكرا
 ''';
       const expected = 'مرحبا\nشكرا\n';
-      
+
       final result = await applyPatchAndGetResult(input, patch);
       expect(result, equals(expected));
     });
@@ -335,13 +339,13 @@ void main() {
 +Hello World 世界
 ''';
       const expected = 'Hello World 世界\n';
-      
+
       final result = await applyPatchAndGetResult(input, patch);
       expect(result, equals(expected));
     });
 
     // ==================== Japanese Punctuation Tests ====================
-    
+
     test('18. Japanese: various punctuation marks', () async {
       const input = '「こんにちは」と言った。\n';
       const patch = '''@@ -1 +1 @@
@@ -349,7 +353,7 @@ void main() {
 +『こんにちは！』と言った…。
 ''';
       const expected = '『こんにちは！』と言った…。\n';
-      
+
       final result = await applyPatchAndGetResult(input, patch);
       expect(result, equals(expected));
     });
@@ -361,7 +365,7 @@ void main() {
 +進捗: 100%
 ''';
       const expected = '進捗: 100%\n';
-      
+
       final result = await applyPatchAndGetResult(input, patch);
       expect(result, equals(expected));
     });
@@ -385,24 +389,24 @@ void main() {
 秋は、夕暮れ。
 冬は、つとめて（早朝）。
 ''';
-      
+
       final result = await applyPatchAndGetResult(input, patch);
       expect(result, equals(expected));
     });
 
     // ==================== Edge Cases ====================
-    
+
     test('21. Empty patch returns error', () async {
       final createResult = await overwriteTool.execute({
         'content': 'Line 1\nLine 2',
       });
       final tabId = createResult['tabId'] as String;
-      
+
       final patchResult = await patchTool.execute({
         'tabId': tabId,
         'patch': '',
       });
-      
+
       expect(patchResult['success'], isFalse);
       expect(patchResult['error'], contains('No valid patches'));
     });
@@ -415,13 +419,13 @@ void main() {
 +new
 ''',
       });
-      
+
       expect(patchResult['success'], isFalse);
       expect(patchResult['error'], contains('Tab not found'));
     });
 
     // ==================== Additional Japanese Tests ====================
-    
+
     test('23. Japanese: single character addition', () async {
       const input = 'あ\n';
       const patch = '''@@ -1 +1,2 @@
@@ -429,7 +433,7 @@ void main() {
 +い
 ''';
       const expected = 'あ\nい\n';
-      
+
       final result = await applyPatchAndGetResult(input, patch);
       expect(result, equals(expected));
     });
@@ -441,7 +445,7 @@ void main() {
 +コンニチハ
 ''';
       const expected = 'コンニチハ\n';
-      
+
       final result = await applyPatchAndGetResult(input, patch);
       expect(result, equals(expected));
     });
@@ -453,7 +457,7 @@ void main() {
 +名前はまだ無い。
 ''';
       const expected = '吾輩は猫である。\n名前はまだ無い。\n';
-      
+
       final result = await applyPatchAndGetResult(input, patch);
       expect(result, equals(expected));
     });
@@ -466,7 +470,7 @@ void main() {
  三
 ''';
       const expected = '一\n三\n';
-      
+
       final result = await applyPatchAndGetResult(input, patch);
       expect(result, equals(expected));
     });
@@ -479,7 +483,7 @@ void main() {
  残る行
 ''';
       const expected = '新しい行\n残る行\n';
-      
+
       final result = await applyPatchAndGetResult(input, patch);
       expect(result, equals(expected));
     });
@@ -492,7 +496,7 @@ void main() {
 +新しい行
 ''';
       const expected = '残る行\n新しい行\n';
-      
+
       final result = await applyPatchAndGetResult(input, patch);
       expect(result, equals(expected));
     });
@@ -504,7 +508,7 @@ void main() {
  既存の行
 ''';
       const expected = '新しい行\n既存の行\n';
-      
+
       final result = await applyPatchAndGetResult(input, patch);
       expect(result, equals(expected));
     });
@@ -529,14 +533,15 @@ void main() {
 内容3
 第二章
 ''';
-      
+
       final result = await applyPatchAndGetResult(input, patch);
       expect(result, equals(expected));
     });
 
     // ==================== Needle in Haystack Tests ====================
-    
-    test('31. Needle in haystack: single word change in long Japanese text', () async {
+
+    test('31. Needle in haystack: single word change in long Japanese text',
+        () async {
       const input = '''むかしむかし、あるところにおじいさんとおばあさんがいました。
 おじいさんは山へしばかりに、おばあさんは川へせんたくに行きました。
 おばあさんが川でせんたくをしていると、大きなももが流れてきました。
@@ -560,7 +565,7 @@ void main() {
 すると中から元気な男の子が生まれました。
 二人はその子を桃太郎と名づけました。
 ''';
-      
+
       final result = await applyPatchAndGetResult(input, patch);
       expect(result, equals(expected));
     });
@@ -616,52 +621,57 @@ void main() {
 行19：テスト
 行20：テスト
 ''';
-      
+
       final result = await applyPatchAndGetResult(input, patch);
       expect(result, equals(expected));
     });
 
-    test('33. Needle in haystack: change one line at the end of long document', () async {
+    test('33. Needle in haystack: change one line at the end of long document',
+        () async {
       final inputLines = List.generate(30, (i) => '段落${i + 1}');
       inputLines[29] = '最後の段落（旧）';
       final input = '${inputLines.join('\n')}\n';
-      
+
       const patch = '''@@ -28,3 +28,3 @@
  段落28
  段落29
 -最後の段落（旧）
 +最後の段落（新）
 ''';
-      
+
       final expectedLines = List.generate(30, (i) => '段落${i + 1}');
       expectedLines[29] = '最後の段落（新）';
       final expected = '${expectedLines.join('\n')}\n';
-      
+
       final result = await applyPatchAndGetResult(input, patch);
       expect(result, equals(expected));
     });
 
-    test('34. Needle in haystack: change one line at the beginning of long document', () async {
+    test(
+        '34. Needle in haystack: change one line at the beginning of long document',
+        () async {
       final inputLines = ['最初の行（旧）'] + List.generate(29, (i) => '段落${i + 2}');
       final input = '${inputLines.join('\n')}\n';
-      
+
       const patch = '''@@ -1,3 +1,3 @@
 -最初の行（旧）
 +最初の行（新）
  段落2
  段落3
 ''';
-      
-      final expectedLines = ['最初の行（新）'] + List.generate(29, (i) => '段落${i + 2}');
+
+      final expectedLines =
+          ['最初の行（新）'] + List.generate(29, (i) => '段落${i + 2}');
       final expected = '${expectedLines.join('\n')}\n';
-      
+
       final result = await applyPatchAndGetResult(input, patch);
       expect(result, equals(expected));
     });
 
     // ==================== Long Content Tests ====================
-    
-    test('35. Long content: 15-line Japanese document with middle edit', () async {
+
+    test('35. Long content: 15-line Japanese document with middle edit',
+        () async {
       const input = '''最初の段落です。
 二番目の段落です。
 三番目の段落です。
@@ -702,7 +712,7 @@ void main() {
 十四番目の段落です。
 十五番目の段落です。
 ''';
-      
+
       final result = await applyPatchAndGetResult(input, patch);
       expect(result, equals(expected));
     });
@@ -769,7 +779,7 @@ void main() {
 行24
 行25
 ''';
-      
+
       final result = await applyPatchAndGetResult(input, patch);
       expect(result, equals(expected));
     });
@@ -777,14 +787,14 @@ void main() {
     test('37. Long content: very long single line (1000 chars)', () async {
       final longContent = 'あ' * 1000;
       final input = '$longContent\n';
-      
+
       final newContent = 'あ' * 500 + 'い' * 500;
       final patch = '''@@ -1 +1 @@
 -$longContent
 +$newContent
 ''';
       final expected = '$newContent\n';
-      
+
       final result = await applyPatchAndGetResult(input, patch);
       expect(result, equals(expected));
     });
@@ -794,7 +804,7 @@ void main() {
       final line2 = '第二行：${'ひらがな' * 100}';
       final line3 = '第三行：${'カタカナ' * 100}';
       final input = '$line1\n$line2\n$line3\n';
-      
+
       final newLine2 = '第二行（修正）：${'ひらがな' * 100}';
       final patch = '''@@ -1,3 +1,3 @@
  $line1
@@ -803,13 +813,13 @@ void main() {
  $line3
 ''';
       final expected = '$line1\n$newLine2\n$line3\n';
-      
+
       final result = await applyPatchAndGetResult(input, patch);
       expect(result, equals(expected));
     });
 
     // ==================== Fine-grained Detail Tests ====================
-    
+
     test('39. Detail: single character replacement in Japanese', () async {
       const input = '東京都\n';
       const patch = '''@@ -1 +1 @@
@@ -817,7 +827,7 @@ void main() {
 +東京府
 ''';
       const expected = '東京府\n';
-      
+
       final result = await applyPatchAndGetResult(input, patch);
       expect(result, equals(expected));
     });
@@ -829,19 +839,19 @@ void main() {
 +こんにちは！
 ''';
       const expected = 'こんにちは！\n';
-      
+
       final result = await applyPatchAndGetResult(input, patch);
       expect(result, equals(expected));
     });
 
     test('41. Detail: whitespace preservation', () async {
-      const input = '　インデントされた行\n';  // Full-width space at start
+      const input = '　インデントされた行\n'; // Full-width space at start
       const patch = '''@@ -1 +1,2 @@
  　インデントされた行
 +　別のインデント行
 ''';
       const expected = '　インデントされた行\n　別のインデント行\n';
-      
+
       final result = await applyPatchAndGetResult(input, patch);
       expect(result, equals(expected));
     });
@@ -853,7 +863,7 @@ void main() {
 +ABCかきくDEF
 ''';
       const expected = 'ABCかきくDEF\n';
-      
+
       final result = await applyPatchAndGetResult(input, patch);
       expect(result, equals(expected));
     });
@@ -865,7 +875,7 @@ void main() {
 +❶❷❸
 ''';
       const expected = '❶❷❸\n';
-      
+
       final result = await applyPatchAndGetResult(input, patch);
       expect(result, equals(expected));
     });
@@ -877,7 +887,7 @@ void main() {
 +（円の方程式）
 ''';
       const expected = 'x² + y² = r²\n（円の方程式）\n';
-      
+
       final result = await applyPatchAndGetResult(input, patch);
       expect(result, equals(expected));
     });
@@ -892,13 +902,13 @@ void main() {
  第二段落
 ''';
       const expected = '第一段落\n\n\n追加行\n第二段落\n';
-      
+
       final result = await applyPatchAndGetResult(input, patch);
       expect(result, equals(expected));
     });
 
     // ==================== Complex Scenario Tests ====================
-    
+
     test('46. Complex: multiple scattered changes in document', () async {
       const input = '''章1：序章
 内容A
@@ -929,7 +939,7 @@ void main() {
 内容E
 内容F
 ''';
-      
+
       final result = await applyPatchAndGetResult(input, patch);
       expect(result, equals(expected));
     });
@@ -951,7 +961,7 @@ void main() {
       const expected = '''保持行1
 保持行2
 ''';
-      
+
       final result = await applyPatchAndGetResult(input, patch);
       expect(result, equals(expected));
     });
@@ -973,7 +983,7 @@ void main() {
 挿入行3
 既存行2
 ''';
-      
+
       final result = await applyPatchAndGetResult(input, patch);
       expect(result, equals(expected));
     });
@@ -995,7 +1005,7 @@ void main() {
 新しい内容B
 新しい内容C
 ''';
-      
+
       final result = await applyPatchAndGetResult(input, patch);
       expect(result, equals(expected));
     });
@@ -1022,7 +1032,7 @@ void main() {
 行4（変更）
 行5
 ''';
-      
+
       final result = await applyPatchAndGetResult(input, patch);
       expect(result, equals(expected));
     });

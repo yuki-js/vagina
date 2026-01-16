@@ -17,7 +17,8 @@ class AssistantConfig {
   ];
 
   /// デフォルトのシステムプロンプト - VAGINAキャラクターとしての自覚
-  static const String defaultInstructions = '''あなたは「VAGINA」（Voice AGI Notepad Agent）という名前の音声AIアシスタントです。
+  static const String defaultInstructions =
+      '''あなたは「VAGINA」（Voice AGI Notepad Agent）という名前の音声AIアシスタントです。
 
 あなたの特徴:
 - フレンドリーで親しみやすい

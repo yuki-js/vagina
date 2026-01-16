@@ -2,7 +2,7 @@
 class EditHistoryEntry {
   final String content;
   final DateTime timestamp;
-  
+
   const EditHistoryEntry({
     required this.content,
     required this.timestamp,
@@ -52,12 +52,13 @@ class NotepadTab {
       currentHistoryIndex: currentHistoryIndex ?? this.currentHistoryIndex,
     );
   }
-  
+
   /// Check if undo is available
   bool get canUndo => history.isNotEmpty && currentHistoryIndex > 0;
-  
+
   /// Check if redo is available
-  bool get canRedo => history.isNotEmpty && currentHistoryIndex < history.length - 1;
+  bool get canRedo =>
+      history.isNotEmpty && currentHistoryIndex < history.length - 1;
 
   /// Get metadata as a map (for AI tools)
   Map<String, dynamic> toMetadata() {

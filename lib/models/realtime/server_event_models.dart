@@ -131,7 +131,9 @@ class ConversationItem {
       type: json['type'] as String? ?? '',
       status: json['status'] as String?,
       role: json['role'] as String?,
-      content: contentList.map((c) => ContentPart.fromJson(c as Map<String, dynamic>)).toList(),
+      content: contentList
+          .map((c) => ContentPart.fromJson(c as Map<String, dynamic>))
+          .toList(),
       callId: json['call_id'] as String?,
       name: json['name'] as String?,
       arguments: json['arguments'] as String?,
@@ -162,10 +164,12 @@ class ResponseUsage {
       inputTokens: json['input_tokens'] as int? ?? 0,
       outputTokens: json['output_tokens'] as int? ?? 0,
       inputTokenDetails: json['input_token_details'] != null
-          ? InputTokenDetails.fromJson(json['input_token_details'] as Map<String, dynamic>)
+          ? InputTokenDetails.fromJson(
+              json['input_token_details'] as Map<String, dynamic>)
           : null,
       outputTokenDetails: json['output_token_details'] != null
-          ? OutputTokenDetails.fromJson(json['output_token_details'] as Map<String, dynamic>)
+          ? OutputTokenDetails.fromJson(
+              json['output_token_details'] as Map<String, dynamic>)
           : null,
     );
   }

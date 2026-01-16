@@ -6,13 +6,12 @@ import '../services/log_service.dart';
 import '../services/platform/platform_storage_service.dart';
 
 // Conditional import for web support
-import 'web_storage_stub.dart'
-    if (dart.library.html) 'dart:html' as html;
+import 'web_storage_stub.dart' if (dart.library.html) 'dart:html' as html;
 
 /// File-based JSON key-value store implementation
 class JsonFileStore implements KeyValueStore {
   static const _tag = 'JsonFileStore';
-  
+
   final String fileName;
   final String? folderName;
   final PlatformStorageService _storageService;
@@ -32,11 +31,11 @@ class JsonFileStore implements KeyValueStore {
   @override
   Future<void> initialize() async {
     if (_initialized) return;
-    
+
     _file = await _getFile();
     _cache = await _loadFromFile();
     _initialized = true;
-    
+
     _logService.debug(_tag, 'Initialized with ${_cache.keys.length} keys');
   }
 
@@ -46,7 +45,8 @@ class JsonFileStore implements KeyValueStore {
       return File('');
     }
 
-    final directory = await _storageService.getStorageDirectory(folderName: folderName);
+    final directory =
+        await _storageService.getStorageDirectory(folderName: folderName);
     final file = File('${directory.path}/$fileName');
     _logService.info(_tag, 'Storage file: ${file.path}');
     return file;
@@ -56,15 +56,15 @@ class JsonFileStore implements KeyValueStore {
     if (kIsWeb) {
       return _loadFromWebStorage();
     }
-    
+
     if (_file == null || !await _file!.exists()) {
       return {};
     }
-    
+
     try {
       final contents = await _file!.readAsString();
       if (contents.isEmpty) return {};
-      
+
       final data = jsonDecode(contents) as Map<String, dynamic>;
       _logService.debug(_tag, 'Loaded ${data.keys.length} keys from file');
       return data;
@@ -79,9 +79,9 @@ class JsonFileStore implements KeyValueStore {
       await _saveToWebStorage(data);
       return;
     }
-    
+
     if (_file == null) return;
-    
+
     try {
       final json = jsonEncode(data);
       await _file!.writeAsString(json);
@@ -94,19 +94,20 @@ class JsonFileStore implements KeyValueStore {
 
   Map<String, dynamic> _loadFromWebStorage() {
     if (!kIsWeb) return {};
-    
+
     try {
       final storage = html.window.localStorage;
       final key = 'vagina_${fileName}_data';
       final value = storage[key];
-      
+
       if (value == null || value.isEmpty) {
         _logService.debug(_tag, 'No web storage data found');
         return {};
       }
-      
+
       final data = jsonDecode(value) as Map<String, dynamic>;
-      _logService.debug(_tag, 'Loaded ${data.keys.length} keys from web storage');
+      _logService.debug(
+          _tag, 'Loaded ${data.keys.length} keys from web storage');
       return data;
     } catch (e) {
       _logService.error(_tag, 'Error loading from web storage: $e');
@@ -116,13 +117,13 @@ class JsonFileStore implements KeyValueStore {
 
   Future<void> _saveToWebStorage(Map<String, dynamic> data) async {
     if (!kIsWeb) return;
-    
+
     try {
       final storage = html.window.localStorage;
       final key = 'vagina_${fileName}_data';
       final json = jsonEncode(data);
       storage[key] = json;
-      
+
       _logService.debug(_tag, 'Saved ${data.keys.length} keys to web storage');
     } catch (e) {
       _logService.error(_tag, 'Error saving to web storage: $e');

@@ -13,7 +13,8 @@ void main() {
       expect(hapticService, isNotNull);
     });
 
-    testWidgets('heavyImpact can be called without throwing', (WidgetTester tester) async {
+    testWidgets('heavyImpact can be called without throwing',
+        (WidgetTester tester) async {
       // HapticFeedback requires a platform channel, so in tests it may fail silently
       // We just verify it doesn't throw an unhandled exception
       await expectLater(
@@ -22,7 +23,8 @@ void main() {
       );
     });
 
-    testWidgets('selectionClick can be called without throwing', (WidgetTester tester) async {
+    testWidgets('selectionClick can be called without throwing',
+        (WidgetTester tester) async {
       // HapticFeedback requires a platform channel, so in tests it may fail silently
       // We just verify it doesn't throw an unhandled exception
       await expectLater(

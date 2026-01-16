@@ -5,7 +5,7 @@ void main() {
   group('SpeedDial', () {
     test('should create default speed dial', () {
       final speedDial = SpeedDial.defaultSpeedDial;
-      
+
       expect(speedDial.id, equals(SpeedDial.defaultId));
       expect(speedDial.name, equals('Default'));
       expect(speedDial.isDefault, isTrue);
@@ -21,7 +21,7 @@ void main() {
         systemPrompt: 'Custom prompt',
         voice: 'echo',
       );
-      
+
       expect(defaultDial.isDefault, isTrue);
       expect(customDial.isDefault, isFalse);
     });

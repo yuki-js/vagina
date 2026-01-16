@@ -48,7 +48,12 @@ class AppTheme {
       useMaterial3: true,
       brightness: Brightness.light,
       fontFamily: 'NotoSansJP',
-      fontFamilyFallback: const ['NotoSansJP', 'Noto Sans JP', 'Noto Sans CJK JP', 'sans-serif'],
+      fontFamilyFallback: const [
+        'NotoSansJP',
+        'Noto Sans JP',
+        'Noto Sans CJK JP',
+        'sans-serif'
+      ],
       textTheme: TextTheme(
         displayLarge: const TextStyle(
           fontWeight: FontWeight.w700,
@@ -156,18 +161,22 @@ class AppTheme {
         fillColor: lightSurfaceColor,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: lightTextSecondary.withValues(alpha: 0.3)),
+          borderSide:
+              BorderSide(color: lightTextSecondary.withValues(alpha: 0.3)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: lightTextSecondary.withValues(alpha: 0.3)),
+          borderSide:
+              BorderSide(color: lightTextSecondary.withValues(alpha: 0.3)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: primaryColor, width: 2),
         ),
-        labelStyle: TextStyle(color: lightTextSecondary, fontWeight: FontWeight.w500),
-        hintStyle: TextStyle(color: lightTextSecondary, fontWeight: FontWeight.w500),
+        labelStyle:
+            TextStyle(color: lightTextSecondary, fontWeight: FontWeight.w500),
+        hintStyle:
+            TextStyle(color: lightTextSecondary, fontWeight: FontWeight.w500),
       ),
       sliderTheme: SliderThemeData(
         activeTrackColor: primaryColor,
@@ -190,7 +199,12 @@ class AppTheme {
       brightness: Brightness.dark,
       // Explicitly specify sans-serif font to prevent Samsung devices from using Mincho (serif) font
       fontFamily: 'NotoSansJP',
-      fontFamilyFallback: const ['NotoSansJP', 'Noto Sans JP', 'Noto Sans CJK JP', 'sans-serif'],
+      fontFamilyFallback: const [
+        'NotoSansJP',
+        'Noto Sans JP',
+        'Noto Sans CJK JP',
+        'sans-serif'
+      ],
       textTheme: TextTheme(
         displayLarge: const TextStyle(
           fontWeight: FontWeight.w700,
@@ -308,8 +322,10 @@ class AppTheme {
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: primaryColor, width: 2),
         ),
-        labelStyle: const TextStyle(color: textSecondary, fontWeight: FontWeight.w500),
-        hintStyle: const TextStyle(color: textSecondary, fontWeight: FontWeight.w500),
+        labelStyle:
+            const TextStyle(color: textSecondary, fontWeight: FontWeight.w500),
+        hintStyle:
+            const TextStyle(color: textSecondary, fontWeight: FontWeight.w500),
       ),
       sliderTheme: SliderThemeData(
         activeTrackColor: primaryColor,

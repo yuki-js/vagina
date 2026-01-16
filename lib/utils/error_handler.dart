@@ -1,5 +1,5 @@
 /// Standardized error handling for the application
-/// 
+///
 /// This module provides consistent error types, handling patterns,
 /// and utilities for error management across the codebase.
 
@@ -150,7 +150,7 @@ class ErrorHandler {
   const ErrorHandler._();
 
   /// Wrap an operation with error handling
-  /// 
+  ///
   /// Converts exceptions into AppErrors and optionally logs them
   static Future<T> handleAsync<T>(
     Future<T> Function() operation, {
@@ -195,7 +195,8 @@ class ErrorHandler {
   }
 
   /// Categorize a generic error into specific AppError types
-  static AppError _categorizeError(Object error, StackTrace stack, String context) {
+  static AppError _categorizeError(
+      Object error, StackTrace stack, String context) {
     final message = error.toString();
 
     // Network-related errors
@@ -220,7 +221,8 @@ class ErrorHandler {
     }
 
     // Storage errors
-    if (message.contains('FileSystemException') || message.contains('PathAccessException')) {
+    if (message.contains('FileSystemException') ||
+        message.contains('PathAccessException')) {
       return StorageError(
         'Storage error in $context',
         originalError: error,

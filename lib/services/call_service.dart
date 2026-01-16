@@ -32,7 +32,7 @@ enum CallState {
 /// microphone recording, Azure OpenAI Realtime API connection, and audio playback
 class CallService {
   static const _tag = 'CallService';
-  
+
   final AudioRecorderService _recorder;
   final AudioPlayerService _player;
   final RealtimeApiClient _apiClient;
@@ -42,7 +42,7 @@ class CallService {
   final LogService _logService;
   final CallFeedbackService _feedback;
   final ChatMessageManager _chatManager = ChatMessageManager();
-  
+
   /// Session-scoped tool manager (created on call start, disposed on call end)
   ToolManager? _toolManager;
 
@@ -93,7 +93,8 @@ class CallService {
         _toolService = toolService,
         _notepadService = notepadService,
         _logService = logService ?? LogService(),
-        _feedback = feedbackService ?? CallFeedbackService(logService: logService);
+        _feedback =
+            feedbackService ?? CallFeedbackService(logService: logService);
 
   /// Current call state
   CallState get currentState => _currentState;
@@ -109,13 +110,13 @@ class CallService {
 
   /// Stream of error messages
   Stream<String> get errorStream => _errorController.stream;
-  
+
   /// セッション保存完了通知ストリーム（セッションID）
   Stream<String> get sessionSavedStream => _sessionSavedController.stream;
-  
+
   /// Stream of chat messages
   Stream<List<ChatMessage>> get chatStream => _chatManager.chatStream;
-  
+
   /// Get current chat messages
   List<ChatMessage> get chatMessages => _chatManager.chatMessages;
 
@@ -126,7 +127,7 @@ class CallService {
   bool get isCallActive =>
       _currentState == CallState.connecting ||
       _currentState == CallState.connected;
-  
+
   /// Get the current session's tool manager (null if no active call)
   ToolManager? get toolManager => _toolManager;
 
@@ -160,7 +161,7 @@ class CallService {
   Future<bool> hasMicrophonePermission() async {
     return await _recorder.hasPermission();
   }
-  
+
   /// Send a text message (for chat input)
   void sendTextMessage(String text) {
     if (!isCallActive || text.trim().isEmpty) return;
@@ -181,7 +182,7 @@ class CallService {
 
     try {
       _setState(CallState.connecting);
-      
+
       // Play dial tone while connecting
       await _feedback.playDialTone();
 
@@ -233,7 +234,7 @@ class CallService {
       _setupAudioStream(audioStream);
       _setupAmplitudeMonitoring();
       _startCallTimer();
-      
+
       // Track call start time for session saving
       _callStartTime = DateTime.now();
 
@@ -241,10 +242,10 @@ class CallService {
       await _enableWakeLock();
 
       _setState(CallState.connected);
-      
+
       // Stop dial tone when connected
       await _feedback.stopDialTone();
-      
+
       _resetSilenceTimer(); // Start silence detection
       _logService.info(_tag, 'Call connected successfully');
     } catch (e) {
@@ -255,7 +256,7 @@ class CallService {
       await _cleanup();
     }
   }
-  
+
   /// Called when tools change (via ToolManager)
   void _onToolsChanged() {
     if (_toolManager != null && _currentState == CallState.connected) {
@@ -271,23 +272,26 @@ class CallService {
       _emitError('API エラー: $error');
     });
 
-    _responseAudioSubscription = _apiClient.audioStream.listen((audioData) async {
-      _logService.debug(_tag, 'Received audio from API: ${audioData.length} bytes');
+    _responseAudioSubscription =
+        _apiClient.audioStream.listen((audioData) async {
+      _logService.debug(
+          _tag, 'Received audio from API: ${audioData.length} bytes');
       await _player.addAudioData(audioData);
     });
-    
+
     _audioDoneSubscription = _apiClient.audioDoneStream.listen((_) async {
-      _logService.info(_tag, 'Audio done event received, marking response complete');
+      _logService.info(
+          _tag, 'Audio done event received, marking response complete');
       await _player.markResponseComplete();
       _chatManager.completeCurrentAssistantMessage();
       // Haptic feedback: AI response ended, user's turn
       await _feedback.heavyImpact();
     });
-    
+
     _transcriptSubscription = _apiClient.transcriptStream.listen((delta) {
       _chatManager.appendAssistantTranscript(delta);
     });
-    
+
     _speechStartedSubscription = _apiClient.speechStartedStream.listen((_) {
       _chatManager.createUserMessagePlaceholder();
       _resetSilenceTimer(); // User started speaking, reset silence timer
@@ -295,13 +299,16 @@ class CallService {
       // Haptic feedback: VAD detected user speech started (fire-and-forget)
       unawaited(_feedback.selectionClick());
     });
-    
-    _userTranscriptSubscription = _apiClient.userTranscriptStream.listen((transcript) {
+
+    _userTranscriptSubscription =
+        _apiClient.userTranscriptStream.listen((transcript) {
       _chatManager.updateUserMessagePlaceholder(transcript);
-      _logService.debug(_tag, 'Updated user message placeholder with transcript');
+      _logService.debug(
+          _tag, 'Updated user message placeholder with transcript');
     });
-    
-    _functionCallSubscription = _apiClient.functionCallStream.listen((functionCall) async {
+
+    _functionCallSubscription =
+        _apiClient.functionCallStream.listen((functionCall) async {
       _logService.info(_tag, 'Handling function call: ${functionCall.name}');
       if (_toolManager == null) {
         _logService.error(_tag, 'Tool manager not available');
@@ -312,17 +319,21 @@ class CallService {
         functionCall.name,
         functionCall.arguments,
       );
-      _chatManager.addToolCall(functionCall.name, functionCall.arguments, result.output);
+      _chatManager.addToolCall(
+          functionCall.name, functionCall.arguments, result.output);
       _apiClient.sendFunctionCallResult(result.callId, result.output);
     });
-    
-    _responseStartedSubscription = _apiClient.responseStartedStream.listen((_) async {
-      _logService.info(_tag, 'User speech detected, stopping audio for interrupt');
+
+    _responseStartedSubscription =
+        _apiClient.responseStartedStream.listen((_) async {
+      _logService.info(
+          _tag, 'User speech detected, stopping audio for interrupt');
       await _player.stop();
       _chatManager.completeCurrentAssistantMessage();
     });
-    
-    _responseAudioStartedSubscription = _apiClient.responseAudioStartedStream.listen((_) {
+
+    _responseAudioStartedSubscription =
+        _apiClient.responseAudioStartedStream.listen((_) {
       _resetSilenceTimer(); // AI started speaking, reset silence timer
       // Haptic feedback: AI audio response started after user speech ended (fire-and-forget)
       unawaited(_feedback.selectionClick());
@@ -354,7 +365,8 @@ class CallService {
     if (amplitudeStream != null) {
       _amplitudeSubscription = amplitudeStream.listen((amplitude) {
         if (!_isMuted && isCallActive) {
-          final normalizedLevel = AudioUtils.normalizeAmplitude(amplitude.current);
+          final normalizedLevel =
+              AudioUtils.normalizeAmplitude(amplitude.current);
           _amplitudeController.add(normalizedLevel);
         } else {
           _amplitudeController.add(0.0);
@@ -377,14 +389,16 @@ class CallService {
   void _resetSilenceTimer() {
     // Cancel any existing timer
     _silenceTimer?.cancel();
-    
+
     // Only start silence timer if configured (timeout > 0) and call is connected
-    if (AppConfig.silenceTimeoutSeconds <= 0 || _currentState != CallState.connected) {
+    if (AppConfig.silenceTimeoutSeconds <= 0 ||
+        _currentState != CallState.connected) {
       return;
     }
-    
-    _logService.debug(_tag, 'Resetting silence timer (${AppConfig.silenceTimeoutSeconds}s)');
-    
+
+    _logService.debug(
+        _tag, 'Resetting silence timer (${AppConfig.silenceTimeoutSeconds}s)');
+
     _silenceTimer = Timer(
       Duration(seconds: AppConfig.silenceTimeoutSeconds),
       _onSilenceTimeout,
@@ -396,8 +410,9 @@ class CallService {
     if (_currentState != CallState.connected) {
       return;
     }
-    
-    _logService.info(_tag, 'Silence timeout reached (${AppConfig.silenceTimeoutSeconds}s), ending call');
+
+    _logService.info(_tag,
+        'Silence timeout reached (${AppConfig.silenceTimeoutSeconds}s), ending call');
     _emitError('無音状態が続いたため通話を終了しました');
     endCall();
   }
@@ -414,7 +429,7 @@ class CallService {
 
     // Save session before cleanup
     await _saveSession();
-    
+
     await _cleanup();
     _setState(CallState.idle);
     _logService.info(_tag, 'Call ended');
@@ -439,7 +454,7 @@ class CallService {
       // ノートパッドの内容を収集
       final notepadTabs = _notepadService.tabs;
       List<SessionNotepadTab>? notepadTabsData;
-      
+
       if (notepadTabs.isNotEmpty) {
         // タブを構造化データとして保存
         notepadTabsData = notepadTabs.map((tab) {
@@ -462,7 +477,7 @@ class CallService {
 
       await RepositoryFactory.callSessions.save(session);
       _logService.info(_tag, 'セッション保存完了: ${session.id}');
-      
+
       // セッション保存完了を通知（UIの更新用）
       _sessionSavedController.add(session.id);
     } catch (e) {
@@ -472,10 +487,10 @@ class CallService {
 
   Future<void> _cleanup() async {
     _logService.debug(_tag, 'リソースのクリーンアップ');
-    
+
     _callTimer?.cancel();
     _callTimer = null;
-    
+
     _silenceTimer?.cancel();
     _silenceTimer = null;
 
@@ -487,38 +502,38 @@ class CallService {
 
     await _responseAudioSubscription?.cancel();
     _responseAudioSubscription = null;
-    
+
     await _audioDoneSubscription?.cancel();
     _audioDoneSubscription = null;
 
     await _errorSubscription?.cancel();
     _errorSubscription = null;
-    
+
     await _transcriptSubscription?.cancel();
     _transcriptSubscription = null;
-    
+
     await _userTranscriptSubscription?.cancel();
     _userTranscriptSubscription = null;
-    
+
     await _speechStartedSubscription?.cancel();
     _speechStartedSubscription = null;
-    
+
     await _functionCallSubscription?.cancel();
     _functionCallSubscription = null;
-    
+
     await _responseStartedSubscription?.cancel();
     _responseStartedSubscription = null;
-    
+
     await _responseAudioStartedSubscription?.cancel();
     _responseAudioStartedSubscription = null;
 
     await _recorder.stopRecording();
     await _player.stop();
     await _apiClient.disconnect();
-    
+
     // Disable wake lock to allow device to sleep normally
     await _disableWakeLock();
-    
+
     // Dispose session-scoped tool manager
     _toolManager?.dispose();
     _toolManager = null;
@@ -526,7 +541,7 @@ class CallService {
     _callDuration = 0;
     _durationController.add(0);
     _amplitudeController.add(0.0);
-    
+
     _logService.debug(_tag, 'Cleanup complete');
   }
 
@@ -559,7 +574,7 @@ class CallService {
       _logService.error(_tag, 'Failed to disable wake lock: $e');
     }
   }
-  
+
   /// Clear chat history
   void clearChat() {
     _chatManager.clearChat();

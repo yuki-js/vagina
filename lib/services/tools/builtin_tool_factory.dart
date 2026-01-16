@@ -7,12 +7,13 @@ import '../../interfaces/memory_repository.dart';
 class BuiltinToolFactory {
   final MemoryRepository _memoryRepo;
   final NotepadService _notepadService;
-  
+
   BuiltinToolFactory({
     required MemoryRepository memoryRepository,
     required NotepadService notepadService,
-  }) : _memoryRepo = memoryRepository, _notepadService = notepadService;
-  
+  })  : _memoryRepo = memoryRepository,
+        _notepadService = notepadService;
+
   /// すべてのビルトインツール名（設定用）
   static const List<String> allToolNames = [
     'get_current_time',
@@ -28,7 +29,7 @@ class BuiltinToolFactory {
     'document_patch',
     'document_read',
   ];
-  
+
   /// すべてのビルトインツールを生成
   List<BaseTool> createBuiltinTools() {
     return [

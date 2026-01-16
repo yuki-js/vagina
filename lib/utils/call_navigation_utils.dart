@@ -8,7 +8,7 @@ import '../screens/call/call_screen.dart';
 /// These are navigation/UI helpers, not service methods
 class CallNavigationUtils {
   /// Navigate to call screen with the specified SpeedDial configuration
-  /// 
+  ///
   /// Passes the SpeedDial directly via navigation parameters instead of
   /// going through the global store, following Flutter navigation best practices
   static Future<void> navigateToCallWithSpeedDial({
@@ -26,13 +26,13 @@ class CallNavigationUtils {
         builder: (context) => CallScreen(speedDial: speedDial),
       ),
     );
-    
+
     // Reset to default speed dial ID after call
     callService.setSpeedDialId(SpeedDial.defaultId);
   }
 
   /// Navigate to call screen with the Default SpeedDial
-  /// 
+  ///
   /// This is used by the FAB button and other entry points that should
   /// use the default character configuration
   static Future<void> navigateToCallWithDefault({

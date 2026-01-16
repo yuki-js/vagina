@@ -6,7 +6,7 @@ void main() {
     test('generateId creates unique IDs', () {
       final id1 = Utils.generateId();
       final id2 = Utils.generateId();
-      
+
       expect(id1, isNotEmpty);
       expect(id2, isNotEmpty);
       expect(id1, isNot(equals(id2)));
@@ -67,21 +67,26 @@ void main() {
     });
 
     test('deepCopyMap creates independent copy', () {
-      final original = {'key': 'value', 'nested': {'inner': 'data'}};
+      final original = {
+        'key': 'value',
+        'nested': {'inner': 'data'}
+      };
       final copy = Utils.deepCopyMap(original);
-      
+
       // Modify copy
       copy['key'] = 'modified';
       (copy['nested'] as Map<String, dynamic>)['inner'] = 'changed';
-      
+
       // Original should be unchanged
       expect(original['key'], equals('value'));
-      expect((original['nested'] as Map<String, dynamic>)['inner'], equals('data'));
+      expect((original['nested'] as Map<String, dynamic>)['inner'],
+          equals('data'));
     });
 
     test('listsEqual compares lists correctly', () {
       expect(Utils.listsEqual([1, 2, 3], [1, 2, 3]), isTrue);
-      expect(Utils.listsEqual([1, 2, 3], [3, 2, 1]), isTrue); // Order independent
+      expect(
+          Utils.listsEqual([1, 2, 3], [3, 2, 1]), isTrue); // Order independent
       expect(Utils.listsEqual([1, 2], [1, 2, 3]), isFalse);
       expect(Utils.listsEqual(null, null), isTrue);
       expect(Utils.listsEqual([1], null), isFalse);
@@ -111,7 +116,7 @@ void main() {
         attempts++;
         return 'success';
       });
-      
+
       expect(result, equals('success'));
       expect(attempts, equals(1));
     });
@@ -127,14 +132,14 @@ void main() {
         maxAttempts: 5,
         initialDelay: const Duration(milliseconds: 10),
       );
-      
+
       expect(result, equals('success'));
       expect(attempts, equals(3));
     });
 
     test('retry throws after max attempts', () async {
       var attempts = 0;
-      
+
       try {
         await Utils.retry(
           () async {

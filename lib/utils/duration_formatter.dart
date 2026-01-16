@@ -35,10 +35,12 @@ class DurationFormatter {
 
   /// Format DateTime as relative date (今日, 昨日, or YYYY/MM/DD)
   /// [includeTime] - whether to include time component
-  static String formatRelativeDate(DateTime dateTime, {bool includeTime = true}) {
+  static String formatRelativeDate(DateTime dateTime,
+      {bool includeTime = true}) {
     final now = DateTime.now();
     final difference = now.difference(dateTime);
-    final timeStr = '${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}';
+    final timeStr =
+        '${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}';
 
     if (difference.inDays == 0) {
       return includeTime ? '今日 $timeStr' : '今日';

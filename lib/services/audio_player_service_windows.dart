@@ -7,7 +7,7 @@ import 'package:path/path.dart' as path;
 import 'log_service.dart';
 
 /// Windows-compatible audio player service using just_audio
-/// 
+///
 /// This implementation provides audio playback specifically for Windows
 /// where flutter_sound is not supported. It uses just_audio which has
 /// full Windows support through its platform implementation.
@@ -35,11 +35,11 @@ class AudioPlayerServiceWindows {
   }
 
   /// Play PCM16 audio data
-  /// 
+  ///
   /// [audioData] - PCM16 audio data at 24kHz mono
   Future<void> play(Uint8List audioData) async {
     _audioQueue.add(audioData);
-    
+
     if (!_isPlaying) {
       await _playNextInQueue();
     }
@@ -57,15 +57,16 @@ class AudioPlayerServiceWindows {
     try {
       // Write PCM data to temporary WAV file
       final wavFile = await _createWavFile(audioData);
-      
+
       // Play the file
       await _player.setFilePath(wavFile.path);
       await _player.play();
-      
+
       // Clean up after playback
-      _player.playerStateStream.firstWhere(
-        (state) => state.processingState == ProcessingState.completed
-      ).then((_) {
+      _player.playerStateStream
+          .firstWhere(
+              (state) => state.processingState == ProcessingState.completed)
+          .then((_) {
         wavFile.deleteSync();
       });
     } catch (e) {
@@ -79,17 +80,15 @@ class AudioPlayerServiceWindows {
   /// Convert PCM16 data to WAV file
   Future<File> _createWavFile(Uint8List pcm16Data) async {
     final tempDir = await getTemporaryDirectory();
-    final wavFilePath = path.join(
-      tempDir.path,
-      'audio_${_currentFileIndex++}_${DateTime.now().millisecondsSinceEpoch}.wav'
-    );
+    final wavFilePath = path.join(tempDir.path,
+        'audio_${_currentFileIndex++}_${DateTime.now().millisecondsSinceEpoch}.wav');
 
     // Create WAV header for 24kHz mono PCM16
     const sampleRate = 24000;
     const numChannels = 1;
     const bitsPerSample = 16;
     final dataSize = pcm16Data.length;
-    
+
     final header = ByteData(44);
     // "RIFF" chunk descriptor
     header.setUint8(0, 0x52); // 'R'
@@ -97,13 +96,13 @@ class AudioPlayerServiceWindows {
     header.setUint8(2, 0x46); // 'F'
     header.setUint8(3, 0x46); // 'F'
     header.setUint32(4, 36 + dataSize, Endian.little); // File size - 8
-    
+
     // "WAVE" format
-    header.setUint8(8, 0x57);  // 'W'
-    header.setUint8(9, 0x41);  // 'A'
+    header.setUint8(8, 0x57); // 'W'
+    header.setUint8(9, 0x41); // 'A'
     header.setUint8(10, 0x56); // 'V'
     header.setUint8(11, 0x45); // 'E'
-    
+
     // "fmt " sub-chunk
     header.setUint8(12, 0x66); // 'f'
     header.setUint8(13, 0x6D); // 'm'
@@ -113,10 +112,12 @@ class AudioPlayerServiceWindows {
     header.setUint16(20, 1, Endian.little); // Audio format (PCM)
     header.setUint16(22, numChannels, Endian.little); // Number of channels
     header.setUint32(24, sampleRate, Endian.little); // Sample rate
-    header.setUint32(28, sampleRate * numChannels * bitsPerSample ~/ 8, Endian.little); // Byte rate
-    header.setUint16(32, numChannels * bitsPerSample ~/ 8, Endian.little); // Block align
+    header.setUint32(28, sampleRate * numChannels * bitsPerSample ~/ 8,
+        Endian.little); // Byte rate
+    header.setUint16(
+        32, numChannels * bitsPerSample ~/ 8, Endian.little); // Block align
     header.setUint16(34, bitsPerSample, Endian.little); // Bits per sample
-    
+
     // "data" sub-chunk
     header.setUint8(36, 0x64); // 'd'
     header.setUint8(37, 0x61); // 'a'
@@ -132,7 +133,7 @@ class AudioPlayerServiceWindows {
     // Write to file
     final file = File(wavFilePath);
     await file.writeAsBytes(wavData);
-    
+
     return file;
   }
 

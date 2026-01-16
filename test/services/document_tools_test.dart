@@ -138,7 +138,8 @@ void main() {
       });
 
       expect(patchResult['success'], isTrue);
-      expect(notepadService.getTabContent(tabId), equals('Hello Dart! Greetings to Dart!'));
+      expect(notepadService.getTabContent(tabId),
+          equals('Hello Dart! Greetings to Dart!'));
     });
 
     test('returns error for non-existent tab', () async {

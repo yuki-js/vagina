@@ -54,7 +54,7 @@ void main() {
 
     test('AppError is rethrown as-is', () async {
       final originalError = NetworkError('Test error');
-      
+
       try {
         await ErrorHandler.handleAsync(
           () async {

@@ -10,15 +10,17 @@ import 'repositories/repository_factory.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialize repositories
   await RepositoryFactory.initialize();
-  
+
   // Initialize window manager ONLY for desktop platforms
   // This prevents crashes on mobile (Android/iOS) and web
-  if (PlatformCompat.isWindows || PlatformCompat.isMacOS || PlatformCompat.isLinux) {
+  if (PlatformCompat.isWindows ||
+      PlatformCompat.isMacOS ||
+      PlatformCompat.isLinux) {
     await windowManager.ensureInitialized();
-    
+
     // Configure window options for desktop
     const windowOptions = WindowOptions(
       minimumSize: Size(400, 600),
@@ -26,13 +28,13 @@ void main() async {
       backgroundColor: Colors.transparent,
       skipTaskbar: false,
     );
-    
+
     await windowManager.waitUntilReadyToShow(windowOptions, () async {
       await windowManager.show();
       await windowManager.focus();
     });
   }
-  
+
   runApp(
     const ProviderScope(
       child: VaginaApp(),
@@ -61,7 +63,7 @@ class _VaginaAppState extends State<VaginaApp> {
   Future<void> _checkFirstLaunch() async {
     // Use RepositoryFactory.preferences which shares the common KeyValueStore
     final isFirst = await RepositoryFactory.preferences.isFirstLaunch();
-    
+
     if (mounted) {
       setState(() {
         _isFirstLaunch = isFirst;
