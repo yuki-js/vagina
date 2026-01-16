@@ -1,7 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../models/android_audio_config.dart';
-import '../repository_providers.dart';
-import 'call_providers.dart';
+import 'package:record/record.dart';
+import '../../../models/android_audio_config.dart';
+import '../../../providers/repository_providers.dart';
+import '../../call/providers/call_providers.dart';
 
 // ============================================================================
 // Androidオーディオプロバイダ

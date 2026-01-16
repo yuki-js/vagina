@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../models/call_session.dart';
-import '../../models/speed_dial.dart';
-import '../../repositories/repository_factory.dart';
+import '../../../models/call_session.dart';
+import '../../../models/speed_dial.dart';
+import '../../../repositories/repository_factory.dart';
 
 // ============================================================================
 // スピードダイヤルプロバイダ

@@ -4,20 +4,14 @@
 // for backward compatibility with existing code
 // ============================================================================
 
-// Core providers
+// Core providers (kept in providers/ as they're used everywhere)
 export 'core_providers.dart';
 
-// Repository providers
+// Repository providers (kept in providers/ as they're infrastructure)
 export 'repository_providers.dart';
 
-// Call-related providers
-export 'call/call_providers.dart';
-
-// Notepad-related providers
-export 'notepad/notepad_providers.dart';
-
-// Session-related providers
-export 'session/session_providers.dart';
-
-// Settings-related providers
-export 'settings/settings_providers.dart';
+// Feature-specific providers (moved to features/)
+export '../features/call/providers/call_providers.dart';
+export '../features/notepad/providers/notepad_providers.dart';
+export '../features/session/providers/session_providers.dart';
+export '../features/settings/providers/settings_providers.dart';

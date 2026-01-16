@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../services/notepad_service.dart';
-import '../../models/notepad_tab.dart';
-import '../core_providers.dart';
+import '../../../services/notepad_service.dart';
+import '../../../models/notepad_tab.dart';
+import '../../../providers/core_providers.dart';
 
 // ============================================================================
 // ノートパッドプロバイダ
