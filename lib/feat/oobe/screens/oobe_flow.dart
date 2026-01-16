@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:vagina/core/state/repository_providers.dart';
 import 'package:vagina/feat/home/screens/home.dart';
 import 'package:vagina/feat/oobe/screens/authentication.dart';
 import 'package:vagina/feat/oobe/screens/dive_in.dart';
@@ -7,7 +8,6 @@ import 'package:vagina/feat/oobe/screens/manual_setup.dart';
 import 'package:vagina/feat/oobe/screens/permissions.dart';
 import 'package:vagina/feat/oobe/screens/welcome.dart';
 import 'package:vagina/feat/oobe/widgets/oobe_background.dart';
-import 'package:vagina/repositories/repository_factory.dart';
 
 /// Main OOBE flow coordinator with navigation and page management
 class OobeFlowScreen extends ConsumerStatefulWidget {
@@ -35,8 +35,9 @@ class _OobeFlowScreenState extends ConsumerState<OobeFlowScreen> {
   }
 
   void _completeOOBE() async {
-    // Mark first launch as completed using RepositoryFactory
-    await RepositoryFactory.preferences.markFirstLaunchCompleted();
+    // Mark first launch as completed using preferencesRepositoryProvider
+    final preferences = ref.read(preferencesRepositoryProvider);
+    await preferences.markFirstLaunchCompleted();
     
     if (!mounted) return;
 

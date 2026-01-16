@@ -1,9 +1,10 @@
+import 'package:vagina/interfaces/config_repository.dart';
+import 'package:vagina/interfaces/memory_repository.dart';
 import 'notepad_service.dart';
 import 'tools/tool_manager.dart';
 import 'tools/tool_registry.dart';
 import 'tools/tool_metadata.dart';
 import 'tools/builtin_tool_factory.dart';
-import 'package:vagina/repositories/repository_factory.dart';
 
 export 'tools/base_tool.dart' show BaseTool, ToolExecutionResult, ToolManagerRef;
 export 'tools/tool_manager.dart' show ToolManager;
@@ -11,7 +12,7 @@ export 'tools/tool_registry.dart' show ToolRegistry, ToolRegistryEvent, ToolRegi
 export 'tools/tool_metadata.dart' show ToolMetadata, ToolCategory, ToolSource;
 
 /// ツールサービス
-/// 
+///
 /// アプリケーション全体のツール管理を担当する。
 /// - ビルトインツールの初期化
 /// - セッションスコープのToolManager生成
@@ -19,15 +20,21 @@ export 'tools/tool_metadata.dart' show ToolMetadata, ToolCategory, ToolSource;
 /// - 将来のMCP対応の基盤
 class ToolService {
   final NotepadService _notepadService;
+  final MemoryRepository _memoryRepository;
+  final ConfigRepository _configRepository;
   late final BuiltinToolFactory _builtinFactory;
   final ToolRegistry _registry = ToolRegistry();
   bool _initialized = false;
   
   ToolService({
     required NotepadService notepadService,
-  }) : _notepadService = notepadService {
+    required MemoryRepository memoryRepository,
+    required ConfigRepository configRepository,
+  })  : _notepadService = notepadService,
+        _memoryRepository = memoryRepository,
+        _configRepository = configRepository {
     _builtinFactory = BuiltinToolFactory(
-      memoryRepository: RepositoryFactory.memory,
+      memoryRepository: _memoryRepository,
       notepadService: _notepadService,
     );
   }
@@ -57,7 +64,7 @@ class ToolService {
     
     final manager = ToolManager(onToolsChanged: onToolsChanged);
     final allTools = _registry.getAllTools();
-    final enabledTools = await RepositoryFactory.config.getEnabledTools();
+    final enabledTools = await _configRepository.getEnabledTools();
     
     // 有効なツールのみを登録
     for (final entry in allTools) {
@@ -96,12 +103,12 @@ class ToolService {
   
   /// ツールの有効状態を取得
   Future<bool> isToolEnabled(String toolName) async {
-    return await RepositoryFactory.config.isToolEnabled(toolName);
+    return await _configRepository.isToolEnabled(toolName);
   }
   
   /// ツールの有効/無効を切り替え
   Future<void> toggleTool(String toolName) async {
-    await RepositoryFactory.config.toggleTool(toolName);
+    await _configRepository.toggleTool(toolName);
   }
   
   /// ツールメタデータを取得

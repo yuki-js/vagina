@@ -5,6 +5,7 @@ import 'package:vagina/feat/call/panes/chat.dart';
 import 'package:vagina/feat/call/panes/notepad.dart';
 import 'package:vagina/feat/call/state/call_service_providers.dart';
 import 'package:vagina/feat/call/state/call_stream_providers.dart';
+import 'package:vagina/feat/call/state/call_ui_state_providers.dart';
 import 'package:vagina/models/speed_dial.dart';
 import 'package:vagina/theme/app_theme.dart';
 
@@ -140,15 +141,15 @@ class _CallScreenState extends ConsumerState<CallScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Listen for errors from call service via consolidated metrics stream.
+    // Listen for errors from call service via consolidated UI-state stream.
     // Dedupe so that amplitude/duration updates don't re-show the same error.
-    ref.listen<AsyncValue<CallMetrics>>(callMetricsProvider, (previous, next) {
+    ref.listen<AsyncValue<CallUiState>>(callUiStateProvider, (previous, next) {
       final previousError = previous?.maybeWhen(
-        data: (metrics) => metrics.lastError,
+        data: (ui) => ui.metrics.lastError,
         orElse: () => null,
       );
       final nextError = next.maybeWhen(
-        data: (metrics) => metrics.lastError,
+        data: (ui) => ui.metrics.lastError,
         orElse: () => null,
       );
       if (nextError != null && nextError.isNotEmpty && nextError != previousError) {
@@ -156,37 +157,45 @@ class _CallScreenState extends ConsumerState<CallScreen> {
       }
     });
 
-    return PopScope(
-      canPop: _canPop,
-      onPopInvokedWithResult: (didPop, result) {
-        if (!didPop) {
-          _handleBackButton();
-        }
-      },
-      child: Theme(
-        data: AppTheme.darkTheme, // Force dark theme for call screen
-        child: Scaffold(
-          body: Column(
-            children: [
-              Expanded(
-                child: Container(
-                  decoration: AppTheme.backgroundGradient,
-                  child: SafeArea(
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        // Use multi-column layout for wide screens (>= 900px)
-                        if (constraints.maxWidth >= 900) {
-                          return _buildThreeColumnLayout();
-                        } else {
-                          // Use PageView for mobile/narrow screens
-                          return _buildPageViewLayout();
-                        }
-                      },
+    // Screen-scoped overrides: ensure call-only toggles reset on every CallScreen.
+    // NOTE: noiseReductionProvider is used in Settings, so we intentionally keep it global.
+    return ProviderScope(
+      overrides: [
+        isMutedProvider.overrideWith(IsMuted.new),
+        speakerMutedProvider.overrideWith(SpeakerMuted.new),
+      ],
+      child: PopScope(
+        canPop: _canPop,
+        onPopInvokedWithResult: (didPop, result) {
+          if (!didPop) {
+            _handleBackButton();
+          }
+        },
+        child: Theme(
+          data: AppTheme.darkTheme, // Force dark theme for call screen
+          child: Scaffold(
+            body: Column(
+              children: [
+                Expanded(
+                  child: Container(
+                    decoration: AppTheme.backgroundGradient,
+                    child: SafeArea(
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          // Use multi-column layout for wide screens (>= 900px)
+                          if (constraints.maxWidth >= 900) {
+                            return _buildThreeColumnLayout();
+                          } else {
+                            // Use PageView for mobile/narrow screens
+                            return _buildPageViewLayout();
+                          }
+                        },
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

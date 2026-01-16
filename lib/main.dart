@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:window_manager/window_manager.dart';
+import 'core/state/repository_providers.dart';
 import 'feat/home/screens/home.dart';
 import 'feat/oobe/screens/oobe_flow.dart';
 import 'theme/app_theme.dart';
@@ -41,14 +42,14 @@ void main() async {
 }
 
 /// Main application widget
-class VaginaApp extends StatefulWidget {
+class VaginaApp extends ConsumerStatefulWidget {
   const VaginaApp({super.key});
 
   @override
-  State<VaginaApp> createState() => _VaginaAppState();
+  ConsumerState<VaginaApp> createState() => _VaginaAppState();
 }
 
-class _VaginaAppState extends State<VaginaApp> {
+class _VaginaAppState extends ConsumerState<VaginaApp> {
   bool _isFirstLaunch = true;
   bool _isLoading = true;
 
@@ -59,8 +60,9 @@ class _VaginaAppState extends State<VaginaApp> {
   }
 
   Future<void> _checkFirstLaunch() async {
-    // Use RepositoryFactory.preferences which shares the common KeyValueStore
-    final isFirst = await RepositoryFactory.preferences.isFirstLaunch();
+    // Use preferencesRepositoryProvider instead of RepositoryFactory
+    final preferences = ref.read(preferencesRepositoryProvider);
+    final isFirst = await preferences.isFirstLaunch();
     
     if (mounted) {
       setState(() {

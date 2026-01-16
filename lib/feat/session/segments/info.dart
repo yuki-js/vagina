@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:vagina/core/state/repository_providers.dart';
 import 'package:vagina/models/call_session.dart';
 import 'package:vagina/models/speed_dial.dart';
-import 'package:vagina/repositories/repository_factory.dart';
 import 'package:vagina/theme/app_theme.dart';
 import 'package:vagina/utils/duration_formatter.dart';
 
 /// Session detail segment - info/details view.
-class SessionDetailInfoSegment extends StatelessWidget {
+class SessionDetailInfoSegment extends ConsumerWidget {
   final CallSession session;
 
   const SessionDetailInfoSegment({
@@ -16,9 +16,9 @@ class SessionDetailInfoSegment extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return FutureBuilder<SpeedDial?>(
-      future: _loadSpeedDial(),
+      future: _loadSpeedDial(ref),
       builder: (context, snapshot) {
         final speedDial = snapshot.data;
 
@@ -96,8 +96,9 @@ class SessionDetailInfoSegment extends StatelessWidget {
     );
   }
 
-  Future<SpeedDial?> _loadSpeedDial() async {
-    return await RepositoryFactory.speedDials.getById(session.speedDialId);
+  Future<SpeedDial?> _loadSpeedDial(WidgetRef ref) async {
+    final repository = ref.read(speedDialRepositoryProvider);
+    return await repository.getById(session.speedDialId);
   }
 
   Widget _buildSectionHeader(String title) {

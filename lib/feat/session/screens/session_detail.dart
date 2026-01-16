@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:vagina/core/state/repository_providers.dart';
 import 'package:vagina/models/call_session.dart';
-import 'package:vagina/repositories/repository_factory.dart';
 import 'package:vagina/theme/app_theme.dart';
 import 'package:vagina/widgets/adaptive_widgets.dart';
 import 'package:vagina/feat/session/segments/chat.dart';
@@ -70,7 +70,8 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
   }
   
   Future<CallSession?> _loadSession() async {
-    return await RepositoryFactory.callSessions.getById(widget.sessionId);
+    final repository = ref.read(callSessionRepositoryProvider);
+    return await repository.getById(widget.sessionId);
   }
   
   Widget _buildSessionDetail(CallSession session) {

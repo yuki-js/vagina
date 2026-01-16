@@ -17,7 +17,7 @@ import 'package:vagina/models/call_session.dart';
 import 'package:vagina/models/speed_dial.dart';
 import 'package:vagina/models/realtime_events.dart';
 import 'package:vagina/utils/audio_utils.dart';
-import 'package:vagina/repositories/repository_factory.dart';
+import 'package:vagina/interfaces/call_session_repository.dart';
 import 'package:vagina/interfaces/config_repository.dart';
 
 /// Enum representing the current state of the call
@@ -37,6 +37,7 @@ class CallService {
   final AudioPlayerService _player;
   final RealtimeApiClient _apiClient;
   final ConfigRepository _config;
+  final CallSessionRepository _sessionRepository;
   final ToolService _toolService;
   final NotepadService _notepadService;
   final LogService _logService;
@@ -82,6 +83,7 @@ class CallService {
     required AudioPlayerService player,
     required RealtimeApiClient apiClient,
     required ConfigRepository config,
+    required CallSessionRepository sessionRepository,
     required ToolService toolService,
     required NotepadService notepadService,
     LogService? logService,
@@ -90,6 +92,7 @@ class CallService {
         _player = player,
         _apiClient = apiClient,
         _config = config,
+        _sessionRepository = sessionRepository,
         _toolService = toolService,
         _notepadService = notepadService,
         _logService = logService ?? LogService(),
@@ -460,7 +463,7 @@ class CallService {
         speedDialId: _currentSpeedDialId,
       );
 
-      await RepositoryFactory.callSessions.save(session);
+      await _sessionRepository.save(session);
       _logService.info(_tag, 'セッション保存完了: ${session.id}');
       
       // セッション保存完了を通知（UIの更新用）

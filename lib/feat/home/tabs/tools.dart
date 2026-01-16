@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:vagina/core/state/repository_providers.dart';
 import 'package:vagina/feat/call/state/call_service_providers.dart';
 import 'package:vagina/theme/app_theme.dart';
-import 'package:vagina/repositories/repository_factory.dart';
 import 'package:vagina/services/tools/tool_metadata.dart';
 
 /// ツール有効状態のプロバイダー（リポジトリ使用）
 final toolEnabledProvider = FutureProvider.family<bool, String>((ref, toolName) async {
-  return await RepositoryFactory.config.isToolEnabled(toolName);
+  final config = ref.watch(configRepositoryProvider);
+  return await config.isToolEnabled(toolName);
 });
 
 /// ツールタブ - 利用可能なツールを表示し、長押しで有効/無効を切り替え
@@ -60,7 +61,7 @@ class _ToolsTabState extends ConsumerState<ToolsTab> {
   Future<void> _enableSelected() async {
     if (_selectedTools.isEmpty) return;
 
-    final configRepo = RepositoryFactory.config;
+    final configRepo = ref.read(configRepositoryProvider);
     for (final toolName in _selectedTools) {
       final isEnabled = await configRepo.isToolEnabled(toolName);
       if (!isEnabled) {
@@ -84,7 +85,7 @@ class _ToolsTabState extends ConsumerState<ToolsTab> {
   Future<void> _disableSelected() async {
     if (_selectedTools.isEmpty) return;
 
-    final configRepo = RepositoryFactory.config;
+    final configRepo = ref.read(configRepositoryProvider);
     for (final toolName in _selectedTools) {
       final isEnabled = await configRepo.isToolEnabled(toolName);
       if (isEnabled) {
