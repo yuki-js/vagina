@@ -37,7 +37,8 @@ class ToolDetailsSheet extends StatelessWidget {
                   color: AppTheme.secondaryColor.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(Icons.build, color: AppTheme.secondaryColor, size: 20),
+                child: const Icon(Icons.build,
+                    color: AppTheme.secondaryColor, size: 20),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -53,7 +54,7 @@ class ToolDetailsSheet extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          
+
           // Arguments section
           const Text(
             '引数:',
@@ -81,7 +82,7 @@ class ToolDetailsSheet extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          
+
           // Result section
           const Text(
             '結果:',

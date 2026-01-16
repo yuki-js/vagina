@@ -23,7 +23,7 @@ class PermissionsScreen extends StatefulWidget {
 
 class _PermissionsScreenState extends State<PermissionsScreen> {
   final PermissionManager _permissionManager = PermissionManager();
-  
+
   late List<PermissionItem> _permissions;
   bool _isLoading = true;
 
@@ -68,14 +68,14 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
       if (permission.title == 'マイク') {
         final status = await Permission.microphone.request();
         granted = status.isGranted;
-        
+
         if (status.isPermanentlyDenied) {
           _showSettingsDialog('マイク');
           return;
         }
       } else if (permission.title == 'ストレージ') {
         granted = await _permissionManager.requestStoragePermission();
-        
+
         if (!granted) {
           final status = await Permission.storage.status;
           if (status.isPermanentlyDenied) {
@@ -141,9 +141,7 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
   }
 
   bool get _canContinue {
-    return _permissions
-        .where((p) => p.isRequired)
-        .every((p) => p.isGranted);
+    return _permissions.where((p) => p.isRequired).every((p) => p.isGranted);
   }
 
   @override
@@ -202,7 +200,8 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
                           padding: const EdgeInsets.only(bottom: 16),
                           child: PermissionCard(
                             permission: permission,
-                            onRequest: () => _handlePermissionRequest(permission),
+                            onRequest: () =>
+                                _handlePermissionRequest(permission),
                           ),
                         )),
 

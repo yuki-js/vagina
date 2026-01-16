@@ -103,11 +103,11 @@ class VoiceSettingsSection extends ConsumerWidget {
   void _handleNoiseReductionChange(WidgetRef ref, String value) {
     // Update the provider state
     ref.read(noiseReductionProvider.notifier).set(value);
-    
+
     // Update the API client
     final apiClient = ref.read(realtimeApiClientProvider);
     apiClient.setNoiseReduction(value);
-    
+
     // If connected, update session config
     final isCallActive = ref.read(isCallActiveProvider);
     if (isCallActive) {

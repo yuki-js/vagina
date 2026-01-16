@@ -5,12 +5,12 @@ import '../models/speed_dial.dart';
 /// スピードダイヤルインジケーター - 現在使用中のスピードダイヤルをさりげなく表示
 class SpeedDialIndicator extends StatelessWidget {
   final SpeedDial speedDial;
-  
+
   const SpeedDialIndicator({
     super.key,
     required this.speedDial,
   });
-  
+
   @override
   Widget build(BuildContext context) {
     return Container(

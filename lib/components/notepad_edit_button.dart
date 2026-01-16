@@ -21,7 +21,8 @@ class NotepadEditButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppTheme.surfaceColor,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.3)),
+          border:
+              Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.3)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -34,7 +35,8 @@ class NotepadEditButton extends StatelessWidget {
             const SizedBox(width: 4),
             Text(
               isEditing ? '完了' : '編集',
-              style: const TextStyle(fontSize: 12, color: AppTheme.primaryColor),
+              style:
+                  const TextStyle(fontSize: 12, color: AppTheme.primaryColor),
             ),
           ],
         ),

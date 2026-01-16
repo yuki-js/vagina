@@ -12,7 +12,7 @@ class ChatBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isUser = message.role == 'user';
-    
+
     // Regular message bubble (both user and assistant)
     return _MessageBubble(message: message, isUser: isUser);
   }
@@ -52,8 +52,8 @@ class _ToolBadge extends StatelessWidget {
             ),
             const SizedBox(width: 2),
             Icon(
-              Icons.chevron_right, 
-              size: 12, 
+              Icons.chevron_right,
+              size: 12,
               color: AppTheme.secondaryColor.withValues(alpha: 0.7),
             ),
           ],
@@ -69,19 +69,19 @@ class _MessageBubble extends StatelessWidget {
   final bool isUser;
 
   const _MessageBubble({required this.message, required this.isUser});
-  
+
   /// Build content widgets from content parts in order
   List<Widget> _buildContentWidgets() {
     final widgets = <Widget>[];
-    
+
     for (int i = 0; i < message.contentParts.length; i++) {
       final part = message.contentParts[i];
-      
+
       // Add spacing between parts
       if (i > 0) {
         widgets.add(const SizedBox(height: 8));
       }
-      
+
       if (part is TextPart && part.text.isNotEmpty) {
         widgets.add(
           SelectableText(
@@ -96,18 +96,19 @@ class _MessageBubble extends StatelessWidget {
         widgets.add(_ToolBadge(toolCall: part.toolCall));
       }
     }
-    
+
     return widgets;
   }
 
   @override
   Widget build(BuildContext context) {
     final hasContent = message.contentParts.isNotEmpty;
-    
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
-        mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment:
+            isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (!isUser) ...[
@@ -122,9 +123,7 @@ class _MessageBubble extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               decoration: BoxDecoration(
-                color: isUser 
-                    ? AppTheme.primaryColor 
-                    : AppTheme.surfaceColor,
+                color: isUser ? AppTheme.primaryColor : AppTheme.surfaceColor,
                 borderRadius: BorderRadius.only(
                   topLeft: const Radius.circular(18),
                   topRight: const Radius.circular(18),
@@ -136,8 +135,7 @@ class _MessageBubble extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Content parts in order (text and tool calls interleaved)
-                  if (hasContent)
-                    ..._buildContentWidgets(),
+                  if (hasContent) ..._buildContentWidgets(),
                   // Typing indicator for incomplete messages
                   if (!message.isComplete)
                     const Padding(

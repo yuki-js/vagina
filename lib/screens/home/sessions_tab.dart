@@ -102,7 +102,7 @@ class _SessionsTabState extends ConsumerState<SessionsTab> {
   @override
   Widget build(BuildContext context) {
     final sessionsAsync = ref.watch(refreshableCallSessionsProvider);
-    
+
     // セッション保存完了通知を監視してリストを自動更新
     ref.listen<AsyncValue<String>>(sessionSavedProvider, (_, state) {
       state.whenData((_) {
@@ -144,7 +144,9 @@ class _SessionsTabState extends ConsumerState<SessionsTab> {
                       label: const Text('反転'),
                     ),
                     IconButton(
-                      onPressed: _selectedSessionIds.isNotEmpty ? _deleteSelected : null,
+                      onPressed: _selectedSessionIds.isNotEmpty
+                          ? _deleteSelected
+                          : null,
                       icon: const Icon(Icons.delete),
                       color: AppTheme.errorColor,
                     ),
@@ -185,7 +187,8 @@ class _SessionsTabState extends ConsumerState<SessionsTab> {
                           Icon(
                             Icons.history,
                             size: 64,
-                            color: AppTheme.lightTextSecondary.withValues(alpha: 0.5),
+                            color: AppTheme.lightTextSecondary
+                                .withValues(alpha: 0.5),
                           ),
                           const SizedBox(height: 16),
                           Text(
@@ -199,7 +202,8 @@ class _SessionsTabState extends ConsumerState<SessionsTab> {
                       ),
                     )
                   else
-                    ...sessions.map((session) => _buildSessionItem(context, session)),
+                    ...sessions
+                        .map((session) => _buildSessionItem(context, session)),
                 ],
               ),
             ),
@@ -211,7 +215,7 @@ class _SessionsTabState extends ConsumerState<SessionsTab> {
 
   Widget _buildSessionItem(BuildContext context, CallSession session) {
     final isSelected = _selectedSessionIds.contains(session.id);
-    
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
@@ -221,8 +225,10 @@ class _SessionsTabState extends ConsumerState<SessionsTab> {
                 onChanged: (_) => _toggleSelection(session.id),
               )
             : const Icon(Icons.phone, color: AppTheme.primaryColor),
-        title: Text(DurationFormatter.formatRelativeDate(session.startTime, includeTime: true)),
-        subtitle: Text(DurationFormatter.formatDurationCompact(session.duration)),
+        title: Text(DurationFormatter.formatRelativeDate(session.startTime,
+            includeTime: true)),
+        subtitle:
+            Text(DurationFormatter.formatDurationCompact(session.duration)),
         trailing: _isSelectionMode ? null : const Icon(Icons.chevron_right),
         onTap: () {
           if (_isSelectionMode) {
@@ -230,7 +236,8 @@ class _SessionsTabState extends ConsumerState<SessionsTab> {
           } else {
             Navigator.of(context).push(
               MaterialPageRoute(
-                builder: (context) => SessionDetailScreen(sessionId: session.id),
+                builder: (context) =>
+                    SessionDetailScreen(sessionId: session.id),
               ),
             );
           }

@@ -12,13 +12,14 @@ class UiPreferencesSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final useCupertinoStyle = ref.watch(useCupertinoStyleProvider);
-    
+
     return SettingsCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ListTile(
-            leading: const Icon(Icons.palette_outlined, color: AppTheme.lightTextSecondary),
+            leading: const Icon(Icons.palette_outlined,
+                color: AppTheme.lightTextSecondary),
             title: const Text(
               'Cupertinoスタイルを使用',
               style: TextStyle(color: AppTheme.lightTextPrimary),

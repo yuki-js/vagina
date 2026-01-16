@@ -43,10 +43,10 @@ class _ManualSetupScreenState extends ConsumerState<ManualSetupScreen> {
   Future<void> _loadSettings() async {
     try {
       final config = ref.read(configRepositoryProvider);
-      
+
       final realtimeUrl = await config.getRealtimeUrl();
       final apiKey = await config.getApiKey();
-      
+
       if (realtimeUrl != null) {
         _realtimeUrlController.text = realtimeUrl;
       }
@@ -74,13 +74,14 @@ class _ManualSetupScreenState extends ConsumerState<ManualSetupScreen> {
       _showSnackBar('Realtime URLを入力してください', isError: true);
       return;
     }
-    
-    final parsed = UrlUtils.parseAzureRealtimeUrl(_realtimeUrlController.text.trim());
+
+    final parsed =
+        UrlUtils.parseAzureRealtimeUrl(_realtimeUrlController.text.trim());
     if (parsed == null) {
       _showSnackBar('Realtime URLの形式が正しくありません', isError: true);
       return;
     }
-    
+
     if (_apiKeyController.text.trim().isEmpty) {
       _showSnackBar('APIキーを入力してください', isError: true);
       return;
@@ -92,26 +93,28 @@ class _ManualSetupScreenState extends ConsumerState<ManualSetupScreen> {
     RealtimeApiClient? apiClient;
     try {
       apiClient = RealtimeApiClient();
-      
-      await apiClient.connect(
+
+      await apiClient
+          .connect(
         _realtimeUrlController.text.trim(),
         _apiKeyController.text.trim(),
-      ).timeout(
+      )
+          .timeout(
         const Duration(seconds: 10),
         onTimeout: () {
           throw TimeoutException('接続がタイムアウトしました');
         },
       );
-      
+
       await apiClient.disconnect();
       await apiClient.dispose();
       apiClient = null;
-      
+
       // Connection successful, save the config
       final config = ref.read(configRepositoryProvider);
       await config.saveRealtimeUrl(_realtimeUrlController.text.trim());
       await config.saveApiKey(_apiKeyController.text.trim());
-      
+
       if (mounted) {
         widget.onContinue();
       }
@@ -250,11 +253,14 @@ class _ManualSetupScreenState extends ConsumerState<ManualSetupScreen> {
                         ),
                         suffixIcon: IconButton(
                           icon: Icon(
-                            _isApiKeyVisible ? Icons.visibility_off : Icons.visibility,
+                            _isApiKeyVisible
+                                ? Icons.visibility_off
+                                : Icons.visibility,
                             color: Colors.white.withValues(alpha: 0.6),
                           ),
                           onPressed: () {
-                            setState(() => _isApiKeyVisible = !_isApiKeyVisible);
+                            setState(
+                                () => _isApiKeyVisible = !_isApiKeyVisible);
                           },
                         ),
                       ),

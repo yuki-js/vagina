@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
-import '../settings_card.dart';
-import '../../screens/settings/log_screen.dart';
+import '../../components/settings_card.dart';
+import '../../screens/oobe/oobe_flow.dart';
 
-/// 開発者向け設定セクション
-class DeveloperSection extends StatelessWidget {
-  const DeveloperSection({super.key});
+/// Setup section - OOBE restart etc
+class SetupSection extends StatelessWidget {
+  const SetupSection({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -14,14 +14,14 @@ class DeveloperSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ListTile(
-            leading: const Icon(Icons.article_outlined,
-                color: AppTheme.lightTextSecondary),
+            leading:
+                const Icon(Icons.refresh, color: AppTheme.lightTextSecondary),
             title: const Text(
-              'ログを表示',
+              '初期設定をやり直す',
               style: TextStyle(color: AppTheme.lightTextPrimary),
             ),
             subtitle: Text(
-              'トレースログとWebSocketイベントを確認',
+              'ウェルカム画面から初期設定を再実行',
               style: TextStyle(
                 color: AppTheme.lightTextSecondary.withValues(alpha: 0.7),
                 fontSize: 12,
@@ -30,8 +30,10 @@ class DeveloperSection extends StatelessWidget {
             trailing: const Icon(Icons.chevron_right,
                 color: AppTheme.lightTextSecondary),
             onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (context) => const LogScreen()),
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(
+                  builder: (context) => const OOBEFlow(),
+                ),
               );
             },
           ),

@@ -5,6 +5,8 @@ import '../../providers/providers.dart';
 import '../../components/chat_bubble.dart';
 import '../../components/chat_input.dart';
 import '../../components/chat_empty_state.dart';
+import '../../components/call/chat_header.dart';
+import '../../components/call/scroll_to_bottom_button.dart';
 
 /// Chat page widget - displays chat history and input
 class ChatPage extends ConsumerStatefulWidget {
@@ -41,13 +43,14 @@ class _ChatPageState extends ConsumerState<ChatPage> {
 
   void _onScrollChanged() {
     if (!_scrollController.hasClients) return;
-    
+
     final maxScroll = _scrollController.position.maxScrollExtent;
     final currentScroll = _scrollController.offset;
     final isAtBottom = currentScroll >= maxScroll - 50;
     final shouldShowScrollButton = !isAtBottom;
-    
-    if (isAtBottom != _isAtBottom || shouldShowScrollButton != _showScrollToBottom) {
+
+    if (isAtBottom != _isAtBottom ||
+        shouldShowScrollButton != _showScrollToBottom) {
       setState(() {
         _isAtBottom = isAtBottom;
         _showScrollToBottom = shouldShowScrollButton;
@@ -73,7 +76,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     return Column(
       children: [
         // Header
-        _ChatHeader(
+        ChatHeader(
           onBackPressed: widget.onBackPressed,
           hideBackButton: widget.hideBackButton,
         ),
@@ -85,19 +88,21 @@ class _ChatPageState extends ConsumerState<ChatPage> {
               if (messages.isEmpty) {
                 return ChatEmptyState(isConnected: isCallActive);
               }
-              
+
               // Smart auto-scroll: only scroll if user is already at bottom
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (_isAtBottom && _scrollController.hasClients) {
-                  _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+                  _scrollController
+                      .jumpTo(_scrollController.position.maxScrollExtent);
                 }
               });
-              
+
               return Stack(
                 children: [
                   ListView.builder(
                     controller: _scrollController,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     itemCount: messages.length,
                     itemBuilder: (context, index) {
                       final message = messages[index];
@@ -111,7 +116,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                       left: 0,
                       right: 0,
                       child: Center(
-                        child: _ScrollToBottomButton(onPressed: _scrollToBottom),
+                        child: ScrollToBottomButton(onPressed: _scrollToBottom),
                       ),
                     ),
                 ],
@@ -130,103 +135,6 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         // Input area
         ChatInput(isConnected: isCallActive),
       ],
-    );
-  }
-}
-
-/// Chat header with navigation to call
-class _ChatHeader extends StatelessWidget {
-  final VoidCallback onBackPressed;
-  final bool hideBackButton;
-
-  const _ChatHeader({
-    required this.onBackPressed,
-    this.hideBackButton = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        children: [
-          if (!hideBackButton) const SizedBox(width: 80), // Balance for the navigation button
-          Expanded(
-            child: Center(
-              child: Text(
-                'チャット',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.textPrimary,
-                ),
-              ),
-            ),
-          ),
-          if (!hideBackButton)
-            GestureDetector(
-              onTap: onBackPressed,
-              child: Row(
-                children: [
-                  Text(
-                    '通話画面',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppTheme.textSecondary,
-                    ),
-                  ),
-                  const Icon(Icons.chevron_right, color: AppTheme.textSecondary),
-                ],
-              ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Scroll to bottom button
-class _ScrollToBottomButton extends StatelessWidget {
-  final VoidCallback onPressed;
-
-  const _ScrollToBottomButton({required this.onPressed});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onPressed,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: AppTheme.surfaceColor.withValues(alpha: 0.9),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.2),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.keyboard_arrow_down,
-              size: 16,
-              color: AppTheme.textSecondary.withValues(alpha: 0.7),
-            ),
-            const SizedBox(width: 4),
-            Text(
-              '下に戻る',
-              style: TextStyle(
-                fontSize: 12,
-                color: AppTheme.textSecondary.withValues(alpha: 0.7),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

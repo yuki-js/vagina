@@ -9,7 +9,7 @@ class AudioLevelVisualizer extends StatelessWidget {
   final bool isConnected;
   final int barCount;
   final double height;
-  
+
   const AudioLevelVisualizer({
     super.key,
     required this.level,
@@ -31,12 +31,13 @@ class AudioLevelVisualizer extends StatelessWidget {
           // Create a wave-like pattern with falloff from center
           final centerOffset = (i - barCount / 2).abs() / (barCount / 2);
           final falloff = 1 - centerOffset * 0.5;
-          final barLevel = isMuted ? 0.0 : (pow(level, 0.9) * falloff).clamp(0.0, 1.0);
-          
+          final barLevel =
+              isMuted ? 0.0 : (pow(level, 0.9) * falloff).clamp(0.0, 1.0);
+
           // Minimum height percentage
           const minPct = 0.15;
           final pct = max(minPct, barLevel);
-          
+
           return AnimatedContainer(
             duration: const Duration(milliseconds: 50),
             curve: Curves.easeOut,
@@ -44,10 +45,11 @@ class AudioLevelVisualizer extends StatelessWidget {
             height: height * pct,
             margin: const EdgeInsets.symmetric(horizontal: 2),
             decoration: BoxDecoration(
-              color: isMuted 
+              color: isMuted
                   ? AppTheme.textSecondary.withValues(alpha: 0.3)
-                  : (isConnected 
-                      ? AppTheme.primaryColor.withValues(alpha: 0.8 + barLevel * 0.2)
+                  : (isConnected
+                      ? AppTheme.primaryColor
+                          .withValues(alpha: 0.8 + barLevel * 0.2)
                       : AppTheme.textSecondary.withValues(alpha: 0.5)),
               borderRadius: BorderRadius.circular(3),
             ),

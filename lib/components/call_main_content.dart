@@ -30,15 +30,10 @@ class CallMainContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDefault = speedDial.isDefault;
-    final displayIcon = isDefault 
-        ? Icons.headset_mic 
-        : null;
-    final displayEmoji = !isDefault && speedDial.iconEmoji != null
-        ? speedDial.iconEmoji!
-        : null;
-    final displayName = isDefault
-        ? AppConfig.appName
-        : speedDial.name;
+    final displayIcon = isDefault ? Icons.headset_mic : null;
+    final displayEmoji =
+        !isDefault && speedDial.iconEmoji != null ? speedDial.iconEmoji! : null;
+    final displayName = isDefault ? AppConfig.appName : speedDial.name;
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,

@@ -39,17 +39,17 @@ class _AzureConfigSectionState extends ConsumerState<AzureConfigSection> {
   Future<void> _loadSettings() async {
     try {
       final config = ref.read(configRepositoryProvider);
-      
+
       final realtimeUrl = await config.getRealtimeUrl();
       final apiKey = await config.getApiKey();
-      
+
       if (realtimeUrl != null) {
         _realtimeUrlController.text = realtimeUrl;
       }
       if (apiKey != null) {
         _apiKeyController.text = apiKey;
       }
-      
+
       if (mounted) {
         setState(() => _isLoading = false);
       }
@@ -61,15 +61,16 @@ class _AzureConfigSectionState extends ConsumerState<AzureConfigSection> {
     }
   }
 
-  void _showSnackBar(String message, {bool isError = false, bool isWarning = false}) {
+  void _showSnackBar(String message,
+      {bool isError = false, bool isWarning = false}) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isError 
-            ? AppTheme.errorColor 
-            : isWarning 
-                ? AppTheme.warningColor 
+        backgroundColor: isError
+            ? AppTheme.errorColor
+            : isWarning
+                ? AppTheme.warningColor
                 : AppTheme.successColor,
         duration: const Duration(seconds: 3),
       ),
@@ -81,13 +82,14 @@ class _AzureConfigSectionState extends ConsumerState<AzureConfigSection> {
       _showSnackBar('Realtime URLを入力してください', isError: true);
       return;
     }
-    
-    final parsed = UrlUtils.parseAzureRealtimeUrl(_realtimeUrlController.text.trim());
+
+    final parsed =
+        UrlUtils.parseAzureRealtimeUrl(_realtimeUrlController.text.trim());
     if (parsed == null) {
       _showSnackBar('Realtime URLの形式が正しくありません', isError: true);
       return;
     }
-    
+
     if (_apiKeyController.text.trim().isEmpty) {
       _showSnackBar('APIキーを入力してください', isError: true);
       return;
@@ -119,7 +121,8 @@ class _AzureConfigSectionState extends ConsumerState<AzureConfigSection> {
       return;
     }
 
-    final parsed = UrlUtils.parseAzureRealtimeUrl(_realtimeUrlController.text.trim());
+    final parsed =
+        UrlUtils.parseAzureRealtimeUrl(_realtimeUrlController.text.trim());
     if (parsed == null) {
       _showSnackBar('Realtime URLの形式が正しくありません', isError: true);
       return;
@@ -130,21 +133,23 @@ class _AzureConfigSectionState extends ConsumerState<AzureConfigSection> {
     RealtimeApiClient? apiClient;
     try {
       apiClient = RealtimeApiClient();
-      
-      await apiClient.connect(
+
+      await apiClient
+          .connect(
         _realtimeUrlController.text.trim(),
         _apiKeyController.text.trim(),
-      ).timeout(
+      )
+          .timeout(
         const Duration(seconds: 10),
         onTimeout: () {
           throw TimeoutException('接続がタイムアウトしました');
         },
       );
-      
+
       await apiClient.disconnect();
       await apiClient.dispose();
       apiClient = null;
-      
+
       final config = ref.read(configRepositoryProvider);
       await config.saveRealtimeUrl(_realtimeUrlController.text.trim());
       await config.saveApiKey(_apiKeyController.text.trim());
@@ -215,7 +220,8 @@ class _AzureConfigSectionState extends ConsumerState<AzureConfigSection> {
             TextField(
               controller: _realtimeUrlController,
               decoration: const InputDecoration(
-                hintText: 'https://<resource>.openai.azure.com/openai/realtime?api-version=2024-10-01-preview&deployment=gpt-4o-realtime',
+                hintText:
+                    'https://<resource>.openai.azure.com/openai/realtime?api-version=2024-10-01-preview&deployment=gpt-4o-realtime',
               ),
               keyboardType: TextInputType.url,
               maxLines: 2,

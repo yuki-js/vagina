@@ -26,14 +26,14 @@ class _AboutScreenState extends State<AboutScreen> {
       setState(() {
         _tapCount = 0;
       });
-      
+
       // Alternate between the two easter eggs
       final easterEgg = _easterEggIndex % 2 == 0
           ? const ConstellationGame()
           : const VoiceVisualizerGame();
-      
+
       _easterEggIndex++;
-      
+
       Navigator.of(context).push(
         MaterialPageRoute(
           builder: (context) => easterEgg,
@@ -88,7 +88,7 @@ class _AboutScreenState extends State<AboutScreen> {
                       ),
                     ),
                     const SizedBox(height: 48),
-                    
+
                     // Main content
                     _buildSection(
                       icon: Icons.voice_chat,
@@ -97,7 +97,7 @@ class _AboutScreenState extends State<AboutScreen> {
                           'あなたの言葉を受け止め、理解し、共に考えるパートナーです。',
                     ),
                     const SizedBox(height: 32),
-                    
+
                     _buildSection(
                       icon: Icons.lightbulb_outline,
                       title: 'アイデアの生まれる場所',
@@ -106,7 +106,7 @@ class _AboutScreenState extends State<AboutScreen> {
                           'あなたのクリエイティビティを最大限に引き出します。',
                     ),
                     const SizedBox(height: 32),
-                    
+
                     _buildSection(
                       icon: Icons.auto_awesome,
                       title: 'AGI時代の新しい体験',
@@ -115,7 +115,7 @@ class _AboutScreenState extends State<AboutScreen> {
                           'あなたの意図を汲み取り、最適な支援を提供します。',
                     ),
                     const SizedBox(height: 48),
-                    
+
                     // Footer
                     Container(
                       padding: const EdgeInsets.all(24),
@@ -153,7 +153,7 @@ class _AboutScreenState extends State<AboutScreen> {
                       ),
                     ),
                     const SizedBox(height: 32),
-                    
+
                     // App info section
                     Container(
                       padding: const EdgeInsets.all(24),
@@ -165,7 +165,8 @@ class _AboutScreenState extends State<AboutScreen> {
                         children: [
                           _buildInfoRow('バージョン', '1.0.0'),
                           const Divider(height: 24),
-                          _buildInfoRow('Powered by', 'Azure OpenAI Realtime API'),
+                          _buildInfoRow(
+                              'Powered by', 'Azure OpenAI Realtime API'),
                         ],
                       ),
                     ),

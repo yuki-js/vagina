@@ -38,13 +38,19 @@ class _CallScreenState extends ConsumerState<CallScreen> {
     // Start on the call page (center)
     _pageController = PageController(initialPage: _callPageIndex);
     _pageController.addListener(_onPageChanged);
-    
+
     // Apply SpeedDial configuration and auto-start call when screen opens
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(assistantConfigProvider.notifier).updateName(widget.speedDial.name);
-      ref.read(assistantConfigProvider.notifier).updateInstructions(widget.speedDial.systemPrompt);
-      ref.read(assistantConfigProvider.notifier).updateVoice(widget.speedDial.voice);
-      
+      ref
+          .read(assistantConfigProvider.notifier)
+          .updateName(widget.speedDial.name);
+      ref
+          .read(assistantConfigProvider.notifier)
+          .updateInstructions(widget.speedDial.systemPrompt);
+      ref
+          .read(assistantConfigProvider.notifier)
+          .updateVoice(widget.speedDial.voice);
+
       _startCallIfNeeded();
     });
   }
@@ -70,7 +76,7 @@ class _CallScreenState extends ConsumerState<CallScreen> {
   Future<void> _startCallIfNeeded() async {
     final callService = ref.read(callServiceProvider);
     final isActive = ref.read(isCallActiveProvider);
-    
+
     // Only start if not already active
     if (!isActive) {
       // Set assistant config from provider before starting call
@@ -79,10 +85,10 @@ class _CallScreenState extends ConsumerState<CallScreen> {
         assistantConfig.voice,
         assistantConfig.instructions,
       );
-      
+
       // Set the speed dial ID for session tracking
       callService.setSpeedDialId(widget.speedDial.id);
-      
+
       await callService.startCall();
     }
   }
@@ -243,8 +249,10 @@ class _CallScreenState extends ConsumerState<CallScreen> {
             ),
             child: CallPage(
               onChatPressed: () {}, // No navigation needed in 3-column layout
-              onNotepadPressed: () {}, // No navigation needed in 3-column layout
-              hideNavigationButtons: true, // Hide chat/notepad buttons in 3-column layout
+              onNotepadPressed:
+                  () {}, // No navigation needed in 3-column layout
+              hideNavigationButtons:
+                  true, // Hide chat/notepad buttons in 3-column layout
               speedDial: widget.speedDial,
             ),
           ),

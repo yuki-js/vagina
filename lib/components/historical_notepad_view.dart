@@ -59,7 +59,8 @@ class HistoricalNotepadView extends StatelessWidget {
     );
   }
 
-  Widget _buildTabCard(BuildContext context, SessionNotepadTab tab, int number) {
+  Widget _buildTabCard(
+      BuildContext context, SessionNotepadTab tab, int number) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -89,7 +90,8 @@ class HistoricalNotepadView extends StatelessWidget {
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: AppTheme.primaryColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(6),
@@ -151,7 +153,8 @@ class HistoricalNotepadView extends StatelessWidget {
                   color: AppTheme.lightTextPrimary,
                 ),
                 code: TextStyle(
-                  backgroundColor: AppTheme.lightTextSecondary.withValues(alpha: 0.1),
+                  backgroundColor:
+                      AppTheme.lightTextSecondary.withValues(alpha: 0.1),
                   color: AppTheme.primaryColor,
                   fontFamily: 'monospace',
                 ),

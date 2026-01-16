@@ -37,7 +37,7 @@ class _OOBEFlowState extends ConsumerState<OOBEFlow> {
   void _completeOOBE() async {
     // Mark first launch as completed using RepositoryFactory
     await RepositoryFactory.preferences.markFirstLaunchCompleted();
-    
+
     if (!mounted) return;
 
     // Navigate to HomeScreen with elegant transition
@@ -67,7 +67,8 @@ class _OOBEFlowState extends ConsumerState<OOBEFlow> {
             ),
           );
         },
-        transitionDuration: const Duration(milliseconds: 2000), // Elegant slow transition
+        transitionDuration:
+            const Duration(milliseconds: 2000), // Elegant slow transition
       ),
     );
   }

@@ -50,8 +50,9 @@ class SpeedDialTab extends ConsumerWidget {
                 // Calculate number of columns based on screen width
                 // Each card should be approximately 160px wide
                 final cardWidth = 160.0;
-                final crossAxisCount = (constraints.maxWidth / cardWidth).floor().clamp(2, 6);
-                
+                final crossAxisCount =
+                    (constraints.maxWidth / cardWidth).floor().clamp(2, 6);
+
                 return GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
@@ -134,7 +135,7 @@ class SpeedDialTab extends ConsumerWidget {
     SpeedDial speedDial,
   ) {
     final isDefault = speedDial.isDefault;
-    
+
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(

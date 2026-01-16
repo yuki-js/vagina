@@ -13,13 +13,14 @@ class AndroidAudioSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final asyncConfig = ref.watch(androidAudioConfigProvider);
-    
+
     return asyncConfig.when(
       loading: () => const SettingsCard(
         child: Center(child: CircularProgressIndicator()),
       ),
       error: (error, stack) => SettingsCard(
-        child: Text('エラー: $error', style: const TextStyle(color: AppTheme.errorColor)),
+        child: Text('エラー: $error',
+            style: const TextStyle(color: AppTheme.errorColor)),
       ),
       data: (config) => SettingsCard(
         child: Column(
@@ -46,26 +47,30 @@ class AndroidAudioSection extends ConsumerWidget {
             DropdownButtonFormField<AndroidAudioSource>(
               value: config.audioSource,
               decoration: const InputDecoration(
-                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                contentPadding:
+                    EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               ),
               dropdownColor: AppTheme.lightSurfaceColor,
               items: AndroidAudioSource.values.map((source) {
                 return DropdownMenuItem(
                   value: source,
                   child: Text(
-                    AndroidAudioConfig.audioSourceDisplayNames[source] ?? source.name,
+                    AndroidAudioConfig.audioSourceDisplayNames[source] ??
+                        source.name,
                     style: const TextStyle(color: AppTheme.lightTextPrimary),
                   ),
                 );
               }).toList(),
               onChanged: (value) {
                 if (value != null) {
-                  ref.read(androidAudioConfigProvider.notifier).updateAudioSource(value);
+                  ref
+                      .read(androidAudioConfigProvider.notifier)
+                      .updateAudioSource(value);
                 }
               },
             ),
             const SizedBox(height: 16),
-            
+
             // Audio manager mode dropdown
             const Text(
               'オーディオマネージャーモード',
@@ -87,7 +92,8 @@ class AndroidAudioSection extends ConsumerWidget {
             DropdownButtonFormField<AudioManagerMode>(
               value: config.audioManagerMode,
               decoration: const InputDecoration(
-                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                contentPadding:
+                    EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               ),
               dropdownColor: AppTheme.lightSurfaceColor,
               items: AudioManagerMode.values.map((mode) {
@@ -101,7 +107,9 @@ class AndroidAudioSection extends ConsumerWidget {
               }).toList(),
               onChanged: (value) {
                 if (value != null) {
-                  ref.read(androidAudioConfigProvider.notifier).updateAudioManagerMode(value);
+                  ref
+                      .read(androidAudioConfigProvider.notifier)
+                      .updateAudioManagerMode(value);
                 }
               },
             ),

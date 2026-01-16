@@ -26,7 +26,7 @@ class _PiPSettingsSectionState extends ConsumerState<PiPSettingsSection> {
   Future<void> _checkPiPAvailability() async {
     final pipService = ref.read(pipServiceProvider);
     final available = await pipService.isPiPAvailable();
-    
+
     if (mounted) {
       setState(() {
         _isPiPAvailable = available;
@@ -38,15 +38,15 @@ class _PiPSettingsSectionState extends ConsumerState<PiPSettingsSection> {
 
   Future<void> _togglePiP(bool value) async {
     final pipService = ref.read(pipServiceProvider);
-    
+
     setState(() => _isLoading = true);
-    
+
     if (value) {
       await pipService.enablePiP();
     } else {
       await pipService.disablePiP();
     }
-    
+
     if (mounted) {
       setState(() {
         _isEnabled = value;

@@ -123,7 +123,8 @@ class _ConstellationGameState extends State<ConstellationGame>
             child: GestureDetector(
               onTapDown: (details) {
                 final renderBox = context.findRenderObject() as RenderBox;
-                final localPosition = renderBox.globalToLocal(details.globalPosition);
+                final localPosition =
+                    renderBox.globalToLocal(details.globalPosition);
                 _handleTap(localPosition, renderBox.size);
               },
               child: CustomPaint(
@@ -148,7 +149,7 @@ class _ConstellationGameState extends State<ConstellationGame>
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ),
-                
+
                 const Spacer(),
 
                 // Instructions
@@ -191,7 +192,8 @@ class _ConstellationGameState extends State<ConstellationGame>
                             icon: const Icon(Icons.refresh, size: 18),
                             label: const Text('リセット'),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.3),
+                              backgroundColor:
+                                  AppTheme.primaryColor.withValues(alpha: 0.3),
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 16,

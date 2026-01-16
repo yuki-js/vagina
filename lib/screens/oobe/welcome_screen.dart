@@ -44,7 +44,8 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   void _cycleMessages() {
     if (!mounted) return;
     setState(() {
-      _currentMessageIndex = (_currentMessageIndex + 1) % _welcomeMessages.length;
+      _currentMessageIndex =
+          (_currentMessageIndex + 1) % _welcomeMessages.length;
     });
     Future.delayed(const Duration(seconds: 2), _cycleMessages);
   }

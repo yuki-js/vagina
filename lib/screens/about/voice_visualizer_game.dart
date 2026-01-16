@@ -21,10 +21,10 @@ class _VoiceVisualizerGameState extends State<VoiceVisualizerGame>
   late AnimationController _pulseController;
   late AnimationController _rotationController;
   final AudioRecorderService _audioService = AudioRecorderService();
-  
+
   bool _isRecording = false;
   bool _hasPermission = false;
-  final List<double> _audioLevels = <double>[];  // Growable list
+  final List<double> _audioLevels = <double>[]; // Growable list
   double _currentAmplitude = 0.0;
   StreamSubscription<Amplitude>? _amplitudeSubscription;
   StreamSubscription<Uint8List>? _audioStreamSubscription;
@@ -77,12 +77,12 @@ class _VoiceVisualizerGameState extends State<VoiceVisualizerGame>
       await _audioService.stopRecording();
       await _amplitudeSubscription?.cancel();
       await _audioStreamSubscription?.cancel();
-      
+
       setState(() {
         _isRecording = false;
         _currentAmplitude = 0.0;
       });
-      
+
       _pulseController.stop();
     } else {
       // Start recording
@@ -106,7 +106,7 @@ class _VoiceVisualizerGameState extends State<VoiceVisualizerGame>
 
       try {
         final audioStream = await _audioService.startRecording();
-        
+
         // Subscribe to audio stream
         _audioStreamSubscription = audioStream.listen((data) {
           // Process audio data to extract amplitude
@@ -119,7 +119,7 @@ class _VoiceVisualizerGameState extends State<VoiceVisualizerGame>
             }
             final rms = math.sqrt(sum / samples.length);
             final normalizedAmplitude = (rms / 32768).clamp(0.0, 1.0);
-            
+
             if (mounted) {
               setState(() {
                 _currentAmplitude = normalizedAmplitude;
@@ -136,7 +136,7 @@ class _VoiceVisualizerGameState extends State<VoiceVisualizerGame>
         setState(() {
           _isRecording = true;
         });
-        
+
         _pulseController.repeat(reverse: true);
 
         if (mounted) {
@@ -429,7 +429,8 @@ class WaveformVisualizerPainter extends CustomPainter {
 
       final paint = Paint()
         ..shader = gradient.createShader(
-          Rect.fromLTWH(i * barWidth, centerY - barHeight / 2, barWidth * 0.8, barHeight),
+          Rect.fromLTWH(
+              i * barWidth, centerY - barHeight / 2, barWidth * 0.8, barHeight),
         )
         ..style = PaintingStyle.fill;
 
