@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vagina/feat/call/state/call_stream_providers.dart';
 import 'package:vagina/feat/call/state/call_ui_state_providers.dart';
-import 'package:vagina/models/speed_dial.dart';
-import 'package:vagina/services/call_service.dart';
 import 'package:vagina/feat/call/widgets/call_main_content.dart';
 import 'package:vagina/feat/call/widgets/control_panel.dart';
+import 'package:vagina/models/speed_dial.dart';
 
 /// 通話ページウィジェット - 通話UIとコントロールを表示
 class CallPane extends ConsumerWidget {
@@ -24,15 +23,13 @@ class CallPane extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final callStateAsync = ref.watch(callStateProvider);
-    final amplitudeAsync = ref.watch(amplitudeProvider);
-    final durationAsync = ref.watch(durationProvider);
+    final callStateInfo = ref.watch(callStateInfoProvider);
+    final callMetricsAsync = ref.watch(callMetricsProvider);
     final isMuted = ref.watch(isMutedProvider);
 
-    final isCallActive = ref.watch(isCallActiveProvider);
-    final callState = callStateAsync.value;
-    final amplitude = amplitudeAsync.value ?? 0.0;
-    final duration = durationAsync.value ?? 0;
+    final isCallActive = callStateInfo.isActive;
+    final amplitude = callMetricsAsync.value?.amplitude ?? 0.0;
+    final duration = callMetricsAsync.value?.duration ?? 0;
 
     return Column(
       children: [
@@ -40,8 +37,8 @@ class CallPane extends ConsumerWidget {
         Expanded(
           child: CallMainContent(
             isCallActive: isCallActive,
-            isConnecting: callState == CallState.connecting,
-            isConnected: callState == CallState.connected,
+            isConnecting: callStateInfo.isConnecting,
+            isConnected: callStateInfo.isConnected,
             callDuration: duration,
             inputLevel: amplitude,
             isMuted: isMuted,

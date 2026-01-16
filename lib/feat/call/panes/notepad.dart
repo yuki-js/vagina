@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:vagina/feat/call/state/notepad_controller.dart';
 import 'package:vagina/feat/call/state/notepad_providers.dart';
 import 'package:vagina/theme/app_theme.dart';
 import 'package:vagina/feat/call/widgets/notepad_header.dart';
@@ -47,17 +48,15 @@ class _NotepadPaneState extends ConsumerState<NotepadPane> {
 
   @override
   Widget build(BuildContext context) {
-    final tabsAsync = ref.watch(notepadTabsProvider);
-    final selectedTabIdAsync = ref.watch(selectedNotepadTabIdProvider);
+    final notepadStateAsync = ref.watch(notepadStateProvider);
     final notepadService = ref.read(notepadServiceProvider);
 
-    return tabsAsync.when(
-      data: (tabs) {
-        final selectedId = selectedTabIdAsync.value;
-        final selectedTab = selectedId != null 
-            ? tabs.where((t) => t.id == selectedId).firstOrNull
-            : null;
-        
+    return notepadStateAsync.when(
+      data: (state) {
+        final tabs = state.tabs;
+        final selectedId = state.selectedTabId;
+        final selectedTab = state.selectedTab;
+
         // Reset editing state when tab changes (based on tab ID change)
         if (_currentTabId != selectedId && _isEditing) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -154,4 +153,3 @@ class _NotepadPaneState extends ConsumerState<NotepadPane> {
     );
   }
 }
-

@@ -25,7 +25,7 @@ class ControlPanel extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isMuted = ref.watch(isMutedProvider);
     final speakerMuted = ref.watch(speakerMutedProvider);
-    final isCallActive = ref.watch(isCallActiveProvider);
+    final isCallActive = ref.watch(callStateInfoProvider).isActive;
 
     return Container(
       margin: const EdgeInsets.all(16),
@@ -184,7 +184,7 @@ class ControlPanel extends ConsumerWidget {
   }
 
   void _handleInterrupt(WidgetRef ref) {
-    final isCallActive = ref.read(isCallActiveProvider);
+    final isCallActive = ref.read(callStateInfoProvider).isActive;
     if (!isCallActive) return;
 
     final audioPlayer = ref.read(audioPlayerServiceProvider);

@@ -39,7 +39,7 @@ class _CallScreenState extends ConsumerState<CallScreen> {
     // Start on the call page (center)
     _pageController = PageController(initialPage: _callPageIndex);
     _pageController.addListener(_onPageChanged);
-    
+
     // Auto-start call when screen opens
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _startCallIfNeeded();
@@ -66,8 +66,8 @@ class _CallScreenState extends ConsumerState<CallScreen> {
 
   Future<void> _startCallIfNeeded() async {
     final callService = ref.read(callServiceProvider);
-    final isActive = ref.read(isCallActiveProvider);
-    
+    final isActive = ref.read(callStateInfoProvider).isActive;
+
     // Only start if not already active
     if (!isActive) {
       // Set assistant config from SpeedDial before starting call
@@ -75,10 +75,10 @@ class _CallScreenState extends ConsumerState<CallScreen> {
         widget.speedDial.voice,
         widget.speedDial.systemPrompt,
       );
-      
+
       // Set the speed dial ID for session tracking
       callService.setSpeedDialId(widget.speedDial.id);
-      
+
       await callService.startCall();
     }
   }
@@ -140,11 +140,20 @@ class _CallScreenState extends ConsumerState<CallScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Listen for errors from call service
-    ref.listen(callErrorProvider, (previous, next) {
-      next.whenData((error) {
-        _showSnackBar(error, isError: true);
-      });
+    // Listen for errors from call service via consolidated metrics stream.
+    // Dedupe so that amplitude/duration updates don't re-show the same error.
+    ref.listen<AsyncValue<CallMetrics>>(callMetricsProvider, (previous, next) {
+      final previousError = previous?.maybeWhen(
+        data: (metrics) => metrics.lastError,
+        orElse: () => null,
+      );
+      final nextError = next.maybeWhen(
+        data: (metrics) => metrics.lastError,
+        orElse: () => null,
+      );
+      if (nextError != null && nextError.isNotEmpty && nextError != previousError) {
+        _showSnackBar(nextError, isError: true);
+      }
     });
 
     return PopScope(

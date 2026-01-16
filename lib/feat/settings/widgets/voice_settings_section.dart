@@ -83,7 +83,7 @@ class VoiceSettingsSection extends ConsumerWidget {
     apiClient.setNoiseReduction(value);
 
     // If connected, update session config
-    final isCallActive = ref.read(isCallActiveProvider);
+    final isCallActive = ref.read(callStateInfoProvider).isActive;
     if (isCallActive) {
       apiClient.updateSessionConfig();
     }

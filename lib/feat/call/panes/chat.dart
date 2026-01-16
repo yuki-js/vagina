@@ -43,12 +43,12 @@ class _ChatPaneState extends ConsumerState<ChatPane> {
 
   void _onScrollChanged() {
     if (!_scrollController.hasClients) return;
-    
+
     final maxScroll = _scrollController.position.maxScrollExtent;
     final currentScroll = _scrollController.offset;
     final isAtBottom = currentScroll >= maxScroll - 50;
     final shouldShowScrollButton = !isAtBottom;
-    
+
     if (isAtBottom != _isAtBottom || shouldShowScrollButton != _showScrollToBottom) {
       setState(() {
         _isAtBottom = isAtBottom;
@@ -70,7 +70,7 @@ class _ChatPaneState extends ConsumerState<ChatPane> {
   @override
   Widget build(BuildContext context) {
     final chatMessagesAsync = ref.watch(chatMessagesProvider);
-    final isCallActive = ref.watch(isCallActiveProvider);
+    final isCallActive = ref.watch(callStateInfoProvider).isActive;
 
     return Column(
       children: [
@@ -87,14 +87,14 @@ class _ChatPaneState extends ConsumerState<ChatPane> {
               if (messages.isEmpty) {
                 return ChatEmptyState(isConnected: isCallActive);
               }
-              
+
               // Smart auto-scroll: only scroll if user is already at bottom
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (_isAtBottom && _scrollController.hasClients) {
                   _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
                 }
               });
-              
+
               return Stack(
                 children: [
                   ListView.builder(
@@ -135,4 +135,3 @@ class _ChatPaneState extends ConsumerState<ChatPane> {
     );
   }
 }
-
