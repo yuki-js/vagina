@@ -5,7 +5,7 @@ import 'package:vagina/interfaces/speed_dial_repository.dart';
 import 'package:vagina/interfaces/memory_repository.dart';
 import 'package:vagina/interfaces/config_repository.dart';
 import 'package:vagina/data/permission_manager.dart';
-import 'providers.dart'; // For logServiceProvider
+import 'package:vagina/core/state/log_provider.dart';
 
 /// Provider for CallSessionRepository
 final callSessionRepositoryProvider = Provider<CallSessionRepository>((ref) {
