@@ -1,11 +1,11 @@
-import '../utils/platform_compat.dart';
+import 'package:vagina/utils/platform_compat.dart';
 import 'dart:async';
 import 'dart:collection';
 import 'dart:typed_data';
 import 'package:taudio/taudio.dart';
 import 'audio_player_service_windows.dart';
 import 'log_service.dart';
-import '../config/app_config.dart';
+import 'package:vagina/config/app_config.dart';
 
 /// Service for playing streaming PCM audio from Azure OpenAI Realtime API
 ///

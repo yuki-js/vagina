@@ -3,7 +3,7 @@ import 'tools/tool_manager.dart';
 import 'tools/tool_registry.dart';
 import 'tools/tool_metadata.dart';
 import 'tools/builtin_tool_factory.dart';
-import '../repositories/repository_factory.dart';
+import 'package:vagina/repositories/repository_factory.dart';
 
 export 'tools/base_tool.dart' show BaseTool, ToolExecutionResult, ToolManagerRef;
 export 'tools/tool_manager.dart' show ToolManager;

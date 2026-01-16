@@ -1,7 +1,7 @@
-import '../models/android_audio_config.dart';
-import '../interfaces/config_repository.dart';
-import '../interfaces/key_value_store.dart';
-import '../services/log_service.dart';
+import 'package:vagina/models/android_audio_config.dart';
+import 'package:vagina/interfaces/config_repository.dart';
+import 'package:vagina/interfaces/key_value_store.dart';
+import 'package:vagina/services/log_service.dart';
 
 /// JSON-based implementation of ConfigRepository
 class JsonConfigRepository implements ConfigRepository {

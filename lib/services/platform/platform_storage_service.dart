@@ -1,9 +1,9 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
-import '../../utils/platform_compat.dart';
-import '../log_service.dart';
-import '../../data/permission_manager.dart';
+import 'package:vagina/utils/platform_compat.dart';
+import 'package:vagina/services/log_service.dart';
+import 'package:vagina/data/permission_manager.dart';
 
 /// Platform-specific storage path resolution
 class PlatformStorageService {

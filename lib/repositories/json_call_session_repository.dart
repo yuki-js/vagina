@@ -1,7 +1,7 @@
-import '../models/call_session.dart';
-import '../interfaces/call_session_repository.dart';
-import '../interfaces/key_value_store.dart';
-import '../services/log_service.dart';
+import 'package:vagina/models/call_session.dart';
+import 'package:vagina/interfaces/call_session_repository.dart';
+import 'package:vagina/interfaces/key_value_store.dart';
+import 'package:vagina/services/log_service.dart';
 
 /// JSON-based implementation of CallSessionRepository
 class JsonCallSessionRepository implements CallSessionRepository {

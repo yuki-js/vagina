@@ -55,6 +55,14 @@ fvm flutter run
 
 > **注意**: devcontainer を使用する場合、fvm は自動的に設定されます。
 
+## UI構造チェック
+
+スクリーン/タブ/ペーン/セグメントの配置ルールを簡易チェックします。
+
+```bash
+python3 scripts/ui_structure_check.py --lib ./lib
+```
+
 ## クイックスタート
 
 ```bash

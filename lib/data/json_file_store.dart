@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
-import '../interfaces/key_value_store.dart';
-import '../services/log_service.dart';
-import '../services/platform/platform_storage_service.dart';
+import 'package:vagina/interfaces/key_value_store.dart';
+import 'package:vagina/services/log_service.dart';
+import 'package:vagina/services/platform/platform_storage_service.dart';
 
 // Conditional import for web support
 import 'web_storage_stub.dart'

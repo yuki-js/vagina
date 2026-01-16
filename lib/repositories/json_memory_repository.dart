@@ -1,6 +1,6 @@
-import '../interfaces/memory_repository.dart';
-import '../interfaces/key_value_store.dart';
-import '../services/log_service.dart';
+import 'package:vagina/interfaces/memory_repository.dart';
+import 'package:vagina/interfaces/key_value_store.dart';
+import 'package:vagina/services/log_service.dart';
 
 /// JSON-based implementation of MemoryRepository
 class JsonMemoryRepository implements MemoryRepository {

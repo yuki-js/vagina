@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../base_tool.dart';
-import '../tool_metadata.dart';
-import '../../../interfaces/memory_repository.dart';
+import 'package:vagina/services/tools/base_tool.dart';
+import 'package:vagina/services/tools/tool_metadata.dart';
+import 'package:vagina/interfaces/memory_repository.dart';
 
 /// メモリ保存ツール
 class MemorySaveTool extends BaseTool {

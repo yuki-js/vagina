@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
-import '../config/app_config.dart';
-import '../models/realtime_events.dart';
-import '../models/realtime_session_config.dart';
+import 'package:vagina/config/app_config.dart';
+import 'package:vagina/models/realtime_events.dart';
+import 'package:vagina/models/realtime_session_config.dart';
 import 'websocket_service.dart';
 import 'log_service.dart';
 
@@ -120,9 +120,6 @@ class RealtimeApiClient {
 
   /// Session configuration
   RealtimeSessionConfig _sessionConfig = const RealtimeSessionConfig();
-  
-  /// Noise reduction type ('near', 'far', or null for disabled)
-  String? _noiseReduction;
 
   RealtimeApiClient({
     WebSocketService? webSocket,

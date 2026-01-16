@@ -1,7 +1,7 @@
-import '../models/speed_dial.dart';
-import '../interfaces/speed_dial_repository.dart';
-import '../interfaces/key_value_store.dart';
-import '../services/log_service.dart';
+import 'package:vagina/models/speed_dial.dart';
+import 'package:vagina/interfaces/speed_dial_repository.dart';
+import 'package:vagina/interfaces/key_value_store.dart';
+import 'package:vagina/services/log_service.dart';
 
 /// JSON-based implementation of SpeedDialRepository
 class JsonSpeedDialRepository implements SpeedDialRepository {

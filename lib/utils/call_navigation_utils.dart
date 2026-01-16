@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/speed_dial.dart';
-import '../providers/providers.dart';
-import '../screens/call/call_screen.dart';
+import 'package:vagina/models/speed_dial.dart';
+import 'package:vagina/providers/providers.dart';
+import 'package:vagina/feat/call/screens/call.dart';
 
 /// Utility functions for initiating calls with SpeedDial configuration
 /// These are navigation/UI helpers, not service methods

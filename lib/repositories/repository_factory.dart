@@ -1,15 +1,17 @@
-import '../interfaces/key_value_store.dart';
-import '../data/json_file_store.dart';
-import '../interfaces/call_session_repository.dart';
-import '../interfaces/speed_dial_repository.dart';
-import '../interfaces/memory_repository.dart';
-import '../interfaces/config_repository.dart';
+import 'package:vagina/data/in_memory_store.dart';
+import 'package:vagina/data/json_file_store.dart';
+import 'package:vagina/interfaces/call_session_repository.dart';
+import 'package:vagina/interfaces/config_repository.dart';
+import 'package:vagina/interfaces/key_value_store.dart';
+import 'package:vagina/interfaces/memory_repository.dart';
+import 'package:vagina/interfaces/speed_dial_repository.dart';
+import 'package:vagina/services/log_service.dart';
+
 import 'json_call_session_repository.dart';
-import 'json_speed_dial_repository.dart';
-import 'json_memory_repository.dart';
 import 'json_config_repository.dart';
+import 'json_memory_repository.dart';
+import 'json_speed_dial_repository.dart';
 import 'preferences_repository.dart';
-import '../services/log_service.dart';
 
 /// Factory for creating repository instances
 /// 
@@ -24,14 +26,31 @@ class RepositoryFactory {
   static PreferencesRepository? _preferencesRepo;
   static LogService? _logService;
 
-  /// Initialize the repositories with a key-value store
-  static Future<void> initialize({LogService? logService}) async {
+  /// Initialize the repositories with a key-value store.
+  ///
+  /// In widget/unit tests, file IO / platform channels can hang. When running
+  /// under test (`bool.fromEnvironment('FLUTTER_TEST') == true`), we default to
+  /// an in-memory store.
+  static Future<void> initialize({LogService? logService, KeyValueStore? store}) async {
     _logService = logService ?? LogService();
-    _store ??= JsonFileStore(
-      fileName: 'vagina_config.json',
-      folderName: 'VAGINA',
-      logService: _logService,
-    );
+
+    if (_store != null) return;
+
+    const isFlutterTest = bool.fromEnvironment('FLUTTER_TEST');
+
+    if (store != null) {
+      _store = store;
+    } else if (isFlutterTest) {
+      // Avoid file IO / platform storage services in tests.
+      _store = InMemoryStore();
+    } else {
+      _store = JsonFileStore(
+        fileName: 'vagina_config.json',
+        folderName: 'VAGINA',
+        logService: _logService,
+      );
+    }
+
     await _store!.initialize();
   }
 

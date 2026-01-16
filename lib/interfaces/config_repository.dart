@@ -1,4 +1,4 @@
-import '../models/android_audio_config.dart';
+import 'package:vagina/models/android_audio_config.dart';
 
 /// Repository for managing application configuration
 abstract class ConfigRepository {

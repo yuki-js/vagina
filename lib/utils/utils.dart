@@ -1,5 +1,4 @@
-/// Utils library - utility functions and classes
-library;
+// Utils library - utility functions and classes
 
 export 'duration_formatter.dart';
 export 'audio_utils.dart';
@@ -72,7 +71,7 @@ class Utils {
     return '${value.toStringAsFixed(decimals)} ${suffixes[i]}';
   }
 
-  /// Debounce a function call (delay execution until no calls for [duration])
+  /// Debounce a function call (delay execution until no calls for `duration`)
   /// Returns a function that wraps the original function with debouncing
   static Function debounce(Function func, Duration duration) {
     DateTime? lastCall;
@@ -85,13 +84,13 @@ class Utils {
     };
   }
 
-  /// Deep copy a Map<String, dynamic> structure
+  /// Deep copy a `Map<String, dynamic>` structure
   static Map<String, dynamic> deepCopyMap(Map<String, dynamic> source) {
     final json = jsonEncode(source);
     return jsonDecode(json) as Map<String, dynamic>;
   }
 
-  /// Deep copy a List<Map<String, dynamic>> structure
+  /// Deep copy a `List<Map<String, dynamic>>` structure
   static List<Map<String, dynamic>> deepCopyList(List<Map<String, dynamic>> source) {
     final json = jsonEncode(source);
     return (jsonDecode(json) as List).cast<Map<String, dynamic>>();

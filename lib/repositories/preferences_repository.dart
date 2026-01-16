@@ -1,4 +1,4 @@
-import '../interfaces/key_value_store.dart';
+import 'package:vagina/interfaces/key_value_store.dart';
 
 /// Repository for app preferences and settings
 /// 

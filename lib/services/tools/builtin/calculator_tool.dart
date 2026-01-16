@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../base_tool.dart';
-import '../tool_metadata.dart';
+import 'package:vagina/services/tools/base_tool.dart';
+import 'package:vagina/services/tools/tool_metadata.dart';
 
 /// 計算機ツール
 class CalculatorTool extends BaseTool {

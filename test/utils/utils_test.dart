@@ -134,7 +134,7 @@ void main() {
 
     test('retry throws after max attempts', () async {
       var attempts = 0;
-      
+
       try {
         await Utils.retry(
           () async {
@@ -144,6 +144,7 @@ void main() {
           maxAttempts: 3,
           initialDelay: const Duration(milliseconds: 10),
         );
+        // ignore: dead_code
         fail('Should have thrown an exception');
       } catch (e) {
         expect(attempts, equals(3));

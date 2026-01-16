@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:typed_data';
 import 'package:record/record.dart';
-import '../config/app_config.dart';
-import '../models/android_audio_config.dart';
+import 'package:vagina/config/app_config.dart';
+import 'package:vagina/models/android_audio_config.dart';
 
 /// Service for recording audio from the microphone
 class AudioRecorderService {

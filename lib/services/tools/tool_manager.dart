@@ -1,5 +1,5 @@
 import 'base_tool.dart';
-import '../log_service.dart';
+import 'package:vagina/services/log_service.dart';
 
 /// セッションスコープのツールマネージャ
 /// 

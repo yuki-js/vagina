@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:window_manager/window_manager.dart';
-import 'screens/home/home_screen.dart';
-import 'screens/oobe/oobe_flow.dart';
+import 'feat/home/screens/home.dart';
+import 'feat/oobe/screens/oobe_flow.dart';
 import 'theme/app_theme.dart';
 import 'repositories/repository_factory.dart';
 
@@ -93,7 +93,7 @@ class _VaginaAppState extends State<VaginaApp> {
               ),
             )
           : _isFirstLaunch
-              ? const OOBEFlow()
+              ? const OobeFlowScreen()
               : const HomeScreen(),
     );
   }

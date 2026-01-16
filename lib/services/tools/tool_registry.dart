@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'base_tool.dart';
 import 'tool_metadata.dart';
-import '../log_service.dart';
+import 'package:vagina/services/log_service.dart';
 
 /// ツールレジストリ
 /// 

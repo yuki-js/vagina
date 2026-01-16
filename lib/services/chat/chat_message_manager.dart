@@ -1,5 +1,5 @@
 import 'dart:async';
-import '../../models/chat_message.dart';
+import 'package:vagina/models/chat_message.dart';
 
 /// Service for managing chat message state
 class ChatMessageManager {

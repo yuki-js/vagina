@@ -54,7 +54,7 @@ void main() {
 
     test('AppError is rethrown as-is', () async {
       final originalError = NetworkError('Test error');
-      
+
       try {
         await ErrorHandler.handleAsync(
           () async {
@@ -62,6 +62,7 @@ void main() {
           },
           context: 'test',
         );
+        // ignore: dead_code
         fail('Should have thrown');
       } catch (e) {
         expect(identical(e, originalError), isTrue);

@@ -1,5 +1,5 @@
 import 'dart:async';
-import '../models/notepad_tab.dart';
+import 'package:vagina/models/notepad_tab.dart';
 import 'log_service.dart';
 
 /// Service for managing artifact tabs

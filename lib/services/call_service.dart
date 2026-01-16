@@ -11,14 +11,14 @@ import 'notepad_service.dart';
 import 'log_service.dart';
 import 'call_feedback_service.dart';
 import 'chat/chat_message_manager.dart';
-import '../config/app_config.dart';
-import '../models/chat_message.dart';
-import '../models/call_session.dart';
-import '../models/speed_dial.dart';
-import '../models/realtime_events.dart';
-import '../utils/audio_utils.dart';
-import '../repositories/repository_factory.dart';
-import '../interfaces/config_repository.dart';
+import 'package:vagina/config/app_config.dart';
+import 'package:vagina/models/chat_message.dart';
+import 'package:vagina/models/call_session.dart';
+import 'package:vagina/models/speed_dial.dart';
+import 'package:vagina/models/realtime_events.dart';
+import 'package:vagina/utils/audio_utils.dart';
+import 'package:vagina/repositories/repository_factory.dart';
+import 'package:vagina/interfaces/config_repository.dart';
 
 /// Enum representing the current state of the call
 enum CallState {

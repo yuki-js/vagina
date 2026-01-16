@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import '../utils/duration_formatter.dart';
+import 'package:vagina/utils/duration_formatter.dart';
 
 /// Log entry with timestamp and message
 class LogEntry {

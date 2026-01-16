@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'log_service.dart';
-import '../utils/url_utils.dart';
+import 'package:vagina/utils/url_utils.dart';
 
 /// Service for WebSocket communication
 class WebSocketService {

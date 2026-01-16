@@ -1,7 +1,7 @@
 import 'package:permission_handler/permission_handler.dart';
 import 'package:device_info_plus/device_info_plus.dart';
-import '../utils/platform_compat.dart';
-import '../services/log_service.dart';
+import 'package:vagina/utils/platform_compat.dart';
+import 'package:vagina/services/log_service.dart';
 
 /// Handles storage and other permissions
 class PermissionManager {

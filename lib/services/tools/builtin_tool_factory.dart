@@ -1,7 +1,7 @@
 import 'base_tool.dart';
 import 'builtin/builtin_tools.dart';
-import '../notepad_service.dart';
-import '../../interfaces/memory_repository.dart';
+import 'package:vagina/services/notepad_service.dart';
+import 'package:vagina/interfaces/memory_repository.dart';
 
 /// ビルトインツールのファクトリ
 class BuiltinToolFactory {

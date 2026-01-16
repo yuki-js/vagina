@@ -1,4 +1,4 @@
-import '../models/speed_dial.dart';
+import 'package:vagina/models/speed_dial.dart';
 
 /// Repository for managing speed dial data
 abstract class SpeedDialRepository {

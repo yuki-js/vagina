@@ -1,4 +1,4 @@
-import '../models/call_session.dart';
+import 'package:vagina/models/call_session.dart';
 
 /// Repository for managing call session data
 abstract class CallSessionRepository {

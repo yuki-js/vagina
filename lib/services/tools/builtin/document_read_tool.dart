@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../base_tool.dart';
-import '../tool_metadata.dart';
-import '../../notepad_service.dart';
+import 'package:vagina/services/tools/base_tool.dart';
+import 'package:vagina/services/tools/tool_metadata.dart';
+import 'package:vagina/services/notepad_service.dart';
 
 /// ドキュメント読取ツール
 class DocumentReadTool extends BaseTool {

@@ -8,6 +8,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:vagina/data/in_memory_store.dart';
 import 'package:vagina/main.dart';
 import 'package:vagina/repositories/repository_factory.dart';
 
@@ -15,7 +16,8 @@ void main() {
   testWidgets('App smoke test - builds without crashing',
       (WidgetTester tester) async {
     // Initialize repository factory before building app
-    await RepositoryFactory.initialize();
+    // Use in-memory store to avoid file IO / platform channels in widget tests.
+    await RepositoryFactory.initialize(store: InMemoryStore());
     
     // Build our app and trigger a frame.
     // This verifies the app can build and initialize without errors

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:diff_match_patch/diff_match_patch.dart';
-import '../base_tool.dart';
-import '../tool_metadata.dart';
-import '../../notepad_service.dart';
+import 'package:vagina/services/tools/base_tool.dart';
+import 'package:vagina/services/tools/tool_metadata.dart';
+import 'package:vagina/services/notepad_service.dart';
 
 /// unified diff形式のパッチをdiff_match_patchライブラリの形式に変換
 /// 

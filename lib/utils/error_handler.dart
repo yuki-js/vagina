@@ -1,7 +1,7 @@
-/// Standardized error handling for the application
-/// 
-/// This module provides consistent error types, handling patterns,
-/// and utilities for error management across the codebase.
+// Standardized error handling for the application
+//
+// This module provides consistent error types, handling patterns,
+// and utilities for error management across the codebase.
 
 import 'dart:async';
 import 'package:flutter/foundation.dart';
@@ -39,16 +39,11 @@ abstract class AppError implements Exception {
 /// Error related to network/API operations
 class NetworkError extends AppError {
   const NetworkError(
-    String message, {
-    String? code,
-    Object? originalError,
-    StackTrace? stackTrace,
-  }) : super(
-          message,
-          code: code,
-          originalError: originalError,
-          stackTrace: stackTrace,
-        );
+    super.message, {
+    super.code,
+    super.originalError,
+    super.stackTrace,
+  });
 
   @override
   String toUserMessage() {
@@ -61,16 +56,11 @@ class NetworkError extends AppError {
 /// Error related to audio operations
 class AudioError extends AppError {
   const AudioError(
-    String message, {
-    String? code,
-    Object? originalError,
-    StackTrace? stackTrace,
-  }) : super(
-          message,
-          code: code,
-          originalError: originalError,
-          stackTrace: stackTrace,
-        );
+    super.message, {
+    super.code,
+    super.originalError,
+    super.stackTrace,
+  });
 
   @override
   String toUserMessage() {
@@ -83,16 +73,11 @@ class AudioError extends AppError {
 /// Error related to storage/persistence
 class StorageError extends AppError {
   const StorageError(
-    String message, {
-    String? code,
-    Object? originalError,
-    StackTrace? stackTrace,
-  }) : super(
-          message,
-          code: code,
-          originalError: originalError,
-          stackTrace: stackTrace,
-        );
+    super.message, {
+    super.code,
+    super.originalError,
+    super.stackTrace,
+  });
 
   @override
   String toUserMessage() {
@@ -105,16 +90,11 @@ class StorageError extends AppError {
 /// Error related to configuration
 class ConfigurationError extends AppError {
   const ConfigurationError(
-    String message, {
-    String? code,
-    Object? originalError,
-    StackTrace? stackTrace,
-  }) : super(
-          message,
-          code: code,
-          originalError: originalError,
-          stackTrace: stackTrace,
-        );
+    super.message, {
+    super.code,
+    super.originalError,
+    super.stackTrace,
+  });
 
   @override
   String toUserMessage() {
@@ -129,17 +109,12 @@ class ValidationError extends AppError {
   final Map<String, String>? fieldErrors;
 
   const ValidationError(
-    String message, {
-    String? code,
+    super.message, {
+    super.code,
     this.fieldErrors,
-    Object? originalError,
-    StackTrace? stackTrace,
-  }) : super(
-          message,
-          code: code,
-          originalError: originalError,
-          stackTrace: stackTrace,
-        );
+    super.originalError,
+    super.stackTrace,
+  });
 
   @override
   String toUserMessage() => message;
@@ -261,14 +236,8 @@ class ErrorHandler {
 /// Generic application error (internal use)
 class _GenericError extends AppError {
   const _GenericError(
-    String message, {
-    String? code,
-    Object? originalError,
-    StackTrace? stackTrace,
-  }) : super(
-          message,
-          code: code,
-          originalError: originalError,
-          stackTrace: stackTrace,
-        );
+    super.message, {
+    super.originalError,
+    super.stackTrace,
+  });
 }

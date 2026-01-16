@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../base_tool.dart';
-import '../tool_metadata.dart';
-import '../../../utils/duration_formatter.dart';
+import 'package:vagina/services/tools/base_tool.dart';
+import 'package:vagina/services/tools/tool_metadata.dart';
+import 'package:vagina/utils/duration_formatter.dart';
 
 /// 現在時刻取得ツール
 class GetCurrentTimeTool extends BaseTool {

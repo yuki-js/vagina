@@ -1,4 +1,4 @@
-import '../utils/platform_compat.dart';
+import 'package:vagina/utils/platform_compat.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
