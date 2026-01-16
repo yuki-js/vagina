@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:vagina/feat/call/state/call_stream_providers.dart';
 import 'package:vagina/theme/app_theme.dart';
 import 'package:vagina/feat/call/widgets/chat_header.dart';
 import 'package:vagina/feat/call/widgets/scroll_to_bottom_button.dart';
-import 'package:vagina/providers/providers.dart';
 import 'package:vagina/widgets/chat_bubble.dart';
 import 'package:vagina/feat/call/widgets/chat_input.dart';
 import 'package:vagina/feat/call/widgets/chat_empty_state.dart';

@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:vagina/models/speed_dial.dart';
-import 'package:vagina/providers/providers.dart';
-import 'package:vagina/theme/app_theme.dart';
+import 'package:vagina/feat/call/panes/call.dart';
 import 'package:vagina/feat/call/panes/chat.dart';
 import 'package:vagina/feat/call/panes/notepad.dart';
-import 'package:vagina/feat/call/panes/call.dart';
+import 'package:vagina/feat/call/state/call_service_providers.dart';
+import 'package:vagina/feat/call/state/call_stream_providers.dart';
+import 'package:vagina/models/speed_dial.dart';
+import 'package:vagina/theme/app_theme.dart';
 
 /// Call screen with PageView for swipe navigation between chat, call, and notepad
 /// Layout: Chat (left) ← Call (center) → Notepad (right)

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:vagina/providers/providers.dart';
-import 'package:vagina/services/call_service.dart';
+import 'package:vagina/feat/call/state/call_stream_providers.dart';
+import 'package:vagina/feat/call/state/call_ui_state_providers.dart';
 import 'package:vagina/models/speed_dial.dart';
+import 'package:vagina/services/call_service.dart';
 import 'package:vagina/feat/call/widgets/call_main_content.dart';
 import 'package:vagina/feat/call/widgets/control_panel.dart';
 

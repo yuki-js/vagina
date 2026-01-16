@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:vagina/feat/call/state/notepad_providers.dart';
 import 'package:vagina/theme/app_theme.dart';
 import 'package:vagina/feat/call/widgets/notepad_header.dart';
 import 'package:vagina/feat/call/widgets/notepad_tab_bar.dart';
-import 'package:vagina/providers/providers.dart';
 import 'package:vagina/models/notepad_tab.dart';
 import 'package:vagina/feat/call/widgets/notepad_content_renderer.dart';
 import 'package:vagina/feat/call/widgets/notepad_empty_state.dart';
