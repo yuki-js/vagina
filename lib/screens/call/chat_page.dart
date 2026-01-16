@@ -5,8 +5,8 @@ import '../../providers/providers.dart';
 import '../../components/chat_bubble.dart';
 import '../../components/chat_input.dart';
 import '../../components/chat_empty_state.dart';
-import '../../components/call/chat_header.dart';
-import '../../components/call/scroll_to_bottom_button.dart';
+import '../../features/call/components/chat_header.dart';
+import '../../features/call/components/scroll_to_bottom_button.dart';
 
 /// Chat page widget - displays chat history and input
 class ChatPage extends ConsumerStatefulWidget {

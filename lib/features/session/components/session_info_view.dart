@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../theme/app_theme.dart';
-import '../../models/call_session.dart';
-import '../../models/speed_dial.dart';
-import '../../repositories/repository_factory.dart';
-import '../../utils/duration_formatter.dart';
+import '../../../theme/app_theme.dart';
+import '../../../models/call_session.dart';
+import '../../../models/speed_dial.dart';
+import '../../../repositories/repository_factory.dart';
+import '../../../utils/duration_formatter.dart';
 
 /// Session information view - displays detailed session information
 class SessionInfoView extends StatelessWidget {

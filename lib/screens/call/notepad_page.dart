@@ -5,8 +5,8 @@ import '../../providers/providers.dart';
 import '../../models/notepad_tab.dart';
 import '../../components/notepad_content_renderer.dart';
 import '../../components/notepad_empty_state.dart';
-import '../../components/call/notepad_header.dart';
-import '../../components/call/notepad_tab_bar.dart';
+import '../../features/call/components/notepad_header.dart';
+import '../../features/call/components/notepad_tab_bar.dart';
 
 /// Artifact page widget - displays artifact tabs and their content
 class NotepadPage extends ConsumerStatefulWidget {

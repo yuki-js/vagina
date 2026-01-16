@@ -5,7 +5,7 @@ import '../../models/call_session.dart';
 import '../../components/historical_chat_view.dart';
 import '../../components/historical_notepad_view.dart';
 import '../../components/adaptive_widgets.dart';
-import '../../components/session/session_info_view.dart';
+import '../../features/session/components/session_info_view.dart';
 import '../../repositories/repository_factory.dart';
 
 /// セッション詳細画面 - 過去のセッションのチャットとノートパッドを表示

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../theme/app_theme.dart';
-import '../../models/notepad_tab.dart';
+import '../../../theme/app_theme.dart';
+import '../../../models/notepad_tab.dart';
 
 /// Individual tab item
 class NotepadTabItem extends StatelessWidget {

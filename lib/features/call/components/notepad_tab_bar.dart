@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../models/notepad_tab.dart';
+import '../../../models/notepad_tab.dart';
 import 'notepad_tab_item.dart';
 
 /// Tab bar showing notepad tabs

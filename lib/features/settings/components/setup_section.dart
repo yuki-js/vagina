@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../theme/app_theme.dart';
-import '../../components/settings_card.dart';
-import '../../screens/oobe/oobe_flow.dart';
+import '../../../theme/app_theme.dart';
+import '../../../components/settings_card.dart';
+import '../../../screens/oobe/oobe_flow.dart';
 
 /// Setup section - OOBE restart etc
 class SetupSection extends StatelessWidget {

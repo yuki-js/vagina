@@ -8,7 +8,7 @@ import '../../components/settings/voice_settings_section.dart';
 import '../../components/settings/android_audio_section.dart';
 import '../../components/settings/developer_section.dart';
 import '../../components/settings/ui_preferences_section.dart';
-import '../../components/settings_screen/setup_section.dart';
+import '../../features/settings/components/setup_section.dart';
 
 /// 設定画面 - API設定など
 class SettingsScreen extends ConsumerWidget {

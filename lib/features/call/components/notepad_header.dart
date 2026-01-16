@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../theme/app_theme.dart';
-import '../../models/notepad_tab.dart';
-import '../../providers/providers.dart';
-import '../notepad_action_bar.dart';
+import '../../../theme/app_theme.dart';
+import '../../../models/notepad_tab.dart';
+import '../../../providers/providers.dart';
+import '../../../components/notepad_action_bar.dart';
 
 /// Notepad header with navigation to call and more menu
 class NotepadHeader extends StatelessWidget {

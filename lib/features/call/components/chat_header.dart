@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../theme/app_theme.dart';
+import '../../../theme/app_theme.dart';
 
 /// Chat header with navigation to call
 class ChatHeader extends StatelessWidget {
