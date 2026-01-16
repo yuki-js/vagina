@@ -5,7 +5,7 @@ import '../interfaces/speed_dial_repository.dart';
 import '../interfaces/memory_repository.dart';
 import '../interfaces/config_repository.dart';
 import '../data/permission_manager.dart';
-import 'providers.dart'; // For logServiceProvider
+import 'core_providers.dart'; // For logServiceProvider
 
 /// Provider for CallSessionRepository
 final callSessionRepositoryProvider = Provider<CallSessionRepository>((ref) {
@@ -32,4 +32,16 @@ final permissionManagerProvider = Provider<PermissionManager>((ref) {
   return PermissionManager(
     logService: ref.read(logServiceProvider),
   );
+});
+
+/// APIキー存在確認のプロバイダ
+final hasApiKeyProvider = FutureProvider<bool>((ref) async {
+  final config = ref.read(configRepositoryProvider);
+  return await config.hasApiKey();
+});
+
+/// APIキーのプロバイダ
+final apiKeyProvider = FutureProvider<String?>((ref) async {
+  final config = ref.read(configRepositoryProvider);
+  return await config.getApiKey();
 });
