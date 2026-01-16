@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:vagina/theme/app_theme.dart';
-import 'package:vagina/providers/repository_providers.dart';
-import 'package:vagina/utils/url_utils.dart';
+import 'package:vagina/core/state/repository_providers.dart';
 import 'package:vagina/services/realtime_api_client.dart';
+import 'package:vagina/theme/app_theme.dart';
+import 'package:vagina/utils/url_utils.dart';
 
 /// Third OOBE screen - Manual AI API configuration
 class ManualSetupScreen extends ConsumerStatefulWidget {

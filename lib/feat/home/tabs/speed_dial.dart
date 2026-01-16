@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:vagina/theme/app_theme.dart';
-import 'package:vagina/providers/providers.dart';
+import 'package:vagina/feat/speed_dial/state/speed_dial_providers.dart';
 import 'package:vagina/models/speed_dial.dart';
+import 'package:vagina/theme/app_theme.dart';
 import 'package:vagina/utils/call_navigation_utils.dart';
 import 'package:vagina/feat/speed_dial/screens/config.dart';
 
@@ -12,7 +12,7 @@ class SpeedDialTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final speedDialsAsync = ref.watch(refreshableSpeedDialsProvider);
+    final speedDialsAsync = ref.watch(speedDialsProvider);
 
     return speedDialsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),

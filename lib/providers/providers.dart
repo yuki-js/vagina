@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:record/record.dart';
 import 'package:vagina/services/notepad_service.dart';
 import 'package:vagina/services/audio_recorder_service.dart';
 import 'package:vagina/services/audio_player_service.dart';
@@ -8,13 +7,8 @@ import 'package:vagina/services/realtime_api_client.dart';
 import 'package:vagina/services/call_service.dart';
 import 'package:vagina/services/tool_service.dart';
 import 'package:vagina/services/call_feedback_service.dart';
-import 'package:vagina/models/assistant_config.dart';
 import 'package:vagina/models/chat_message.dart';
 import 'package:vagina/models/notepad_tab.dart';
-import 'package:vagina/models/android_audio_config.dart';
-import 'package:vagina/models/call_session.dart';
-import 'package:vagina/models/speed_dial.dart';
-import 'package:vagina/repositories/repository_factory.dart';
 import 'package:vagina/core/state/repository_providers.dart';
 import 'package:vagina/services/log_service.dart';
 
@@ -151,13 +145,6 @@ final callErrorProvider = StreamProvider<String>((ref) {
   return callService.errorStream;
 });
 
-/// セッション保存完了通知のプロバイダ
-/// セッション保存後にセッション履歴を自動更新するために使用
-final sessionSavedProvider = StreamProvider<String>((ref) {
-  final callService = ref.read(callServiceProvider);
-  return callService.sessionSavedStream;
-});
-
 /// 通話アクティブ状態のプロバイダ
 final isCallActiveProvider = Provider<bool>((ref) {
   final callState = ref.watch(callStateProvider);
@@ -202,89 +189,6 @@ class NoiseReductionNotifier extends Notifier<String> {
 }
 
 // ============================================================================
-// アシスタントプロバイダ
-// ============================================================================
-
-/// アシスタント設定のプロバイダ
-final assistantConfigProvider =
-    NotifierProvider<AssistantConfigNotifier, AssistantConfig>(AssistantConfigNotifier.new);
-
-/// アシスタント設定の通知クラス
-class AssistantConfigNotifier extends Notifier<AssistantConfig> {
-  @override
-  AssistantConfig build() => const AssistantConfig();
-
-  /// アシスタント名を更新
-  void updateName(String name) {
-    state = state.copyWith(name: name);
-  }
-
-  /// アシスタントの指示を更新
-  void updateInstructions(String instructions) {
-    state = state.copyWith(instructions: instructions);
-  }
-
-  /// アシスタントの声を更新
-  void updateVoice(String voice) {
-    state = state.copyWith(voice: voice);
-  }
-
-  /// デフォルト設定にリセット
-  void reset() {
-    state = const AssistantConfig();
-  }
-}
-
-// ============================================================================
-// Androidオーディオプロバイダ
-// ============================================================================
-
-/// Androidオーディオ設定のプロバイダ
-final androidAudioConfigProvider =
-    AsyncNotifierProvider<AndroidAudioConfigNotifier, AndroidAudioConfig>(
-        AndroidAudioConfigNotifier.new);
-
-/// Androidオーディオ設定の通知クラス
-class AndroidAudioConfigNotifier extends AsyncNotifier<AndroidAudioConfig> {
-  @override
-  Future<AndroidAudioConfig> build() async {
-    final config = ref.read(configRepositoryProvider);
-    final audioConfig = await config.getAndroidAudioConfig();
-    // 録音サービスに設定を適用
-    ref.read(audioRecorderServiceProvider).setAndroidAudioConfig(audioConfig);
-    return audioConfig;
-  }
-
-  /// オーディオソースを更新
-  Future<void> updateAudioSource(AndroidAudioSource source) async {
-    final current = state.value ?? const AndroidAudioConfig();
-    final newConfig = current.copyWith(audioSource: source);
-    await _saveAndApply(newConfig);
-  }
-
-  /// オーディオマネージャーモードを更新
-  Future<void> updateAudioManagerMode(AudioManagerMode mode) async {
-    final current = state.value ?? const AndroidAudioConfig();
-    final newConfig = current.copyWith(audioManagerMode: mode);
-    await _saveAndApply(newConfig);
-  }
-
-  /// 設定を保存して適用
-  Future<void> _saveAndApply(AndroidAudioConfig config) async {
-    final configRepo = ref.read(configRepositoryProvider);
-    await configRepo.saveAndroidAudioConfig(config);
-    ref.read(audioRecorderServiceProvider).setAndroidAudioConfig(config);
-    state = AsyncData(config);
-  }
-
-  /// デフォルト設定にリセット
-  Future<void> reset() async {
-    const defaultConfig = AndroidAudioConfig();
-    await _saveAndApply(defaultConfig);
-  }
-}
-
-// ============================================================================
 // ノートパッドプロバイダ
 // ============================================================================
 
@@ -299,77 +203,6 @@ final selectedNotepadTabIdProvider = StreamProvider<String?>((ref) {
   final notepadService = ref.read(notepadServiceProvider);
   return notepadService.selectedTabStream;
 });
-
-// ============================================================================
-// スピードダイヤルプロバイダ
-// ============================================================================
-
-/// スピードダイヤルのプロバイダ（リポジトリ使用）
-final speedDialsProvider = FutureProvider<List<SpeedDial>>((ref) async {
-  return await RepositoryFactory.speedDials.getAll();
-});
-
-/// スピードダイヤル更新トリガーのプロバイダ
-final speedDialsRefreshProvider = NotifierProvider<RefreshNotifier, int>(RefreshNotifier.new);
-
-/// 自動更新スピードダイヤルのプロバイダ（リポジトリ使用）
-final refreshableSpeedDialsProvider = FutureProvider<List<SpeedDial>>((ref) async {
-  // 更新トリガーを監視
-  ref.watch(speedDialsRefreshProvider);
-  return await RepositoryFactory.speedDials.getAll();
-});
-
-// ============================================================================
-// セッション履歴プロバイダ
-// ============================================================================
-
-/// セッション履歴のプロバイダ（リポジトリ使用）
-final callSessionsProvider = FutureProvider<List<CallSession>>((ref) async {
-  return await RepositoryFactory.callSessions.getAll();
-});
-
-/// セッション履歴更新トリガーのプロバイダ
-final callSessionsRefreshProvider = NotifierProvider<RefreshNotifier, int>(RefreshNotifier.new);
-
-/// 自動更新セッション履歴のプロバイダ（リポジトリ使用）
-final refreshableCallSessionsProvider = FutureProvider<List<CallSession>>((ref) async {
-  // 更新トリガーを監視
-  ref.watch(callSessionsRefreshProvider);
-  return await RepositoryFactory.callSessions.getAll();
-});
-
-/// シンプルな更新通知クラス
-class RefreshNotifier extends Notifier<int> {
-  @override
-  int build() => 0;
-
-  void refresh() {
-    state++;
-  }
-}
-
-// ============================================================================
-// UI設定プロバイダ
-// ============================================================================
-
-/// Cupertinoスタイル設定のプロバイダ（Material vs Cupertino）
-final useCupertinoStyleProvider = NotifierProvider<CupertinoStyleNotifier, bool>(
-  CupertinoStyleNotifier.new,
-);
-
-/// Cupertinoスタイル設定の通知クラス
-class CupertinoStyleNotifier extends Notifier<bool> {
-  @override
-  bool build() => false;
-  
-  void toggle() {
-    state = !state;
-  }
-  
-  void set(bool value) {
-    state = value;
-  }
-}
 
 // ============================================================================
 // ロギングプロバイダ

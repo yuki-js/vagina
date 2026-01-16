@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:vagina/theme/app_theme.dart';
-import 'package:vagina/providers/providers.dart';
 import 'package:vagina/models/speed_dial.dart';
+import 'package:vagina/providers/providers.dart';
+import 'package:vagina/theme/app_theme.dart';
 import 'package:vagina/feat/call/panes/chat.dart';
 import 'package:vagina/feat/call/panes/notepad.dart';
 import 'package:vagina/feat/call/panes/call.dart';
@@ -39,12 +39,8 @@ class _CallScreenState extends ConsumerState<CallScreen> {
     _pageController = PageController(initialPage: _callPageIndex);
     _pageController.addListener(_onPageChanged);
     
-    // Apply SpeedDial configuration and auto-start call when screen opens
+    // Auto-start call when screen opens
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(assistantConfigProvider.notifier).updateName(widget.speedDial.name);
-      ref.read(assistantConfigProvider.notifier).updateInstructions(widget.speedDial.systemPrompt);
-      ref.read(assistantConfigProvider.notifier).updateVoice(widget.speedDial.voice);
-      
       _startCallIfNeeded();
     });
   }
@@ -73,11 +69,10 @@ class _CallScreenState extends ConsumerState<CallScreen> {
     
     // Only start if not already active
     if (!isActive) {
-      // Set assistant config from provider before starting call
-      final assistantConfig = ref.read(assistantConfigProvider);
+      // Set assistant config from SpeedDial before starting call
       callService.setAssistantConfig(
-        assistantConfig.voice,
-        assistantConfig.instructions,
+        widget.speedDial.voice,
+        widget.speedDial.systemPrompt,
       );
       
       // Set the speed dial ID for session tracking

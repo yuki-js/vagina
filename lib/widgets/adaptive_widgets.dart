@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:vagina/providers/providers.dart';
+import 'package:vagina/feat/settings/state/ui_preferences_provider.dart';
 import 'package:vagina/theme/app_theme.dart';
 
 /// Material/Cupertino共通化のためのアダプティブウィジェット

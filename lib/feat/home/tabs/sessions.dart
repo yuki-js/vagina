@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:vagina/theme/app_theme.dart';
+import 'package:vagina/core/state/repository_providers.dart';
+import 'package:vagina/feat/session/state/session_history_providers.dart';
 import 'package:vagina/models/call_session.dart';
-import 'package:vagina/providers/providers.dart';
+import 'package:vagina/theme/app_theme.dart';
 import 'package:vagina/utils/duration_formatter.dart';
 import 'package:vagina/feat/session/screens/session_detail.dart';
-import 'package:vagina/repositories/repository_factory.dart';
 
 /// セッション履歴タブ - 通話履歴を表示
 class SessionsTab extends ConsumerStatefulWidget {
@@ -79,7 +79,7 @@ class _SessionsTabState extends ConsumerState<SessionsTab> {
     );
 
     if (confirmed == true && mounted) {
-      final sessionRepo = RepositoryFactory.callSessions;
+      final sessionRepo = ref.read(callSessionRepositoryProvider);
       for (final id in _selectedSessionIds) {
         await sessionRepo.delete(id);
       }
@@ -89,7 +89,7 @@ class _SessionsTabState extends ConsumerState<SessionsTab> {
         _isSelectionMode = false;
       });
 
-      ref.invalidate(refreshableCallSessionsProvider);
+      ref.invalidate(callSessionsProvider);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -101,14 +101,7 @@ class _SessionsTabState extends ConsumerState<SessionsTab> {
 
   @override
   Widget build(BuildContext context) {
-    final sessionsAsync = ref.watch(refreshableCallSessionsProvider);
-    
-    // セッション保存完了通知を監視してリストを自動更新
-    ref.listen<AsyncValue<String>>(sessionSavedProvider, (_, state) {
-      state.whenData((_) {
-        ref.invalidate(refreshableCallSessionsProvider);
-      });
-    });
+    final sessionsAsync = ref.watch(callSessionsProvider);
 
     return sessionsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),

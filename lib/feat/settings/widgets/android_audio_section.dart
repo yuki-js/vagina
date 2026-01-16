@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:record/record.dart';
+import 'package:vagina/feat/settings/state/android_audio_config_provider.dart' as state;
+import 'package:vagina/models/android_audio_config.dart' as model;
 import 'package:vagina/theme/app_theme.dart';
-import 'package:vagina/providers/providers.dart';
-import 'package:vagina/models/android_audio_config.dart';
 import 'settings_card.dart';
 
 /// Android audio settings section widget
@@ -12,7 +12,7 @@ class AndroidAudioSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final asyncConfig = ref.watch(androidAudioConfigProvider);
+    final asyncConfig = ref.watch(state.androidAudioConfigProvider);
     
     return asyncConfig.when(
       loading: () => const SettingsCard(
@@ -53,14 +53,14 @@ class AndroidAudioSection extends ConsumerWidget {
                 return DropdownMenuItem(
                   value: source,
                   child: Text(
-                    AndroidAudioConfig.audioSourceDisplayNames[source] ?? source.name,
+                    model.AndroidAudioConfig.audioSourceDisplayNames[source] ?? source.name,
                     style: const TextStyle(color: AppTheme.lightTextPrimary),
                   ),
                 );
               }).toList(),
               onChanged: (value) {
                 if (value != null) {
-                  ref.read(androidAudioConfigProvider.notifier).updateAudioSource(value);
+                  ref.read(state.androidAudioConfigProvider.notifier).updateAudioSource(value);
                 }
               },
             ),
@@ -94,14 +94,14 @@ class AndroidAudioSection extends ConsumerWidget {
                 return DropdownMenuItem(
                   value: mode,
                   child: Text(
-                    AndroidAudioConfig.audioModeDisplayNames[mode] ?? mode.name,
+                    model.AndroidAudioConfig.audioModeDisplayNames[mode] ?? mode.name,
                     style: const TextStyle(color: AppTheme.lightTextPrimary),
                   ),
                 );
               }).toList(),
               onChanged: (value) {
                 if (value != null) {
-                  ref.read(androidAudioConfigProvider.notifier).updateAudioManagerMode(value);
+                  ref.read(state.androidAudioConfigProvider.notifier).updateAudioManagerMode(value);
                 }
               },
             ),

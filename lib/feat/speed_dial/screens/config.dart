@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:vagina/theme/app_theme.dart';
-import 'package:vagina/providers/providers.dart';
+import 'package:vagina/core/state/repository_providers.dart';
+import 'package:vagina/feat/speed_dial/state/speed_dial_providers.dart';
 import 'package:vagina/models/speed_dial.dart';
+import 'package:vagina/theme/app_theme.dart';
 import 'package:vagina/feat/speed_dial/widgets/emoji_picker.dart';
-import 'package:vagina/repositories/repository_factory.dart';
 
 /// Speed dial configuration screen
 /// Accessed from speed dial tab when tapping on a speed dial
@@ -90,7 +90,7 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
       return;
     }
 
-    final speedDialRepo = RepositoryFactory.speedDials;
+    final speedDialRepo = ref.read(speedDialRepositoryProvider);
     final speedDial = SpeedDial(
       id: _isNewSpeedDial 
           ? DateTime.now().millisecondsSinceEpoch.toString()
@@ -108,7 +108,7 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
       await speedDialRepo.update(speedDial);
     }
 
-    ref.invalidate(refreshableSpeedDialsProvider);
+    ref.invalidate(speedDialsProvider);
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -154,8 +154,8 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
     );
 
     if (confirmed == true && mounted) {
-      await RepositoryFactory.speedDials.delete(widget.speedDial!.id);
-      ref.invalidate(refreshableSpeedDialsProvider);
+      await ref.read(speedDialRepositoryProvider).delete(widget.speedDial!.id);
+      ref.invalidate(speedDialsProvider);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
