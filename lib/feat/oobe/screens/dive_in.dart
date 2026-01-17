@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:vagina/theme/app_theme.dart';
+import 'package:vagina/core/theme/app_theme.dart';
 
 /// OOBE 最終画面 - 準備完了
 class DiveInScreen extends StatefulWidget {

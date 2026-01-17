@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:vagina/theme/app_theme.dart';
+import 'package:vagina/core/theme/app_theme.dart';
 
 /// Scroll to bottom button.
 class ScrollToBottomButton extends StatelessWidget {

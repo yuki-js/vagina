@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:vagina/theme/app_theme.dart';
+import 'package:vagina/core/theme/app_theme.dart';
 
 /// コントロールボタン - 通話画面などで使用される円形アイコンボタン
 class ControlButton extends StatelessWidget {

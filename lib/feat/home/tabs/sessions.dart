@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vagina/core/state/repository_providers.dart';
 import 'package:vagina/feat/session/state/session_history_providers.dart';
 import 'package:vagina/models/call_session.dart';
-import 'package:vagina/theme/app_theme.dart';
+import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/utils/duration_formatter.dart';
 import 'package:vagina/feat/session/screens/session_detail.dart';
 
@@ -137,7 +137,9 @@ class _SessionsTabState extends ConsumerState<SessionsTab> {
                       label: const Text('反転'),
                     ),
                     IconButton(
-                      onPressed: _selectedSessionIds.isNotEmpty ? _deleteSelected : null,
+                      onPressed: _selectedSessionIds.isNotEmpty
+                          ? _deleteSelected
+                          : null,
                       icon: const Icon(Icons.delete),
                       color: AppTheme.errorColor,
                     ),
@@ -178,7 +180,8 @@ class _SessionsTabState extends ConsumerState<SessionsTab> {
                           Icon(
                             Icons.history,
                             size: 64,
-                            color: AppTheme.lightTextSecondary.withValues(alpha: 0.5),
+                            color: AppTheme.lightTextSecondary
+                                .withValues(alpha: 0.5),
                           ),
                           const SizedBox(height: 16),
                           Text(
@@ -192,7 +195,8 @@ class _SessionsTabState extends ConsumerState<SessionsTab> {
                       ),
                     )
                   else
-                    ...sessions.map((session) => _buildSessionItem(context, session)),
+                    ...sessions
+                        .map((session) => _buildSessionItem(context, session)),
                 ],
               ),
             ),
@@ -204,7 +208,7 @@ class _SessionsTabState extends ConsumerState<SessionsTab> {
 
   Widget _buildSessionItem(BuildContext context, CallSession session) {
     final isSelected = _selectedSessionIds.contains(session.id);
-    
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
@@ -214,8 +218,10 @@ class _SessionsTabState extends ConsumerState<SessionsTab> {
                 onChanged: (_) => _toggleSelection(session.id),
               )
             : const Icon(Icons.phone, color: AppTheme.primaryColor),
-        title: Text(DurationFormatter.formatRelativeDate(session.startTime, includeTime: true)),
-        subtitle: Text(DurationFormatter.formatDurationCompact(session.duration)),
+        title: Text(DurationFormatter.formatRelativeDate(session.startTime,
+            includeTime: true)),
+        subtitle:
+            Text(DurationFormatter.formatDurationCompact(session.duration)),
         trailing: _isSelectionMode ? null : const Icon(Icons.chevron_right),
         onTap: () {
           if (_isSelectionMode) {
@@ -223,7 +229,8 @@ class _SessionsTabState extends ConsumerState<SessionsTab> {
           } else {
             Navigator.of(context).push(
               MaterialPageRoute(
-                builder: (context) => SessionDetailScreen(sessionId: session.id),
+                builder: (context) =>
+                    SessionDetailScreen(sessionId: session.id),
               ),
             );
           }

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:vagina/theme/app_theme.dart';
+import 'package:vagina/core/theme/app_theme.dart';
 
 /// Chat header with navigation to call.
 class ChatHeader extends StatelessWidget {
@@ -45,7 +45,8 @@ class ChatHeader extends StatelessWidget {
                       color: AppTheme.textSecondary,
                     ),
                   ),
-                  const Icon(Icons.chevron_right, color: AppTheme.textSecondary),
+                  const Icon(Icons.chevron_right,
+                      color: AppTheme.textSecondary),
                 ],
               ),
             ),

@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:vagina/theme/app_theme.dart';
+import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/services/log_service.dart';
 
 /// Screen for viewing trace logs
@@ -107,8 +107,12 @@ class _LogScreenState extends State<LogScreen> {
           // Auto-scroll toggle
           IconButton(
             icon: Icon(
-              _autoScroll ? Icons.vertical_align_bottom : Icons.vertical_align_center,
-              color: _autoScroll ? AppTheme.primaryColor : AppTheme.lightTextSecondary,
+              _autoScroll
+                  ? Icons.vertical_align_bottom
+                  : Icons.vertical_align_center,
+              color: _autoScroll
+                  ? AppTheme.primaryColor
+                  : AppTheme.lightTextSecondary,
             ),
             onPressed: () {
               setState(() {
@@ -123,7 +127,8 @@ class _LogScreenState extends State<LogScreen> {
             tooltip: 'コピー',
           ),
           IconButton(
-            icon: const Icon(Icons.delete_outline, color: AppTheme.lightTextSecondary),
+            icon: const Icon(Icons.delete_outline,
+                color: AppTheme.lightTextSecondary),
             onPressed: _clearLogs,
             tooltip: 'クリア',
           ),
@@ -135,12 +140,16 @@ class _LogScreenState extends State<LogScreen> {
           children: [
             // Filter input
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: TextField(
                 decoration: InputDecoration(
                   hintText: 'フィルター...',
-                  hintStyle: TextStyle(color: AppTheme.lightTextSecondary.withValues(alpha: 0.5)),
-                  prefixIcon: const Icon(Icons.search, color: AppTheme.lightTextSecondary),
+                  hintStyle: TextStyle(
+                      color:
+                          AppTheme.lightTextSecondary.withValues(alpha: 0.5)),
+                  prefixIcon: const Icon(Icons.search,
+                      color: AppTheme.lightTextSecondary),
                   isDense: true,
                   filled: true,
                   fillColor: AppTheme.lightSurfaceColor,
@@ -157,9 +166,9 @@ class _LogScreenState extends State<LogScreen> {
                 },
               ),
             ),
-            
+
             const SizedBox(height: 8),
-            
+
             // Log count
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -181,9 +190,9 @@ class _LogScreenState extends State<LogScreen> {
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 8),
-            
+
             // Log list
             Expanded(
               child: Container(

@@ -1,6 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:vagina/core/state/log_provider.dart';
-import 'package:vagina/data/permission_manager.dart';
+import 'package:vagina/core/data/permission_manager.dart';
 import 'package:vagina/interfaces/call_session_repository.dart';
 import 'package:vagina/interfaces/config_repository.dart';
 import 'package:vagina/interfaces/memory_repository.dart';

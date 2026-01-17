@@ -1,6 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:vagina/theme/app_theme.dart';
+import 'package:vagina/core/theme/app_theme.dart';
 
 /// OOBEスクリーン用のアニメーション背景（星と波のモチーフ）
 /// 背景アニメーションのみを提供し、レイアウトは各画面が担当

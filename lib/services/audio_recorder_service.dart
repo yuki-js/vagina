@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 import 'package:record/record.dart';
-import 'package:vagina/config/app_config.dart';
+import 'package:vagina/core/config/app_config.dart';
 import 'package:vagina/models/android_audio_config.dart';
 
 /// Service for recording audio from the microphone
@@ -9,20 +9,20 @@ class AudioRecorderService {
   final AudioRecorder _recorder = AudioRecorder();
   StreamSubscription<RecordState>? _stateSubscription;
   StreamSubscription<Amplitude>? _amplitudeSubscription;
-  
+
   Stream<RecordState>? _stateStream;
   Stream<Amplitude>? _amplitudeStream;
 
   bool _isRecording = false;
-  
+
   /// Current Android audio configuration
   AndroidAudioConfig _androidAudioConfig = const AndroidAudioConfig();
 
   bool get isRecording => _isRecording;
-  
+
   /// Get current Android audio configuration
   AndroidAudioConfig get androidAudioConfig => _androidAudioConfig;
-  
+
   /// Update Android audio configuration
   void setAndroidAudioConfig(AndroidAudioConfig config) {
     _androidAudioConfig = config;

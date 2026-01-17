@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:vagina/theme/app_theme.dart';
+import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/models/chat_message.dart';
-import 'package:vagina/widgets/chat_bubble.dart';
+import 'package:vagina/core/widgets/chat_bubble.dart';
 
 /// Read-only chat history viewer for session detail screen
 class HistoricalChatView extends StatelessWidget {

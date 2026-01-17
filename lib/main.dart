@@ -6,20 +6,22 @@ import 'package:window_manager/window_manager.dart';
 import 'core/state/repository_providers.dart';
 import 'feat/home/screens/home.dart';
 import 'feat/oobe/screens/oobe_flow.dart';
-import 'theme/app_theme.dart';
+import 'core/theme/app_theme.dart';
 import 'repositories/repository_factory.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialize repositories
   await RepositoryFactory.initialize();
-  
+
   // Initialize window manager ONLY for desktop platforms
   // This prevents crashes on mobile (Android/iOS) and web
-  if (PlatformCompat.isWindows || PlatformCompat.isMacOS || PlatformCompat.isLinux) {
+  if (PlatformCompat.isWindows ||
+      PlatformCompat.isMacOS ||
+      PlatformCompat.isLinux) {
     await windowManager.ensureInitialized();
-    
+
     // Configure window options for desktop
     const windowOptions = WindowOptions(
       minimumSize: Size(400, 600),
@@ -27,13 +29,13 @@ void main() async {
       backgroundColor: Colors.transparent,
       skipTaskbar: false,
     );
-    
+
     await windowManager.waitUntilReadyToShow(windowOptions, () async {
       await windowManager.show();
       await windowManager.focus();
     });
   }
-  
+
   runApp(
     const ProviderScope(
       child: VaginaApp(),
@@ -63,7 +65,7 @@ class _VaginaAppState extends ConsumerState<VaginaApp> {
     // Use preferencesRepositoryProvider instead of RepositoryFactory
     final preferences = ref.read(preferencesRepositoryProvider);
     final isFirst = await preferences.isFirstLaunch();
-    
+
     if (mounted) {
       setState(() {
         _isFirstLaunch = isFirst;

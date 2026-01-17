@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:vagina/feat/oobe/screens/oobe_flow.dart';
 import 'package:vagina/feat/settings/widgets/settings_card.dart';
-import 'package:vagina/theme/app_theme.dart';
+import 'package:vagina/core/theme/app_theme.dart';
 
 /// セットアップセクション - OOBEの再開始など
 class SetupSection extends StatelessWidget {
@@ -15,7 +15,8 @@ class SetupSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ListTile(
-            leading: const Icon(Icons.refresh, color: AppTheme.lightTextSecondary),
+            leading:
+                const Icon(Icons.refresh, color: AppTheme.lightTextSecondary),
             title: const Text(
               '初期設定をやり直す',
               style: TextStyle(color: AppTheme.lightTextPrimary),
@@ -27,8 +28,8 @@ class SetupSection extends StatelessWidget {
                 fontSize: 12,
               ),
             ),
-            trailing:
-                const Icon(Icons.chevron_right, color: AppTheme.lightTextSecondary),
+            trailing: const Icon(Icons.chevron_right,
+                color: AppTheme.lightTextSecondary),
             onTap: () {
               Navigator.of(context).pushReplacement(
                 MaterialPageRoute(

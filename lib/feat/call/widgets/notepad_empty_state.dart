@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:vagina/theme/app_theme.dart';
+import 'package:vagina/core/theme/app_theme.dart';
 
 /// Empty state widget for artifacts when there are no tabs
 class NotepadEmptyState extends StatelessWidget {

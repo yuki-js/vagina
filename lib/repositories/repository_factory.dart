@@ -1,5 +1,5 @@
-import 'package:vagina/data/in_memory_store.dart';
-import 'package:vagina/data/json_file_store.dart';
+import 'package:vagina/core/data/in_memory_store.dart';
+import 'package:vagina/core/data/json_file_store.dart';
 import 'package:vagina/interfaces/call_session_repository.dart';
 import 'package:vagina/interfaces/config_repository.dart';
 import 'package:vagina/interfaces/key_value_store.dart';
@@ -14,7 +14,7 @@ import 'json_speed_dial_repository.dart';
 import 'preferences_repository.dart';
 
 /// Factory for creating repository instances
-/// 
+///
 /// All repositories share a common KeyValueStore for consistent
 /// data storage location and initialization.
 class RepositoryFactory {
@@ -31,7 +31,8 @@ class RepositoryFactory {
   /// In widget/unit tests, file IO / platform channels can hang. When running
   /// under test (`bool.fromEnvironment('FLUTTER_TEST') == true`), we default to
   /// an in-memory store.
-  static Future<void> initialize({LogService? logService, KeyValueStore? store}) async {
+  static Future<void> initialize(
+      {LogService? logService, KeyValueStore? store}) async {
     _logService = logService ?? LogService();
 
     if (_store != null) return;
@@ -57,25 +58,29 @@ class RepositoryFactory {
   /// Get the CallSession repository
   static CallSessionRepository get callSessions {
     _ensureInitialized();
-    return _callSessionRepo ??= JsonCallSessionRepository(_store!, logService: _logService);
+    return _callSessionRepo ??=
+        JsonCallSessionRepository(_store!, logService: _logService);
   }
 
   /// Get the SpeedDial repository
   static SpeedDialRepository get speedDials {
     _ensureInitialized();
-    return _speedDialRepo ??= JsonSpeedDialRepository(_store!, logService: _logService);
+    return _speedDialRepo ??=
+        JsonSpeedDialRepository(_store!, logService: _logService);
   }
 
   /// Get the Memory repository
   static MemoryRepository get memory {
     _ensureInitialized();
-    return _memoryRepo ??= JsonMemoryRepository(_store!, logService: _logService);
+    return _memoryRepo ??=
+        JsonMemoryRepository(_store!, logService: _logService);
   }
 
   /// Get the Config repository
   static ConfigRepository get config {
     _ensureInitialized();
-    return _configRepo ??= JsonConfigRepository(_store!, logService: _logService);
+    return _configRepo ??=
+        JsonConfigRepository(_store!, logService: _logService);
   }
 
   /// Get the Preferences repository
@@ -87,7 +92,8 @@ class RepositoryFactory {
   /// Helper to ensure initialization
   static void _ensureInitialized() {
     if (_store == null) {
-      throw StateError('RepositoryFactory not initialized. Call initialize() first.');
+      throw StateError(
+          'RepositoryFactory not initialized. Call initialize() first.');
     }
   }
 

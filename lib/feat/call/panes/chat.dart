@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vagina/feat/call/state/call_stream_providers.dart';
-import 'package:vagina/theme/app_theme.dart';
+import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/feat/call/widgets/chat_header.dart';
 import 'package:vagina/feat/call/widgets/scroll_to_bottom_button.dart';
-import 'package:vagina/widgets/chat_bubble.dart';
+import 'package:vagina/core/widgets/chat_bubble.dart';
 import 'package:vagina/feat/call/widgets/chat_input.dart';
 import 'package:vagina/feat/call/widgets/chat_empty_state.dart';
 
@@ -49,7 +49,8 @@ class _ChatPaneState extends ConsumerState<ChatPane> {
     final isAtBottom = currentScroll >= maxScroll - 50;
     final shouldShowScrollButton = !isAtBottom;
 
-    if (isAtBottom != _isAtBottom || shouldShowScrollButton != _showScrollToBottom) {
+    if (isAtBottom != _isAtBottom ||
+        shouldShowScrollButton != _showScrollToBottom) {
       setState(() {
         _isAtBottom = isAtBottom;
         _showScrollToBottom = shouldShowScrollButton;
@@ -91,7 +92,8 @@ class _ChatPaneState extends ConsumerState<ChatPane> {
               // Smart auto-scroll: only scroll if user is already at bottom
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (_isAtBottom && _scrollController.hasClients) {
-                  _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+                  _scrollController
+                      .jumpTo(_scrollController.position.maxScrollExtent);
                 }
               });
 
@@ -99,7 +101,8 @@ class _ChatPaneState extends ConsumerState<ChatPane> {
                 children: [
                   ListView.builder(
                     controller: _scrollController,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     itemCount: messages.length,
                     itemBuilder: (context, index) {
                       final message = messages[index];

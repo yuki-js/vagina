@@ -1,6 +1,6 @@
 import 'package:vagina/utils/platform_compat.dart';
 import 'package:flutter/material.dart';
-import 'package:vagina/theme/app_theme.dart';
+import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/services/log_service.dart';
 
 /// Plain text content renderer with edit/preview toggle
@@ -24,19 +24,21 @@ class _PlainTextContentState extends State<PlainTextContent> {
   static const _tag = 'PlainTextContent';
   late TextEditingController _controller;
   final FocusNode _focusNode = FocusNode();
-  final FocusNode? _keyboardListenerFocusNode = PlatformCompat.isWindows ? FocusNode() : null;
+  final FocusNode? _keyboardListenerFocusNode =
+      PlatformCompat.isWindows ? FocusNode() : null;
 
   @override
   void initState() {
     super.initState();
     _controller = TextEditingController(text: widget.content);
-    
+
     // Add listener for debugging on Windows
     if (PlatformCompat.isWindows) {
       _controller.addListener(() {
-        logService.debug(_tag, 'Text changed: length=${_controller.text.length}');
+        logService.debug(
+            _tag, 'Text changed: length=${_controller.text.length}');
       });
-      
+
       _focusNode.addListener(() {
         logService.debug(_tag, 'Focus changed: ${_focusNode.hasFocus}');
       });
@@ -66,10 +68,11 @@ class _PlainTextContentState extends State<PlainTextContent> {
   void _onTextChanged(String value) {
     widget.onContentChanged?.call(value);
   }
-  
+
   void _handleKeyEvent(KeyEvent event) {
     if (PlatformCompat.isWindows) {
-      logService.debug(_tag, 'Key event: ${event.logicalKey}, character: ${event.character}');
+      logService.debug(_tag,
+          'Key event: ${event.logicalKey}, character: ${event.character}');
     }
   }
 
@@ -93,11 +96,13 @@ class _PlainTextContentState extends State<PlainTextContent> {
       decoration: InputDecoration(
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: AppTheme.primaryColor.withValues(alpha: 0.3)),
+          borderSide:
+              BorderSide(color: AppTheme.primaryColor.withValues(alpha: 0.3)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: AppTheme.primaryColor.withValues(alpha: 0.3)),
+          borderSide:
+              BorderSide(color: AppTheme.primaryColor.withValues(alpha: 0.3)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
@@ -108,7 +113,7 @@ class _PlainTextContentState extends State<PlainTextContent> {
         contentPadding: const EdgeInsets.all(12),
       ),
     );
-    
+
     // Wrap with KeyboardListener for debugging on Windows
     if (PlatformCompat.isWindows && _keyboardListenerFocusNode != null) {
       textField = KeyboardListener(
@@ -117,7 +122,7 @@ class _PlainTextContentState extends State<PlainTextContent> {
         child: textField,
       );
     }
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       child: textField,

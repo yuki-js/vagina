@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:vagina/theme/app_theme.dart';
+import 'package:vagina/core/theme/app_theme.dart';
 
 /// Empty state widget for chat when there are no messages
 class ChatEmptyState extends StatelessWidget {
@@ -31,7 +31,7 @@ class ChatEmptyState extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              isConnected 
+              isConnected
                   ? '話しかけるか、下のテキストボックスからメッセージを送信してください'
                   : '通話を開始すると、ここに会話が表示されます',
               style: TextStyle(

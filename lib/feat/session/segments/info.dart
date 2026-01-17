@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vagina/core/state/repository_providers.dart';
 import 'package:vagina/models/call_session.dart';
 import 'package:vagina/models/speed_dial.dart';
-import 'package:vagina/theme/app_theme.dart';
+import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/utils/duration_formatter.dart';
 
 /// Session detail segment - info/details view.
@@ -31,15 +31,17 @@ class SessionDetailInfoSegment extends ConsumerWidget {
               _buildSectionHeader('基本情報'),
               const SizedBox(height: 8),
               _buildInfoCard([
-                _buildInfoRow('開始時刻',
-                    DurationFormatter.formatJapaneseDateTime(session.startTime)),
+                _buildInfoRow(
+                    '開始時刻',
+                    DurationFormatter.formatJapaneseDateTime(
+                        session.startTime)),
                 if (session.endTime != null)
                   _buildInfoRow(
                     '終了時刻',
                     DurationFormatter.formatJapaneseDateTime(session.endTime!),
                   ),
-                _buildInfoRow(
-                    '通話時間', DurationFormatter.formatCallDuration(session.duration)),
+                _buildInfoRow('通話時間',
+                    DurationFormatter.formatCallDuration(session.duration)),
                 _buildInfoRow('メッセージ数', '${session.chatMessages.length}件'),
                 _buildInfoRow('ノートパッド', '${session.notepadTabs?.length ?? 0}件'),
               ]),

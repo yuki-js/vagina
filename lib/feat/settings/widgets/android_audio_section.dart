@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:record/record.dart';
-import 'package:vagina/feat/settings/state/android_audio_config_provider.dart' as state;
+import 'package:vagina/feat/settings/state/android_audio_config_provider.dart'
+    as state;
 import 'package:vagina/models/android_audio_config.dart' as model;
-import 'package:vagina/theme/app_theme.dart';
+import 'package:vagina/core/theme/app_theme.dart';
 import 'settings_card.dart';
 
 /// Android audio settings section widget
@@ -13,13 +14,14 @@ class AndroidAudioSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final asyncConfig = ref.watch(state.androidAudioConfigProvider);
-    
+
     return asyncConfig.when(
       loading: () => const SettingsCard(
         child: Center(child: CircularProgressIndicator()),
       ),
       error: (error, stack) => SettingsCard(
-        child: Text('エラー: $error', style: const TextStyle(color: AppTheme.errorColor)),
+        child: Text('エラー: $error',
+            style: const TextStyle(color: AppTheme.errorColor)),
       ),
       data: (config) => SettingsCard(
         child: Column(
@@ -46,26 +48,30 @@ class AndroidAudioSection extends ConsumerWidget {
             DropdownButtonFormField<AndroidAudioSource>(
               initialValue: config.audioSource,
               decoration: const InputDecoration(
-                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                contentPadding:
+                    EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               ),
               dropdownColor: AppTheme.lightSurfaceColor,
               items: AndroidAudioSource.values.map((source) {
                 return DropdownMenuItem(
                   value: source,
                   child: Text(
-                    model.AndroidAudioConfig.audioSourceDisplayNames[source] ?? source.name,
+                    model.AndroidAudioConfig.audioSourceDisplayNames[source] ??
+                        source.name,
                     style: const TextStyle(color: AppTheme.lightTextPrimary),
                   ),
                 );
               }).toList(),
               onChanged: (value) {
                 if (value != null) {
-                  ref.read(state.androidAudioConfigProvider.notifier).updateAudioSource(value);
+                  ref
+                      .read(state.androidAudioConfigProvider.notifier)
+                      .updateAudioSource(value);
                 }
               },
             ),
             const SizedBox(height: 16),
-            
+
             // Audio manager mode dropdown
             const Text(
               'オーディオマネージャーモード',
@@ -87,21 +93,25 @@ class AndroidAudioSection extends ConsumerWidget {
             DropdownButtonFormField<AudioManagerMode>(
               initialValue: config.audioManagerMode,
               decoration: const InputDecoration(
-                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                contentPadding:
+                    EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               ),
               dropdownColor: AppTheme.lightSurfaceColor,
               items: AudioManagerMode.values.map((mode) {
                 return DropdownMenuItem(
                   value: mode,
                   child: Text(
-                    model.AndroidAudioConfig.audioModeDisplayNames[mode] ?? mode.name,
+                    model.AndroidAudioConfig.audioModeDisplayNames[mode] ??
+                        mode.name,
                     style: const TextStyle(color: AppTheme.lightTextPrimary),
                   ),
                 );
               }).toList(),
               onChanged: (value) {
                 if (value != null) {
-                  ref.read(state.androidAudioConfigProvider.notifier).updateAudioManagerMode(value);
+                  ref
+                      .read(state.androidAudioConfigProvider.notifier)
+                      .updateAudioManagerMode(value);
                 }
               },
             ),

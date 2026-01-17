@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:vagina/theme/app_theme.dart';
+import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/models/chat_message.dart';
 
 /// Shows tool details in a bottom sheet
@@ -37,7 +37,8 @@ class ToolDetailsSheet extends StatelessWidget {
                   color: AppTheme.secondaryColor.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(Icons.build, color: AppTheme.secondaryColor, size: 20),
+                child: const Icon(Icons.build,
+                    color: AppTheme.secondaryColor, size: 20),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -53,7 +54,7 @@ class ToolDetailsSheet extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          
+
           // Arguments section
           const Text(
             '引数:',
@@ -81,7 +82,7 @@ class ToolDetailsSheet extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          
+
           // Result section
           const Text(
             '結果:',

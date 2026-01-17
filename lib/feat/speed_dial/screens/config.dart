@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vagina/core/state/repository_providers.dart';
 import 'package:vagina/feat/speed_dial/state/speed_dial_providers.dart';
 import 'package:vagina/models/speed_dial.dart';
-import 'package:vagina/theme/app_theme.dart';
+import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/feat/speed_dial/widgets/emoji_picker.dart';
 
 /// Speed dial configuration screen
@@ -19,7 +19,8 @@ class SpeedDialConfigScreen extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<SpeedDialConfigScreen> createState() => _SpeedDialConfigScreenState();
+  ConsumerState<SpeedDialConfigScreen> createState() =>
+      _SpeedDialConfigScreenState();
 }
 
 class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
@@ -33,7 +34,7 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
   void initState() {
     super.initState();
     _isNewSpeedDial = widget.speedDial == null;
-    
+
     if (_isNewSpeedDial) {
       _nameController = TextEditingController();
       _instructionsController = TextEditingController();
@@ -41,7 +42,8 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
       _selectedEmoji = '⭐';
     } else {
       _nameController = TextEditingController(text: widget.speedDial!.name);
-      _instructionsController = TextEditingController(text: widget.speedDial!.systemPrompt);
+      _instructionsController =
+          TextEditingController(text: widget.speedDial!.systemPrompt);
       _selectedVoice = widget.speedDial!.voice;
       _selectedEmoji = widget.speedDial!.iconEmoji ?? '⭐';
     }
@@ -92,7 +94,7 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
 
     final speedDialRepo = ref.read(speedDialRepositoryProvider);
     final speedDial = SpeedDial(
-      id: _isNewSpeedDial 
+      id: _isNewSpeedDial
           ? DateTime.now().millisecondsSinceEpoch.toString()
           : widget.speedDial!.id,
       name: _nameController.text,
@@ -113,7 +115,8 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(_isNewSpeedDial ? 'スピードダイヤルを追加しました' : 'スピードダイヤルを更新しました'),
+          content:
+              Text(_isNewSpeedDial ? 'スピードダイヤルを追加しました' : 'スピードダイヤルを更新しました'),
           duration: const Duration(seconds: 2),
         ),
       );
@@ -123,7 +126,7 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
 
   Future<void> _deleteSpeedDial() async {
     if (_isNewSpeedDial) return;
-    
+
     // Prevent deletion of default speed dial
     if (widget.speedDial!.id == SpeedDial.defaultId) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -262,7 +265,10 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
                     const SizedBox(height: 12),
                     TextField(
                       controller: _nameController,
-                      enabled: _isNewSpeedDial || widget.speedDial!.id != SpeedDial.defaultId, // Disable for default speed dial
+                      enabled: _isNewSpeedDial ||
+                          widget.speedDial!.id !=
+                              SpeedDial
+                                  .defaultId, // Disable for default speed dial
                       decoration: InputDecoration(
                         hintText: '例: アシスタント',
                         border: OutlineInputBorder(
@@ -270,8 +276,9 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
                         ),
                         filled: true,
                         fillColor: Colors.grey[50],
-                        helperText: (!_isNewSpeedDial && widget.speedDial!.id == SpeedDial.defaultId) 
-                            ? 'デフォルトのスピードダイヤルは名前を変更できません' 
+                        helperText: (!_isNewSpeedDial &&
+                                widget.speedDial!.id == SpeedDial.defaultId)
+                            ? 'デフォルトのスピードダイヤルは名前を変更できません'
                             : null,
                       ),
                       style: const TextStyle(color: AppTheme.lightTextPrimary),
@@ -309,7 +316,8 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
                       items: const [
                         DropdownMenuItem(value: 'alloy', child: Text('Alloy')),
                         DropdownMenuItem(value: 'echo', child: Text('Echo')),
-                        DropdownMenuItem(value: 'shimmer', child: Text('Shimmer')),
+                        DropdownMenuItem(
+                            value: 'shimmer', child: Text('Shimmer')),
                       ],
                       onChanged: (value) {
                         if (value != null) {

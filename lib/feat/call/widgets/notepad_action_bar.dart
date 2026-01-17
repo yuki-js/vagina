@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:vagina/theme/app_theme.dart';
+import 'package:vagina/core/theme/app_theme.dart';
 
 /// Popup menu with copy, share, edit, undo, and redo options for notepad content
 class NotepadMoreMenu extends StatelessWidget {
@@ -99,7 +99,8 @@ class NotepadMoreMenu extends StatelessWidget {
           value: 'share',
           child: Row(
             children: [
-              Icon(Icons.share_rounded, size: 20, color: AppTheme.textSecondary),
+              Icon(Icons.share_rounded,
+                  size: 20, color: AppTheme.textSecondary),
               const SizedBox(width: 12),
               const Text('共有', style: TextStyle(color: AppTheme.textPrimary)),
             ],
@@ -113,13 +114,17 @@ class NotepadMoreMenu extends StatelessWidget {
                 Icon(
                   isEditing ? Icons.check_rounded : Icons.edit_rounded,
                   size: 20,
-                  color: isEditing ? AppTheme.primaryColor : AppTheme.textSecondary,
+                  color: isEditing
+                      ? AppTheme.primaryColor
+                      : AppTheme.textSecondary,
                 ),
                 const SizedBox(width: 12),
                 Text(
                   isEditing ? '完了' : '編集',
                   style: TextStyle(
-                    color: isEditing ? AppTheme.primaryColor : AppTheme.textPrimary,
+                    color: isEditing
+                        ? AppTheme.primaryColor
+                        : AppTheme.textPrimary,
                   ),
                 ),
               ],
@@ -134,13 +139,17 @@ class NotepadMoreMenu extends StatelessWidget {
                 Icon(
                   Icons.undo_rounded,
                   size: 20,
-                  color: canUndo ? AppTheme.textSecondary : AppTheme.textSecondary.withValues(alpha: 0.3),
+                  color: canUndo
+                      ? AppTheme.textSecondary
+                      : AppTheme.textSecondary.withValues(alpha: 0.3),
                 ),
                 const SizedBox(width: 12),
                 Text(
                   '元に戻す',
                   style: TextStyle(
-                    color: canUndo ? AppTheme.textPrimary : AppTheme.textPrimary.withValues(alpha: 0.3),
+                    color: canUndo
+                        ? AppTheme.textPrimary
+                        : AppTheme.textPrimary.withValues(alpha: 0.3),
                   ),
                 ),
               ],
@@ -155,13 +164,17 @@ class NotepadMoreMenu extends StatelessWidget {
                 Icon(
                   Icons.redo_rounded,
                   size: 20,
-                  color: canRedo ? AppTheme.textSecondary : AppTheme.textSecondary.withValues(alpha: 0.3),
+                  color: canRedo
+                      ? AppTheme.textSecondary
+                      : AppTheme.textSecondary.withValues(alpha: 0.3),
                 ),
                 const SizedBox(width: 12),
                 Text(
                   'やり直し',
                   style: TextStyle(
-                    color: canRedo ? AppTheme.textPrimary : AppTheme.textPrimary.withValues(alpha: 0.3),
+                    color: canRedo
+                        ? AppTheme.textPrimary
+                        : AppTheme.textPrimary.withValues(alpha: 0.3),
                   ),
                 ),
               ],

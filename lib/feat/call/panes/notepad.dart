@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vagina/feat/call/state/notepad_controller.dart';
 import 'package:vagina/feat/call/state/notepad_providers.dart';
-import 'package:vagina/theme/app_theme.dart';
+import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/feat/call/widgets/notepad_header.dart';
 import 'package:vagina/feat/call/widgets/notepad_tab_bar.dart';
 import 'package:vagina/models/notepad_tab.dart';
@@ -30,9 +30,13 @@ class _NotepadPaneState extends ConsumerState<NotepadPane> {
   String? _currentTabId;
 
   void _toggleEdit(NotepadTab? selectedTab) {
-    if (_isEditing && selectedTab != null && _editedContent != selectedTab.content) {
+    if (_isEditing &&
+        selectedTab != null &&
+        _editedContent != selectedTab.content) {
       // Save changes when exiting edit mode
-      ref.read(notepadServiceProvider).updateTab(selectedTab.id, content: _editedContent);
+      ref
+          .read(notepadServiceProvider)
+          .updateTab(selectedTab.id, content: _editedContent);
     }
     setState(() {
       _isEditing = !_isEditing;

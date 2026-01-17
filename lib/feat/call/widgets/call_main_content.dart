@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:vagina/theme/app_theme.dart';
+import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/models/speed_dial.dart';
-import 'package:vagina/config/app_config.dart';
+import 'package:vagina/core/config/app_config.dart';
 import 'package:vagina/feat/call/widgets/audio_level_visualizer.dart';
 import 'package:vagina/utils/duration_formatter.dart';
 
@@ -30,15 +30,10 @@ class CallMainContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDefault = speedDial.isDefault;
-    final displayIcon = isDefault 
-        ? Icons.headset_mic 
-        : null;
-    final displayEmoji = !isDefault && speedDial.iconEmoji != null
-        ? speedDial.iconEmoji!
-        : null;
-    final displayName = isDefault
-        ? AppConfig.appName
-        : speedDial.name;
+    final displayIcon = isDefault ? Icons.headset_mic : null;
+    final displayEmoji =
+        !isDefault && speedDial.iconEmoji != null ? speedDial.iconEmoji! : null;
+    final displayName = isDefault ? AppConfig.appName : speedDial.name;
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,

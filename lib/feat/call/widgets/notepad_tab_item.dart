@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:vagina/models/notepad_tab.dart';
-import 'package:vagina/theme/app_theme.dart';
+import 'package:vagina/core/theme/app_theme.dart';
 
 /// Individual notepad tab item.
 class NotepadTabItem extends StatelessWidget {
@@ -29,8 +29,9 @@ class NotepadTabItem extends StatelessWidget {
               ? AppTheme.primaryColor.withValues(alpha: 0.2)
               : AppTheme.surfaceColor,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
-          border:
-              isSelected ? Border.all(color: AppTheme.primaryColor, width: 1) : null,
+          border: isSelected
+              ? Border.all(color: AppTheme.primaryColor, width: 1)
+              : null,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -38,7 +39,8 @@ class NotepadTabItem extends StatelessWidget {
             Icon(
               _getMimeTypeIcon(tab.mimeType),
               size: 16,
-              color: isSelected ? AppTheme.primaryColor : AppTheme.textSecondary,
+              color:
+                  isSelected ? AppTheme.primaryColor : AppTheme.textSecondary,
             ),
             const SizedBox(width: 6),
             ConstrainedBox(

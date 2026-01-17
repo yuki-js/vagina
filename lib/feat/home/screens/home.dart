@@ -7,7 +7,7 @@ import 'package:vagina/feat/home/tabs/speed_dial.dart';
 import 'package:vagina/feat/home/tabs/tools.dart';
 import 'package:vagina/feat/settings/screens/settings.dart';
 import 'package:vagina/feat/speed_dial/screens/config.dart';
-import 'package:vagina/theme/app_theme.dart';
+import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/utils/call_navigation_utils.dart';
 
 /// Main home screen with tab bar for phone app design

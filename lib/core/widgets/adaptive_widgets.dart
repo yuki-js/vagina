@@ -2,7 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vagina/feat/settings/state/ui_preferences_provider.dart';
-import 'package:vagina/theme/app_theme.dart';
+import 'package:vagina/core/theme/app_theme.dart';
 
 /// Material/Cupertino共通化のためのアダプティブウィジェット
 /// useCupertinoStyleProviderの値に応じてMaterialまたはCupertinoウィジェットを返す
@@ -23,7 +23,7 @@ class AdaptiveSwitch extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final useCupertino = ref.watch(useCupertinoStyleProvider);
-    
+
     if (useCupertino) {
       return CupertinoSwitch(
         value: value,
@@ -31,7 +31,7 @@ class AdaptiveSwitch extends ConsumerWidget {
         activeTrackColor: activeColor ?? AppTheme.primaryColor,
       );
     }
-    
+
     return Switch(
       value: value,
       onChanged: onChanged,
@@ -61,21 +61,23 @@ class AdaptiveButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final useCupertino = ref.watch(useCupertinoStyleProvider);
-    
+
     if (useCupertino) {
       return CupertinoButton.filled(
         onPressed: onPressed,
-        padding: padding ?? const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        padding:
+            padding ?? const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
         child: child,
       );
     }
-    
+
     return ElevatedButton(
       onPressed: onPressed,
       style: ElevatedButton.styleFrom(
         backgroundColor: backgroundColor ?? AppTheme.primaryColor,
         foregroundColor: foregroundColor ?? Colors.white,
-        padding: padding ?? const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        padding:
+            padding ?? const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
@@ -101,7 +103,7 @@ class AdaptiveTextButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final useCupertino = ref.watch(useCupertinoStyleProvider);
-    
+
     if (useCupertino) {
       return CupertinoButton(
         onPressed: onPressed,
@@ -112,7 +114,7 @@ class AdaptiveTextButton extends ConsumerWidget {
         ),
       );
     }
-    
+
     return TextButton(
       onPressed: onPressed,
       style: TextButton.styleFrom(
@@ -141,7 +143,7 @@ class AdaptiveIconButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final useCupertino = ref.watch(useCupertinoStyleProvider);
-    
+
     if (useCupertino) {
       return CupertinoButton(
         onPressed: onPressed,
@@ -153,7 +155,7 @@ class AdaptiveIconButton extends ConsumerWidget {
         ),
       );
     }
-    
+
     return IconButton(
       onPressed: onPressed,
       icon: icon,
@@ -189,7 +191,7 @@ class AdaptiveTextField extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final useCupertino = ref.watch(useCupertinoStyleProvider);
-    
+
     if (useCupertino) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -210,10 +212,12 @@ class AdaptiveTextField extends ConsumerWidget {
             obscureText: obscureText,
             keyboardType: keyboardType,
             maxLines: maxLines,
-            suffix: suffix != null ? Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: suffix,
-            ) : null,
+            suffix: suffix != null
+                ? Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: suffix,
+                  )
+                : null,
             onChanged: onChanged,
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -224,7 +228,7 @@ class AdaptiveTextField extends ConsumerWidget {
         ],
       );
     }
-    
+
     return TextField(
       controller: controller,
       obscureText: obscureText,
@@ -262,7 +266,7 @@ class AdaptiveSlider extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final useCupertino = ref.watch(useCupertinoStyleProvider);
-    
+
     if (useCupertino) {
       return CupertinoSlider(
         value: value,
@@ -273,7 +277,7 @@ class AdaptiveSlider extends ConsumerWidget {
         activeColor: activeColor ?? AppTheme.primaryColor,
       );
     }
-    
+
     return Slider(
       value: value,
       min: min,
@@ -297,28 +301,31 @@ class AdaptiveActionSheet {
     AdaptiveAction<T>? cancelAction,
   }) async {
     final useCupertino = ref.read(useCupertinoStyleProvider);
-    
+
     if (useCupertino) {
       return showCupertinoModalPopup<T>(
         context: context,
         builder: (context) => CupertinoActionSheet(
           title: title != null ? Text(title) : null,
           message: message != null ? Text(message) : null,
-          actions: actions.map((action) => CupertinoActionSheetAction(
-            onPressed: () => Navigator.of(context).pop(action.value),
-            isDestructiveAction: action.isDestructive,
-            child: Text(action.label),
-          )).toList(),
+          actions: actions
+              .map((action) => CupertinoActionSheetAction(
+                    onPressed: () => Navigator.of(context).pop(action.value),
+                    isDestructiveAction: action.isDestructive,
+                    child: Text(action.label),
+                  ))
+              .toList(),
           cancelButton: cancelAction != null
               ? CupertinoActionSheetAction(
-                  onPressed: () => Navigator.of(context).pop(cancelAction.value),
+                  onPressed: () =>
+                      Navigator.of(context).pop(cancelAction.value),
                   child: Text(cancelAction.label),
                 )
               : null,
         ),
       );
     }
-    
+
     return showModalBottomSheet<T>(
       context: context,
       builder: (context) => SafeArea(
@@ -354,18 +361,20 @@ class AdaptiveActionSheet {
               const Divider(height: 1),
             ],
             ...actions.map((action) => ListTile(
-              title: Text(
-                action.label,
-                style: TextStyle(
-                  color: action.isDestructive ? Colors.red : null,
-                ),
-              ),
-              leading: action.icon != null ? Icon(
-                action.icon,
-                color: action.isDestructive ? Colors.red : null,
-              ) : null,
-              onTap: () => Navigator.of(context).pop(action.value),
-            )),
+                  title: Text(
+                    action.label,
+                    style: TextStyle(
+                      color: action.isDestructive ? Colors.red : null,
+                    ),
+                  ),
+                  leading: action.icon != null
+                      ? Icon(
+                          action.icon,
+                          color: action.isDestructive ? Colors.red : null,
+                        )
+                      : null,
+                  onTap: () => Navigator.of(context).pop(action.value),
+                )),
             if (cancelAction != null) ...[
               const Divider(height: 1),
               ListTile(
@@ -408,7 +417,7 @@ class AdaptiveAlertDialog {
     bool isDestructive = false,
   }) async {
     final useCupertino = ref.read(useCupertinoStyleProvider);
-    
+
     if (useCupertino) {
       return showCupertinoDialog<bool>(
         context: context,
@@ -430,7 +439,7 @@ class AdaptiveAlertDialog {
         ),
       );
     }
-    
+
     return showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -469,13 +478,13 @@ class AdaptiveProgressIndicator extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final useCupertino = ref.watch(useCupertinoStyleProvider);
-    
+
     if (useCupertino) {
       return CupertinoActivityIndicator(
         color: color,
       );
     }
-    
+
     return CircularProgressIndicator(
       value: value,
       color: color ?? AppTheme.primaryColor,
@@ -499,7 +508,7 @@ class AdaptiveSegmentedControl<T extends Object> extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final useCupertino = ref.watch(useCupertinoStyleProvider);
-    
+
     if (useCupertino) {
       return CupertinoSegmentedControl<T>(
         children: children,
@@ -507,13 +516,15 @@ class AdaptiveSegmentedControl<T extends Object> extends ConsumerWidget {
         onValueChanged: onValueChanged,
       );
     }
-    
+
     // Material版はSegmentedButtonを使用
     return SegmentedButton<T>(
-      segments: children.entries.map((entry) => ButtonSegment<T>(
-        value: entry.key,
-        label: entry.value,
-      )).toList(),
+      segments: children.entries
+          .map((entry) => ButtonSegment<T>(
+                value: entry.key,
+                label: entry.value,
+              ))
+          .toList(),
       selected: {groupValue},
       onSelectionChanged: (selected) {
         if (selected.isNotEmpty) {

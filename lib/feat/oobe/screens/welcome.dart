@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:vagina/theme/app_theme.dart';
+import 'package:vagina/core/theme/app_theme.dart';
 
 /// First OOBE screen - Welcome experience with mic motif and features
 class WelcomeScreen extends StatefulWidget {
@@ -44,7 +44,8 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   void _cycleMessages() {
     if (!mounted) return;
     setState(() {
-      _currentMessageIndex = (_currentMessageIndex + 1) % _welcomeMessages.length;
+      _currentMessageIndex =
+          (_currentMessageIndex + 1) % _welcomeMessages.length;
     });
     Future.delayed(const Duration(seconds: 2), _cycleMessages);
   }

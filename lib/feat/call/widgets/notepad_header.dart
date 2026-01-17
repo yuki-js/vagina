@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vagina/feat/call/state/notepad_providers.dart';
 import 'package:vagina/feat/call/widgets/notepad_action_bar.dart';
 import 'package:vagina/models/notepad_tab.dart';
-import 'package:vagina/theme/app_theme.dart';
+import 'package:vagina/core/theme/app_theme.dart';
 
 /// Artifact header with navigation to call and more menu.
 class NotepadHeader extends StatelessWidget {

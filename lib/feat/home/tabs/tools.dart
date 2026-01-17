@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vagina/core/state/repository_providers.dart';
 import 'package:vagina/feat/call/state/call_service_providers.dart';
-import 'package:vagina/theme/app_theme.dart';
+import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/services/tools/tool_metadata.dart';
 
 /// ツール有効状態のプロバイダー（リポジトリ使用）
-final toolEnabledProvider = FutureProvider.family<bool, String>((ref, toolName) async {
+final toolEnabledProvider =
+    FutureProvider.family<bool, String>((ref, toolName) async {
   final config = ref.watch(configRepositoryProvider);
   return await config.isToolEnabled(toolName);
 });
@@ -114,9 +115,8 @@ class _ToolsTabState extends ConsumerState<ToolsTab> {
     return Column(
       children: [
         // 選択モードのヘッダー
-        if (_isSelectionMode)
-          _buildSelectionHeader(toolsByCategory),
-        
+        if (_isSelectionMode) _buildSelectionHeader(toolsByCategory),
+
         // ツールリスト
         Expanded(
           child: ListView(
@@ -139,9 +139,10 @@ class _ToolsTabState extends ConsumerState<ToolsTab> {
                 ),
               ),
               const SizedBox(height: 24),
-              
+
               // カテゴリ別にツールを表示
-              ...toolsByCategory.entries.map((entry) => _buildCategorySection(entry.key, entry.value)),
+              ...toolsByCategory.entries.map(
+                  (entry) => _buildCategorySection(entry.key, entry.value)),
             ],
           ),
         ),
@@ -149,9 +150,10 @@ class _ToolsTabState extends ConsumerState<ToolsTab> {
     );
   }
 
-  Widget _buildSelectionHeader(Map<ToolCategory, List<ToolMetadata>> toolsByCategory) {
+  Widget _buildSelectionHeader(
+      Map<ToolCategory, List<ToolMetadata>> toolsByCategory) {
     final allTools = toolsByCategory.values.expand((list) => list).toList();
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       color: AppTheme.primaryColor.withValues(alpha: 0.1),
@@ -197,7 +199,8 @@ class _ToolsTabState extends ConsumerState<ToolsTab> {
     );
   }
 
-  Widget _buildCategorySection(ToolCategory category, List<ToolMetadata> tools) {
+  Widget _buildCategorySection(
+      ToolCategory category, List<ToolMetadata> tools) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -234,10 +237,10 @@ class _ToolsTabState extends ConsumerState<ToolsTab> {
             ],
           ),
         ),
-        
+
         // ツールアイテム
         ...tools.map((metadata) => _buildToolItem(context, metadata)),
-        
+
         const SizedBox(height: 16),
       ],
     );
@@ -291,7 +294,8 @@ class _ToolsTabState extends ConsumerState<ToolsTab> {
             trailing: _isSelectionMode
                 ? null
                 : Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       color: isEnabled
                           ? AppTheme.successColor.withValues(alpha: 0.1)

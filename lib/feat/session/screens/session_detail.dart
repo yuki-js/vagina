@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vagina/core/state/repository_providers.dart';
 import 'package:vagina/models/call_session.dart';
-import 'package:vagina/theme/app_theme.dart';
-import 'package:vagina/widgets/adaptive_widgets.dart';
+import 'package:vagina/core/theme/app_theme.dart';
+import 'package:vagina/core/widgets/adaptive_widgets.dart';
 import 'package:vagina/feat/session/segments/chat.dart';
 import 'package:vagina/feat/session/segments/info.dart';
 import 'package:vagina/feat/session/segments/notepad.dart';
@@ -18,7 +18,8 @@ class SessionDetailScreen extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<SessionDetailScreen> createState() => _SessionDetailScreenState();
+  ConsumerState<SessionDetailScreen> createState() =>
+      _SessionDetailScreenState();
 }
 
 class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
@@ -46,7 +47,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
             ),
           );
         }
-        
+
         if (snapshot.hasError || !snapshot.hasData || snapshot.data == null) {
           return Scaffold(
             appBar: AppBar(
@@ -62,18 +63,18 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
             ),
           );
         }
-        
+
         final session = snapshot.data!;
         return _buildSessionDetail(session);
       },
     );
   }
-  
+
   Future<CallSession?> _loadSession() async {
     final repository = ref.read(callSessionRepositoryProvider);
     return await repository.getById(widget.sessionId);
   }
-  
+
   Widget _buildSessionDetail(CallSession session) {
     return Scaffold(
       appBar: AppBar(
@@ -142,7 +143,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
       ),
     );
   }
-  
+
   Widget _buildContent(CallSession session) {
     switch (_selectedSegment) {
       case 0:

@@ -7,7 +7,7 @@ import 'package:vagina/feat/call/state/call_service_providers.dart';
 import 'package:vagina/feat/call/state/call_stream_providers.dart';
 import 'package:vagina/feat/call/state/call_ui_state_providers.dart';
 import 'package:vagina/models/speed_dial.dart';
-import 'package:vagina/theme/app_theme.dart';
+import 'package:vagina/core/theme/app_theme.dart';
 
 /// Call screen with PageView for swipe navigation between chat, call, and notepad
 /// Layout: Chat (left) ← Call (center) → Notepad (right)
@@ -152,7 +152,9 @@ class _CallScreenState extends ConsumerState<CallScreen> {
         data: (ui) => ui.metrics.lastError,
         orElse: () => null,
       );
-      if (nextError != null && nextError.isNotEmpty && nextError != previousError) {
+      if (nextError != null &&
+          nextError.isNotEmpty &&
+          nextError != previousError) {
         _showSnackBar(nextError, isError: true);
       }
     });
@@ -257,8 +259,10 @@ class _CallScreenState extends ConsumerState<CallScreen> {
             ),
             child: CallPane(
               onChatPressed: () {}, // No navigation needed in 3-column layout
-              onNotepadPressed: () {}, // No navigation needed in 3-column layout
-              hideNavigationButtons: true, // Hide chat/notepad buttons in 3-column layout
+              onNotepadPressed:
+                  () {}, // No navigation needed in 3-column layout
+              hideNavigationButtons:
+                  true, // Hide chat/notepad buttons in 3-column layout
               speedDial: widget.speedDial,
             ),
           ),
