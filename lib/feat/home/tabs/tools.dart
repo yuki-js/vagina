@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vagina/core/state/repository_providers.dart';
-import 'package:vagina/feat/call/state/call_service_providers.dart';
 import 'package:vagina/core/theme/app_theme.dart';
+import 'package:vagina/feat/call/state/call_service_providers.dart';
+import 'package:vagina/feat/home/tools/tool_icon_mapper.dart';
 import 'package:vagina/services/tools/tool_metadata.dart';
 
 /// ツール有効状態のプロバイダー（リポジトリ使用）
@@ -209,7 +210,11 @@ class _ToolsTabState extends ConsumerState<ToolsTab> {
           padding: const EdgeInsets.symmetric(vertical: 8),
           child: Row(
             children: [
-              Icon(category.icon, size: 20, color: AppTheme.primaryColor),
+              Icon(
+                ToolIconMapper.iconForCategory(category),
+                size: 20,
+                color: AppTheme.primaryColor,
+              ),
               const SizedBox(width: 8),
               Text(
                 category.displayName,
@@ -274,7 +279,7 @@ class _ToolsTabState extends ConsumerState<ToolsTab> {
                     onChanged: (_) => _toggleSelection(metadata.name),
                   )
                 : Icon(
-                    metadata.icon,
+                    ToolIconMapper.iconForMetadata(metadata),
                     color: isEnabled ? AppTheme.primaryColor : Colors.grey,
                   ),
             title: Text(
@@ -317,7 +322,10 @@ class _ToolsTabState extends ConsumerState<ToolsTab> {
       loading: () => Card(
         margin: const EdgeInsets.only(bottom: 12),
         child: ListTile(
-          leading: Icon(metadata.icon, color: Colors.grey),
+          leading: Icon(
+            ToolIconMapper.iconForMetadata(metadata),
+            color: Colors.grey,
+          ),
           title: Text(metadata.displayName),
           subtitle: Text(metadata.displayDescription),
           trailing: const SizedBox(

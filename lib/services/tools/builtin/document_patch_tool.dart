@@ -1,8 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:diff_match_patch/diff_match_patch.dart';
+import 'package:vagina/services/notepad_service.dart';
 import 'package:vagina/services/tools/base_tool.dart';
 import 'package:vagina/services/tools/tool_metadata.dart';
-import 'package:vagina/services/notepad_service.dart';
 
 /// unified diff形式のパッチをdiff_match_patchライブラリの形式に変換
 /// 
@@ -148,13 +147,13 @@ class DocumentPatchTool extends BaseTool {
   
   @override
   ToolMetadata get metadata => const ToolMetadata(
-    name: 'document_patch',
-    displayName: 'ドキュメント編集',
-    displayDescription: 'ドキュメントの一部を編集します',
-    description: 'Apply a unified diff patch to an existing document.',
-    icon: Icons.edit,
-    category: ToolCategory.document,
-  );
+        name: 'document_patch',
+        displayName: 'ドキュメント編集',
+        displayDescription: 'ドキュメントの一部を編集します',
+        description: 'Apply a unified diff patch to an existing document.',
+        iconKey: 'edit',
+        category: ToolCategory.document,
+      );
 
   @override
   Future<Map<String, dynamic>> execute(Map<String, dynamic> arguments) async {

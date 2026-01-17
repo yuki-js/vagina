@@ -1,39 +1,40 @@
-import 'package:flutter/material.dart';
 import 'package:vagina/services/tools/base_tool.dart';
 import 'package:vagina/services/tools/tool_metadata.dart';
 
 /// 計算機ツール
 class CalculatorTool extends BaseTool {
   final _ExpressionEvaluator _evaluator = _ExpressionEvaluator();
-  
+
   @override
   String get name => 'calculator';
-  
+
   @override
-  String get description => 
+  String get description =>
       'Perform basic arithmetic calculations. Use this for mathematical operations.';
-  
+
   @override
   Map<String, dynamic> get parameters => {
-    'type': 'object',
-    'properties': {
-      'expression': {
-        'type': 'string',
-        'description': 'Mathematical expression to evaluate (e.g., "2 + 3 * 4", "100 / 5")',
-      },
-    },
-    'required': ['expression'],
-  };
-  
+        'type': 'object',
+        'properties': {
+          'expression': {
+            'type': 'string',
+            'description':
+                'Mathematical expression to evaluate (e.g., "2 + 3 * 4", "100 / 5")',
+          },
+        },
+        'required': ['expression'],
+      };
+
   @override
   ToolMetadata get metadata => const ToolMetadata(
-    name: 'calculator',
-    displayName: '計算機',
-    displayDescription: '数式を計算します',
-    description: 'Perform basic arithmetic calculations. Use this for mathematical operations.',
-    icon: Icons.calculate,
-    category: ToolCategory.calculation,
-  );
+        name: 'calculator',
+        displayName: '計算機',
+        displayDescription: '数式を計算します',
+        description:
+            'Perform basic arithmetic calculations. Use this for mathematical operations.',
+        iconKey: 'calculate',
+        category: ToolCategory.calculation,
+      );
 
   @override
   Future<Map<String, dynamic>> execute(Map<String, dynamic> arguments) async {

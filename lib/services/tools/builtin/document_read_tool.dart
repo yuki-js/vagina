@@ -1,43 +1,42 @@
-import 'package:flutter/material.dart';
+import 'package:vagina/services/notepad_service.dart';
 import 'package:vagina/services/tools/base_tool.dart';
 import 'package:vagina/services/tools/tool_metadata.dart';
-import 'package:vagina/services/notepad_service.dart';
 
 /// ドキュメント読取ツール
 class DocumentReadTool extends BaseTool {
   final NotepadService _notepadService;
-  
-  DocumentReadTool({required NotepadService notepadService}) 
+
+  DocumentReadTool({required NotepadService notepadService})
       : _notepadService = notepadService;
-  
+
   @override
   String get name => 'document_read';
-  
+
   @override
-  String get description => 
+  String get description =>
       'Read the content of a document from an artifact tab. This returns the current content which may include modifications made by the user.';
-  
+
   @override
   Map<String, dynamic> get parameters => {
-    'type': 'object',
-    'properties': {
-      'tabId': {
-        'type': 'string',
-        'description': 'ID of the tab containing the document to read',
-      },
-    },
-    'required': ['tabId'],
-  };
-  
+        'type': 'object',
+        'properties': {
+          'tabId': {
+            'type': 'string',
+            'description': 'ID of the tab containing the document to read',
+          },
+        },
+        'required': ['tabId'],
+      };
+
   @override
   ToolMetadata get metadata => const ToolMetadata(
-    name: 'document_read',
-    displayName: 'ドキュメント表示',
-    displayDescription: 'ドキュメントの内容を表示します',
-    description: 'Read the content of a document from an artifact tab.',
-    icon: Icons.visibility,
-    category: ToolCategory.document,
-  );
+        name: 'document_read',
+        displayName: 'ドキュメント表示',
+        displayDescription: 'ドキュメントの内容を表示します',
+        description: 'Read the content of a document from an artifact tab.',
+        iconKey: 'visibility',
+        category: ToolCategory.document,
+      );
 
   @override
   Future<Map<String, dynamic>> execute(Map<String, dynamic> arguments) async {
