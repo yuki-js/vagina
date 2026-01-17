@@ -5,7 +5,6 @@ import 'dart:typed_data';
 import 'package:async/async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
-import 'package:vagina/models/realtime_events.dart';
 import 'package:vagina/services/realtime_api_client.dart';
 
 import '../mocks/mock_repositories.mocks.dart';
@@ -100,7 +99,8 @@ void main() {
       expect(errors.last, contains('API key is required'));
     });
 
-    test('sendAudio emits error and does not send when not connected', () async {
+    test('sendAudio emits error and does not send when not connected',
+        () async {
       final errors = <String>[];
       final sub = client.errorStream.listen(errors.add);
       addTearDown(() async {
@@ -300,9 +300,11 @@ void main() {
 
         final userTranscriptDeltaQ =
             StreamQueue<String>(client.userTranscriptDeltaStream);
-        final userTranscriptQ = StreamQueue<String>(client.userTranscriptStream);
+        final userTranscriptQ =
+            StreamQueue<String>(client.userTranscriptStream);
 
-        final assistantTranscriptQ = StreamQueue<String>(client.transcriptStream);
+        final assistantTranscriptQ =
+            StreamQueue<String>(client.transcriptStream);
         final assistantTextDoneQ = StreamQueue<String>(client.textDoneStream);
 
         final responseAudioStartedQ =
@@ -310,7 +312,8 @@ void main() {
         final assistantAudioQ = StreamQueue<Uint8List>(client.audioStream);
         final assistantAudioDoneQ = StreamQueue<void>(client.audioDoneStream);
 
-        final functionCallQ = StreamQueue<FunctionCall>(client.functionCallStream);
+        final functionCallQ =
+            StreamQueue<FunctionCall>(client.functionCallStream);
 
         final conversationCreatedQ =
             StreamQueue<RealtimeConversation>(client.conversationCreatedStream);
@@ -364,11 +367,13 @@ void main() {
           });
 
           // Verify session.update was sent.
-          final sessionUpdate = await nextOutboundOfType(outboundQ, 'session.update');
+          final sessionUpdate =
+              await nextOutboundOfType(outboundQ, 'session.update');
           final sessionUpdatePayload =
               (sessionUpdate['session'] as Map).cast<String, dynamic>();
           expect(sessionUpdatePayload['voice'], 'alloy');
-          expect(sessionUpdatePayload['instructions'], 'You are a helpful assistant');
+          expect(sessionUpdatePayload['instructions'],
+              'You are a helpful assistant');
           expect(sessionUpdatePayload['tools'], isA<List>());
 
           inbound.add({
@@ -480,7 +485,8 @@ void main() {
           });
           await responseAudioStartedQ.next.timeout(stepTimeout);
           responseAudioStartedCount++;
-          assistantAudioChunks.add(await assistantAudioQ.next.timeout(stepTimeout));
+          assistantAudioChunks
+              .add(await assistantAudioQ.next.timeout(stepTimeout));
 
           inbound.add({'type': 'response.text.delta', 'delta': 'どうしましたか？'});
           assistantTranscriptDeltas
@@ -490,14 +496,16 @@ void main() {
             'type': 'response.audio.delta',
             'delta': base64Encode([4, 5]),
           });
-          assistantAudioChunks.add(await assistantAudioQ.next.timeout(stepTimeout));
+          assistantAudioChunks
+              .add(await assistantAudioQ.next.timeout(stepTimeout));
 
           inbound.add({
             'type': 'response.text.done',
             'item_id': 'asst-item-1',
             'text': 'こんにちは！どうしましたか？',
           });
-          assistantTextDone.add(await assistantTextDoneQ.next.timeout(stepTimeout));
+          assistantTextDone
+              .add(await assistantTextDoneQ.next.timeout(stepTimeout));
 
           inbound.add({'type': 'response.audio.done'});
           await assistantAudioDoneQ.next.timeout(stepTimeout);
@@ -621,7 +629,8 @@ void main() {
           });
           await responseAudioStartedQ.next.timeout(stepTimeout);
           responseAudioStartedCount++;
-          assistantAudioChunks.add(await assistantAudioQ.next.timeout(stepTimeout));
+          assistantAudioChunks
+              .add(await assistantAudioQ.next.timeout(stepTimeout));
 
           inbound.add({'type': 'response.text.delta', 'delta': 'コンテンツはどこですか？'});
           assistantTranscriptDeltas
@@ -631,14 +640,16 @@ void main() {
             'type': 'response.audio.delta',
             'delta': base64Encode([8, 8]),
           });
-          assistantAudioChunks.add(await assistantAudioQ.next.timeout(stepTimeout));
+          assistantAudioChunks
+              .add(await assistantAudioQ.next.timeout(stepTimeout));
 
           inbound.add({
             'type': 'response.text.done',
             'item_id': 'asst-item-2',
             'text': '承知しました、コンテンツはどこですか？',
           });
-          assistantTextDone.add(await assistantTextDoneQ.next.timeout(stepTimeout));
+          assistantTextDone
+              .add(await assistantTextDoneQ.next.timeout(stepTimeout));
 
           inbound.add({'type': 'response.audio.done'});
           await assistantAudioDoneQ.next.timeout(stepTimeout);
@@ -672,7 +683,8 @@ void main() {
             'conversation.item.create',
           );
           expect(userItemCreate['type'], 'conversation.item.create');
-          final userResponseCreate = await nextOutboundOfType(outboundQ, 'response.create');
+          final userResponseCreate =
+              await nextOutboundOfType(outboundQ, 'response.create');
           expect(userResponseCreate['type'], 'response.create');
 
           // =============================================================
@@ -848,7 +860,8 @@ void main() {
           });
           await responseAudioStartedQ.next.timeout(stepTimeout);
           responseAudioStartedCount++;
-          assistantAudioChunks.add(await assistantAudioQ.next.timeout(stepTimeout));
+          assistantAudioChunks
+              .add(await assistantAudioQ.next.timeout(stepTimeout));
 
           inbound.add({'type': 'response.text.delta', 'delta': '記載しました。'});
           assistantTranscriptDeltas
@@ -859,7 +872,8 @@ void main() {
             'item_id': 'asst-item-3',
             'text': 'ノートパッドに記載しました。',
           });
-          assistantTextDone.add(await assistantTextDoneQ.next.timeout(stepTimeout));
+          assistantTextDone
+              .add(await assistantTextDoneQ.next.timeout(stepTimeout));
 
           inbound.add({'type': 'response.audio.done'});
           await assistantAudioDoneQ.next.timeout(stepTimeout);
@@ -922,7 +936,8 @@ void main() {
         final conversationCreatedQ =
             StreamQueue<RealtimeConversation>(client.conversationCreatedStream);
 
-        final assistantTranscriptQ = StreamQueue<String>(client.transcriptStream);
+        final assistantTranscriptQ =
+            StreamQueue<String>(client.transcriptStream);
         final assistantTextDeltaQ = StreamQueue<String>(client.textDeltaStream);
         final assistantTextDoneQ = StreamQueue<String>(client.textDoneStream);
 
@@ -1003,7 +1018,8 @@ void main() {
             'item_id': 'asst-item-text-1',
             'text': 'こんにちは！',
           });
-          assistantTextDone.add(await assistantTextDoneQ.next.timeout(stepTimeout));
+          assistantTextDone
+              .add(await assistantTextDoneQ.next.timeout(stepTimeout));
 
           inbound.add({
             'type': 'response.done',
@@ -1157,8 +1173,10 @@ void main() {
 
         final outboundQ = StreamQueue<Map<String, dynamic>>(outbound.stream);
 
-        final sessionCreatedQ = StreamQueue<RealtimeSession>(client.sessionCreatedStream);
-        final sessionUpdatedQ = StreamQueue<RealtimeSession>(client.sessionUpdatedStream);
+        final sessionCreatedQ =
+            StreamQueue<RealtimeSession>(client.sessionCreatedStream);
+        final sessionUpdatedQ =
+            StreamQueue<RealtimeSession>(client.sessionUpdatedStream);
 
         try {
           await client.connect(
@@ -1186,7 +1204,8 @@ void main() {
           client.setNoiseReduction('far');
           client.updateSessionConfig();
 
-          final sessionUpdate2 = await nextOutboundOfType(outboundQ, 'session.update');
+          final sessionUpdate2 =
+              await nextOutboundOfType(outboundQ, 'session.update');
           final sessionUpdatePayload2 =
               (sessionUpdate2['session'] as Map).cast<String, dynamic>();
           expect(sessionUpdatePayload2['voice'], 'alloy');
@@ -1313,7 +1332,10 @@ void main() {
             'type': 'input_audio_buffer.committed',
             'event_id': 'evt-committed',
           });
-          inbound.add({'type': 'input_audio_buffer.cleared', 'event_id': 'evt-cleared'});
+          inbound.add({
+            'type': 'input_audio_buffer.cleared',
+            'event_id': 'evt-cleared'
+          });
 
           // 10) WebRTC-only output audio buffer events (log-only)
           inbound.add({

@@ -15,7 +15,6 @@ import 'package:vagina/core/config/app_config.dart';
 import 'package:vagina/models/chat_message.dart';
 import 'package:vagina/models/call_session.dart';
 import 'package:vagina/models/speed_dial.dart';
-import 'package:vagina/models/realtime_events.dart';
 import 'package:vagina/utils/audio_utils.dart';
 import 'package:vagina/interfaces/call_session_repository.dart';
 import 'package:vagina/interfaces/config_repository.dart';
