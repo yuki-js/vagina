@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:isolate';
 import 'package:vagina/services/tools_runtime/sandbox_protocol.dart';
 import 'package:vagina/services/tools_runtime/tool_context.dart';
 import 'package:vagina/services/tools_runtime/apis/notepad_api.dart';
@@ -7,6 +6,10 @@ import 'package:vagina/services/tools_runtime/apis/memory_api.dart';
 import 'package:vagina/tools/builtin/builtin_tool_catalog.dart';
 import 'package:vagina/services/notepad_service.dart';
 import 'package:vagina/models/notepad_tab.dart';
+
+// Platform-specific imports (conditional)
+import 'sandbox_platform_native.dart'
+    if (dart.library.html) 'sandbox_platform_web.dart' as platform;
 
 const String _tag = 'ToolSandboxWorker';
 
@@ -18,15 +21,15 @@ const String _tag = 'ToolSandboxWorker';
 /// 3. Handles tool execution requests
 /// 4. Manages hostCall requests for side effects
 /// 5. Emits toolsChanged events
-void toolSandboxWorker(SendPort hostSendPort) {
+void toolSandboxWorker(platform.PlatformSendPort hostSendPort) {
   try {
     _log('Worker starting');
     
     // Create worker ReceivePort for bi-directional communication
-    final workerReceivePort = ReceivePort();
+    final workerReceivePort = platform.PlatformReceivePort();
     
     // Send worker's SendPort back to host for them to use
-    hostSendPort.send(workerReceivePort.sendPort);
+    (hostSendPort as dynamic).send(workerReceivePort.sendPort);
     _log('Sent worker SendPort to host');
     
     // Perform handshake and establish communication
@@ -44,13 +47,13 @@ void toolSandboxWorker(SendPort hostSendPort) {
   }
 }
 
-/// Manages the worker isolate's lifecycle and message handling.
+/// Manages the worker's lifecycle and message handling.
 class _WorkerController {
   static const Duration _hostCallTimeout = Duration(seconds: 30);
   
-  final SendPort hostSendPort;
-  final ReceivePort workerReceivePort;
-  late SendPort? _hostReceivePort;
+  final platform.PlatformSendPort hostSendPort;
+  final platform.PlatformReceivePort workerReceivePort;
+  late ReplyToPort? _hostReceivePort;
   
   // Tool registry
   final Map<String, Map<String, dynamic>> _toolDefinitions = {};
@@ -151,14 +154,14 @@ class _WorkerController {
         return;
       }
       
-      final port = payload['port'] as SendPort?;
-      if (port == null) {
-        _log('ERROR: No port in handshake payload');
+      final port = payload['port'];
+      if (!isValidReplyToPort(port)) {
+        _log('ERROR: Invalid or missing port in handshake payload');
         return;
       }
       
-      _hostReceivePort = port;
-      _log('Stored host ReceivePort SendPort');
+      _hostReceivePort = port as ReplyToPort;
+      _log('Stored host port');
       
       // Initialize tool registry from BuiltinToolCatalog
       _initializeToolRegistry();
@@ -234,7 +237,7 @@ class _WorkerController {
       final requestId = generateMessageId();
       
       // Create a ReceivePort for the response
-      final replyReceivePort = ReceivePort();
+      final replyReceivePort = platform.PlatformReceivePort();
       
       // Create and send hostCall message
       final message = hostCallMessage(
@@ -242,7 +245,7 @@ class _WorkerController {
         method,
         args,
         id: requestId,
-        replyTo: replyReceivePort.sendPort,
+        replyTo: replyReceivePort.sendPort as ReplyToPort,
       );
       
       final (valid, error) = validateMessageEnvelope(message);
@@ -258,12 +261,23 @@ class _WorkerController {
       
       try {
         // Send request to host
-        _hostReceivePort!.send(message);
+        (_hostReceivePort! as dynamic).send(message);
         
         // Wait for response with timeout
-        final response = await replyReceivePort.first.timeout(
+        final completer = Completer<Object?>();
+        late StreamSubscription<Object?> subscription;
+        
+        subscription = replyReceivePort.listen((msg) {
+          if (!completer.isCompleted) {
+            completer.complete(msg);
+            subscription.cancel();
+          }
+        });
+        
+        final response = await completer.future.timeout(
           _hostCallTimeout,
           onTimeout: () {
+            subscription.cancel();
             _pendingHostCalls.remove(requestId);
             throw TimeoutException(
               'hostCall timeout: $api.$method did not respond within $_hostCallTimeout',
@@ -542,13 +556,11 @@ class _WorkerController {
           ? successResponse(requestId, data ?? {})
           : errorResponse(requestId, error ?? 'Unknown error', code: code);
       
-      final (valid, validationError) = validateMessageEnvelope(response);
-      if (!valid) {
-        _log('ERROR: Invalid response message: $validationError');
-        return;
-      }
+      // Note: Response messages have a different structure than request messages
+      // (they have 'data'/'error' instead of 'payload'), so we don't validate them
+      // with validateMessageEnvelope()
       
-      _hostReceivePort!.send(response);
+      (_hostReceivePort! as dynamic).send(response);
       _log('Sent response for request $requestId: status=$status');
     } catch (e) {
       _log('ERROR sending response: $e');

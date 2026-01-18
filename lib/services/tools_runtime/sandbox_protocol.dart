@@ -1,19 +1,33 @@
-/// Protocol definitions for Dart Isolate-based tool sandboxing.
+/// Protocol definitions for platform-agnostic tool sandboxing.
 ///
 /// This module defines the message protocol used for safe communication
-/// between the host process and sandboxed tool isolates. All communication
+/// between the host process and sandboxed tool workers. All communication
 /// uses message passing to prevent direct access to live objects.
+///
+/// Supports both:
+/// - **Native**: True Isolate-based sandboxing (dart:isolate)
+/// - **Web**: Pseudo-isolate with single-thread message passing
 ///
 /// # Message Flow
 ///
 /// 1. **Handshake**: Host initiates with [handshakeMessage]
-/// 2. **Tool Operations**: Host sends [executeToolMessage], isolate responds with result
-/// 3. **Dynamic Changes**: Host notifies isolate of tool changes via [toolsChangedMessage]
-/// 4. **Host Calls**: Isolate requests host services via [hostCallMessage]
+/// 2. **Tool Operations**: Host sends [executeToolMessage], worker responds with result
+/// 3. **Dynamic Changes**: Host notifies worker of tool changes via [toolsChangedMessage]
+/// 4. **Host Calls**: Worker requests host services via [hostCallMessage]
 library sandbox_protocol;
 
-import 'dart:isolate';
-import 'dart:async';
+// Conditional import for platform-specific port types
+import 'sandbox_protocol_platform_native.dart'
+    if (dart.library.html) 'sandbox_protocol_platform_web.dart'
+    as platform;
+
+// Re-export platform-specific ReplyToPort type for type safety
+typedef ReplyToPort = platform.ReplyToPort;
+
+/// Check if a value is a valid ReplyToPort
+///
+/// This is a helper for code that needs to validate port types at runtime.
+bool isValidReplyToPort(Object? value) => platform.isValidReplyTo(value);
 
 // ============================================================================
 // MESSAGE TYPE CONSTANTS
@@ -22,14 +36,14 @@ import 'dart:async';
 /// Message type constants for protocol messages.
 ///
 /// These strings identify the purpose and structure of each message type
-/// transmitted between host and isolate.
+/// transmitted between host and worker.
 abstract final class MessageType {
-  /// Initial handshake message from host to isolate.
+  /// Initial handshake message from host to worker.
   ///
-  /// Payload: `{port: SendPort, toolDefinitions: List<Map>}`
+  /// Payload: `{port: ReplyToPort, toolDefinitions: List<Map>}`
   static const String handshake = 'handshake';
 
-  /// Tool execution request from host to isolate.
+  /// Tool execution request from host to worker.
   ///
   /// Payload: `{toolKey: String, args: Map<String,dynamic>}`
   ///
@@ -51,10 +65,10 @@ abstract final class MessageType {
   ///
   /// Payload: `{}` (empty)
   ///
-  /// Isolate responds with list of available tool definitions.
+  /// Worker responds with list of available tool definitions.
   static const String listSessionDefinitions = 'listSessionDefinitions';
 
-  /// Isolate requests host to call a service API.
+  /// Worker requests host to call a service API.
   ///
   /// Payload: `{api: String, method: String, args: Map<String,dynamic>}`
   ///
@@ -68,7 +82,7 @@ abstract final class MessageType {
   /// // => {
   /// //   type: 'hostCall',
   /// //   id: 'req-67890',
-  /// //   replyTo: <SendPort>,
+  /// //   replyTo: <ReplyToPort>,
   /// //   payload: {api: 'storage', method: 'get', args: {key: 'user_settings'}}
   /// // }
   /// ```
@@ -113,14 +127,14 @@ abstract final class MessageType {
 
 /// Standard envelope for all protocol messages.
 ///
-/// All messages passed between host and isolate follow this structure:
+/// All messages passed between host and worker follow this structure:
 ///
 /// ```dart
 /// {
 ///   'type': String,           // Message type from [MessageType]
 ///   'id': String,             // Unique request ID for correlation
 ///   'payload': Map<String,dynamic>, // Message-specific data
-///   'replyTo': SendPort?,      // Optional: response recipient
+///   'replyTo': ReplyToPort?,   // Optional: response recipient (SendPort or WebSendPort)
 /// }
 /// ```
 ///
@@ -158,12 +172,12 @@ abstract final class MessageEnvelope {
 
 /// Handshake message builder.
 ///
-/// Initiates communication between host and isolate. The host sends its
+/// Initiates communication between host and worker. The host sends its
 /// receive port and initial tool definitions.
 ///
 /// Parameters:
-/// - `port`: SendPort from host's ReceivePort
-/// - `toolDefinitions`: List of tool definitions available to isolate
+/// - `port`: ReplyToPort from host's ReceivePort (SendPort on Native, WebSendPort on Web)
+/// - `toolDefinitions`: List of tool definitions available to worker
 /// - `id`: Optional request ID (auto-generated if omitted)
 ///
 /// Returns: Complete message envelope ready to send
@@ -177,10 +191,10 @@ abstract final class MessageEnvelope {
 ///     {'key': 'math.subtract', 'name': 'Subtract'},
 ///   ],
 /// );
-/// isolate.sendPort.send(handshake);
+/// workerPort.send(handshake);
 /// ```
 Map<String, dynamic> handshakeMessage(
-  SendPort port,
+  ReplyToPort port,
   List<Map<String, dynamic>> toolDefinitions, {
   String? id,
 }) {
@@ -196,13 +210,13 @@ Map<String, dynamic> handshakeMessage(
 
 /// Execute tool message builder.
 ///
-/// Requests the isolate to execute a specific tool with given arguments.
+/// Requests the worker to execute a specific tool with given arguments.
 ///
 /// Parameters:
 /// - `toolKey`: Unique identifier of the tool (e.g., 'calculator.add')
 /// - `args`: Tool-specific arguments
 /// - `id`: Optional request ID (auto-generated if omitted)
-/// - `replyTo`: Optional SendPort for response (typically host's ReceivePort.sendPort)
+/// - `replyTo`: Optional ReplyToPort for response
 ///
 /// Returns: Complete message envelope ready to send
 ///
@@ -218,7 +232,7 @@ Map<String, dynamic> executeToolMessage(
   String toolKey,
   Map<String, dynamic> args, {
   String? id,
-  SendPort? replyTo,
+  ReplyToPort? replyTo,
 }) {
   final message = {
     'type': MessageType.execute,
@@ -236,11 +250,11 @@ Map<String, dynamic> executeToolMessage(
 
 /// List session definitions message builder.
 ///
-/// Requests the isolate to return all current tool definitions.
+/// Requests the worker to return all current tool definitions.
 ///
 /// Parameters:
 /// - `id`: Optional request ID (auto-generated if omitted)
-/// - `replyTo`: SendPort for receiving the definition list
+/// - `replyTo`: ReplyToPort for receiving the definition list
 ///
 /// Returns: Complete message envelope ready to send
 ///
@@ -252,7 +266,7 @@ Map<String, dynamic> executeToolMessage(
 /// ```
 Map<String, dynamic> listSessionDefinitionsMessage({
   String? id,
-  SendPort? replyTo,
+  ReplyToPort? replyTo,
 }) {
   final message = {
     'type': MessageType.listSessionDefinitions,
@@ -267,7 +281,7 @@ Map<String, dynamic> listSessionDefinitionsMessage({
 
 /// Host call message builder.
 ///
-/// Sent from isolate to host requesting a service operation. The isolate
+/// Sent from worker to host requesting a service operation. The worker
 /// includes a replyTo port to receive the response.
 ///
 /// Parameters:
@@ -275,7 +289,7 @@ Map<String, dynamic> listSessionDefinitionsMessage({
 /// - `method`: Operation to perform
 /// - `args`: Operation-specific arguments
 /// - `id`: Optional request ID (auto-generated if omitted)
-/// - `replyTo`: SendPort for response (required)
+/// - `replyTo`: ReplyToPort for response (required)
 ///
 /// Returns: Complete message envelope ready to send
 ///
@@ -285,7 +299,7 @@ Map<String, dynamic> listSessionDefinitionsMessage({
 ///   'storage',
 ///   'getValue',
 ///   {'key': 'session_id'},
-///   replyTo: isolatePort,
+///   replyTo: workerPort,
 /// );
 /// ```
 Map<String, dynamic> hostCallMessage(
@@ -293,7 +307,7 @@ Map<String, dynamic> hostCallMessage(
   String method,
   Map<String, dynamic> args, {
   String? id,
-  SendPort? replyTo,
+  ReplyToPort? replyTo,
 }) {
   final message = {
     'type': MessageType.hostCall,
@@ -318,7 +332,7 @@ Map<String, dynamic> hostCallMessage(
 /// Parameters:
 /// - `toolDefinition`: Complete tool definition map
 /// - `id`: Optional request ID (auto-generated if omitted)
-/// - `replyTo`: Optional SendPort for acknowledgment
+/// - `replyTo`: Optional ReplyToPort for acknowledgment
 ///
 /// Returns: Complete message envelope ready to send
 ///
@@ -336,7 +350,7 @@ Map<String, dynamic> hostCallMessage(
 Map<String, dynamic> registerToolMessage(
   Map<String, dynamic> toolDefinition, {
   String? id,
-  SendPort? replyTo,
+  ReplyToPort? replyTo,
 }) {
   final message = {
     'type': MessageType.registerTool,
@@ -359,7 +373,7 @@ Map<String, dynamic> registerToolMessage(
 /// Parameters:
 /// - `toolKey`: Unique identifier of tool to unregister
 /// - `id`: Optional request ID (auto-generated if omitted)
-/// - `replyTo`: Optional SendPort for acknowledgment
+/// - `replyTo`: Optional ReplyToPort for acknowledgment
 ///
 /// Returns: Complete message envelope ready to send
 ///
@@ -373,7 +387,7 @@ Map<String, dynamic> registerToolMessage(
 Map<String, dynamic> unregisterToolMessage(
   String toolKey, {
   String? id,
-  SendPort? replyTo,
+  ReplyToPort? replyTo,
 }) {
   final message = {
     'type': MessageType.unregisterTool,
@@ -390,7 +404,7 @@ Map<String, dynamic> unregisterToolMessage(
 
 /// Tools changed notification message builder.
 ///
-/// Notifies isolate that the set of available tools has changed. This is
+/// Notifies worker that the set of available tools has changed. This is
 /// a push event (no response expected).
 ///
 /// Parameters:
@@ -533,9 +547,9 @@ String generateMessageId() {
 // VALIDATION UTILITIES
 // ============================================================================
 
-/// Validates that a value is sendable across isolate boundary.
+/// Validates that a value is sendable across worker boundary.
 ///
-/// Only the following types are safe to send between isolates:
+/// Only the following types are safe to send:
 /// - `null`
 /// - `bool`
 /// - `int`
@@ -543,7 +557,7 @@ String generateMessageId() {
 /// - `String`
 /// - `List<dynamic>` (must contain only sendable values)
 /// - `Map<String, dynamic>` (must contain only sendable values)
-/// - `SendPort`
+/// - `ReplyToPort` (SendPort on Native, WebSendPort on Web)
 ///
 /// Parameters:
 /// - `value`: Value to validate
@@ -570,8 +584,8 @@ String generateMessageId() {
     return (true, '');
   }
 
-  // SendPort is sendable
-  if (value is SendPort) {
+  // ReplyToPort is sendable (platform-specific check)
+  if (platform.isValidReplyTo(value)) {
     return (true, '');
   }
 
@@ -603,7 +617,7 @@ String generateMessageId() {
   // Type not sendable
   return (
     false,
-    '$path: Type ${value.runtimeType} is not sendable across isolate boundary'
+    '$path: Type ${value.runtimeType} is not sendable across worker boundary'
   );
 }
 
@@ -660,8 +674,8 @@ String generateMessageId() {
   // Validate replyTo if present
   if (message.containsKey('replyTo')) {
     final replyTo = message['replyTo'];
-    if (replyTo is! SendPort) {
-      return (false, 'replyTo must be SendPort, got ${replyTo.runtimeType}');
+    if (!platform.isValidReplyTo(replyTo)) {
+      return (false, 'replyTo must be ${platform.replyToTypeName()}, got ${replyTo.runtimeType}');
     }
   }
 

@@ -1,12 +1,15 @@
 import 'dart:async';
-import 'dart:isolate';
 import 'dart:convert';
 import 'package:vagina/services/notepad_service.dart';
 import 'package:vagina/interfaces/memory_repository.dart';
 import 'package:vagina/services/tools_runtime/sandbox_protocol.dart';
 import 'package:vagina/services/tools_runtime/host/notepad_host_api.dart';
 import 'package:vagina/services/tools_runtime/host/memory_host_api.dart';
-import 'package:vagina/services/tools_runtime/tool_sandbox_worker.dart';
+
+// Platform-specific imports (conditional)
+import 'sandbox_platform_native.dart'
+    if (dart.library.html) 'sandbox_platform_web.dart' as platform;
+import 'tool_sandbox_worker.dart' show toolSandboxWorker;
 
 /// Event emitted when the set of available tools changes
 class ToolsChangedEvent {
@@ -25,10 +28,10 @@ class ToolsChangedEvent {
   String toString() => 'ToolsChangedEvent(reason: $reason, toolCount: ${tools.length})';
 }
 
-/// Manages the lifecycle and message routing for an isolated tool sandbox
+/// Manages the lifecycle and message routing for a sandboxed tool worker
 ///
 /// This coordinator:
-/// - Spawns an isolate worker for tool execution
+/// - Spawns a worker (Isolate on Native, pseudo-worker on Web)
 /// - Handles bi-directional communication via message passing
 /// - Routes `hostCall` requests to appropriate host adapters
 /// - Provides a clean API for tool execution
@@ -42,10 +45,10 @@ class ToolSandboxManager {
   late NotepadHostApi _notepadHostApi;
   late MemoryHostApi _memoryHostApi;
 
-  // Isolate management
-  Isolate? _isolate;
-  late ReceivePort _receivePort;
-  late SendPort _isolateSendPort;
+  // Worker management (platform-agnostic)
+  platform.PlatformIsolate? _worker;
+  late platform.PlatformReceivePort _receivePort;
+  late platform.PlatformSendPort _workerSendPort;
 
   // Message routing
   final Map<String, Completer<Map<String, dynamic>>> _pendingRequests = {};
@@ -67,7 +70,7 @@ class ToolSandboxManager {
     _toolsChangedController = StreamController<ToolsChangedEvent>.broadcast();
   }
 
-  /// Stream of tool set change events from the isolate
+  /// Stream of tool set change events from the worker
   Stream<ToolsChangedEvent> get toolsChanged => _toolsChangedController.stream;
 
   /// Whether the sandbox manager is currently running
@@ -76,17 +79,17 @@ class ToolSandboxManager {
   /// Whether the sandbox manager has been disposed
   bool get isDisposed => _isDisposed;
 
-  /// Start the sandbox: spawn isolate and establish communication
+  /// Start the sandbox: spawn worker and establish communication
   ///
   /// This method:
   /// 1. Creates a ReceivePort for host-side listening
-  /// 2. Spawns the worker isolate
-  /// 3. Performs handshake to get the isolate's SendPort
+  /// 2. Spawns the worker (Isolate on Native, pseudo-worker on Web)
+  /// 3. Performs handshake to get the worker's SendPort
   /// 4. Sets up message routing
   ///
   /// Throws if:
   /// - Already started or disposed
-  /// - Isolate spawn fails
+  /// - Worker spawn fails
   /// - Handshake timeout
   Future<void> start() async {
     if (_isStarted) {
@@ -97,32 +100,24 @@ class ToolSandboxManager {
     }
 
     try {
-      // Create receive port for host-side listening
-      _receivePort = ReceivePort();
-
-      // Spawn the isolate worker
-      _isolate = await Isolate.spawn(
+      // Spawn worker and get ports
+      final (worker, receivePort, workerSendPort) = await platform.spawnPlatformWorker(
         toolSandboxWorker,
-        _receivePort.sendPort,
-      );
-
-      // Wait for handshake response with isolate's SendPort
-      final handshakeMessage = await _receivePort.first.timeout(
         _defaultTimeout,
-        onTimeout: () {
-          throw TimeoutException(
-            'Handshake timeout: isolate did not respond within $_defaultTimeout',
-          );
-        },
       );
 
-      if (handshakeMessage is! SendPort) {
-        throw StateError('Invalid handshake response: expected SendPort');
-      }
+      _worker = worker;
+      _receivePort = receivePort;
+      _workerSendPort = workerSendPort;
 
-      _isolateSendPort = handshakeMessage;
+      // Send handshake message to worker to initialize it
+      final handshake = handshakeMessage(
+        _receivePort.sendPort as ReplyToPort,
+        [], // Empty tool definitions list (worker uses BuiltinToolCatalog)
+      );
+      (_workerSendPort as dynamic).send(handshake);
 
-      // Start listening for incoming messages from isolate
+      // Start listening for incoming messages from worker
       _startMessageListener();
 
       _isStarted = true;
@@ -132,11 +127,11 @@ class ToolSandboxManager {
     }
   }
 
-  /// Dispose the sandbox: kill isolate and cleanup resources
+  /// Dispose the sandbox: kill worker and cleanup resources
   ///
   /// This method:
   /// 1. Closes message listeners
-  /// 2. Kills the isolate
+  /// 2. Kills the worker
   /// 3. Cleans up pending requests
   /// 4. Closes the stream controllers
   Future<void> dispose() async {
@@ -190,8 +185,8 @@ class ToolSandboxManager {
       _pendingRequests[messageId] = completer;
 
       try {
-        // Send message to isolate
-        _isolateSendPort.send(message);
+        // Send message to worker
+        (_workerSendPort as dynamic).send(message);
 
         // Wait for response with timeout
         final response = await completer.future.timeout(
@@ -231,7 +226,7 @@ class ToolSandboxManager {
     }
   }
 
-  /// List all available tool definitions from the isolate
+  /// List all available tool definitions from the worker
   ///
   /// Returns: List of tool definitions in realtime format
   /// (output of ToolDefinition.toRealtimeJson())
@@ -264,8 +259,8 @@ class ToolSandboxManager {
       _pendingRequests[messageId] = completer;
 
       try {
-        // Send message to isolate
-        _isolateSendPort.send(message);
+        // Send message to worker
+        (_workerSendPort as dynamic).send(message);
 
         // Wait for response with timeout
         final response = await completer.future.timeout(
@@ -306,7 +301,7 @@ class ToolSandboxManager {
     }
   }
 
-  /// Start listening for messages from the isolate
+  /// Start listening for messages from the worker
   ///
   /// Sets up the main message loop that handles:
   /// - Response messages (completing pending requests)
@@ -321,16 +316,16 @@ class ToolSandboxManager {
       },
       onError: (error) {
         // Log error but don't crash
-        print('ToolSandboxManager: Error in message listener: $error');
+        print('$_tag: Error in message listener: $error');
       },
       onDone: () {
-        // Isolate terminated
-        _handleIsolateDone();
+        // Worker terminated
+        _handleWorkerDone();
       },
     );
   }
 
-  /// Handle an incoming message from the isolate
+  /// Handle an incoming message from the worker
   void _handleMessage(Map<String, dynamic> message) {
     try {
       final type = message['type'] as String?;
@@ -355,38 +350,45 @@ class ToolSandboxManager {
         return;
       }
 
-      print('ToolSandboxManager: Unknown message type: $type');
+      print('$_tag: Unknown message type: $type');
     } catch (e) {
-      print('ToolSandboxManager: Error handling message: $e');
+      print('$_tag: Error handling message: $e');
     }
   }
 
-  /// Handle a response message from the isolate
+  /// Handle a response message from the worker
   ///
   /// Completes the corresponding pending request
   void _handleResponseMessage(String requestId, Map<String, dynamic> message) {
     final completer = _pendingRequests[requestId];
     if (completer == null) {
-      print('ToolSandboxManager: Received response for unknown request: $requestId');
+      print('$_tag: Received response for unknown request: $requestId');
       return;
     }
 
     try {
       completer.complete(message);
     } catch (e) {
-      print('ToolSandboxManager: Error completing request $requestId: $e');
+      print('$_tag: Error completing request $requestId: $e');
     }
   }
 
-  /// Handle a hostCall request from the isolate
+  /// Handle a hostCall request from the worker
   ///
   /// Routes to appropriate host adapter (NotepadHostApi or MemoryHostApi)
-  /// and sends response back to isolate
+  /// and sends response back to worker via the replyTo port
   void _handleHostCall(String requestId, Map<String, dynamic> message) async {
     try {
+      // Extract replyTo port from message
+      final replyTo = message['replyTo'];
+      if (replyTo == null) {
+        print('$_tag: hostCall missing replyTo port');
+        return;
+      }
+
       final payload = message['payload'] as Map<String, dynamic>?;
       if (payload == null) {
-        _sendHostCallError(requestId, 'Missing payload');
+        _sendHostCallError(requestId, 'Missing payload', replyTo);
         return;
       }
 
@@ -395,7 +397,7 @@ class ToolSandboxManager {
       final args = payload['args'] as Map<String, dynamic>? ?? {};
 
       if (api == null || method == null) {
-        _sendHostCallError(requestId, 'Missing api or method');
+        _sendHostCallError(requestId, 'Missing api or method', replyTo);
         return;
       }
 
@@ -410,40 +412,44 @@ class ToolSandboxManager {
           result = await _memoryHostApi.handleCall(method, args);
           break;
         default:
-          _sendHostCallError(requestId, 'Unknown API: $api');
+          _sendHostCallError(requestId, 'Unknown API: $api', replyTo);
           return;
       }
 
-      // Send result back to isolate
-      _sendHostCallResponse(requestId, result);
+      // Send result back to worker via replyTo port
+      _sendHostCallResponse(requestId, result, replyTo);
     } catch (e) {
-      _sendHostCallError(requestId, 'Error: $e');
+      // If we have replyTo, send error there; otherwise log only
+      final replyTo = message['replyTo'];
+      if (replyTo != null) {
+        _sendHostCallError(requestId, 'Error: $e', replyTo);
+      } else {
+        print('$_tag: Error in hostCall (no replyTo): $e');
+      }
     }
   }
 
-  /// Send a hostCall response to the isolate
-  void _sendHostCallResponse(String requestId, Map<String, dynamic> result) {
+  /// Send a hostCall response to the worker via the replyTo port
+  void _sendHostCallResponse(String requestId, Map<String, dynamic> result, dynamic replyTo) {
     try {
       final response = successResponse(requestId, result);
-      final replyTo = _isolateSendPort;
-      replyTo.send(response);
+      (replyTo as dynamic).send(response);
     } catch (e) {
-      print('ToolSandboxManager: Error sending hostCall response: $e');
+      print('$_tag: Error sending hostCall response: $e');
     }
   }
 
-  /// Send a hostCall error response to the isolate
-  void _sendHostCallError(String requestId, String error) {
+  /// Send a hostCall error response to the worker via the replyTo port
+  void _sendHostCallError(String requestId, String error, dynamic replyTo) {
     try {
       final response = errorResponse(requestId, error);
-      final replyTo = _isolateSendPort;
-      replyTo.send(response);
+      (replyTo as dynamic).send(response);
     } catch (e) {
-      print('ToolSandboxManager: Error sending hostCall error: $e');
+      print('$_tag: Error sending hostCall error: $e');
     }
   }
 
-  /// Handle toolsChanged push event from the isolate
+  /// Handle toolsChanged push event from the worker
   void _handleToolsChanged(Map<String, dynamic> message) {
     try {
       final payload = message['payload'] as Map<String, dynamic>?;
@@ -467,19 +473,19 @@ class ToolSandboxManager {
 
       _toolsChangedController.add(event);
     } catch (e) {
-      print('ToolSandboxManager: Error handling toolsChanged: $e');
+      print('$_tag: Error handling toolsChanged: $e');
     }
   }
 
-  /// Handle isolate termination
-  void _handleIsolateDone() {
-    print('ToolSandboxManager: Isolate terminated');
+  /// Handle worker termination
+  void _handleWorkerDone() {
+    print('$_tag: Worker terminated');
     _isStarted = false;
     
     // Complete all pending requests with error
     for (final completer in _pendingRequests.values) {
       if (!completer.isCompleted) {
-        completer.completeError('Isolate terminated');
+        completer.completeError('Worker terminated');
       }
     }
     _pendingRequests.clear();
@@ -496,10 +502,10 @@ class ToolSandboxManager {
       }
       _pendingRequests.clear();
 
-      // Kill isolate if running
-      if (_isolate != null) {
-        _isolate!.kill(priority: Isolate.immediate);
-        _isolate = null;
+      // Kill worker if running
+      if (_worker != null) {
+        platform.killPlatformWorker(_worker!);
+        _worker = null;
       }
 
       // Close receive port
@@ -510,8 +516,7 @@ class ToolSandboxManager {
 
       _isStarted = false;
     } catch (e) {
-      print('ToolSandboxManager: Error during cleanup: $e');
+      print('$_tag: Error during cleanup: $e');
     }
   }
 }
-
