@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:vagina/interfaces/config_repository.dart';
 import 'package:vagina/interfaces/memory_repository.dart';
 
@@ -55,21 +57,21 @@ class ToolService {
       ),
       runtime_tools.DocumentReadTool.toolKeyName:
           SimpleToolFactory(create: () => runtime_tools.DocumentReadTool()),
-      runtime_tools.DocumentOverwriteTool.toolKeyName:
-          SimpleToolFactory(create: () => runtime_tools.DocumentOverwriteTool()),
+      runtime_tools.DocumentOverwriteTool.toolKeyName: SimpleToolFactory(
+          create: () => runtime_tools.DocumentOverwriteTool()),
       runtime_tools.DocumentPatchTool.toolKeyName:
           SimpleToolFactory(create: () => runtime_tools.DocumentPatchTool()),
       runtime_tools.NotepadListTabsTool.toolKeyName:
           SimpleToolFactory(create: () => runtime_tools.NotepadListTabsTool()),
-      runtime_tools.NotepadGetMetadataTool.toolKeyName:
-          SimpleToolFactory(create: () => runtime_tools.NotepadGetMetadataTool()),
-      runtime_tools.NotepadGetContentTool.toolKeyName:
-          SimpleToolFactory(create: () => runtime_tools.NotepadGetContentTool()),
+      runtime_tools.NotepadGetMetadataTool.toolKeyName: SimpleToolFactory(
+          create: () => runtime_tools.NotepadGetMetadataTool()),
+      runtime_tools.NotepadGetContentTool.toolKeyName: SimpleToolFactory(
+          create: () => runtime_tools.NotepadGetContentTool()),
       runtime_tools.NotepadCloseTabTool.toolKeyName:
           SimpleToolFactory(create: () => runtime_tools.NotepadCloseTabTool()),
     };
   }
-  
+
   /// サービスを初期化（ビルトインツールを登録）
   void initialize() {
     if (_initialized) return;
@@ -92,8 +94,8 @@ class ToolService {
   }) async {
     if (!_initialized) initialize();
 
-    final allowList = toolNamesOverride?.toSet();
-    final enabledTools = allowList == null
+    final allowList = toolNamesOverride?.toSet() ?? {};
+    final enabledTools = allowList.isEmpty
         ? await _configRepository.getEnabledTools()
         : const <String>[];
 
@@ -102,9 +104,9 @@ class ToolService {
     for (final entry in _runtimeToolFactories.entries) {
       final toolName = entry.key;
 
-      final shouldInclude = allowList != null
+      final shouldInclude = allowList.isNotEmpty
           ? allowList.contains(toolName)
-          : (enabledTools.isEmpty || enabledTools.contains(toolName));
+          : enabledTools.contains(toolName);
 
       if (!shouldInclude) continue;
 
@@ -175,30 +177,29 @@ class ToolService {
     final result = <ToolCategory, List<ToolMetadata>>{};
 
     for (final entry in allToolsWithMetadata) {
-      result.putIfAbsent(entry.metadata.category, () => <ToolMetadata>[])
+      result
+          .putIfAbsent(entry.metadata.category, () => <ToolMetadata>[])
           .add(entry.metadata);
     }
 
     return result;
   }
-  
+
   /// ツールの有効状態を取得
   Future<bool> isToolEnabled(String toolName) async {
     return await _configRepository.isToolEnabled(toolName);
   }
-  
+
   /// ツールの有効/無効を切り替え
   Future<void> toggleTool(String toolName) async {
     await _configRepository.toggleTool(toolName);
   }
-  
+
   /// ツールメタデータを取得
   ToolMetadata? getToolMetadata(String name) {
     if (!_initialized) initialize();
     try {
-      return allToolsWithMetadata
-          .firstWhere((e) => e.name == name)
-          .metadata;
+      return allToolsWithMetadata.firstWhere((e) => e.name == name).metadata;
     } catch (_) {
       return null;
     }

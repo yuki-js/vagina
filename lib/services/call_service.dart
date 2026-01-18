@@ -227,17 +227,15 @@ class CallService {
         return;
       }
 
-      _activeToolAllowList = (await _config.getEnabledTools()).toSet();
-      final allowList = _activeToolAllowList;
-
       // enabledTools empty => treat as all enabled
-      _toolRuntime = await _toolService.createToolRuntime(
-        toolNamesOverride: (allowList == null || allowList.isEmpty)
-            ? null
-            : allowList,
-      );
+      _toolRuntime = await _toolService.createToolRuntime();
 
       _apiClient.setTools(_toolRuntime!.toolDefinitionsForRealtime);
+
+      _logService.debug(
+          _tag,
+          'Tools enabled for call: '
+          '${_toolRuntime!.toolKeys}');
 
       _logService.info(_tag, 'Connecting to Azure OpenAI');
       await _apiClient.connect(realtimeUrl, apiKey);
@@ -332,7 +330,8 @@ class CallService {
       final argsMap = _parseFunctionCallArguments(functionCall.arguments);
       if (argsMap == null) {
         final output = jsonEncode({'error': 'Invalid or empty JSON arguments'});
-        _chatManager.addToolCall(functionCall.name, functionCall.arguments, output);
+        _chatManager.addToolCall(
+            functionCall.name, functionCall.arguments, output);
         _apiClient.sendFunctionCallResult(functionCall.callId, output);
         return;
       }
@@ -342,7 +341,8 @@ class CallService {
         args: argsMap,
       );
 
-      _chatManager.addToolCall(functionCall.name, functionCall.arguments, output);
+      _chatManager.addToolCall(
+          functionCall.name, functionCall.arguments, output);
       _apiClient.sendFunctionCallResult(functionCall.callId, output);
     });
 
