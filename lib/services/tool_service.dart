@@ -3,7 +3,6 @@ import 'package:vagina/interfaces/memory_repository.dart';
 
 import 'notepad_service.dart';
 import 'tool_metadata.dart';
-import 'tools_runtime/simple_tool_factory.dart';
 import 'tools_runtime/tool_context.dart';
 import 'tools_runtime/tool_factory.dart';
 import 'tools_runtime/tool_registry.dart' as runtime;
