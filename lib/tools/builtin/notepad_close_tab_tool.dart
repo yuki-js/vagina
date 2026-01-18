@@ -36,7 +36,7 @@ class NotepadCloseTabTool implements Tool {
   @override
   Future<String> execute(ToolArgs args, ToolContext context) async {
     final tabId = args['tabId'] as String;
-    final success = context.notepadService.closeTab(tabId);
+    final success = await context.notepadApi.closeTab(tabId);
 
     if (!success) {
       return jsonEncode({

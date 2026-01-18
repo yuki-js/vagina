@@ -7,10 +7,11 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:vagina/core/config/app_config.dart';
 import 'package:vagina/interfaces/call_session_repository.dart';
 import 'package:vagina/interfaces/config_repository.dart';
+import 'package:vagina/interfaces/memory_repository.dart';
 import 'package:vagina/models/call_session.dart';
 import 'package:vagina/models/chat_message.dart';
 import 'package:vagina/models/speed_dial.dart';
-import 'package:vagina/services/tools_runtime/tool_runtime.dart';
+import 'package:vagina/services/tools_runtime/tool_sandbox_manager.dart';
 import 'package:vagina/utils/audio_utils.dart';
 
 import 'audio_player_service.dart';
@@ -42,6 +43,7 @@ class CallService {
   final CallSessionRepository _sessionRepository;
   final ToolService _toolService;
   final NotepadService _notepadService;
+  final MemoryRepository _memoryRepository;
   final LogService _logService;
   final CallFeedbackService _feedback;
   final ChatMessageManager _chatManager = ChatMessageManager();
@@ -52,8 +54,11 @@ class CallService {
   /// push updated tool definitions to the session.
   Set<String>? _activeToolAllowList;
 
-  /// Session-scoped ToolRuntime (created on call start, rebuilt on tool changes)
-  ToolRuntime? _toolRuntime;
+  /// Session-scoped ToolSandboxManager (spawned on call start, disposed on call end)
+  ToolSandboxManager? _sandboxManager;
+
+  /// Subscription to tool definition changes from the sandbox
+  StreamSubscription<ToolsChangedEvent>? _toolsChangedSubscription;
 
   StreamSubscription<Uint8List>? _audioStreamSubscription;
   StreamSubscription<Amplitude>? _amplitudeSubscription;
@@ -94,6 +99,7 @@ class CallService {
     required CallSessionRepository sessionRepository,
     required ToolService toolService,
     required NotepadService notepadService,
+    required MemoryRepository memoryRepository,
     LogService? logService,
     CallFeedbackService? feedbackService,
   })  : _recorder = recorder,
@@ -103,6 +109,7 @@ class CallService {
         _sessionRepository = sessionRepository,
         _toolService = toolService,
         _notepadService = notepadService,
+        _memoryRepository = memoryRepository,
         _logService = logService ?? LogService(),
         _feedback =
             feedbackService ?? CallFeedbackService(logService: logService);
@@ -138,8 +145,6 @@ class CallService {
   bool get isCallActive =>
       _currentState == CallState.connecting ||
       _currentState == CallState.connected;
-
-  ToolRuntime? get toolRuntime => _toolRuntime;
 
   /// Set mute state
   void setMuted(bool muted) {
@@ -227,15 +232,25 @@ class CallService {
         return;
       }
 
-      // enabledTools empty => treat as all enabled
-      _toolRuntime = await _toolService.createToolRuntime();
+      // Create and start sandbox
+      _sandboxManager = ToolSandboxManager(
+        notepadService: _notepadService,
+        memoryRepository: _memoryRepository,
+      );
+      await _sandboxManager!.start();
 
-      _apiClient.setTools(_toolRuntime!.toolDefinitionsForRealtime);
+      // Get initial tool definitions from sandbox
+      final toolDefinitions = await _sandboxManager!.listSessionDefinitions();
+      _apiClient.setTools(toolDefinitions);
+
+      // Listen for tool changes and update realtime session
+      _toolsChangedSubscription = _sandboxManager!.toolsChanged.listen((event) {
+        _apiClient.setTools(event.tools);
+      });
 
       _logService.debug(
           _tag,
-          'Tools enabled for call: '
-          '${_toolRuntime!.toolKeys}');
+          'Sandbox started and tools initialized');
 
       _logService.info(_tag, 'Connecting to Azure OpenAI');
       await _apiClient.connect(realtimeUrl, apiKey);
@@ -321,9 +336,9 @@ class CallService {
         _apiClient.functionCallStream.listen((functionCall) async {
       _logService.info(_tag, 'Handling function call: ${functionCall.name}');
 
-      final runtime = _toolRuntime;
-      if (runtime == null) {
-        _logService.error(_tag, 'Tool runtime not available');
+      final sandbox = _sandboxManager;
+      if (sandbox == null) {
+        _logService.error(_tag, 'Tool sandbox not available');
         return;
       }
 
@@ -336,9 +351,9 @@ class CallService {
         return;
       }
 
-      final output = await runtime.execute(
-        toolKey: functionCall.name,
-        args: argsMap,
+      final output = await sandbox.execute(
+        functionCall.name,
+        argsMap,
       );
 
       _chatManager.addToolCall(
@@ -556,8 +571,15 @@ class CallService {
     // Disable wake lock to allow device to sleep normally
     await _disableWakeLock();
 
+    // Cancel tools changed subscription
+    await _toolsChangedSubscription?.cancel();
+    _toolsChangedSubscription = null;
+
+    // Dispose sandbox
+    await _sandboxManager?.dispose();
+    _sandboxManager = null;
+
     _activeToolAllowList = null;
-    _toolRuntime = null;
 
     _callDuration = 0;
     _durationController.add(0);

@@ -5,6 +5,7 @@ import 'package:diff_match_patch/diff_match_patch.dart';
 import 'package:vagina/services/notepad_service.dart';
 import 'package:vagina/services/tools_runtime/tool_context.dart';
 import 'package:vagina/tools/builtin/builtin_tools.dart';
+import '../mocks/mock_apis.dart';
 
 void main() {
   group('Patch Format Tests', () {
@@ -82,7 +83,10 @@ void main() {
 
     setUp(() {
       notepadService = NotepadService();
-      ctx = ToolContext(notepadService: notepadService);
+      ctx = ToolContext(
+        notepadApi: TestNotepadApi(notepadService),
+        memoryApi: TestMemoryApi(InMemoryRepository()),
+      );
       patchTool = DocumentPatchTool();
       overwriteTool = DocumentOverwriteTool();
     });

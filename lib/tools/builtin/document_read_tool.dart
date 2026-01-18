@@ -38,7 +38,7 @@ class DocumentReadTool implements Tool {
   Future<String> execute(ToolArgs args, ToolContext context) async {
     final tabId = args['tabId'] as String;
 
-    final tab = context.notepadService.getTab(tabId);
+    final tab = await context.notepadApi.getTab(tabId);
     if (tab == null) {
       return jsonEncode({
         'success': false,
@@ -49,9 +49,9 @@ class DocumentReadTool implements Tool {
     return jsonEncode({
       'success': true,
       'tabId': tabId,
-      'content': tab.content,
-      'mime': tab.mimeType,
-      'title': tab.title,
+      'content': tab['content'],
+      'mime': tab['mimeType'],
+      'title': tab['title'],
     });
   }
 }

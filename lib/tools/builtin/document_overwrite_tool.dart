@@ -59,14 +59,14 @@ class DocumentOverwriteTool implements Tool {
     try {
       if (tabId != null) {
         // 既存タブを更新
-        final success = context.notepadService.updateTab(
+        final result = await context.notepadApi.updateTab(
           tabId,
           content: content,
           title: title,
           mimeType: mime,
         );
 
-        if (!success) {
+        if (!result) {
           return jsonEncode({
             'success': false,
             'error':
@@ -81,7 +81,7 @@ class DocumentOverwriteTool implements Tool {
         });
       } else {
         // 新規タブを作成
-        final newTabId = context.notepadService.createTab(
+        final newTabId = await context.notepadApi.createTab(
           content: content,
           mimeType: mime,
           title: title,

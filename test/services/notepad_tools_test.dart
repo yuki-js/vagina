@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:vagina/services/notepad_service.dart';
 import 'package:vagina/services/tools_runtime/tool_context.dart';
 import 'package:vagina/tools/builtin/builtin_tools.dart';
+import '../mocks/mock_apis.dart';
 
 void main() {
   group('NotepadListTabsTool (runtime)', () {
@@ -13,7 +14,10 @@ void main() {
 
     setUp(() {
       notepadService = NotepadService();
-      ctx = ToolContext(notepadService: notepadService);
+      ctx = ToolContext(
+        notepadApi: TestNotepadApi(notepadService),
+        memoryApi: TestMemoryApi(InMemoryRepository()),
+      );
       tool = NotepadListTabsTool();
     });
 
@@ -50,7 +54,10 @@ void main() {
 
     setUp(() {
       notepadService = NotepadService();
-      ctx = ToolContext(notepadService: notepadService);
+      ctx = ToolContext(
+        notepadApi: TestNotepadApi(notepadService),
+        memoryApi: TestMemoryApi(InMemoryRepository()),
+      );
       tool = NotepadGetMetadataTool();
     });
 
@@ -90,7 +97,10 @@ void main() {
 
     setUp(() {
       notepadService = NotepadService();
-      ctx = ToolContext(notepadService: notepadService);
+      ctx = ToolContext(
+        notepadApi: TestNotepadApi(notepadService),
+        memoryApi: TestMemoryApi(InMemoryRepository()),
+      );
       tool = NotepadGetContentTool();
     });
 
@@ -128,7 +138,10 @@ void main() {
 
     setUp(() {
       notepadService = NotepadService();
-      ctx = ToolContext(notepadService: notepadService);
+      ctx = ToolContext(
+        notepadApi: TestNotepadApi(notepadService),
+        memoryApi: TestMemoryApi(InMemoryRepository()),
+      );
       tool = NotepadCloseTabTool();
     });
 

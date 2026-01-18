@@ -88,6 +88,7 @@ CallService callService(Ref ref) {
     sessionRepository: ref.watch(callSessionRepositoryProvider),
     toolService: ref.watch(toolServiceProvider),
     notepadService: ref.watch(notepadServiceProvider),
+    memoryRepository: ref.watch(memoryRepositoryProvider),
     logService: ref.watch(logServiceProvider),
     feedbackService: ref.watch(callFeedbackServiceProvider),
   );

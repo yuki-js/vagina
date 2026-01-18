@@ -36,7 +36,7 @@ class NotepadGetContentTool implements Tool {
   @override
   Future<String> execute(ToolArgs args, ToolContext context) async {
     final tabId = args['tabId'] as String;
-    final tab = context.notepadService.getTab(tabId);
+    final tab = await context.notepadApi.getTab(tabId);
 
     if (tab == null) {
       return jsonEncode({
@@ -47,8 +47,8 @@ class NotepadGetContentTool implements Tool {
 
     return jsonEncode({
       'success': true,
-      'content': tab.content,
-      'mimeType': tab.mimeType,
+      'content': tab['content'],
+      'mimeType': tab['mimeType'],
     });
   }
 }

@@ -160,7 +160,7 @@ class DocumentPatchTool implements Tool {
     final tabId = args['tabId'] as String;
     final patchText = args['patch'] as String;
 
-    final tab = context.notepadService.getTab(tabId);
+    final tab = await context.notepadApi.getTab(tabId);
     if (tab == null) {
       return jsonEncode({
         'success': false,
@@ -168,7 +168,7 @@ class DocumentPatchTool implements Tool {
       });
     }
 
-    final originalContent = tab.content;
+    final originalContent = tab['content'] as String;
 
     // Convert plain diff format to URL-encoded format expected by the library
     final encodedPatch = _encodePatchText(patchText);
@@ -212,7 +212,7 @@ class DocumentPatchTool implements Tool {
 
     // Update the document
     final updateSuccess =
-        context.notepadService.updateTab(tabId, content: patchedContent);
+        await context.notepadApi.updateTab(tabId, content: patchedContent);
 
     if (!updateSuccess) {
       return jsonEncode({

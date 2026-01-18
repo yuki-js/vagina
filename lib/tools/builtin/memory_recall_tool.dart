@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:vagina/interfaces/memory_repository.dart';
 import 'package:vagina/services/tools_runtime/tool.dart';
 import 'package:vagina/services/tools_runtime/tool_context.dart';
 import 'package:vagina/services/tools_runtime/tool_definition.dart';
@@ -8,11 +7,7 @@ import 'package:vagina/services/tools_runtime/tool_definition.dart';
 class MemoryRecallTool implements Tool {
   static const String toolKeyName = 'memory_recall';
 
-  final MemoryRepository _memoryRepo;
   final AsyncOnce<void> _initOnce = AsyncOnce<void>();
-
-  MemoryRecallTool({required MemoryRepository memoryRepository})
-      : _memoryRepo = memoryRepository;
 
   @override
   ToolDefinition get definition => const ToolDefinition(
@@ -45,14 +40,14 @@ class MemoryRecallTool implements Tool {
     final key = args['key'] as String;
 
     if (key == 'all') {
-      final allMemories = await _memoryRepo.getAll();
+      final allMemories = await context.memoryApi.list();
       return jsonEncode({
         'success': true,
         'memories': allMemories,
       });
     }
 
-    final value = await _memoryRepo.get(key);
+    final value = await context.memoryApi.recall(key);
     if (value == null) {
       return jsonEncode({
         'success': false,

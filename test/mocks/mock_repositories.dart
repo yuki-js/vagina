@@ -6,6 +6,7 @@ import 'package:vagina/interfaces/speed_dial_repository.dart';
 import 'package:vagina/repositories/preferences_repository.dart';
 import 'package:vagina/services/audio_player_service.dart';
 import 'package:vagina/services/audio_recorder_service.dart';
+import 'package:vagina/services/call_feedback_service.dart';
 import 'package:vagina/services/call_service.dart';
 import 'package:vagina/services/log_service.dart';
 import 'package:vagina/services/notepad_service.dart';
@@ -23,6 +24,7 @@ import 'package:vagina/services/websocket_service.dart';
   LogService,
   AudioRecorderService,
   AudioPlayerService,
+  CallFeedbackService,
   WebSocketService,
   RealtimeApiClient,
   ToolService,

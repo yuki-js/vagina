@@ -37,9 +37,9 @@ class NotepadGetMetadataTool implements Tool {
   @override
   Future<String> execute(ToolArgs args, ToolContext context) async {
     final tabId = args['tabId'] as String;
-    final metadata = context.notepadService.getTabMetadata(tabId);
+    final tab = await context.notepadApi.getTab(tabId);
 
-    if (metadata == null) {
+    if (tab == null) {
       return jsonEncode({
         'success': false,
         'error': 'Tab not found: $tabId',
@@ -48,7 +48,7 @@ class NotepadGetMetadataTool implements Tool {
 
     return jsonEncode({
       'success': true,
-      'metadata': metadata,
+      'metadata': tab,
     });
   }
 }

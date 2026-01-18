@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:vagina/interfaces/memory_repository.dart';
 import 'package:vagina/services/tools_runtime/tool.dart';
 import 'package:vagina/services/tools_runtime/tool_context.dart';
 import 'package:vagina/services/tools_runtime/tool_definition.dart';
@@ -8,11 +7,7 @@ import 'package:vagina/services/tools_runtime/tool_definition.dart';
 class MemorySaveTool implements Tool {
   static const String toolKeyName = 'memory_save';
 
-  final MemoryRepository _memoryRepo;
   final AsyncOnce<void> _initOnce = AsyncOnce<void>();
-
-  MemorySaveTool({required MemoryRepository memoryRepository})
-      : _memoryRepo = memoryRepository;
 
   @override
   ToolDefinition get definition => const ToolDefinition(
@@ -49,7 +44,7 @@ class MemorySaveTool implements Tool {
     final key = args['key'] as String;
     final value = args['value'] as String;
 
-    await _memoryRepo.save(key, value);
+    await context.memoryApi.save(key, value);
 
     return jsonEncode({
       'success': true,

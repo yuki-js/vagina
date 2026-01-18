@@ -5,10 +5,8 @@ import 'package:vagina/interfaces/memory_repository.dart';
 
 import 'notepad_service.dart';
 import 'tool_metadata.dart';
-import 'tools_runtime/tool_context.dart';
 import 'tools_runtime/tool_factory.dart';
 import 'tools_runtime/tool_registry.dart' as runtime;
-import 'tools_runtime/tool_runtime.dart';
 
 import 'package:vagina/tools/builtin/builtin_tools.dart' as runtime_tools;
 
@@ -40,21 +38,12 @@ class ToolService {
           SimpleToolFactory(create: () => runtime_tools.GetCurrentTimeTool()),
       runtime_tools.CalculatorTool.toolKeyName:
           SimpleToolFactory(create: () => runtime_tools.CalculatorTool()),
-      runtime_tools.MemorySaveTool.toolKeyName: SimpleToolFactory(
-        create: () => runtime_tools.MemorySaveTool(
-          memoryRepository: _memoryRepository,
-        ),
-      ),
-      runtime_tools.MemoryRecallTool.toolKeyName: SimpleToolFactory(
-        create: () => runtime_tools.MemoryRecallTool(
-          memoryRepository: _memoryRepository,
-        ),
-      ),
-      runtime_tools.MemoryDeleteTool.toolKeyName: SimpleToolFactory(
-        create: () => runtime_tools.MemoryDeleteTool(
-          memoryRepository: _memoryRepository,
-        ),
-      ),
+      runtime_tools.MemorySaveTool.toolKeyName:
+          SimpleToolFactory(create: () => runtime_tools.MemorySaveTool()),
+      runtime_tools.MemoryRecallTool.toolKeyName:
+          SimpleToolFactory(create: () => runtime_tools.MemoryRecallTool()),
+      runtime_tools.MemoryDeleteTool.toolKeyName:
+          SimpleToolFactory(create: () => runtime_tools.MemoryDeleteTool()),
       runtime_tools.DocumentReadTool.toolKeyName:
           SimpleToolFactory(create: () => runtime_tools.DocumentReadTool()),
       runtime_tools.DocumentOverwriteTool.toolKeyName: SimpleToolFactory(
@@ -78,46 +67,6 @@ class ToolService {
 
     // Legacy registry is removed; UI reads definitions from the runtime registry.
     _initialized = true;
-  }
-
-  /// Creates a per-call [ToolRuntime] with fresh tool instances.
-  ///
-  /// If [toolNamesOverride] is provided, it is treated as the source-of-truth
-  /// for which tools should be present (e.g. when mirroring a live session's
-  /// tool manager state).
-  ///
-  /// Otherwise, current enabled/disabled config semantics are used:
-  /// - enabledTools empty => all tools enabled
-  /// - enabledTools non-empty => only listed tools enabled
-  Future<ToolRuntime> createToolRuntime({
-    Iterable<String>? toolNamesOverride,
-  }) async {
-    if (!_initialized) initialize();
-
-    final allowList = toolNamesOverride?.toSet() ?? {};
-    final enabledTools = allowList.isEmpty
-        ? await _configRepository.getEnabledTools()
-        : const <String>[];
-
-    final registry = runtime.ToolRegistry();
-
-    for (final entry in _runtimeToolFactories.entries) {
-      final toolName = entry.key;
-
-      final shouldInclude = allowList.isNotEmpty
-          ? allowList.contains(toolName)
-          : enabledTools.contains(toolName);
-
-      if (!shouldInclude) continue;
-
-      registry.registerFactory(entry.value);
-    }
-
-    final context = ToolContext(
-      notepadService: _notepadService,
-    );
-
-    return registry.buildRuntimeForCall(context);
   }
 
   /// すべてのツール定義を取得（有効/無効問わず）

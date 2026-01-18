@@ -1,8 +1,6 @@
 import 'tool.dart';
-import 'tool_context.dart';
 import 'tool_definition.dart';
 import 'tool_factory.dart';
-import 'tool_runtime.dart';
 
 /// App-scope registry of [ToolFactory] instances.
 ///
@@ -64,20 +62,4 @@ class ToolRegistry {
     return definitions;
   }
 
-  /// Builds a per-call runtime containing fresh tool instances.
-  ///
-  /// Instances created here are always fresh (per-call) and are never reused
-  /// from [listDefinitions].
-  ToolRuntime buildRuntimeForCall(ToolContext context) {
-    final toolsByKey = <String, Tool>{};
-    for (final factory in _factories) {
-      final tool = factory.createTool();
-      toolsByKey[tool.definition.toolKey] = tool;
-    }
-
-    return ToolRuntime(
-      context: context,
-      toolsByKey: toolsByKey,
-    );
-  }
 }

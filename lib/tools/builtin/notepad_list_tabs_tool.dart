@@ -31,7 +31,7 @@ class NotepadListTabsTool implements Tool {
 
   @override
   Future<String> execute(ToolArgs args, ToolContext context) async {
-    final tabs = context.notepadService.listTabs();
+    final tabs = await context.notepadApi.listTabs();
     return jsonEncode({
       'success': true,
       'tabs': tabs,

@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:vagina/interfaces/memory_repository.dart';
 import 'package:vagina/services/tools_runtime/tool.dart';
 import 'package:vagina/services/tools_runtime/tool_context.dart';
 import 'package:vagina/services/tools_runtime/tool_definition.dart';
@@ -8,11 +7,7 @@ import 'package:vagina/services/tools_runtime/tool_definition.dart';
 class MemoryDeleteTool implements Tool {
   static const String toolKeyName = 'memory_delete';
 
-  final MemoryRepository _memoryRepo;
   final AsyncOnce<void> _initOnce = AsyncOnce<void>();
-
-  MemoryDeleteTool({required MemoryRepository memoryRepository})
-      : _memoryRepo = memoryRepository;
 
   @override
   ToolDefinition get definition => const ToolDefinition(
@@ -45,14 +40,17 @@ class MemoryDeleteTool implements Tool {
     final key = args['key'] as String;
 
     if (key == 'all') {
-      await _memoryRepo.deleteAll();
+      final allMemories = await context.memoryApi.list();
+      for (final memoryKey in allMemories.keys) {
+        await context.memoryApi.delete(memoryKey);
+      }
       return jsonEncode({
         'success': true,
         'message': 'All memories deleted successfully',
       });
     }
 
-    final existed = await _memoryRepo.delete(key);
+    final existed = await context.memoryApi.delete(key);
     if (!existed) {
       return jsonEncode({
         'success': false,
