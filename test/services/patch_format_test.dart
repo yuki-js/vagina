@@ -1,7 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:diff_match_patch/diff_match_patch.dart';
 import 'package:vagina/services/notepad_service.dart';
-import 'package:vagina/services/tools/builtin/document_tools.dart';
+import 'package:vagina/services/tools_runtime/tool_context.dart';
+import 'package:vagina/tools/builtin/builtin_tools.dart';
 
 void main() {
   group('Patch Format Tests', () {
@@ -50,6 +53,7 @@ void main() {
 
   group('DocumentPatchTool comprehensive tests', () {
     late NotepadService notepadService;
+    late ToolContext ctx;
     late DocumentPatchTool patchTool;
     late DocumentOverwriteTool overwriteTool;
 
@@ -58,16 +62,18 @@ void main() {
       String originalContent,
       String patch,
     ) async {
-      final createResult = await overwriteTool.execute({
+      final createOut = await overwriteTool.execute({
         'content': originalContent,
-      });
+      }, ctx);
+      final createResult = jsonDecode(createOut) as Map<String, dynamic>;
       final tabId = createResult['tabId'] as String;
-      
-      final patchResult = await patchTool.execute({
+
+      final patchOut = await patchTool.execute({
         'tabId': tabId,
         'patch': patch,
-      });
-      
+      }, ctx);
+      final patchResult = jsonDecode(patchOut) as Map<String, dynamic>;
+
       if (patchResult['success'] == true) {
         return notepadService.getTabContent(tabId);
       }
@@ -76,8 +82,9 @@ void main() {
 
     setUp(() {
       notepadService = NotepadService();
-      patchTool = DocumentPatchTool(notepadService: notepadService);
-      overwriteTool = DocumentOverwriteTool(notepadService: notepadService);
+      ctx = ToolContext(notepadService: notepadService);
+      patchTool = DocumentPatchTool();
+      overwriteTool = DocumentOverwriteTool();
     });
 
     tearDown(() {
@@ -393,29 +400,32 @@ void main() {
     // ==================== Edge Cases ====================
     
     test('21. Empty patch returns error', () async {
-      final createResult = await overwriteTool.execute({
+      final createOut = await overwriteTool.execute({
         'content': 'Line 1\nLine 2',
-      });
+      }, ctx);
+      final createResult = jsonDecode(createOut) as Map<String, dynamic>;
       final tabId = createResult['tabId'] as String;
-      
-      final patchResult = await patchTool.execute({
+
+      final patchOut = await patchTool.execute({
         'tabId': tabId,
         'patch': '',
-      });
-      
+      }, ctx);
+      final patchResult = jsonDecode(patchOut) as Map<String, dynamic>;
+
       expect(patchResult['success'], isFalse);
       expect(patchResult['error'], contains('No valid patches'));
     });
 
     test('22. Tab not found returns error', () async {
-      final patchResult = await patchTool.execute({
+      final patchOut = await patchTool.execute({
         'tabId': 'non_existent_tab',
         'patch': '''@@ -1 +1 @@
 -old
 +new
 ''',
-      });
-      
+      }, ctx);
+      final patchResult = jsonDecode(patchOut) as Map<String, dynamic>;
+
       expect(patchResult['success'], isFalse);
       expect(patchResult['error'], contains('Tab not found'));
     });

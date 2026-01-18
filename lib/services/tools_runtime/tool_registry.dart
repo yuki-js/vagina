@@ -17,17 +17,13 @@ import 'tool_runtime.dart';
 ///   instantiating any tools.
 /// - [invalidateCache] clears cached definitions.
 class ToolRegistry {
-  static final ToolRegistry _instance = ToolRegistry._internal();
-
-  factory ToolRegistry() => _instance;
-
-  ToolRegistry._internal();
+  ToolRegistry();
 
   final List<ToolFactory> _factories = <ToolFactory>[];
 
   List<ToolDefinition>? _cachedDefinitions;
 
-  /// Registers a factory at app scope.
+  /// Registers a factory at registry scope.
   ///
   /// Registering a new factory invalidates any cached definitions.
   void registerFactory(ToolFactory factory) {

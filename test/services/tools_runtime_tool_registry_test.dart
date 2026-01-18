@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vagina/services/tools_runtime/notepad_backend.dart';
+import 'package:vagina/services/notepad_service.dart';
 import 'package:vagina/services/tools_runtime/tool.dart';
 import 'package:vagina/services/tools_runtime/tool_context.dart';
 import 'package:vagina/services/tools_runtime/tool_definition.dart';
@@ -147,7 +147,7 @@ void main() {
       expect(f1.createToolCallCount, 1);
       final cachedInstance = f1.createdInstances.single;
 
-      final ctx = ToolContext(notepadBackend: NotepadBackend());
+      final ctx = ToolContext(notepadService: NotepadService());
 
       final runtime1 = registry.buildRuntimeForCall(ctx);
       final runtimeTool1 = runtime1.getTool('tracking_tool');

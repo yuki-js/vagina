@@ -4,7 +4,7 @@ import 'package:vagina/core/state/repository_providers.dart';
 import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/feat/call/state/call_service_providers.dart';
 import 'package:vagina/feat/home/tools/tool_icon_mapper.dart';
-import 'package:vagina/services/tools/tool_metadata.dart';
+import 'package:vagina/services/tool_metadata.dart';
 
 /// ツール有効状態のプロバイダー（リポジトリ使用）
 final toolEnabledProvider =

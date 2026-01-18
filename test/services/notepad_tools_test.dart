@@ -1,15 +1,20 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vagina/services/notepad_service.dart';
-import 'package:vagina/services/tools/builtin/notepad_tools.dart';
+import 'package:vagina/services/tools_runtime/tool_context.dart';
+import 'package:vagina/tools/builtin/builtin_tools.dart';
 
 void main() {
-  group('NotepadListTabsTool', () {
+  group('NotepadListTabsTool (runtime)', () {
     late NotepadService notepadService;
+    late ToolContext ctx;
     late NotepadListTabsTool tool;
 
     setUp(() {
       notepadService = NotepadService();
-      tool = NotepadListTabsTool(notepadService: notepadService);
+      ctx = ToolContext(notepadService: notepadService);
+      tool = NotepadListTabsTool();
     });
 
     tearDown(() {
@@ -17,7 +22,8 @@ void main() {
     });
 
     test('returns empty list when no tabs exist', () async {
-      final result = await tool.execute({});
+      final out = await tool.execute({}, ctx);
+      final result = jsonDecode(out) as Map<String, dynamic>;
 
       expect(result['success'], isTrue);
       expect(result['tabs'], isEmpty);
@@ -28,7 +34,8 @@ void main() {
       notepadService.createTab(content: 'Tab 1', mimeType: 'text/plain');
       notepadService.createTab(content: 'Tab 2', mimeType: 'text/markdown');
 
-      final result = await tool.execute({});
+      final out = await tool.execute({}, ctx);
+      final result = jsonDecode(out) as Map<String, dynamic>;
 
       expect(result['success'], isTrue);
       expect((result['tabs'] as List), hasLength(2));
@@ -36,13 +43,15 @@ void main() {
     });
   });
 
-  group('NotepadGetMetadataTool', () {
+  group('NotepadGetMetadataTool (runtime)', () {
     late NotepadService notepadService;
+    late ToolContext ctx;
     late NotepadGetMetadataTool tool;
 
     setUp(() {
       notepadService = NotepadService();
-      tool = NotepadGetMetadataTool(notepadService: notepadService);
+      ctx = ToolContext(notepadService: notepadService);
+      tool = NotepadGetMetadataTool();
     });
 
     tearDown(() {
@@ -56,7 +65,8 @@ void main() {
         title: 'Test',
       );
 
-      final result = await tool.execute({'tabId': tabId});
+      final out = await tool.execute({'tabId': tabId}, ctx);
+      final result = jsonDecode(out) as Map<String, dynamic>;
 
       expect(result['success'], isTrue);
       expect(result['metadata'], isNotNull);
@@ -65,20 +75,23 @@ void main() {
     });
 
     test('returns error for non-existent tab', () async {
-      final result = await tool.execute({'tabId': 'non_existent'});
+      final out = await tool.execute({'tabId': 'non_existent'}, ctx);
+      final result = jsonDecode(out) as Map<String, dynamic>;
 
       expect(result['success'], isFalse);
       expect(result['error'], contains('Tab not found'));
     });
   });
 
-  group('NotepadGetContentTool', () {
+  group('NotepadGetContentTool (runtime)', () {
     late NotepadService notepadService;
+    late ToolContext ctx;
     late NotepadGetContentTool tool;
 
     setUp(() {
       notepadService = NotepadService();
-      tool = NotepadGetContentTool(notepadService: notepadService);
+      ctx = ToolContext(notepadService: notepadService);
+      tool = NotepadGetContentTool();
     });
 
     tearDown(() {
@@ -91,7 +104,8 @@ void main() {
         mimeType: 'text/plain',
       );
 
-      final result = await tool.execute({'tabId': tabId});
+      final out = await tool.execute({'tabId': tabId}, ctx);
+      final result = jsonDecode(out) as Map<String, dynamic>;
 
       expect(result['success'], isTrue);
       expect(result['content'], equals('Hello World'));
@@ -99,20 +113,23 @@ void main() {
     });
 
     test('returns error for non-existent tab', () async {
-      final result = await tool.execute({'tabId': 'non_existent'});
+      final out = await tool.execute({'tabId': 'non_existent'}, ctx);
+      final result = jsonDecode(out) as Map<String, dynamic>;
 
       expect(result['success'], isFalse);
       expect(result['error'], contains('Tab not found'));
     });
   });
 
-  group('NotepadCloseTabTool', () {
+  group('NotepadCloseTabTool (runtime)', () {
     late NotepadService notepadService;
+    late ToolContext ctx;
     late NotepadCloseTabTool tool;
 
     setUp(() {
       notepadService = NotepadService();
-      tool = NotepadCloseTabTool(notepadService: notepadService);
+      ctx = ToolContext(notepadService: notepadService);
+      tool = NotepadCloseTabTool();
     });
 
     tearDown(() {
@@ -125,14 +142,16 @@ void main() {
         mimeType: 'text/plain',
       );
 
-      final result = await tool.execute({'tabId': tabId});
+      final out = await tool.execute({'tabId': tabId}, ctx);
+      final result = jsonDecode(out) as Map<String, dynamic>;
 
       expect(result['success'], isTrue);
       expect(notepadService.tabs, isEmpty);
     });
 
     test('returns error for non-existent tab', () async {
-      final result = await tool.execute({'tabId': 'non_existent'});
+      final out = await tool.execute({'tabId': 'non_existent'}, ctx);
+      final result = jsonDecode(out) as Map<String, dynamic>;
 
       expect(result['success'], isFalse);
       expect(result['error'], contains('Tab not found'));

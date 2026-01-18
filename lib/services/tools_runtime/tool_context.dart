@@ -1,12 +1,15 @@
-import 'notepad_backend.dart';
+import 'package:vagina/services/notepad_service.dart';
 
 /// Per-call dependency container.
 ///
-/// This is intentionally minimal for PR1 and will be expanded in later PRs.
+/// This is intentionally minimal and can be expanded later.
 class ToolContext {
-  final NotepadBackend notepadBackend;
+  /// Allows tools to access and mutate the current notepad state.
+  ///
+  /// This is Flutter-free.
+  final NotepadService notepadService;
 
   ToolContext({
-    required this.notepadBackend,
+    required this.notepadService,
   });
 }

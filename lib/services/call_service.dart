@@ -46,10 +46,11 @@ class CallService {
   final CallFeedbackService _feedback;
   final ChatMessageManager _chatManager = ChatMessageManager();
 
-  /// Session-scoped legacy tool manager (created on call start, disposed on call end)
+  /// Session-scoped allow-list of tool keys for the active call.
   ///
-  /// Kept for UI/legacy paths and for preserving mid-call tool updates.
-  ToolManager? _toolManager;
+  /// Tools can be toggled from config; on changes we rebuild the runtime and
+  /// push updated tool definitions to the session.
+  Set<String>? _activeToolAllowList;
 
   /// Session-scoped ToolRuntime (created on call start, rebuilt on tool changes)
   ToolRuntime? _toolRuntime;
@@ -137,9 +138,6 @@ class CallService {
   bool get isCallActive =>
       _currentState == CallState.connecting ||
       _currentState == CallState.connected;
-
-  /// Get the current session's tool manager (null if no active call)
-  ToolManager? get toolManager => _toolManager;
 
   ToolRuntime? get toolRuntime => _toolRuntime;
 
@@ -229,16 +227,14 @@ class CallService {
         return;
       }
 
-      // Create session-scoped legacy tool manager (async now)
-      _toolManager = await _toolService.createToolManager(
-        onToolsChanged: _onToolsChanged,
-      );
+      _activeToolAllowList = (await _config.getEnabledTools()).toSet();
+      final allowList = _activeToolAllowList;
 
-      // Create per-call runtime with **fresh** tool instances, mirroring the
-      // same tool set as the legacy manager.
+      // enabledTools empty => treat as all enabled
       _toolRuntime = await _toolService.createToolRuntime(
-        toolNamesOverride: _toolManager!.registeredToolNames,
-        managerRef: _toolManager,
+        toolNamesOverride: (allowList == null || allowList.isEmpty)
+            ? null
+            : allowList,
       );
 
       _apiClient.setTools(_toolRuntime!.toolDefinitionsForRealtime);
@@ -277,26 +273,10 @@ class CallService {
     }
   }
 
-  /// Called when tools change (via ToolManager)
-  void _onToolsChanged() {
-    final manager = _toolManager;
-    if (manager == null || _currentState != CallState.connected) {
-      return;
-    }
-
-    // Rebuild the current call's ToolRuntime and push updated tools to the
-    // session config, mirroring legacy behavior.
-    unawaited(() async {
-      _toolRuntime = await _toolService.createToolRuntime(
-        toolNamesOverride: manager.registeredToolNames,
-        managerRef: manager,
-      );
-
-      _apiClient.setTools(_toolRuntime!.toolDefinitionsForRealtime);
-      _apiClient.updateSessionConfig();
-      _logService.info(_tag, 'Tools updated, session config refreshed');
-    }());
-  }
+  // Kept for future mid-call tool-set updates.
+  //
+  // Current app semantics only change tools via config toggles, which are
+  // read when building the runtime.
 
   void _setupApiSubscriptions() {
     _errorSubscription = _apiClient.errorStream.listen((error) {
@@ -576,9 +556,7 @@ class CallService {
     // Disable wake lock to allow device to sleep normally
     await _disableWakeLock();
 
-    // Dispose session-scoped tool manager
-    _toolManager?.dispose();
-    _toolManager = null;
+    _activeToolAllowList = null;
     _toolRuntime = null;
 
     _callDuration = 0;

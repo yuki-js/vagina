@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:vagina/services/tools/tool_metadata.dart';
+import 'package:vagina/services/tool_metadata.dart';
 
 /// Flutter-only icon resolver for tool metadata keys.
 ///

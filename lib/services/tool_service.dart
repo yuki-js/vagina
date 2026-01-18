@@ -2,37 +2,30 @@ import 'package:vagina/interfaces/config_repository.dart';
 import 'package:vagina/interfaces/memory_repository.dart';
 
 import 'notepad_service.dart';
-import 'tools/base_tool.dart' show ToolManagerRef;
-import 'tools/builtin_tool_factory.dart';
-import 'tools/tool_manager.dart';
-import 'tools/tool_metadata.dart';
-import 'tools/tool_registry.dart';
-import 'tools_runtime/legacy_tool_factory.dart';
-import 'tools_runtime/notepad_backend.dart';
+import 'tool_metadata.dart';
+import 'tools_runtime/simple_tool_factory.dart';
 import 'tools_runtime/tool_context.dart';
+import 'tools_runtime/tool_factory.dart';
 import 'tools_runtime/tool_registry.dart' as runtime;
 import 'tools_runtime/tool_runtime.dart';
 
-export 'tools/base_tool.dart' show BaseTool, ToolExecutionResult, ToolManagerRef;
-export 'tools/tool_manager.dart' show ToolManager;
-export 'tools/tool_registry.dart'
-    show ToolRegistry, ToolRegistryEvent, ToolRegistryEventType;
-export 'tools/tool_metadata.dart' show ToolMetadata, ToolCategory, ToolSource;
+import 'package:vagina/tools/builtin/builtin_tools.dart' as runtime_tools;
+
+export 'tool_metadata.dart' show ToolMetadata, ToolCategory, ToolSource;
 
 /// ツールサービス
 ///
 /// アプリケーション全体のツール管理を担当する。
-/// - ビルトインツールの初期化
-/// - セッションスコープのToolManager生成
 /// - ツールの有効/無効管理
 /// - 将来のMCP対応の基盤
 class ToolService {
   final NotepadService _notepadService;
   final MemoryRepository _memoryRepository;
   final ConfigRepository _configRepository;
-  late final BuiltinToolFactory _builtinFactory;
-  final ToolRegistry _registry = ToolRegistry();
   bool _initialized = false;
+
+  /// Runtime tool factories keyed by toolKey.
+  late final Map<String, ToolFactory> _runtimeToolFactories;
 
   ToolService({
     required NotepadService notepadService,
@@ -41,48 +34,49 @@ class ToolService {
   })  : _notepadService = notepadService,
         _memoryRepository = memoryRepository,
         _configRepository = configRepository {
-    _builtinFactory = BuiltinToolFactory(
-      memoryRepository: _memoryRepository,
-      notepadService: _notepadService,
-    );
+    _runtimeToolFactories = <String, ToolFactory>{
+      runtime_tools.GetCurrentTimeTool.toolKeyName:
+          SimpleToolFactory(create: () => runtime_tools.GetCurrentTimeTool()),
+      runtime_tools.CalculatorTool.toolKeyName:
+          SimpleToolFactory(create: () => runtime_tools.CalculatorTool()),
+      runtime_tools.MemorySaveTool.toolKeyName: SimpleToolFactory(
+        create: () => runtime_tools.MemorySaveTool(
+          memoryRepository: _memoryRepository,
+        ),
+      ),
+      runtime_tools.MemoryRecallTool.toolKeyName: SimpleToolFactory(
+        create: () => runtime_tools.MemoryRecallTool(
+          memoryRepository: _memoryRepository,
+        ),
+      ),
+      runtime_tools.MemoryDeleteTool.toolKeyName: SimpleToolFactory(
+        create: () => runtime_tools.MemoryDeleteTool(
+          memoryRepository: _memoryRepository,
+        ),
+      ),
+      runtime_tools.DocumentReadTool.toolKeyName:
+          SimpleToolFactory(create: () => runtime_tools.DocumentReadTool()),
+      runtime_tools.DocumentOverwriteTool.toolKeyName:
+          SimpleToolFactory(create: () => runtime_tools.DocumentOverwriteTool()),
+      runtime_tools.DocumentPatchTool.toolKeyName:
+          SimpleToolFactory(create: () => runtime_tools.DocumentPatchTool()),
+      runtime_tools.NotepadListTabsTool.toolKeyName:
+          SimpleToolFactory(create: () => runtime_tools.NotepadListTabsTool()),
+      runtime_tools.NotepadGetMetadataTool.toolKeyName:
+          SimpleToolFactory(create: () => runtime_tools.NotepadGetMetadataTool()),
+      runtime_tools.NotepadGetContentTool.toolKeyName:
+          SimpleToolFactory(create: () => runtime_tools.NotepadGetContentTool()),
+      runtime_tools.NotepadCloseTabTool.toolKeyName:
+          SimpleToolFactory(create: () => runtime_tools.NotepadCloseTabTool()),
+    };
   }
-  
-  /// ツールレジストリを取得
-  ToolRegistry get registry => _registry;
   
   /// サービスを初期化（ビルトインツールを登録）
   void initialize() {
     if (_initialized) return;
-    
-    // ビルトインツールを登録
-    // 各ツールは自身のmetadataゲッターを持つため、それを使用
-    final tools = _builtinFactory.createBuiltinTools();
-    for (final tool in tools) {
-      _registry.registerTool(tool, tool.metadata);
-    }
-    
+
+    // Legacy registry is removed; UI reads definitions from the runtime registry.
     _initialized = true;
-  }
-  
-  /// セッションスコープのToolManagerを生成
-  /// 通話開始時に呼び出される
-  Future<ToolManager> createToolManager({void Function()? onToolsChanged}) async {
-    // 未初期化なら初期化
-    if (!_initialized) initialize();
-    
-    final manager = ToolManager(onToolsChanged: onToolsChanged);
-    final allTools = _registry.getAllTools();
-    final enabledTools = await _configRepository.getEnabledTools();
-    
-    // 有効なツールのみを登録
-    for (final entry in allTools) {
-      final isEnabled = enabledTools.isEmpty || enabledTools.contains(entry.tool.name);
-      if (isEnabled) {
-        manager.registerTool(entry.tool);
-      }
-    }
-    
-    return manager;
   }
 
   /// Creates a per-call [ToolRuntime] with fresh tool instances.
@@ -96,7 +90,6 @@ class ToolService {
   /// - enabledTools non-empty => only listed tools enabled
   Future<ToolRuntime> createToolRuntime({
     Iterable<String>? toolNamesOverride,
-    ToolManagerRef? managerRef,
   }) async {
     if (!_initialized) initialize();
 
@@ -106,9 +99,8 @@ class ToolService {
         : const <String>[];
 
     final registry = runtime.ToolRegistry();
-    final builders = _builtinFactory.createBuiltinToolBuilders();
 
-    for (final entry in builders.entries) {
+    for (final entry in _runtimeToolFactories.entries) {
       final toolName = entry.key;
 
       final shouldInclude = allowList != null
@@ -117,16 +109,11 @@ class ToolService {
 
       if (!shouldInclude) continue;
 
-      registry.registerFactory(
-        LegacyToolFactory(
-          createLegacy: entry.value,
-          managerRef: managerRef,
-        ),
-      );
+      registry.registerFactory(entry.value);
     }
 
     final context = ToolContext(
-      notepadBackend: NotepadBackend(initialTabs: _notepadService.tabs),
+      notepadService: _notepadService,
     );
 
     return registry.buildRuntimeForCall(context);
@@ -135,24 +122,64 @@ class ToolService {
   /// すべてのツール定義を取得（有効/無効問わず）
   List<Map<String, dynamic>> get toolDefinitions {
     if (!_initialized) initialize();
-    return _registry.getToolDefinitions();
+
+    final registry = runtime.ToolRegistry();
+    for (final factory in _runtimeToolFactories.values) {
+      registry.registerFactory(factory);
+    }
+
+    return registry
+        .listDefinitions()
+        .map((d) => d.toRealtimeJson())
+        .toList(growable: false);
   }
-  
+
   /// すべてのツールとメタデータを取得
   List<({String name, ToolMetadata metadata})> get allToolsWithMetadata {
     if (!_initialized) initialize();
-    return _registry.getAllTools()
-        .map((t) => (name: t.tool.name, metadata: t.metadata))
-        .toList();
+
+    final registry = runtime.ToolRegistry();
+    for (final factory in _runtimeToolFactories.values) {
+      registry.registerFactory(factory);
+    }
+
+    return registry.listDefinitions().map((d) {
+      final category = ToolCategory.values
+          .where((c) => c.name == d.categoryKey)
+          .cast<ToolCategory?>()
+          .firstWhere((c) => c != null, orElse: () => null);
+
+      final source = ToolSource.values
+          .where((s) => s.name == d.sourceKey)
+          .cast<ToolSource?>()
+          .firstWhere((s) => s != null, orElse: () => null);
+
+      return (
+        name: d.toolKey,
+        metadata: ToolMetadata(
+          name: d.toolKey,
+          displayName: d.displayName,
+          displayDescription: d.displayDescription,
+          description: d.description,
+          iconKey: d.iconKey,
+          category: category ?? ToolCategory.custom,
+          source: source ?? ToolSource.custom,
+          mcpServerUrl: d.mcpServerUrl,
+        ),
+      );
+    }).toList(growable: false);
   }
-  
+
   /// カテゴリ別にグループ化したツールを取得
   Map<ToolCategory, List<ToolMetadata>> get toolsByCategory {
     if (!_initialized) initialize();
     final result = <ToolCategory, List<ToolMetadata>>{};
-    for (final entry in _registry.getAllTools()) {
-      result.putIfAbsent(entry.metadata.category, () => []).add(entry.metadata);
+
+    for (final entry in allToolsWithMetadata) {
+      result.putIfAbsent(entry.metadata.category, () => <ToolMetadata>[])
+          .add(entry.metadata);
     }
+
     return result;
   }
   
@@ -169,6 +196,12 @@ class ToolService {
   /// ツールメタデータを取得
   ToolMetadata? getToolMetadata(String name) {
     if (!_initialized) initialize();
-    return _registry.getMetadata(name);
+    try {
+      return allToolsWithMetadata
+          .firstWhere((e) => e.name == name)
+          .metadata;
+    } catch (_) {
+      return null;
+    }
   }
 }
