@@ -7,6 +7,8 @@ import 'package:vagina/models/notepad_tab.dart';
 part 'notepad_controller.g.dart';
 
 class NotepadState {
+  static const _unset = Object();
+
   final List<NotepadTab> tabs;
   final String? selectedTabId;
 
@@ -15,13 +17,18 @@ class NotepadState {
     required this.selectedTabId,
   });
 
+  /// Copy state.
+  ///
+  /// `selectedTabId` uses a sentinel so callers can omit it without
+  /// accidentally clearing the selection.
   NotepadState copyWith({
     List<NotepadTab>? tabs,
-    String? selectedTabId,
+    Object? selectedTabId = _unset,
   }) {
     return NotepadState(
       tabs: tabs ?? this.tabs,
-      selectedTabId: selectedTabId,
+      selectedTabId:
+          identical(selectedTabId, _unset) ? this.selectedTabId : selectedTabId as String?,
     );
   }
 
