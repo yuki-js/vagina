@@ -60,8 +60,9 @@ class MemoryApiClient implements MemoryApi {
       };
       
       final result = await hostCall('save', args);
+      final data = result['data'] as Map<String, dynamic>?;
       
-      if (result['success'] == true) {
+      if (data != null && data['success'] == true) {
         return true;
       }
       
@@ -76,9 +77,10 @@ class MemoryApiClient implements MemoryApi {
   Future<String?> recall(String key) async {
     try {
       final result = await hostCall('recall', {'key': key});
+      final data = result['data'] as Map<String, dynamic>?;
       
-      if (result['success'] == true) {
-        final value = result['value'];
+      if (data != null && data['success'] == true) {
+        final value = data['value'];
         if (value is String) {
           return value;
         }

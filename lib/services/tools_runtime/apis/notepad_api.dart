@@ -71,16 +71,16 @@ class NotepadApiClient implements NotepadApi {
   Future<List<Map<String, dynamic>>> listTabs() async {
     try {
       final result = await hostCall('listTabs', {});
+      final data = result['data'] as Map<String, dynamic>?;
       
-      // The response should have a 'tabs' key with the list of tabs
-      if (result['success'] == true && result['tabs'] is List) {
+      if (data != null && data['success'] == true && data['tabs'] is List) {
         return List<Map<String, dynamic>>.from(
-          result['tabs'].map((tab) => Map<String, dynamic>.from(tab as Map))
+          data['tabs'].map((tab) => Map<String, dynamic>.from(tab as Map))
         );
       }
       
       // Handle error
-      throw result['error'] ?? 'Failed to list tabs';
+      throw data?['error'] ?? result['error'] ?? 'Failed to list tabs';
     } catch (e) {
       throw Exception('Error listing tabs: $e');
     }
@@ -90,16 +90,17 @@ class NotepadApiClient implements NotepadApi {
   Future<Map<String, dynamic>?> getTab(String id) async {
     try {
       final result = await hostCall('getTab', {'id': id});
+      final data = result['data'] as Map<String, dynamic>?;
       
-      if (result['success'] == true) {
-        if (result['tab'] != null) {
-          return Map<String, dynamic>.from(result['tab'] as Map);
+      if (data != null && data['success'] == true) {
+        if (data['tab'] != null) {
+          return Map<String, dynamic>.from(data['tab'] as Map);
         }
         return null;
       }
       
       // Handle error
-      throw result['error'] ?? 'Failed to get tab';
+      throw data?['error'] ?? result['error'] ?? 'Failed to get tab';
     } catch (e) {
       throw Exception('Error getting tab: $e');
     }
@@ -119,13 +120,14 @@ class NotepadApiClient implements NotepadApi {
       };
       
       final result = await hostCall('createTab', args);
+      final data = result['data'] as Map<String, dynamic>?;
       
-      if (result['success'] == true && result['tabId'] is String) {
-        return result['tabId'] as String;
+      if (data != null && data['success'] == true && data['tabId'] is String) {
+        return data['tabId'] as String;
       }
       
       // Handle error
-      throw result['error'] ?? 'Failed to create tab';
+      throw data?['error'] ?? result['error'] ?? 'Failed to create tab';
     } catch (e) {
       throw Exception('Error creating tab: $e');
     }

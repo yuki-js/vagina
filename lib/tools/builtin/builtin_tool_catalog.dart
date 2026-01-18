@@ -32,12 +32,10 @@ class BuiltinToolCatalog {
   /// Initialized lazily on first call to [listDefinitions].
   static List<ToolDefinition>? _definitionsCache;
 
-  /// Tool definitions for Memory tools that require external dependencies.
+  /// Tool definitions for Memory tools.
   ///
-  /// These are created directly without instantiation since Memory tools
-  /// require MemoryRepository which is not available in the catalog.
-  /// Once ToolContext is refactored to include MemoryRepository,
-  /// these can be instantiated normally.
+  /// These definitions are used in listDefinitions() but the actual
+  /// tool instances are created in createTool() like other tools.
   static const ToolDefinition _memorySaveDefinition = ToolDefinition(
     toolKey: 'memory_save',
     displayName: 'メモリ保存',
@@ -167,28 +165,13 @@ class BuiltinToolCatalog {
         return GetCurrentTimeTool();
 
       case 'memory_delete':
-        throw MemoryToolException(
-          toolKey,
-          'Memory tools require MemoryRepository which is not available '
-          'in ToolContext yet. Use ToolService to create these tools instead. '
-          'This limitation will be resolved in a later refactoring.',
-        );
+        return MemoryDeleteTool();
 
       case 'memory_recall':
-        throw MemoryToolException(
-          toolKey,
-          'Memory tools require MemoryRepository which is not available '
-          'in ToolContext yet. Use ToolService to create these tools instead. '
-          'This limitation will be resolved in a later refactoring.',
-        );
+        return MemoryRecallTool();
 
       case 'memory_save':
-        throw MemoryToolException(
-          toolKey,
-          'Memory tools require MemoryRepository which is not available '
-          'in ToolContext yet. Use ToolService to create these tools instead. '
-          'This limitation will be resolved in a later refactoring.',
-        );
+        return MemorySaveTool();
 
       case 'notepad_close_tab':
         return NotepadCloseTabTool();

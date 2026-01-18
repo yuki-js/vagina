@@ -55,7 +55,6 @@ class MemoryHostApi {
     await _memoryRepository.save(key, value);
     return {
       'success': true,
-      'data': {'saved': true},
     };
   }
 
@@ -71,7 +70,7 @@ class MemoryHostApi {
     final value = await _memoryRepository.get(key);
     return {
       'success': true,
-      'data': value,
+      'value': value,
     };
   }
 
@@ -87,7 +86,6 @@ class MemoryHostApi {
     final deleted = await _memoryRepository.delete(key);
     return {
       'success': deleted,
-      'data': {'deleted': deleted},
     };
   }
 
@@ -95,7 +93,7 @@ class MemoryHostApi {
     final memories = await _memoryRepository.getAll();
     return {
       'success': true,
-      'data': memories,
+      'memories': memories,
     };
   }
 }

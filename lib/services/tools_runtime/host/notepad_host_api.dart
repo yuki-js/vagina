@@ -48,7 +48,7 @@ class NotepadHostApi {
     final tabs = _notepadService.listTabs();
     return {
       'success': true,
-      'data': tabs,
+      'tabs': tabs,
     };
   }
 
@@ -65,13 +65,13 @@ class NotepadHostApi {
     if (tab == null) {
       return {
         'success': true,
-        'data': null,
+        'tab': null,
       };
     }
 
     return {
       'success': true,
-      'data': _tabToMap(tab),
+      'tab': _tabToMapWithContent(tab),
     };
   }
 
@@ -97,7 +97,7 @@ class NotepadHostApi {
 
     return {
       'success': true,
-      'data': {'id': id},
+      'tabId': id,
     };
   }
 
@@ -125,7 +125,6 @@ class NotepadHostApi {
 
     return {
       'success': success,
-      'data': {'updated': success},
     };
   }
 
@@ -143,15 +142,27 @@ class NotepadHostApi {
     final success = _notepadService.closeTab(id);
     return {
       'success': success,
-      'data': {'closed': success},
     };
   }
 
-  /// Convert a NotepadTab object to a sendable Map
+  /// Convert a NotepadTab object to a sendable Map (metadata only, no content)
   Map<String, dynamic> _tabToMap(NotepadTab tab) {
     return {
       'id': tab.id,
       'title': tab.title,
+      'mimeType': tab.mimeType,
+      'createdAt': tab.createdAt.toIso8601String(),
+      'updatedAt': tab.updatedAt.toIso8601String(),
+      'contentLength': tab.content.length,
+    };
+  }
+
+  /// Convert a NotepadTab object to a sendable Map with content included
+  Map<String, dynamic> _tabToMapWithContent(NotepadTab tab) {
+    return {
+      'id': tab.id,
+      'title': tab.title,
+      'content': tab.content,
       'mimeType': tab.mimeType,
       'createdAt': tab.createdAt.toIso8601String(),
       'updatedAt': tab.updatedAt.toIso8601String(),
