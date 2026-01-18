@@ -21,6 +21,9 @@ class ToolDefinition {
   /// Source identifier (e.g. builtin/mcp/custom).
   final String sourceKey;
 
+  /// Optional MCP server URL (if this tool is backed by an MCP server).
+  final String? mcpServerUrl;
+
   /// AI-facing tool description (English).
   final String description;
 
@@ -36,6 +39,7 @@ class ToolDefinition {
     required this.categoryKey,
     required this.iconKey,
     required this.sourceKey,
+    this.mcpServerUrl,
     required this.description,
     required this.parametersSchema,
   });

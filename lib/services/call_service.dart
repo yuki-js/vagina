@@ -1,23 +1,26 @@
 import 'dart:async';
-import 'dart:typed_data';
 import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:record/record.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
-import 'audio_recorder_service.dart';
-import 'audio_player_service.dart';
-import 'realtime_api_client.dart';
-import 'tool_service.dart';
-import 'notepad_service.dart';
-import 'log_service.dart';
-import 'call_feedback_service.dart';
-import 'chat/chat_message_manager.dart';
 import 'package:vagina/core/config/app_config.dart';
-import 'package:vagina/models/chat_message.dart';
-import 'package:vagina/models/call_session.dart';
-import 'package:vagina/models/speed_dial.dart';
-import 'package:vagina/utils/audio_utils.dart';
 import 'package:vagina/interfaces/call_session_repository.dart';
 import 'package:vagina/interfaces/config_repository.dart';
+import 'package:vagina/models/call_session.dart';
+import 'package:vagina/models/chat_message.dart';
+import 'package:vagina/models/speed_dial.dart';
+import 'package:vagina/services/tools_runtime/tool_runtime.dart';
+import 'package:vagina/utils/audio_utils.dart';
+
+import 'audio_player_service.dart';
+import 'audio_recorder_service.dart';
+import 'call_feedback_service.dart';
+import 'chat/chat_message_manager.dart';
+import 'log_service.dart';
+import 'notepad_service.dart';
+import 'realtime_api_client.dart';
+import 'tool_service.dart';
 
 /// Enum representing the current state of the call
 enum CallState {
@@ -43,8 +46,13 @@ class CallService {
   final CallFeedbackService _feedback;
   final ChatMessageManager _chatManager = ChatMessageManager();
 
-  /// Session-scoped tool manager (created on call start, disposed on call end)
+  /// Session-scoped legacy tool manager (created on call start, disposed on call end)
+  ///
+  /// Kept for UI/legacy paths and for preserving mid-call tool updates.
   ToolManager? _toolManager;
+
+  /// Session-scoped ToolRuntime (created on call start, rebuilt on tool changes)
+  ToolRuntime? _toolRuntime;
 
   StreamSubscription<Uint8List>? _audioStreamSubscription;
   StreamSubscription<Amplitude>? _amplitudeSubscription;
@@ -133,6 +141,8 @@ class CallService {
   /// Get the current session's tool manager (null if no active call)
   ToolManager? get toolManager => _toolManager;
 
+  ToolRuntime? get toolRuntime => _toolRuntime;
+
   /// Set mute state
   void setMuted(bool muted) {
     _isMuted = muted;
@@ -219,11 +229,19 @@ class CallService {
         return;
       }
 
-      // Create session-scoped tool manager (async now)
+      // Create session-scoped legacy tool manager (async now)
       _toolManager = await _toolService.createToolManager(
         onToolsChanged: _onToolsChanged,
       );
-      _apiClient.setTools(_toolManager!.toolDefinitions);
+
+      // Create per-call runtime with **fresh** tool instances, mirroring the
+      // same tool set as the legacy manager.
+      _toolRuntime = await _toolService.createToolRuntime(
+        toolNamesOverride: _toolManager!.registeredToolNames,
+        managerRef: _toolManager,
+      );
+
+      _apiClient.setTools(_toolRuntime!.toolDefinitionsForRealtime);
 
       _logService.info(_tag, 'Connecting to Azure OpenAI');
       await _apiClient.connect(realtimeUrl, apiKey);
@@ -261,11 +279,23 @@ class CallService {
 
   /// Called when tools change (via ToolManager)
   void _onToolsChanged() {
-    if (_toolManager != null && _currentState == CallState.connected) {
-      _apiClient.setTools(_toolManager!.toolDefinitions);
+    final manager = _toolManager;
+    if (manager == null || _currentState != CallState.connected) {
+      return;
+    }
+
+    // Rebuild the current call's ToolRuntime and push updated tools to the
+    // session config, mirroring legacy behavior.
+    unawaited(() async {
+      _toolRuntime = await _toolService.createToolRuntime(
+        toolNamesOverride: manager.registeredToolNames,
+        managerRef: manager,
+      );
+
+      _apiClient.setTools(_toolRuntime!.toolDefinitionsForRealtime);
       _apiClient.updateSessionConfig();
       _logService.info(_tag, 'Tools updated, session config refreshed');
-    }
+    }());
   }
 
   void _setupApiSubscriptions() {
@@ -312,18 +342,28 @@ class CallService {
     _functionCallSubscription =
         _apiClient.functionCallStream.listen((functionCall) async {
       _logService.info(_tag, 'Handling function call: ${functionCall.name}');
-      if (_toolManager == null) {
-        _logService.error(_tag, 'Tool manager not available');
+
+      final runtime = _toolRuntime;
+      if (runtime == null) {
+        _logService.error(_tag, 'Tool runtime not available');
         return;
       }
-      final result = await _toolManager!.executeTool(
-        functionCall.callId,
-        functionCall.name,
-        functionCall.arguments,
+
+      final argsMap = _parseFunctionCallArguments(functionCall.arguments);
+      if (argsMap == null) {
+        final output = jsonEncode({'error': 'Invalid or empty JSON arguments'});
+        _chatManager.addToolCall(functionCall.name, functionCall.arguments, output);
+        _apiClient.sendFunctionCallResult(functionCall.callId, output);
+        return;
+      }
+
+      final output = await runtime.execute(
+        toolKey: functionCall.name,
+        args: argsMap,
       );
-      _chatManager.addToolCall(
-          functionCall.name, functionCall.arguments, result.output);
-      _apiClient.sendFunctionCallResult(result.callId, result.output);
+
+      _chatManager.addToolCall(functionCall.name, functionCall.arguments, output);
+      _apiClient.sendFunctionCallResult(functionCall.callId, output);
     });
 
     _responseStartedSubscription =
@@ -539,6 +579,7 @@ class CallService {
     // Dispose session-scoped tool manager
     _toolManager?.dispose();
     _toolManager = null;
+    _toolRuntime = null;
 
     _callDuration = 0;
     _durationController.add(0);
@@ -574,6 +615,26 @@ class CallService {
       _logService.info(_tag, 'Wake lock disabled');
     } catch (e) {
       _logService.error(_tag, 'Failed to disable wake lock: $e');
+    }
+  }
+
+  Map<String, dynamic>? _parseFunctionCallArguments(String argumentsJson) {
+    final trimmed = argumentsJson.trim();
+    if (trimmed.isEmpty) {
+      return null;
+    }
+
+    try {
+      final decoded = jsonDecode(trimmed);
+      if (decoded is Map<String, dynamic>) {
+        return decoded;
+      }
+      if (decoded is Map) {
+        return Map<String, dynamic>.from(decoded);
+      }
+      return null;
+    } catch (_) {
+      return null;
     }
   }
 

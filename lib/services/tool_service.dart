@@ -1,14 +1,22 @@
 import 'package:vagina/interfaces/config_repository.dart';
 import 'package:vagina/interfaces/memory_repository.dart';
+
 import 'notepad_service.dart';
-import 'tools/tool_manager.dart';
-import 'tools/tool_registry.dart';
-import 'tools/tool_metadata.dart';
+import 'tools/base_tool.dart' show ToolManagerRef;
 import 'tools/builtin_tool_factory.dart';
+import 'tools/tool_manager.dart';
+import 'tools/tool_metadata.dart';
+import 'tools/tool_registry.dart';
+import 'tools_runtime/legacy_tool_factory.dart';
+import 'tools_runtime/notepad_backend.dart';
+import 'tools_runtime/tool_context.dart';
+import 'tools_runtime/tool_registry.dart' as runtime;
+import 'tools_runtime/tool_runtime.dart';
 
 export 'tools/base_tool.dart' show BaseTool, ToolExecutionResult, ToolManagerRef;
 export 'tools/tool_manager.dart' show ToolManager;
-export 'tools/tool_registry.dart' show ToolRegistry, ToolRegistryEvent, ToolRegistryEventType;
+export 'tools/tool_registry.dart'
+    show ToolRegistry, ToolRegistryEvent, ToolRegistryEventType;
 export 'tools/tool_metadata.dart' show ToolMetadata, ToolCategory, ToolSource;
 
 /// ツールサービス
@@ -25,7 +33,7 @@ class ToolService {
   late final BuiltinToolFactory _builtinFactory;
   final ToolRegistry _registry = ToolRegistry();
   bool _initialized = false;
-  
+
   ToolService({
     required NotepadService notepadService,
     required MemoryRepository memoryRepository,
@@ -76,7 +84,54 @@ class ToolService {
     
     return manager;
   }
-  
+
+  /// Creates a per-call [ToolRuntime] with fresh tool instances.
+  ///
+  /// If [toolNamesOverride] is provided, it is treated as the source-of-truth
+  /// for which tools should be present (e.g. when mirroring a live session's
+  /// tool manager state).
+  ///
+  /// Otherwise, current enabled/disabled config semantics are used:
+  /// - enabledTools empty => all tools enabled
+  /// - enabledTools non-empty => only listed tools enabled
+  Future<ToolRuntime> createToolRuntime({
+    Iterable<String>? toolNamesOverride,
+    ToolManagerRef? managerRef,
+  }) async {
+    if (!_initialized) initialize();
+
+    final allowList = toolNamesOverride?.toSet();
+    final enabledTools = allowList == null
+        ? await _configRepository.getEnabledTools()
+        : const <String>[];
+
+    final registry = runtime.ToolRegistry();
+    final builders = _builtinFactory.createBuiltinToolBuilders();
+
+    for (final entry in builders.entries) {
+      final toolName = entry.key;
+
+      final shouldInclude = allowList != null
+          ? allowList.contains(toolName)
+          : (enabledTools.isEmpty || enabledTools.contains(toolName));
+
+      if (!shouldInclude) continue;
+
+      registry.registerFactory(
+        LegacyToolFactory(
+          createLegacy: entry.value,
+          managerRef: managerRef,
+        ),
+      );
+    }
+
+    final context = ToolContext(
+      notepadBackend: NotepadBackend(initialTabs: _notepadService.tabs),
+    );
+
+    return registry.buildRuntimeForCall(context);
+  }
+
   /// すべてのツール定義を取得（有効/無効問わず）
   List<Map<String, dynamic>> get toolDefinitions {
     if (!_initialized) initialize();
