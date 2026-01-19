@@ -3,24 +3,17 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:diff_match_patch/diff_match_patch.dart';
 import 'package:vagina/services/notepad_service.dart';
-import 'package:vagina/services/tools_runtime/tool_context.dart';
-import 'package:vagina/tools/builtin/builtin_tools.dart';
-import '../mocks/mock_apis.dart';
+import 'package:vagina/tools/builtin/document/document_overwrite_tool.dart';
+import 'package:vagina/tools/builtin/document/document_patch_tool.dart';
+import 'package:vagina/tools/builtin/document/document_read_tool.dart';
 
 void main() {
   group('DocumentOverwriteTool (runtime)', () {
     late NotepadService notepadService;
-    late ToolContext ctx;
     late DocumentOverwriteTool tool;
 
     setUp(() {
       notepadService = NotepadService();
-      ctx = ToolContext(
-        notepadApi: TestNotepadApi(notepadService),
-        memoryApi: TestMemoryApi(InMemoryRepository()),
-        callApi: TestCallApi(),
-        textAgentApi: TestTextAgentApi(),
-      );
       tool = DocumentOverwriteTool();
     });
 
@@ -29,7 +22,7 @@ void main() {
     });
 
     test('creates new tab when tabId not provided', () async {
-      final out = await tool.execute({'content': '# New Document'}, ctx);
+      final out = await tool.execute({'content': '# New Document'});
       final result = jsonDecode(out) as Map<String, dynamic>;
 
       expect(result['success'], isTrue);
@@ -44,7 +37,6 @@ void main() {
           'content': 'Plain text content',
           'mime': 'text/plain',
         },
-        ctx,
       );
       final result = jsonDecode(out) as Map<String, dynamic>;
 
@@ -59,7 +51,6 @@ void main() {
           'content': 'Content',
           'title': 'My Custom Title',
         },
-        ctx,
       );
       final result = jsonDecode(out) as Map<String, dynamic>;
 
@@ -70,7 +61,7 @@ void main() {
 
     test('updates existing tab when tabId provided', () async {
       // First create a tab
-      final createOut = await tool.execute({'content': 'Initial content'}, ctx);
+      final createOut = await tool.execute({'content': 'Initial content'});
       final createResult = jsonDecode(createOut) as Map<String, dynamic>;
       final tabId = createResult['tabId'] as String;
 
@@ -80,7 +71,6 @@ void main() {
           'tabId': tabId,
           'content': 'Updated content',
         },
-        ctx,
       );
       final updateResult = jsonDecode(updateOut) as Map<String, dynamic>;
 
@@ -96,7 +86,6 @@ void main() {
           'tabId': 'non_existent',
           'content': 'Content',
         },
-        ctx,
       );
       final result = jsonDecode(out) as Map<String, dynamic>;
 
@@ -107,18 +96,11 @@ void main() {
 
   group('DocumentPatchTool (runtime)', () {
     late NotepadService notepadService;
-    late ToolContext ctx;
     late DocumentPatchTool tool;
     late DocumentOverwriteTool overwriteTool;
 
     setUp(() {
       notepadService = NotepadService();
-      ctx = ToolContext(
-        notepadApi: TestNotepadApi(notepadService),
-        memoryApi: TestMemoryApi(InMemoryRepository()),
-        callApi: TestCallApi(),
-        textAgentApi: TestTextAgentApi(),
-      );
       tool = DocumentPatchTool();
       overwriteTool = DocumentOverwriteTool();
     });
@@ -129,7 +111,7 @@ void main() {
 
     test('applies patch to existing document', () async {
       // Create a document
-      final createOut = await overwriteTool.execute({'content': 'Hello World'}, ctx);
+      final createOut = await overwriteTool.execute({'content': 'Hello World'});
       final createResult = jsonDecode(createOut) as Map<String, dynamic>;
       final tabId = createResult['tabId'] as String;
 
@@ -144,7 +126,6 @@ void main() {
           'tabId': tabId,
           'patch': patchText,
         },
-        ctx,
       );
       final patchResult = jsonDecode(patchOut) as Map<String, dynamic>;
 
@@ -156,7 +137,6 @@ void main() {
     test('applies multiple patches', () async {
       final createOut = await overwriteTool.execute(
         {'content': 'Hello World! Welcome to World!'},
-        ctx,
       );
       final createResult = jsonDecode(createOut) as Map<String, dynamic>;
       final tabId = createResult['tabId'] as String;
@@ -174,7 +154,6 @@ void main() {
           'tabId': tabId,
           'patch': patchText,
         },
-        ctx,
       );
       final patchResult = jsonDecode(patchOut) as Map<String, dynamic>;
 
@@ -193,7 +172,6 @@ void main() {
           'tabId': 'non_existent',
           'patch': patchText,
         },
-        ctx,
       );
       final result = jsonDecode(out) as Map<String, dynamic>;
 
@@ -202,7 +180,7 @@ void main() {
     });
 
     test('returns error for empty patch', () async {
-      final createOut = await overwriteTool.execute({'content': 'Hello World'}, ctx);
+      final createOut = await overwriteTool.execute({'content': 'Hello World'});
       final createResult = jsonDecode(createOut) as Map<String, dynamic>;
       final tabId = createResult['tabId'] as String;
 
@@ -211,7 +189,6 @@ void main() {
           'tabId': tabId,
           'patch': '',
         },
-        ctx,
       );
       final patchResult = jsonDecode(patchOut) as Map<String, dynamic>;
 
@@ -222,18 +199,11 @@ void main() {
 
   group('DocumentReadTool (runtime)', () {
     late NotepadService notepadService;
-    late ToolContext ctx;
     late DocumentReadTool tool;
     late DocumentOverwriteTool overwriteTool;
 
     setUp(() {
       notepadService = NotepadService();
-      ctx = ToolContext(
-        notepadApi: TestNotepadApi(notepadService),
-        memoryApi: TestMemoryApi(InMemoryRepository()),
-        callApi: TestCallApi(),
-        textAgentApi: TestTextAgentApi(),
-      );
       tool = DocumentReadTool();
       overwriteTool = DocumentOverwriteTool();
     });
@@ -249,12 +219,11 @@ void main() {
           'mime': 'text/markdown',
           'title': 'Test Doc',
         },
-        ctx,
       );
       final createResult = jsonDecode(createOut) as Map<String, dynamic>;
       final tabId = createResult['tabId'] as String;
 
-      final readOut = await tool.execute({'tabId': tabId}, ctx);
+      final readOut = await tool.execute({'tabId': tabId});
       final readResult = jsonDecode(readOut) as Map<String, dynamic>;
 
       expect(readResult['success'], isTrue);
@@ -264,7 +233,7 @@ void main() {
     });
 
     test('returns error for non-existent tab', () async {
-      final out = await tool.execute({'tabId': 'non_existent'}, ctx);
+      final out = await tool.execute({'tabId': 'non_existent'});
       final result = jsonDecode(out) as Map<String, dynamic>;
 
       expect(result['success'], isFalse);

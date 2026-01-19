@@ -168,9 +168,9 @@ void main() {
     test('Call list_available_agents → query_text_agent → get response', () async {
       // Step 1: List available agents
       final listTool = ListAvailableAgentsTool();
-      await listTool.init();
+      await listTool.init(mockContext);
       
-      final listResult = await listTool.execute({}, mockContext);
+      final listResult = await listTool.execute({});
       final listData = jsonDecode(listResult) as Map<String, dynamic>;
       
       expect(listData['success'], isTrue);
@@ -182,13 +182,13 @@ void main() {
       final firstAgent = agents[0] as Map<String, dynamic>;
       
       final queryTool = QueryTextAgentTool();
-      await queryTool.init();
+      await queryTool.init(mockContext);
       
       final queryResult = await queryTool.execute({
         'agent_id': firstAgent['id'],
         'prompt': 'What is machine learning?',
         'expect_latency': 'instant',
-      }, mockContext);
+      });
       
       final queryData = jsonDecode(queryResult) as Map<String, dynamic>;
       
@@ -200,14 +200,14 @@ void main() {
 
     test('Query multiple agents simultaneously', () async {
       final queryTool = QueryTextAgentTool();
-      await queryTool.init();
+      await queryTool.init(mockContext);
       
       // Query agent 1
       final result1 = await queryTool.execute({
         'agent_id': 'agent_1',
         'prompt': 'Research question 1',
         'expect_latency': 'long',
-      }, mockContext);
+      });
       
       final data1 = jsonDecode(result1) as Map<String, dynamic>;
       expect(data1['success'], isTrue);
@@ -219,7 +219,7 @@ void main() {
         'agent_id': 'agent_2',
         'prompt': 'Creative writing prompt',
         'expect_latency': 'long',
-      }, mockContext);
+      });
       
       final data2 = jsonDecode(result2) as Map<String, dynamic>;
       expect(data2['success'], isTrue);
@@ -231,11 +231,11 @@ void main() {
       
       // Get both results
       final getResponseTool = GetTextAgentResponseTool();
-      await getResponseTool.init();
+      await getResponseTool.init(mockContext);
       
       final response1 = await getResponseTool.execute({
         'token': token1,
-      }, mockContext);
+      });
       
       final responseData1 = jsonDecode(response1) as Map<String, dynamic>;
       expect(responseData1['success'], isTrue);
@@ -243,7 +243,7 @@ void main() {
       
       final response2 = await getResponseTool.execute({
         'token': token2,
-      }, mockContext);
+      });
       
       final responseData2 = jsonDecode(response2) as Map<String, dynamic>;
       expect(responseData2['success'], isTrue);
@@ -252,13 +252,13 @@ void main() {
 
     test('Tool error handling and validation', () async {
       final queryTool = QueryTextAgentTool();
-      await queryTool.init();
+      await queryTool.init(mockContext);
       
       // Test missing agent_id
       final result1 = await queryTool.execute({
         'prompt': 'Test prompt',
         'expect_latency': 'instant',
-      }, mockContext);
+      });
       
       final data1 = jsonDecode(result1) as Map<String, dynamic>;
       expect(data1['success'], isFalse);
@@ -268,7 +268,7 @@ void main() {
       final result2 = await queryTool.execute({
         'agent_id': 'agent_1',
         'expect_latency': 'instant',
-      }, mockContext);
+      });
       
       final data2 = jsonDecode(result2) as Map<String, dynamic>;
       expect(data2['success'], isFalse);
@@ -279,7 +279,7 @@ void main() {
         'agent_id': 'agent_1',
         'prompt': 'Test',
         'expect_latency': 'invalid_value',
-      }, mockContext);
+      });
       
       final data3 = jsonDecode(result3) as Map<String, dynamic>;
       expect(data3['success'], isFalse);
@@ -296,21 +296,21 @@ void main() {
       final endCallTool = EndCallTool();
       
       await Future.wait([
-        listTool.init(),
-        queryTool.init(),
-        getResponseTool.init(),
-        endCallTool.init(),
+        listTool.init(mockContext),
+        queryTool.init(mockContext),
+        getResponseTool.init(mockContext),
+        endCallTool.init(mockContext),
       ]);
       
       // Execute tools concurrently
       final results = await Future.wait([
-        listTool.execute({}, mockContext),
+        listTool.execute({}),
         queryTool.execute({
           'agent_id': 'agent_1',
           'prompt': 'Test',
           'expect_latency': 'instant',
-        }, mockContext),
-        endCallTool.execute({'end_context': 'test'}, mockContext),
+        }),
+        endCallTool.execute({'end_context': 'test'}),
       ]);
       
       // Verify all succeeded
@@ -323,19 +323,19 @@ void main() {
     test('Complete workflow: list → query async → poll → end call', () async {
       // Step 1: List agents
       final listTool = ListAvailableAgentsTool();
-      await listTool.init();
-      final listResult = await listTool.execute({}, mockContext);
+      await listTool.init(mockContext);
+      final listResult = await listTool.execute({});
       final listData = jsonDecode(listResult) as Map<String, dynamic>;
       expect(listData['success'], isTrue);
       
       // Step 2: Query an agent with long latency
       final queryTool = QueryTextAgentTool();
-      await queryTool.init();
+      await queryTool.init(mockContext);
       final queryResult = await queryTool.execute({
         'agent_id': 'agent_1',
         'prompt': 'Complex analysis task',
         'expect_latency': 'ultra_long',
-      }, mockContext);
+      });
       
       final queryData = jsonDecode(queryResult) as Map<String, dynamic>;
       expect(queryData['success'], isTrue);
@@ -346,10 +346,10 @@ void main() {
       await Future.delayed(const Duration(milliseconds: 150));
       
       final getResponseTool = GetTextAgentResponseTool();
-      await getResponseTool.init();
+      await getResponseTool.init(mockContext);
       final responseResult = await getResponseTool.execute({
         'token': token,
-      }, mockContext);
+      });
       
       final responseData = jsonDecode(responseResult) as Map<String, dynamic>;
       expect(responseData['success'], isTrue);
@@ -357,10 +357,10 @@ void main() {
       
       // Step 4: End call after task completion
       final endCallTool = EndCallTool();
-      await endCallTool.init();
+      await endCallTool.init(mockContext);
       final endResult = await endCallTool.execute({
         'end_context': 'ultra_long task completed',
-      }, mockContext);
+      });
       
       final endData = jsonDecode(endResult) as Map<String, dynamic>;
       expect(endData['success'], isTrue);
@@ -371,13 +371,13 @@ void main() {
     test('Error propagation through tool chain', () async {
       // Test querying non-existent agent
       final queryTool = QueryTextAgentTool();
-      await queryTool.init();
+      await queryTool.init(mockContext);
       
       final result = await queryTool.execute({
         'agent_id': 'non_existent_agent',
         'prompt': 'Test',
         'expect_latency': 'instant',
-      }, mockContext);
+      });
       
       final data = jsonDecode(result) as Map<String, dynamic>;
       expect(data['success'], isFalse);
@@ -386,11 +386,11 @@ void main() {
 
     test('Get result for non-existent token', () async {
       final getResponseTool = GetTextAgentResponseTool();
-      await getResponseTool.init();
+      await getResponseTool.init(mockContext);
       
       final result = await getResponseTool.execute({
         'token': 'invalid_token_123',
-      }, mockContext);
+      });
       
       final data = jsonDecode(result) as Map<String, dynamic>;
       expect(data['success'], isFalse);
@@ -406,7 +406,7 @@ void main() {
       ];
       
       for (final tool in tools) {
-        await tool.init();
+        await tool.init(mockContext);
         
         // Verify definition structure
         final definition = tool.definition;
@@ -438,13 +438,13 @@ void main() {
       // Voice agent uses text agent for quick lookup
       
       final queryTool = QueryTextAgentTool();
-      await queryTool.init();
+      await queryTool.init(mockContext);
       
       final result = await queryTool.execute({
         'agent_id': 'agent_1',
         'prompt': 'What is the capital of France?',
         'expect_latency': 'instant',
-      }, mockContext);
+      });
       
       final data = jsonDecode(result) as Map<String, dynamic>;
       expect(data['success'], isTrue);
@@ -457,13 +457,13 @@ void main() {
       // Submit job and end call to continue in background
       
       final queryTool = QueryTextAgentTool();
-      await queryTool.init();
+      await queryTool.init(mockContext);
       
       final queryResult = await queryTool.execute({
         'agent_id': 'agent_1',
         'prompt': 'Write a comprehensive market analysis report',
         'expect_latency': 'ultra_long',
-      }, mockContext);
+      });
       
       final queryData = jsonDecode(queryResult) as Map<String, dynamic>;
       expect(queryData['success'], isTrue);
@@ -471,11 +471,11 @@ void main() {
       
       // Voice agent explains job was submitted and ends call
       final endCallTool = EndCallTool();
-      await endCallTool.init();
+      await endCallTool.init(mockContext);
       
       final endResult = await endCallTool.execute({
         'end_context': 'ultra_long research job submitted',
-      }, mockContext);
+      });
       
       final endData = jsonDecode(endResult) as Map<String, dynamic>;
       expect(endData['success'], isTrue);
@@ -485,9 +485,9 @@ void main() {
       // Determine which agent is best for the task
       
       final listTool = ListAvailableAgentsTool();
-      await listTool.init();
+      await listTool.init(mockContext);
       
-      final listResult = await listTool.execute({}, mockContext);
+      final listResult = await listTool.execute({});
       final listData = jsonDecode(listResult) as Map<String, dynamic>;
       
       final agents = listData['agents'] as List;

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vagina/core/theme/app_theme.dart';
-import 'package:vagina/feat/text_agents/model/text_agent.dart';
 import 'package:vagina/feat/text_agents/state/text_agent_providers.dart';
 import 'package:vagina/core/state/repository_providers.dart';
 
@@ -118,11 +117,13 @@ class AgentSelectionDialog extends ConsumerWidget {
                                 child: Row(
                                   children: [
                                     // Selection indicator
-                                    Radio<bool>(
-                                      value: true,
-                                      groupValue: isSelected,
+                                    Checkbox(
+                                      value: isSelected,
                                       onChanged: null,
                                       activeColor: AppTheme.primaryColor,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
                                     ),
                                     const SizedBox(width: 8),
                                     // Agent icon

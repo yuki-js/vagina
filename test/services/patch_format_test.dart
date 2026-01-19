@@ -3,9 +3,8 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:diff_match_patch/diff_match_patch.dart';
 import 'package:vagina/services/notepad_service.dart';
-import 'package:vagina/services/tools_runtime/tool_context.dart';
-import 'package:vagina/tools/builtin/builtin_tools.dart';
-import '../mocks/mock_apis.dart';
+import 'package:vagina/tools/builtin/document/document_patch_tool.dart';
+import 'package:vagina/tools/builtin/document/document_overwrite_tool.dart';
 
 void main() {
   group('Patch Format Tests', () {
@@ -54,7 +53,6 @@ void main() {
 
   group('DocumentPatchTool comprehensive tests', () {
     late NotepadService notepadService;
-    late ToolContext ctx;
     late DocumentPatchTool patchTool;
     late DocumentOverwriteTool overwriteTool;
 
@@ -65,14 +63,14 @@ void main() {
     ) async {
       final createOut = await overwriteTool.execute({
         'content': originalContent,
-      }, ctx);
+      });
       final createResult = jsonDecode(createOut) as Map<String, dynamic>;
       final tabId = createResult['tabId'] as String;
 
       final patchOut = await patchTool.execute({
         'tabId': tabId,
         'patch': patch,
-      }, ctx);
+      });
       final patchResult = jsonDecode(patchOut) as Map<String, dynamic>;
 
       if (patchResult['success'] == true) {
@@ -83,12 +81,6 @@ void main() {
 
     setUp(() {
       notepadService = NotepadService();
-      ctx = ToolContext(
-        notepadApi: TestNotepadApi(notepadService),
-        memoryApi: TestMemoryApi(InMemoryRepository()),
-        callApi: TestCallApi(),
-        textAgentApi: TestTextAgentApi(),
-      );
       patchTool = DocumentPatchTool();
       overwriteTool = DocumentOverwriteTool();
     });
@@ -408,14 +400,14 @@ void main() {
     test('21. Empty patch returns error', () async {
       final createOut = await overwriteTool.execute({
         'content': 'Line 1\nLine 2',
-      }, ctx);
+      });
       final createResult = jsonDecode(createOut) as Map<String, dynamic>;
       final tabId = createResult['tabId'] as String;
 
       final patchOut = await patchTool.execute({
         'tabId': tabId,
         'patch': '',
-      }, ctx);
+      });
       final patchResult = jsonDecode(patchOut) as Map<String, dynamic>;
 
       expect(patchResult['success'], isFalse);
@@ -426,10 +418,10 @@ void main() {
       final patchOut = await patchTool.execute({
         'tabId': 'non_existent_tab',
         'patch': '''@@ -1 +1 @@
--old
-+new
-''',
-      }, ctx);
+ -old
+ +new
+ ''',
+      });
       final patchResult = jsonDecode(patchOut) as Map<String, dynamic>;
 
       expect(patchResult['success'], isFalse);

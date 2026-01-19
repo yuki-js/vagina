@@ -243,7 +243,7 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
                   children: [
                     // Provider Selection
                     DropdownButtonFormField<TextAgentProvider>(
-                      value: _provider,
+                      initialValue: _provider,
                       decoration: InputDecoration(
                         labelText: 'プロバイダー *',
                         border: OutlineInputBorder(

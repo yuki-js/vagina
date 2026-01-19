@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:vagina/services/tools_runtime/tool.dart';
-import 'package:vagina/services/tools_runtime/tool_context.dart';
 import 'package:vagina/services/tools_runtime/tool_definition.dart';
 import 'package:vagina/utils/duration_formatter.dart';
 

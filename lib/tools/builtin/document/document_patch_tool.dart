@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:diff_match_patch/diff_match_patch.dart';
 import 'package:vagina/services/tools_runtime/tool.dart';
-import 'package:vagina/services/tools_runtime/tool_context.dart';
 import 'package:vagina/services/tools_runtime/tool_definition.dart';
 
 /// unified diff形式のパッチをdiff_match_patchライブラリの形式に変換

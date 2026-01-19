@@ -2,24 +2,18 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vagina/services/notepad_service.dart';
-import 'package:vagina/services/tools_runtime/tool_context.dart';
-import 'package:vagina/tools/builtin/builtin_tools.dart';
-import '../mocks/mock_apis.dart';
+import 'package:vagina/tools/builtin/notepad/notepad_list_tabs_tool.dart';
+import 'package:vagina/tools/builtin/notepad/notepad_get_metadata_tool.dart';
+import 'package:vagina/tools/builtin/notepad/notepad_get_content_tool.dart';
+import 'package:vagina/tools/builtin/notepad/notepad_close_tab_tool.dart';
 
 void main() {
   group('NotepadListTabsTool (runtime)', () {
     late NotepadService notepadService;
-    late ToolContext ctx;
     late NotepadListTabsTool tool;
 
     setUp(() {
       notepadService = NotepadService();
-      ctx = ToolContext(
-        notepadApi: TestNotepadApi(notepadService),
-        memoryApi: TestMemoryApi(InMemoryRepository()),
-        callApi: TestCallApi(),
-        textAgentApi: TestTextAgentApi(),
-      );
       tool = NotepadListTabsTool();
     });
 
@@ -28,7 +22,7 @@ void main() {
     });
 
     test('returns empty list when no tabs exist', () async {
-      final out = await tool.execute({}, ctx);
+      final out = await tool.execute({});
       final result = jsonDecode(out) as Map<String, dynamic>;
 
       expect(result['success'], isTrue);
@@ -40,7 +34,7 @@ void main() {
       notepadService.createTab(content: 'Tab 1', mimeType: 'text/plain');
       notepadService.createTab(content: 'Tab 2', mimeType: 'text/markdown');
 
-      final out = await tool.execute({}, ctx);
+      final out = await tool.execute({});
       final result = jsonDecode(out) as Map<String, dynamic>;
 
       expect(result['success'], isTrue);
@@ -51,17 +45,10 @@ void main() {
 
   group('NotepadGetMetadataTool (runtime)', () {
     late NotepadService notepadService;
-    late ToolContext ctx;
     late NotepadGetMetadataTool tool;
 
     setUp(() {
       notepadService = NotepadService();
-      ctx = ToolContext(
-        notepadApi: TestNotepadApi(notepadService),
-        memoryApi: TestMemoryApi(InMemoryRepository()),
-        callApi: TestCallApi(),
-        textAgentApi: TestTextAgentApi(),
-      );
       tool = NotepadGetMetadataTool();
     });
 
@@ -76,7 +63,7 @@ void main() {
         title: 'Test',
       );
 
-      final out = await tool.execute({'tabId': tabId}, ctx);
+      final out = await tool.execute({'tabId': tabId});
       final result = jsonDecode(out) as Map<String, dynamic>;
 
       expect(result['success'], isTrue);
@@ -86,7 +73,7 @@ void main() {
     });
 
     test('returns error for non-existent tab', () async {
-      final out = await tool.execute({'tabId': 'non_existent'}, ctx);
+      final out = await tool.execute({'tabId': 'non_existent'});
       final result = jsonDecode(out) as Map<String, dynamic>;
 
       expect(result['success'], isFalse);
@@ -96,17 +83,10 @@ void main() {
 
   group('NotepadGetContentTool (runtime)', () {
     late NotepadService notepadService;
-    late ToolContext ctx;
     late NotepadGetContentTool tool;
 
     setUp(() {
       notepadService = NotepadService();
-      ctx = ToolContext(
-        notepadApi: TestNotepadApi(notepadService),
-        memoryApi: TestMemoryApi(InMemoryRepository()),
-        callApi: TestCallApi(),
-        textAgentApi: TestTextAgentApi(),
-      );
       tool = NotepadGetContentTool();
     });
 
@@ -120,7 +100,7 @@ void main() {
         mimeType: 'text/plain',
       );
 
-      final out = await tool.execute({'tabId': tabId}, ctx);
+      final out = await tool.execute({'tabId': tabId});
       final result = jsonDecode(out) as Map<String, dynamic>;
 
       expect(result['success'], isTrue);
@@ -129,7 +109,7 @@ void main() {
     });
 
     test('returns error for non-existent tab', () async {
-      final out = await tool.execute({'tabId': 'non_existent'}, ctx);
+      final out = await tool.execute({'tabId': 'non_existent'});
       final result = jsonDecode(out) as Map<String, dynamic>;
 
       expect(result['success'], isFalse);
@@ -139,17 +119,10 @@ void main() {
 
   group('NotepadCloseTabTool (runtime)', () {
     late NotepadService notepadService;
-    late ToolContext ctx;
     late NotepadCloseTabTool tool;
 
     setUp(() {
       notepadService = NotepadService();
-      ctx = ToolContext(
-        notepadApi: TestNotepadApi(notepadService),
-        memoryApi: TestMemoryApi(InMemoryRepository()),
-        callApi: TestCallApi(),
-        textAgentApi: TestTextAgentApi(),
-      );
       tool = NotepadCloseTabTool();
     });
 
@@ -163,7 +136,7 @@ void main() {
         mimeType: 'text/plain',
       );
 
-      final out = await tool.execute({'tabId': tabId}, ctx);
+      final out = await tool.execute({'tabId': tabId});
       final result = jsonDecode(out) as Map<String, dynamic>;
 
       expect(result['success'], isTrue);
@@ -171,7 +144,7 @@ void main() {
     });
 
     test('returns error for non-existent tab', () async {
-      final out = await tool.execute({'tabId': 'non_existent'}, ctx);
+      final out = await tool.execute({'tabId': 'non_existent'});
       final result = jsonDecode(out) as Map<String, dynamic>;
 
       expect(result['success'], isFalse);

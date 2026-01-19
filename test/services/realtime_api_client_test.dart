@@ -6,6 +6,7 @@ import 'package:async/async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:vagina/services/realtime_api_client.dart';
+import 'package:vagina/tools/tools.dart';
 
 import '../mocks/mock_repositories.mocks.dart';
 
@@ -251,26 +252,7 @@ void main() {
 
       // Make session.update deterministic-ish for verification.
       client.setVoiceAndInstructions('alloy', 'You are a helpful assistant');
-      client.setTools([
-        {
-          'type': 'function',
-          'name': 'document_patch',
-          'description': 'Patch notepad document',
-          'parameters': {'type': 'object', 'properties': {}}
-        },
-        {
-          'type': 'function',
-          'name': 'document_read',
-          'description': 'Read notepad document',
-          'parameters': {'type': 'object', 'properties': {}}
-        },
-        {
-          'type': 'function',
-          'name': 'document_overwrite',
-          'description': 'Overwrite notepad document',
-          'parameters': {'type': 'object', 'properties': {}}
-        },
-      ]);
+      client.setTools(toolbox);
       client.setNoiseReduction('near');
     });
 

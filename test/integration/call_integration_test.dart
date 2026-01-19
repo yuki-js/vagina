@@ -58,12 +58,12 @@ void main() {
       mockCallApi = MockCallApi();
       mockContext = MockToolContext(callApi: mockCallApi);
       endCallTool = EndCallTool();
-      await endCallTool.init();
+      await endCallTool.init(mockContext);
     });
 
     test('Voice call with end_call tool execution', () async {
       // Execute end_call tool without context
-      final result = await endCallTool.execute({}, mockContext);
+      final result = await endCallTool.execute({});
 
       // Parse and verify result
       final resultMap = jsonDecode(result) as Map<String, dynamic>;
@@ -77,7 +77,7 @@ void main() {
       // Execute end_call tool with context
       final result = await endCallTool.execute({
         'end_context': 'User requested to end call naturally'
-      }, mockContext);
+      });
 
       // Verify result and context
       final resultMap = jsonDecode(result) as Map<String, dynamic>;
@@ -93,7 +93,7 @@ void main() {
       // Simulate ending call while text agent job is running
       final result = await endCallTool.execute({
         'end_context': 'ultra_long job in progress'
-      }, mockContext);
+      });
 
       // Verify call ended with appropriate context
       final resultMap = jsonDecode(result) as Map<String, dynamic>;
@@ -106,7 +106,7 @@ void main() {
       mockCallApi.setShouldSucceed(false);
 
       // Execute tool
-      final result = await endCallTool.execute({}, mockContext);
+      final result = await endCallTool.execute({});
 
       // Verify error is handled
       final resultMap = jsonDecode(result) as Map<String, dynamic>;
@@ -116,13 +116,13 @@ void main() {
 
     test('Multiple sequential calls to end_call', () async {
       // First call
-      final result1 = await endCallTool.execute({}, mockContext);
+      final result1 = await endCallTool.execute({});
       final resultMap1 = jsonDecode(result1) as Map<String, dynamic>;
       expect(resultMap1['success'], isTrue);
 
       // Reset mock and call again
       mockCallApi.reset();
-      final result2 = await endCallTool.execute({}, mockContext);
+      final result2 = await endCallTool.execute({});
       final resultMap2 = jsonDecode(result2) as Map<String, dynamic>;
       expect(resultMap2['success'], isTrue);
       expect(mockCallApi.endCallCalled, isTrue);
@@ -142,7 +142,7 @@ void main() {
         
         final result = await endCallTool.execute({
           'end_context': ctx
-        }, mockContext);
+        });
 
         final resultMap = jsonDecode(result) as Map<String, dynamic>;
         expect(resultMap['success'], isTrue, reason: 'Failed for context: $ctx');
@@ -153,7 +153,7 @@ void main() {
     test('End call with empty context string', () async {
       final result = await endCallTool.execute({
         'end_context': ''
-      }, mockContext);
+      });
 
       final resultMap = jsonDecode(result) as Map<String, dynamic>;
       expect(resultMap['success'], isTrue);
@@ -182,11 +182,11 @@ void main() {
       final mockCallApi = MockCallApi();
       final mockContext = MockToolContext(callApi: mockCallApi);
       final tool = EndCallTool();
-      await tool.init();
+      await tool.init(mockContext);
 
       final result = await tool.execute({
         'end_context': 'natural conclusion'
-      }, mockContext);
+      });
 
       final resultMap = jsonDecode(result) as Map<String, dynamic>;
       expect(resultMap['success'], isTrue);
@@ -197,11 +197,11 @@ void main() {
       final mockCallApi = MockCallApi();
       final mockContext = MockToolContext(callApi: mockCallApi);
       final tool = EndCallTool();
-      await tool.init();
+      await tool.init(mockContext);
 
       final result = await tool.execute({
         'end_context': 'user request'
-      }, mockContext);
+      });
 
       final resultMap = jsonDecode(result) as Map<String, dynamic>;
       expect(resultMap['success'], isTrue);
@@ -212,11 +212,11 @@ void main() {
       final mockCallApi = MockCallApi();
       final mockContext = MockToolContext(callApi: mockCallApi);
       final tool = EndCallTool();
-      await tool.init();
+      await tool.init(mockContext);
 
       final result = await tool.execute({
         'end_context': 'ultra_long text agent task completed, call no longer needed'
-      }, mockContext);
+      });
 
       final resultMap = jsonDecode(result) as Map<String, dynamic>;
       expect(resultMap['success'], isTrue);

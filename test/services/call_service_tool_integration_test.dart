@@ -6,7 +6,6 @@ import 'package:mockito/mockito.dart';
 import 'package:vagina/services/call_service.dart';
 import 'package:vagina/services/notepad_service.dart';
 import 'package:vagina/services/realtime/realtime_api_client.dart';
-import 'package:vagina/services/tool_service.dart';
 
 import '../mocks/mock_repositories.mocks.dart';
 
@@ -18,7 +17,6 @@ void main() {
     late MockWebSocketService mockWs;
     late MockConfigRepository mockConfig;
     late MockCallSessionRepository mockSessionRepository;
-    late ToolService toolService;
     late MockMemoryRepository mockMemoryRepository;
     late NotepadService notepadService;
     late MockLogService mockLogService;
@@ -45,13 +43,6 @@ void main() {
 
       notepadService = NotepadService(logService: mockLogService);
 
-      // Initialize tool service with real tools
-      toolService = ToolService(
-        notepadService: notepadService,
-        memoryRepository: mockMemoryRepository,
-        configRepository: mockConfig,
-      );
-      toolService.initialize();
 
       // Create WebSocket messages stream
       wsMessagesController =
@@ -126,7 +117,6 @@ void main() {
         apiClient: apiClient,
         config: mockConfig,
         sessionRepository: mockSessionRepository,
-        toolService: toolService,
         notepadService: notepadService,
         memoryRepository: mockMemoryRepository,
         agentRepository: mockAgentRepository,

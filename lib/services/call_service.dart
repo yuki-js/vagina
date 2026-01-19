@@ -24,7 +24,6 @@ import 'chat/chat_message_manager.dart';
 import 'log_service.dart';
 import 'notepad_service.dart';
 import 'realtime_api_client.dart';
-import 'tool_service.dart';
 
 /// Enum representing the current state of the call
 enum CallState {

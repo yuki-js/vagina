@@ -14,7 +14,6 @@ void main() {
     late MockRealtimeApiClient mockApiClient;
     late MockConfigRepository mockConfig;
     late MockCallSessionRepository mockSessionRepository;
-    late MockToolService mockToolService;
     late MockNotepadService mockNotepadService;
     late MockMemoryRepository mockMemoryRepository;
     late MockLogService mockLogService;
@@ -29,7 +28,6 @@ void main() {
       mockApiClient = MockRealtimeApiClient();
       mockConfig = MockConfigRepository();
       mockSessionRepository = MockCallSessionRepository();
-      mockToolService = MockToolService();
       mockNotepadService = MockNotepadService();
       mockMemoryRepository = MockMemoryRepository();
       mockLogService = MockLogService();
@@ -44,7 +42,6 @@ void main() {
         apiClient: mockApiClient,
         config: mockConfig,
         sessionRepository: mockSessionRepository,
-        toolService: mockToolService,
         notepadService: mockNotepadService,
         memoryRepository: mockMemoryRepository,
         agentRepository: mockAgentRepository,

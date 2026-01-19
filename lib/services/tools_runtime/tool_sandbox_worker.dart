@@ -7,8 +7,6 @@ import 'package:vagina/services/tools_runtime/apis/notepad_api.dart';
 import 'package:vagina/services/tools_runtime/apis/memory_api.dart';
 import 'package:vagina/services/tools_runtime/apis/call_api.dart';
 import 'package:vagina/services/tools_runtime/apis/text_agent_api.dart';
-import 'package:vagina/services/notepad_service.dart';
-import 'package:vagina/models/notepad_tab.dart';
 import 'package:vagina/tools/tools.dart';
 
 // Platform-specific imports (conditional)

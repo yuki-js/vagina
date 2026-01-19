@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:vagina/feat/text_agents/model/text_agent.dart';
 import 'package:vagina/feat/text_agents/model/text_agent_job.dart';
 import 'package:vagina/interfaces/text_agent_repository.dart';
 import 'package:vagina/services/text_agent_service.dart';
