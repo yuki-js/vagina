@@ -114,7 +114,8 @@ class CallService {
         _logService = logService ?? LogService(),
         _feedback =
             feedbackService ?? CallFeedbackService(logService: logService),
-        _notepadService = NotepadService(logService: logService ?? LogService());
+        _notepadService =
+            NotepadService(logService: logService ?? LogService());
 
   /// Current call state
   CallState get currentState => _currentState;
@@ -197,7 +198,6 @@ class CallService {
     }
 
     _logService.info(_tag, 'Starting call');
-    _chatManager.clearChat();
     _endContext = null; // Clear previous end context for new call
 
     try {
@@ -719,11 +719,6 @@ class CallService {
     } catch (_) {
       return null;
     }
-  }
-
-  /// Clear chat history
-  void clearChat() {
-    _chatManager.clearChat();
   }
 
   /// Dispose the service
