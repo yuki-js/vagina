@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:vagina/feat/call/state/notepad_providers.dart';
+import 'package:vagina/feat/call/state/call_service_providers.dart';
 import 'package:vagina/models/notepad_tab.dart';
 
 part 'notepad_controller.g.dart';
@@ -44,7 +44,9 @@ class NotepadState {
 
 @riverpod
 Stream<NotepadState> notepadState(Ref ref) {
-  final service = ref.watch(notepadServiceProvider);
+  // Get NotepadService from CallService (call-scoped instance)
+  final callService = ref.watch(callServiceProvider);
+  final service = callService.notepadService;
 
   final controller = StreamController<NotepadState>.broadcast();
   var current = NotepadState(

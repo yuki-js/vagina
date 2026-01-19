@@ -4,7 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:record/record.dart';
 import 'package:vagina/core/theme/app_theme.dart';
-import 'package:vagina/services/audio_recorder_service.dart';
+import '../services/audio_visualizer_service.dart';
 
 /// Interactive real-time voice visualizer easter egg
 /// Actually uses the microphone to visualize voice input
@@ -20,7 +20,7 @@ class _VoiceVisualizerGameState extends State<VoiceVisualizerGameScreen>
     with TickerProviderStateMixin {
   late AnimationController _pulseController;
   late AnimationController _rotationController;
-  final AudioRecorderService _audioService = AudioRecorderService();
+  final AudioVisualizerService _audioService = AudioVisualizerService();
 
   bool _isRecording = false;
   bool _hasPermission = false;
@@ -68,6 +68,8 @@ class _VoiceVisualizerGameState extends State<VoiceVisualizerGameScreen>
     if (_isRecording) {
       _audioService.stopRecording();
     }
+    // Dispose audio service and clean up resources
+    _audioService.dispose();
     super.dispose();
   }
 

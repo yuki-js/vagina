@@ -17,7 +17,7 @@ import 'package:vagina/services/text_agent_service.dart';
 import 'package:vagina/services/tools_runtime/tool_sandbox_manager.dart';
 import 'package:vagina/utils/audio_utils.dart';
 
-import 'call_audio_service.dart';
+import 'audio/call_audio_service.dart';
 import 'call_feedback_service.dart';
 import 'chat/chat_message_manager.dart';
 import 'log_service.dart';
@@ -41,7 +41,6 @@ class CallService {
   final RealtimeApiClient _apiClient;
   final ConfigRepository _config;
   final CallSessionRepository _sessionRepository;
-  final NotepadService _notepadService;
   final MemoryRepository _memoryRepository;
   final LogService _logService;
   final CallFeedbackService _feedback;
@@ -49,6 +48,10 @@ class CallService {
   final TextAgentRepository _agentRepository;
   final TextAgentService _textAgentService;
   final TextAgentJobRunner _textAgentJobRunner;
+
+  /// Call-scoped NotepadService (created on startCall, disposed on cleanup)
+  /// This is owned by CallService, NOT by a provider
+  late NotepadService _notepadService;
 
   /// Session-scoped ToolSandboxManager (spawned on call start, disposed on call end)
   ToolSandboxManager? _sandboxManager;
@@ -93,7 +96,6 @@ class CallService {
     required RealtimeApiClient apiClient,
     required ConfigRepository config,
     required CallSessionRepository sessionRepository,
-    required NotepadService notepadService,
     required MemoryRepository memoryRepository,
     required TextAgentRepository agentRepository,
     required TextAgentService textAgentService,
@@ -104,7 +106,6 @@ class CallService {
         _apiClient = apiClient,
         _config = config,
         _sessionRepository = sessionRepository,
-        _notepadService = notepadService,
         _memoryRepository = memoryRepository,
         _agentRepository = agentRepository,
         _textAgentService = textAgentService,
@@ -115,6 +116,9 @@ class CallService {
 
   /// Current call state
   CallState get currentState => _currentState;
+
+  /// Call-scoped Notepad service (accessible during active call)
+  NotepadService get notepadService => _notepadService;
 
   /// Stream of call state changes
   Stream<CallState> get stateStream => _stateController.stream;
@@ -230,6 +234,10 @@ class CallService {
         _setState(CallState.idle);
         return;
       }
+
+      // Create call-scoped NotepadService (owned by this CallService)
+      _notepadService = NotepadService(logService: _logService);
+      _logService.debug(_tag, 'Notepad service created for this call');
 
       // Create and start sandbox
       _sandboxManager = ToolSandboxManager(
@@ -405,7 +413,7 @@ class CallService {
       _amplitudeSubscription = amplitudeStream.listen((amplitude) {
         if (!_isMuted && isCallActive) {
           final normalizedLevel =
-              AudioUtils.normalizeAmplitude(amplitude.current);
+              AudioUtils.normalizeAmplitude(amplitude?.current ?? 0.0);
           _amplitudeController.add(normalizedLevel);
         } else {
           _amplitudeController.add(0.0);
@@ -644,6 +652,10 @@ class CallService {
     // Dispose sandbox
     await _sandboxManager?.dispose();
     _sandboxManager = null;
+
+    // Dispose call-scoped NotepadService
+    _notepadService.dispose();
+    _logService.debug(_tag, 'Notepad service disposed');
 
     _callDuration = 0;
     _durationController.add(0);

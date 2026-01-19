@@ -2,7 +2,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:vagina/core/state/log_provider.dart';
 import 'package:vagina/core/state/repository_providers.dart';
 import 'package:vagina/feat/call/state/notepad_providers.dart';
-import 'package:vagina/services/call_audio_service.dart';
+import 'package:vagina/services/audio/call_audio_service.dart';
 import 'package:vagina/services/call_feedback_service.dart';
 import 'package:vagina/services/call_service.dart';
 import 'package:vagina/services/realtime_api_client.dart';
@@ -60,7 +60,6 @@ CallService callService(Ref ref) {
     apiClient: ref.watch(realtimeApiClientProvider),
     config: ref.watch(configRepositoryProvider),
     sessionRepository: ref.watch(callSessionRepositoryProvider),
-    notepadService: ref.watch(notepadServiceProvider),
     memoryRepository: ref.watch(memoryRepositoryProvider),
     agentRepository: ref.watch(textAgentRepositoryProvider),
     textAgentService: ref.watch(textAgentServiceProvider),

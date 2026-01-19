@@ -10,38 +10,31 @@ import 'dart:collection';
 import 'package:vagina/utils/platform_compat.dart';
 import 'package:vagina/core/config/app_config.dart';
 import 'package:vagina/models/android_audio_config.dart';
-import 'log_service.dart';
+import 'pcm_recorder.dart';
+import '../log_service.dart';
 
 /// Unified audio service for call session
 ///
-/// Combines microphone recording and PCM audio playback, abstracting platform
-/// differences (Windows uses just_audio, others use flutter_sound).
+/// Combines microphone recording (via PcmRecorder) and PCM audio playback,
+/// abstracting platform differences (Windows uses just_audio, others use flutter_sound).
 /// 
 /// This service manages:
-/// - Microphone recording (using `record` package)
+/// - Microphone recording (delegated to PcmRecorder)
 /// - Audio playback with platform-specific implementations
 /// - Platform-specific configuration (Android audio mode, etc.)
 class CallAudioService {
   static const _tag = 'CallAudioService';
 
   final LogService _logService;
-  final AudioRecorder _recorder = AudioRecorder();
   
+  // Use shared PcmRecorder for recording
+  final PcmRecorder _recorder;
+
   // Player implementation (platform-specific)
   dynamic _playerImpl;
   bool _isPlayingAudio = false;
   bool _isInitialized = false;
   bool _isDisposed = false;
-
-  // Recording state
-  StreamSubscription<RecordState>? _stateSubscription;
-  StreamSubscription<Amplitude>? _amplitudeSubscription;
-  Stream<RecordState>? _stateStream;
-  Stream<Amplitude>? _amplitudeStream;
-  bool _isRecording = false;
-
-  // Android configuration
-  AndroidAudioConfig _androidAudioConfig = const AndroidAudioConfig();
 
   // Audio buffer queue for flutter_sound (non-Windows)
   final Queue<Uint8List> _audioQueue = Queue<Uint8List>();
@@ -50,19 +43,20 @@ class CallAudioService {
   bool _isStartingPlayback = false;
 
   bool get isPlaying => _isPlayingAudio;
-  bool get isRecording => _isRecording;
+  bool get isRecording => _recorder.isRecording;
 
   /// Current Android audio configuration
-  AndroidAudioConfig get androidAudioConfig => _androidAudioConfig;
+  AndroidAudioConfig get androidAudioConfig => _recorder.androidAudioConfig;
 
   /// Stream of recording state changes
-  Stream<RecordState>? get stateStream => _stateStream;
+  Stream<RecordState>? get stateStream => _recorder.stateStream;
 
   /// Stream of audio amplitude levels
-  Stream<Amplitude>? get amplitudeStream => _amplitudeStream;
+  Stream<Amplitude>? get amplitudeStream => _recorder.amplitudeStream;
 
   CallAudioService({LogService? logService})
-      : _logService = logService ?? LogService() {
+      : _logService = logService ?? LogService(),
+        _recorder = PcmRecorder(logService: logService) {
     if (PlatformCompat.isWindows) {
       _playerImpl = _WindowsPcmPlayer(logService: _logService);
     } else {
@@ -72,7 +66,7 @@ class CallAudioService {
 
   /// Update Android audio configuration
   void setAndroidAudioConfig(AndroidAudioConfig config) {
-    _androidAudioConfig = config;
+    _recorder.setAndroidAudioConfig(config);
   }
 
   /// Check if microphone permission is granted
@@ -84,43 +78,12 @@ class CallAudioService {
   ///
   /// Returns a stream of PCM16 audio chunks at the configured sample rate
   Future<Stream<Uint8List>> startRecording() async {
-    final hasPermission = await _recorder.hasPermission();
-    if (!hasPermission) {
-      throw Exception('Microphone permission not granted');
-    }
-
-    final stream = await _recorder.startStream(
-      RecordConfig(
-        encoder: AudioEncoder.pcm16bits,
-        sampleRate: AppConfig.sampleRate,
-        numChannels: AppConfig.channels,
-        // Enable echo cancellation to prevent AI voice from being picked up
-        echoCancel: true,
-        // Enable noise suppression for clearer audio
-        noiseSuppress: true,
-        // Android-specific configuration for voice communication
-        androidConfig: AndroidRecordConfig(
-          audioSource: _androidAudioConfig.audioSource,
-          audioManagerMode: _androidAudioConfig.audioManagerMode,
-        ),
-      ),
-    );
-
-    _isRecording = true;
-    _stateStream = _recorder.onStateChanged();
-    _amplitudeStream = _recorder.onAmplitudeChanged(
-      const Duration(milliseconds: 100),
-    );
-
-    return stream;
+    return await _recorder.startRecording();
   }
 
   /// Stop recording audio
   Future<void> stopRecording() async {
-    await _recorder.stop();
-    _isRecording = false;
-    await _stateSubscription?.cancel();
-    await _amplitudeSubscription?.cancel();
+    await _recorder.stopRecording();
   }
 
   /// Add PCM16 audio data for playback
