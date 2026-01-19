@@ -27,8 +27,9 @@ class NotepadState {
   }) {
     return NotepadState(
       tabs: tabs ?? this.tabs,
-      selectedTabId:
-          identical(selectedTabId, _unset) ? this.selectedTabId : selectedTabId as String?,
+      selectedTabId: identical(selectedTabId, _unset)
+          ? this.selectedTabId
+          : selectedTabId as String?,
     );
   }
 
@@ -44,7 +45,6 @@ class NotepadState {
 
 @riverpod
 Stream<NotepadState> notepadState(Ref ref) {
-  // Get NotepadService from CallService (call-scoped instance)
   final callService = ref.watch(callServiceProvider);
   final service = callService.notepadService;
 

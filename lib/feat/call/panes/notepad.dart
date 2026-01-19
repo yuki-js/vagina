@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vagina/feat/call/state/notepad_controller.dart';
-import 'package:vagina/feat/call/state/notepad_providers.dart';
+import 'package:vagina/feat/call/state/call_service_providers.dart';
 import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/feat/call/widgets/notepad_header.dart';
 import 'package:vagina/feat/call/widgets/notepad_tab_bar.dart';
@@ -35,7 +35,8 @@ class _NotepadPaneState extends ConsumerState<NotepadPane> {
         _editedContent != selectedTab.content) {
       // Save changes when exiting edit mode
       ref
-          .read(notepadServiceProvider)
+          .read(callServiceProvider)
+          .notepadService
           .updateTab(selectedTab.id, content: _editedContent);
     }
     setState(() {
@@ -53,7 +54,7 @@ class _NotepadPaneState extends ConsumerState<NotepadPane> {
   @override
   Widget build(BuildContext context) {
     final notepadStateAsync = ref.watch(notepadStateProvider);
-    final notepadService = ref.read(notepadServiceProvider);
+    final notepadService = ref.read(callServiceProvider).notepadService;
 
     return notepadStateAsync.when(
       data: (state) {
@@ -144,11 +145,11 @@ class _NotepadPaneState extends ConsumerState<NotepadPane> {
             editedContent: '',
             hideBackButton: widget.hideBackButton,
           ),
-          Expanded(
+          const Expanded(
             child: Center(
               child: Text(
                 'ノートパッドの読み込みに失敗しました',
-                style: TextStyle(color: AppTheme.errorColor),
+                style: TextStyle(color: Colors.red),
               ),
             ),
           ),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:vagina/feat/call/state/notepad_providers.dart';
+import 'package:vagina/feat/call/state/call_service_providers.dart';
 import 'package:vagina/feat/call/widgets/notepad_action_bar.dart';
 import 'package:vagina/models/notepad_tab.dart';
 import 'package:vagina/core/theme/app_theme.dart';
@@ -70,11 +70,11 @@ class NotepadHeader extends StatelessWidget {
                   canUndo: selectedTab!.canUndo,
                   canRedo: selectedTab!.canRedo,
                   onUndo: () {
-                    final service = ref.read(notepadServiceProvider);
+                    final service = ref.read(callServiceProvider).notepadService;
                     service.undo(selectedTab!.id);
                   },
                   onRedo: () {
-                    final service = ref.read(notepadServiceProvider);
+                    final service = ref.read(callServiceProvider).notepadService;
                     service.redo(selectedTab!.id);
                   },
                 );

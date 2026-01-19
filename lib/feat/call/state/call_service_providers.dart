@@ -1,7 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:vagina/core/state/log_provider.dart';
 import 'package:vagina/core/state/repository_providers.dart';
-import 'package:vagina/feat/call/state/notepad_providers.dart';
 import 'package:vagina/services/audio/call_audio_service.dart';
 import 'package:vagina/services/call_feedback_service.dart';
 import 'package:vagina/services/call_service.dart';

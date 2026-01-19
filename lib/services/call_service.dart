@@ -49,9 +49,9 @@ class CallService {
   final TextAgentService _textAgentService;
   final TextAgentJobRunner _textAgentJobRunner;
 
-  /// Call-scoped NotepadService (created on startCall, disposed on cleanup)
+  /// NotepadService instance (initialized in constructor, scoped to CallService)
   /// This is owned by CallService, NOT by a provider
-  late NotepadService _notepadService;
+  final NotepadService _notepadService;
 
   /// Session-scoped ToolSandboxManager (spawned on call start, disposed on call end)
   ToolSandboxManager? _sandboxManager;
@@ -112,7 +112,8 @@ class CallService {
         _textAgentJobRunner = textAgentJobRunner,
         _logService = logService ?? LogService(),
         _feedback =
-            feedbackService ?? CallFeedbackService(logService: logService);
+            feedbackService ?? CallFeedbackService(logService: logService),
+        _notepadService = NotepadService(logService: logService ?? LogService());
 
   /// Current call state
   CallState get currentState => _currentState;
@@ -235,9 +236,8 @@ class CallService {
         return;
       }
 
-      // Create call-scoped NotepadService (owned by this CallService)
-      _notepadService = NotepadService(logService: _logService);
-      _logService.debug(_tag, 'Notepad service created for this call');
+      // NotepadService is already initialized in constructor
+      _logService.debug(_tag, 'Notepad service ready for this call');
 
       // Create and start sandbox
       _sandboxManager = ToolSandboxManager(
