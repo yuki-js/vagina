@@ -315,8 +315,6 @@ class CallService {
 
     _responseAudioSubscription =
         _apiClient.audioStream.listen((audioData) async {
-      _logService.debug(
-          _tag, 'Received audio from API: ${audioData.length} bytes');
       await _player.addAudioData(audioData);
     });
 

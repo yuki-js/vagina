@@ -183,9 +183,8 @@ class _WorkerController {
       );
 
       _log('Handshake complete: initialized ${_toolDefinitions.length} tools');
-    } catch (e, stackTrace) {
+    } catch (e) {
       _log('ERROR in handshake: $e');
-      _log('Stack trace: $stackTrace');
     }
   }
 
@@ -204,9 +203,8 @@ class _WorkerController {
       }
 
       _log('Tool registry initialized with ${_toolDefinitions.length} tools');
-    } catch (e, stackTrace) {
+    } catch (e) {
       _log('ERROR initializing tool registry: $e');
-      _log('Stack trace: $stackTrace');
       rethrow;
     }
   }
@@ -319,9 +317,8 @@ class _WorkerController {
         replyReceivePort.close();
       }
     } catch (e) {
-      _log('[TOOL:GUEST] Failed to call $api.$method');
-      _log('Error: $e');
-      _log('Request Payload: ${jsonEncode(args)}');
+      _log(
+          '[TOOL:GUEST] Failed to call $api.$method: Error: $e, payload: ${jsonEncode(args)}');
       rethrow;
     }
   }

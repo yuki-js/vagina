@@ -20,7 +20,7 @@ abstract class TextAgentApi {
     String prompt,
     String expectLatency,
   );
-  
+
   /// Get the result of an async query by token
   ///
   /// Arguments:
@@ -28,7 +28,7 @@ abstract class TextAgentApi {
   ///
   /// Returns a map with status and result/error
   Future<Map<String, dynamic>> getResult(String token);
-  
+
   /// List all available text agents
   ///
   /// Returns a list of agent metadata maps
@@ -38,10 +38,11 @@ abstract class TextAgentApi {
 /// Client implementation of TextAgentApi that uses hostCall for isolate communication
 class TextAgentApiClient implements TextAgentApi {
   static const _tag = 'TextAgentApiClient';
-  final Future<Map<String, dynamic>> Function(String method, Map<String, dynamic> args) hostCall;
-  
+  final Future<Map<String, dynamic>> Function(
+      String method, Map<String, dynamic> args) hostCall;
+
   TextAgentApiClient({required this.hostCall});
-  
+
   @override
   Future<Map<String, dynamic>> sendQuery(
     String agentId,
@@ -49,78 +50,81 @@ class TextAgentApiClient implements TextAgentApi {
     String expectLatency,
   ) async {
     try {
-       final payload = {
-         'agentId': agentId,
-         'prompt': prompt,
-         'expectLatency': expectLatency,
-       };
-       final result = await hostCall('sendQuery', payload);
-       
-       final data = result['data'] as Map<String, dynamic>?;
-       if (data != null && result['success'] == true) {
-         return data;
-       }
-       
-       // Handle error
-       final error = data?['error'] ?? result['error'] ?? 'Failed to send query';
-       print('[TOOL:GUEST] $_tag - Failed to call textAgent.sendQuery');
-       print('Error: $error');
-       print('Request Payload: ${jsonEncode(payload)}');
-       throw error;
-     } catch (e) {
-       print('[TOOL:GUEST] $_tag - Exception in sendQuery: $e');
-       print('Request Payload: ${jsonEncode({'agentId': agentId, 'prompt': prompt, 'expectLatency': expectLatency})}');
-       throw Exception('Error sending query: $e');
-     }
-   }
-   
-   @override
-   Future<Map<String, dynamic>> getResult(String token) async {
-     try {
-       final payload = {'token': token};
-       final result = await hostCall('getResult', payload);
-       
-       final data = result['data'] as Map<String, dynamic>?;
-       if (data != null && result['success'] == true) {
-         return data;
-       }
-       
-       // Handle error
-       final error = data?['error'] ?? result['error'] ?? 'Failed to get result';
-       print('[TOOL:GUEST] $_tag - Failed to call textAgent.getResult');
-       print('Error: $error');
-       print('Request Payload: ${jsonEncode(payload)}');
-       throw error;
-     } catch (e) {
-       print('[TOOL:GUEST] $_tag - Exception in getResult: $e');
-       print('Request Payload: ${jsonEncode({'token': token})}');
-       throw Exception('Error getting result: $e');
-     }
-   }
-   
-   @override
-   Future<List<Map<String, dynamic>>> listAgents() async {
-     try {
-       final payload = <String, dynamic>{};
-       final result = await hostCall('listAgents', payload);
-       
-       final data = result['data'] as Map<String, dynamic>?;
-       if (data != null && result['success'] == true && data['agents'] is List) {
-         return List<Map<String, dynamic>>.from(
-           (data['agents'] as List).map((agent) => Map<String, dynamic>.from(agent as Map))
-         );
-       }
-       
-       // Handle error
-       final error = data?['error'] ?? result['error'] ?? 'Failed to list agents';
-       print('[TOOL:GUEST] $_tag - Failed to call textAgent.listAgents');
-       print('Error: $error');
-       print('Request Payload: ${jsonEncode(payload)}');
-       throw error;
-     } catch (e) {
-       print('[TOOL:GUEST] $_tag - Exception in listAgents: $e');
-       print('Request Payload: ${jsonEncode({})}');
-       throw Exception('Error listing agents: $e');
-     }
-   }
+      final payload = {
+        'agentId': agentId,
+        'prompt': prompt,
+        'expectLatency': expectLatency,
+      };
+      final result = await hostCall('sendQuery', payload);
+
+      final data = result['data'] as Map<String, dynamic>?;
+      if (data != null && result['success'] == true) {
+        return data;
+      }
+
+      // Handle error
+      final error = data?['error'] ?? result['error'] ?? 'Failed to send query';
+      print(
+          '[TOOL:GUEST] $_tag - Failed to call textAgent.sendQuery\nError: $error\nRequest Payload: ${jsonEncode(payload)}');
+      throw error;
+    } catch (e) {
+      print(
+          '[TOOL:GUEST] $_tag - Exception in sendQuery: $e\nRequest Payload: ${jsonEncode({
+            'agentId': agentId,
+            'prompt': prompt,
+            'expectLatency': expectLatency
+          })}');
+      throw Exception('Error sending query: $e');
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> getResult(String token) async {
+    try {
+      final payload = {'token': token};
+      final result = await hostCall('getResult', payload);
+
+      final data = result['data'] as Map<String, dynamic>?;
+      if (data != null && result['success'] == true) {
+        return data;
+      }
+
+      // Handle error
+      final error = data?['error'] ?? result['error'] ?? 'Failed to get result';
+      print(
+          '[TOOL:GUEST] $_tag - Failed to call textAgent.getResult\nError: $error\nRequest Payload: ${jsonEncode(payload)}');
+      throw error;
+    } catch (e) {
+      print(
+          '[TOOL:GUEST] $_tag - Exception in getResult: $e\nRequest Payload: ${jsonEncode({
+            'token': token
+          })}');
+      throw Exception('Error getting result: $e');
+    }
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> listAgents() async {
+    try {
+      final payload = <String, dynamic>{};
+      final result = await hostCall('listAgents', payload);
+
+      final data = result['data'] as Map<String, dynamic>?;
+      if (data != null && result['success'] == true && data['agents'] is List) {
+        return List<Map<String, dynamic>>.from((data['agents'] as List)
+            .map((agent) => Map<String, dynamic>.from(agent as Map)));
+      }
+
+      // Handle error
+      final error =
+          data?['error'] ?? result['error'] ?? 'Failed to list agents';
+      print(
+          '[TOOL:GUEST] $_tag - Failed to call textAgent.listAgents\nError: $error\nRequest Payload: ${jsonEncode(payload)}');
+      throw error;
+    } catch (e) {
+      print(
+          '[TOOL:GUEST] $_tag - Exception in listAgents: $e\nRequest Payload: ${jsonEncode({})}');
+      throw Exception('Error listing agents: $e');
+    }
+  }
 }

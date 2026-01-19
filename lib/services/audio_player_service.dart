@@ -94,8 +94,6 @@ class AudioPlayerService {
       return;
     }
 
-    _logService.debug(_tag, 'Queuing audio data: ${pcmData.length} bytes');
-
     if (PlatformCompat.isWindows) {
       await _ensureInitialized();
       await (_playerImpl as AudioPlayerServiceWindows).play(pcmData);

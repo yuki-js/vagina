@@ -28,6 +28,13 @@ class LogEntry {
   }
 }
 
+// costants for exclusion of eventType, which would be sent/received tremendous times
+const Set<String> _excludedEventTypes = {
+  'input_audio_buffer.append',
+  "response.audio_transcript.delta",
+  "response.audio.delta"
+};
+
 /// Singleton logging service for trace logs with similar log reduction
 class LogService {
   static final LogService _instance = LogService._internal();
@@ -35,14 +42,15 @@ class LogService {
   LogService._internal();
 
   final List<LogEntry> _logs = [];
-  final StreamController<LogEntry> _logController = StreamController<LogEntry>.broadcast();
-  
+  final StreamController<LogEntry> _logController =
+      StreamController<LogEntry>.broadcast();
+
   // Maximum number of logs to keep in memory (similar logs don't count toward this)
   static const int _maxLogs = 1000;
-  
+
   // Time window for similar log detection (3 seconds)
   static const Duration _similarLogWindow = Duration(seconds: 3);
-  
+
   // Track last logs by signature for deduplication
   // Key: log signature (level + tag + normalized message pattern)
   // Value: (last entry, last timestamp)
@@ -75,7 +83,12 @@ class LogService {
   }
 
   /// Log WebSocket events (without base64 audio data)
-  void websocket(String direction, String eventType, [Map<String, dynamic>? data]) {
+  void websocket(String direction, String eventType,
+      [Map<String, dynamic>? data]) {
+    if (_excludedEventTypes.contains(eventType)) {
+      // Skip logging for excluded event types
+      return;
+    }
     String message = '$direction $eventType';
     if (data != null) {
       // Filter out audio base64 data to prevent log explosion
@@ -92,7 +105,7 @@ class LogService {
     }
     _addLog('WS', 'WebSocket', message);
   }
-  
+
   /// Generate a signature for similar log detection
   /// This normalizes the message to detect "similar" logs (not just identical)
   String _generateSignature(String level, String tag, String message) {
@@ -100,50 +113,50 @@ class LogService {
     // 1. Removing numbers (chunk counts, byte sizes, etc.)
     // 2. Removing variable data like timestamps, IDs
     String normalized = message
-        .replaceAll(RegExp(r'\d+'), '#')  // Replace numbers with #
-        .replaceAll(RegExp(r'#\.#'), '#')  // Simplify decimal numbers
-        .replaceAll(RegExp(r'#+'), '#')    // Collapse multiple # into one
-        .replaceAll(RegExp(r'\s+'), ' ')   // Normalize whitespace
+        .replaceAll(RegExp(r'\d+'), '#') // Replace numbers with #
+        .replaceAll(RegExp(r'#\.#'), '#') // Simplify decimal numbers
+        .replaceAll(RegExp(r'#+'), '#') // Collapse multiple # into one
+        .replaceAll(RegExp(r'\s+'), ' ') // Normalize whitespace
         .trim();
-    
+
     return '$level|$tag|$normalized';
   }
-  
+
   /// Check if a similar log was recently added
   /// Returns the recent entry if found, null otherwise
   LogEntry? _findSimilarRecentLog(String signature, DateTime now) {
     final recent = _recentLogs[signature];
     if (recent == null) return null;
-    
+
     final (entry, lastTime) = recent;
-    
+
     // Check if within time window OR if it's the immediately preceding log
     // (even if more than 3 seconds passed, as long as no different log in between)
     final withinTimeWindow = now.difference(lastTime) <= _similarLogWindow;
     final isLastLog = _logs.isNotEmpty && _logs.last == entry;
-    
+
     if (withinTimeWindow || isLastLog) {
       return entry;
     }
-    
+
     return null;
   }
 
   void _addLog(String level, String tag, String message) {
     final now = DateTime.now();
     final signature = _generateSignature(level, tag, message);
-    
+
     // Check for similar recent log
     final similarEntry = _findSimilarRecentLog(signature, now);
-    
+
     if (similarEntry != null) {
       // Increment repeat count of existing entry
       similarEntry.repeatCount++;
       _recentLogs[signature] = (similarEntry, now);
-      
+
       // Notify listeners of the update
       _logController.add(similarEntry);
-      
+
       // Also print to console for debugging (only in debug mode)
       if (kDebugMode) {
         // ignore: avoid_print
@@ -151,7 +164,7 @@ class LogService {
       }
       return;
     }
-    
+
     // Create new entry
     final entry = LogEntry(
       timestamp: now,
@@ -159,39 +172,40 @@ class LogService {
       tag: tag,
       message: message,
     );
-    
+
     _logs.add(entry);
     _recentLogs[signature] = (entry, now);
-    
+
     // Clean up old entries from _recentLogs periodically
     _cleanupRecentLogs(now);
-    
+
     // Trim logs if exceeded maximum (only count unique entries)
     while (_logs.length > _maxLogs) {
       _logs.removeAt(0);
     }
-    
+
     _logController.add(entry);
-    
+
     // Also print to console for debugging (only in debug mode)
     if (kDebugMode) {
       // ignore: avoid_print
       print(entry.toString());
     }
   }
-  
+
   /// Clean up old entries from _recentLogs map
   void _cleanupRecentLogs(DateTime now) {
     final keysToRemove = <String>[];
-    
+
     for (final entry in _recentLogs.entries) {
       final (logEntry, lastTime) = entry.value;
       // Remove if older than time window AND not in the log list anymore
-      if (now.difference(lastTime) > _similarLogWindow && !_logs.contains(logEntry)) {
+      if (now.difference(lastTime) > _similarLogWindow &&
+          !_logs.contains(logEntry)) {
         keysToRemove.add(entry.key);
       }
     }
-    
+
     for (final key in keysToRemove) {
       _recentLogs.remove(key);
     }
