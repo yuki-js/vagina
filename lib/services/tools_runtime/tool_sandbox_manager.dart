@@ -6,6 +6,7 @@ import 'package:vagina/interfaces/text_agent_repository.dart';
 import 'package:vagina/services/call_service.dart';
 import 'package:vagina/services/text_agent_service.dart';
 import 'package:vagina/services/text_agent_job_runner.dart';
+import 'package:vagina/services/tools_runtime/sandbox_platform_web.dart';
 import 'package:vagina/services/tools_runtime/sandbox_protocol.dart';
 import 'package:vagina/services/tools_runtime/host/notepad_host_api.dart';
 import 'package:vagina/services/tools_runtime/host/memory_host_api.dart';
@@ -149,7 +150,7 @@ class ToolSandboxManager {
 
       // Send handshake message to worker to initialize it
       final handshake = handshakeMessage(
-        _receivePort.sendPort as ReplyToPort,
+        _receivePort.sendPort,
         [], // Empty tool definitions list (worker uses BuiltinToolCatalog)
       );
       (_workerSendPort as dynamic).send(handshake);
@@ -420,11 +421,12 @@ class ToolSandboxManager {
   void _handleHostCall(String requestId, Map<String, dynamic> message) async {
     try {
       // Extract replyTo port from message
-      final replyTo = message['replyTo'];
-      if (replyTo == null) {
+      if (message['replyTo'] == null) {
         print('[$_tag:HOST] hostCall missing replyTo port');
         return;
       }
+
+      final replyTo = message['replyTo'] as PlatformSendPort;
 
       final payload = message['payload'] as Map<String, dynamic>?;
       if (payload == null) {
@@ -442,7 +444,7 @@ class ToolSandboxManager {
       }
 
       // Route to appropriate host API
-      Map<String, dynamic> result;
+      dynamic result;
 
       switch (api) {
         case 'notepad':
@@ -472,10 +474,8 @@ class ToolSandboxManager {
         final api = payload?['api'] as String? ?? 'unknown';
         final method = payload?['method'] as String? ?? 'unknown';
         final args = payload?['args'] as Map<String, dynamic>? ?? {};
-        print('[$_tag:HOST] Failed to handle hostCall');
-        print('API: $api, Method: $method');
-        print('Error: $e');
-        print('Request Payload: ${jsonEncode(args)}');
+        print(
+            '[$_tag:HOST] Failed to handle hostCall for $api.$method\nError: $e\nRequest Payload: ${jsonEncode(args)}');
         _sendHostCallError(requestId, 'Error: $e', replyTo);
       } else {
         print('[$_tag:HOST] Error in hostCall (no replyTo): $e');
@@ -485,20 +485,21 @@ class ToolSandboxManager {
 
   /// Send a hostCall response to the worker via the replyTo port
   void _sendHostCallResponse(
-      String requestId, Map<String, dynamic> result, dynamic replyTo) {
+      String requestId, dynamic result, PlatformSendPort replyTo) {
     try {
       final response = successResponse(requestId, result);
-      (replyTo as dynamic).send(response);
+      replyTo.send(response);
     } catch (e) {
       print('$_tag: Error sending hostCall response: $e');
     }
   }
 
   /// Send a hostCall error response to the worker via the replyTo port
-  void _sendHostCallError(String requestId, String error, dynamic replyTo) {
+  void _sendHostCallError(
+      String requestId, String error, PlatformSendPort replyTo) {
     try {
       final response = errorResponse(requestId, error);
-      (replyTo as dynamic).send(response);
+      replyTo.send(response);
     } catch (e) {
       print('$_tag: Error sending hostCall error: $e');
     }

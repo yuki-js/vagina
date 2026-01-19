@@ -71,16 +71,19 @@ class NotepadApiClient implements NotepadApi {
   Future<List<Map<String, dynamic>>> listTabs() async {
     try {
       final result = await hostCall('listTabs', {});
-      final data = result['data'] as Map<String, dynamic>?;
       
-      if (data != null && data['success'] == true && data['tabs'] is List) {
-        return List<Map<String, dynamic>>.from(
-          data['tabs'].map((tab) => Map<String, dynamic>.from(tab as Map))
-        );
+      if (result['status'] == 'success') {
+        final data = result['data'];
+        if (data is List) {
+          return List<Map<String, dynamic>>.from(
+            data.map((tab) => Map<String, dynamic>.from(tab as Map))
+          );
+        }
+        return [];
       }
       
       // Handle error
-      throw data?['error'] ?? result['error'] ?? 'Failed to list tabs';
+      throw result['error'] ?? 'Failed to list tabs';
     } catch (e) {
       throw Exception('Error listing tabs: $e');
     }
@@ -90,17 +93,17 @@ class NotepadApiClient implements NotepadApi {
   Future<Map<String, dynamic>?> getTab(String id) async {
     try {
       final result = await hostCall('getTab', {'id': id});
-      final data = result['data'] as Map<String, dynamic>?;
       
-      if (data != null && data['success'] == true) {
-        if (data['tab'] != null) {
-          return Map<String, dynamic>.from(data['tab'] as Map);
+      if (result['status'] == 'success') {
+        final data = result['data'];
+        if (data != null) {
+          return Map<String, dynamic>.from(data as Map);
         }
         return null;
       }
       
       // Handle error
-      throw data?['error'] ?? result['error'] ?? 'Failed to get tab';
+      throw result['error'] ?? 'Failed to get tab';
     } catch (e) {
       throw Exception('Error getting tab: $e');
     }
@@ -120,14 +123,16 @@ class NotepadApiClient implements NotepadApi {
       };
       
       final result = await hostCall('createTab', args);
-      final data = result['data'] as Map<String, dynamic>?;
       
-      if (data != null && data['success'] == true && data['tabId'] is String) {
-        return data['tabId'] as String;
+      if (result['status'] == 'success') {
+        final data = result['data'];
+        if (data is String) {
+          return data;
+        }
       }
       
       // Handle error
-      throw data?['error'] ?? result['error'] ?? 'Failed to create tab';
+      throw result['error'] ?? 'Failed to create tab';
     } catch (e) {
       throw Exception('Error creating tab: $e');
     }
@@ -150,12 +155,13 @@ class NotepadApiClient implements NotepadApi {
       
       final result = await hostCall('updateTab', args);
       
-      if (result['success'] == true) {
-        return result['success'] as bool;
+      if (result['status'] == 'success') {
+        final data = result['data'] as bool?;
+        return data ?? false;
       }
       
       // Handle error
-      return false;
+      throw result['error'] ?? 'Failed to update tab';
     } catch (e) {
       throw Exception('Error updating tab: $e');
     }
@@ -166,12 +172,13 @@ class NotepadApiClient implements NotepadApi {
     try {
       final result = await hostCall('closeTab', {'id': id});
       
-      if (result['success'] == true) {
-        return result['success'] as bool;
+      if (result['status'] == 'success') {
+        final data = result['data'] as bool?;
+        return data ?? false;
       }
       
       // Handle error
-      return false;
+      throw result['error'] ?? 'Failed to close tab';
     } catch (e) {
       throw Exception('Error closing tab: $e');
     }

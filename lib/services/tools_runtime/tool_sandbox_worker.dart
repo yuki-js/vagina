@@ -214,12 +214,10 @@ class _WorkerController {
     _log('Creating API clients');
 
     // Create NotepadApiClient with hostCall callback
-    _notepadApiClient = NotepadApiClient(hostCall: (method, args) async {
-      final ret = await _makeHostCall('notepad', method, args);
-      final decodedRet = JsonEncoder().convert(ret);
-      _log('NotepadApiClient hostCall returned: $decodedRet');
-      return ret;
-    });
+    _notepadApiClient = NotepadApiClient(
+      hostCall: (method, args) => _makeHostCall('notepad', method, args),
+    );
+
     _log('Created NotepadApiClient');
 
     // Create MemoryApiClient with hostCall callback
@@ -265,7 +263,7 @@ class _WorkerController {
         method,
         args,
         id: requestId,
-        replyTo: replyReceivePort.sendPort as ReplyToPort,
+        replyTo: replyReceivePort.sendPort,
       );
 
       final (valid, error) = validateMessageEnvelope(message);
@@ -285,7 +283,7 @@ class _WorkerController {
 
       try {
         // Send request to host
-        (_hostReceivePort! as dynamic).send(message);
+        _hostReceivePort!.send(message);
 
         // Wait for response with timeout
         final completer = Completer<Object?>();

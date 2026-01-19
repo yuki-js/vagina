@@ -60,14 +60,13 @@ class MemoryApiClient implements MemoryApi {
       };
       
       final result = await hostCall('save', args);
-      final data = result['data'] as Map<String, dynamic>?;
       
-      if (data != null && data['success'] == true) {
+      if (result['status'] == 'success') {
         return true;
       }
       
       // Handle error
-      return false;
+      throw result['error'] ?? 'Failed to save memory';
     } catch (e) {
       throw Exception('Error saving memory: $e');
     }
@@ -77,18 +76,17 @@ class MemoryApiClient implements MemoryApi {
   Future<String?> recall(String key) async {
     try {
       final result = await hostCall('recall', {'key': key});
-      final data = result['data'] as Map<String, dynamic>?;
       
-      if (data != null && data['success'] == true) {
-        final value = data['value'];
-        if (value is String) {
-          return value;
+      if (result['status'] == 'success') {
+        final data = result['data'];
+        if (data is String) {
+          return data;
         }
         return null;
       }
       
       // Handle error
-      return null;
+      throw result['error'] ?? 'Failed to recall memory';
     } catch (e) {
       throw Exception('Error recalling memory: $e');
     }
@@ -99,12 +97,13 @@ class MemoryApiClient implements MemoryApi {
     try {
       final result = await hostCall('delete', {'key': key});
       
-      if (result['success'] == true) {
-        return true;
+      if (result['status'] == 'success') {
+        final data = result['data'] as bool?;
+        return data ?? false;
       }
       
       // Handle error
-      return false;
+      throw result['error'] ?? 'Failed to delete memory';
     } catch (e) {
       throw Exception('Error deleting memory: $e');
     }
@@ -115,13 +114,16 @@ class MemoryApiClient implements MemoryApi {
     try {
       final result = await hostCall('list', {});
       
-      if (result['success'] == true && result['memories'] is Map) {
-        // Convert the memories map to ensure all types are correct
-        return Map<String, dynamic>.from(result['memories'] as Map);
+      if (result['status'] == 'success') {
+        final data = result['data'];
+        if (data is Map) {
+          return Map<String, dynamic>.from(data as Map);
+        }
+        return {};
       }
       
-      // Handle error or return empty map
-      return {};
+      // Handle error
+      throw result['error'] ?? 'Failed to list memories';
     } catch (e) {
       throw Exception('Error listing memories: $e');
     }

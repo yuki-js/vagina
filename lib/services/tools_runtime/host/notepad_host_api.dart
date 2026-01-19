@@ -13,69 +13,46 @@ class NotepadHostApi {
   /// Handle API calls from the isolate
   ///
   /// Routes to appropriate NotepadService methods based on [method] parameter
-  /// and returns serializable response Maps
-  Future<Map<String, dynamic>> handleCall(
+  /// and throws on error
+  Future<dynamic> handleCall(
     String method,
     Map<String, dynamic> args,
   ) async {
-    try {
-      switch (method) {
-        case 'listTabs':
-          return await _handleListTabs();
-        case 'getTab':
-          return await _handleGetTab(args);
-        case 'createTab':
-          return await _handleCreateTab(args);
-        case 'updateTab':
-          return await _handleUpdateTab(args);
-        case 'closeTab':
-          return await _handleCloseTab(args);
-        default:
-          return {
-            'success': false,
-            'error': 'Unknown method: $method',
-          };
-      }
-    } catch (e) {
-      return {
-        'success': false,
-        'error': e.toString(),
-      };
+    switch (method) {
+      case 'listTabs':
+        return await _handleListTabs();
+      case 'getTab':
+        return await _handleGetTab(args);
+      case 'createTab':
+        return await _handleCreateTab(args);
+      case 'updateTab':
+        return await _handleUpdateTab(args);
+      case 'closeTab':
+        return await _handleCloseTab(args);
+      default:
+        throw Exception('Unknown method: $method');
     }
   }
 
-  Future<Map<String, dynamic>> _handleListTabs() async {
-    final tabs = _notepadService.listTabs();
-    return {
-      'success': true,
-      'tabs': tabs,
-    };
+  Future<dynamic> _handleListTabs() async {
+    return _notepadService.listTabs();
   }
 
-  Future<Map<String, dynamic>> _handleGetTab(Map<String, dynamic> args) async {
+  Future<dynamic> _handleGetTab(Map<String, dynamic> args) async {
     final id = args['id'] as String?;
     if (id == null) {
-      return {
-        'success': false,
-        'error': 'Missing required parameter: id',
-      };
+      throw Exception('Missing required parameter: id');
     }
 
     final tab = _notepadService.getTab(id);
     if (tab == null) {
-      return {
-        'success': true,
-        'tab': null,
-      };
+      return null;
     }
 
-    return {
-      'success': true,
-      'tab': _tabToMapWithContent(tab),
-    };
+    return _tabToMapWithContent(tab);
   }
 
-  Future<Map<String, dynamic>> _handleCreateTab(
+  Future<dynamic> _handleCreateTab(
     Map<String, dynamic> args,
   ) async {
     final content = args['content'] as String?;
@@ -83,66 +60,45 @@ class NotepadHostApi {
     final title = args['title'] as String?;
 
     if (content == null || mimeType == null) {
-      return {
-        'success': false,
-        'error': 'Missing required parameters: content, mimeType',
-      };
+      throw Exception('Missing required parameters: content, mimeType');
     }
 
-    final id = _notepadService.createTab(
+    return _notepadService.createTab(
       content: content,
       mimeType: mimeType,
       title: title,
     );
-
-    return {
-      'success': true,
-      'tabId': id,
-    };
   }
 
-  Future<Map<String, dynamic>> _handleUpdateTab(
+  Future<dynamic> _handleUpdateTab(
     Map<String, dynamic> args,
   ) async {
     final id = args['id'] as String?;
     if (id == null) {
-      return {
-        'success': false,
-        'error': 'Missing required parameter: id',
-      };
+      throw Exception('Missing required parameter: id');
     }
 
     final content = args['content'] as String?;
     final title = args['title'] as String?;
     final mimeType = args['mimeType'] as String?;
 
-    final success = _notepadService.updateTab(
+    return _notepadService.updateTab(
       id,
       content: content,
       title: title,
       mimeType: mimeType,
     );
-
-    return {
-      'success': success,
-    };
   }
 
-  Future<Map<String, dynamic>> _handleCloseTab(
+  Future<dynamic> _handleCloseTab(
     Map<String, dynamic> args,
   ) async {
     final id = args['id'] as String?;
     if (id == null) {
-      return {
-        'success': false,
-        'error': 'Missing required parameter: id',
-      };
+      throw Exception('Missing required parameter: id');
     }
 
-    final success = _notepadService.closeTab(id);
-    return {
-      'success': success,
-    };
+    return _notepadService.closeTab(id);
   }
 
   /// Convert a NotepadTab object to a sendable Map (metadata only, no content)

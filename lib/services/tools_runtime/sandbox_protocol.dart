@@ -18,8 +18,7 @@ library sandbox_protocol;
 
 // Conditional import for platform-specific port types
 import 'sandbox_protocol_platform_native.dart'
-    if (dart.library.html) 'sandbox_protocol_platform_web.dart'
-    as platform;
+    if (dart.library.html) 'sandbox_protocol_platform_web.dart' as platform;
 
 // Re-export platform-specific ReplyToPort type for type safety
 typedef ReplyToPort = platform.ReplyToPort;
@@ -463,7 +462,7 @@ Map<String, dynamic> toolsChangedMessage(
 /// ```
 Map<String, dynamic> successResponse(
   String requestId,
-  Map<String, dynamic> data, {
+  dynamic data, {
   String? id,
 }) {
   return {
@@ -675,7 +674,10 @@ String generateMessageId() {
   if (message.containsKey('replyTo')) {
     final replyTo = message['replyTo'];
     if (!platform.isValidReplyTo(replyTo)) {
-      return (false, 'replyTo must be ${platform.replyToTypeName()}, got ${replyTo.runtimeType}');
+      return (
+        false,
+        'replyTo must be ${platform.replyToTypeName()}, got ${replyTo.runtimeType}'
+      );
     }
   }
 
