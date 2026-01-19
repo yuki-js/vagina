@@ -10,7 +10,6 @@ import 'package:vagina/services/realtime_api_client.dart';
 import 'package:vagina/services/text_agent_job_runner.dart';
 import 'package:vagina/services/text_agent_service.dart';
 import 'package:vagina/services/tool_service.dart';
-import 'package:vagina/services/websocket_service.dart';
 
 part 'call_service_providers.g.dart';
 
@@ -35,20 +34,8 @@ AudioPlayerService audioPlayerService(Ref ref) {
 }
 
 @riverpod
-WebSocketService webSocketService(Ref ref) {
-  final service = WebSocketService(
-    logService: ref.watch(logServiceProvider),
-  );
-  ref.onDispose(() {
-    service.dispose();
-  });
-  return service;
-}
-
-@riverpod
 RealtimeApiClient realtimeApiClient(Ref ref) {
   final client = RealtimeApiClient(
-    webSocket: ref.watch(webSocketServiceProvider),
     logService: ref.watch(logServiceProvider),
   );
   ref.onDispose(() {

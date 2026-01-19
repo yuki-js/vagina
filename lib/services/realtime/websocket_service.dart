@@ -1,10 +1,14 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:web_socket_channel/web_socket_channel.dart';
-import 'log_service.dart';
+import '../log_service.dart';
 import 'package:vagina/utils/url_utils.dart';
 
 /// Service for WebSocket communication
+/// 
+/// This is an internal dependency of RealtimeApiClient and should not be
+/// managed as a standalone Riverpod provider. It's part of the Realtime
+/// API module implementation.
 class WebSocketService {
   static const _tag = 'WebSocket';
   

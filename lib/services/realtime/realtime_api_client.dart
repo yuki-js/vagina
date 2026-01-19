@@ -4,7 +4,7 @@ import 'dart:typed_data';
 import 'package:vagina/core/config/app_config.dart';
 import 'package:vagina/models/realtime_session_config.dart';
 import 'package:vagina/services/tools_runtime/tool.dart';
-import '../websocket_service.dart';
+import 'websocket_service.dart';
 import '../log_service.dart';
 import 'realtime_types.dart';
 import 'realtime_state.dart';
@@ -19,10 +19,10 @@ import 'response_handlers.dart';
 class RealtimeApiClient {
   static const _tag = 'RealtimeAPI';
 
-  final WebSocketService _webSocket;
+  final WebSocketService _webSocket = WebSocketService();
   final LogService _logService;
-  final RealtimeStreams _streams;
-  final RealtimeState _state;
+  final RealtimeStreams _streams = RealtimeStreams();
+  final RealtimeState _state = RealtimeState();
 
   late final RealtimeEventRouter _router;
 
@@ -32,14 +32,8 @@ class RealtimeApiClient {
   RealtimeSessionConfig _sessionConfig = const RealtimeSessionConfig();
 
   RealtimeApiClient({
-    WebSocketService? webSocket,
     LogService? logService,
-    RealtimeStreams? streams,
-    RealtimeState? state,
-  })  : _webSocket = webSocket ?? WebSocketService(),
-        _logService = logService ?? LogService(),
-        _streams = streams ?? RealtimeStreams(),
-        _state = state ?? RealtimeState() {
+  }) : _logService = logService ?? LogService() {
     _router = _buildRouter();
   }
 
