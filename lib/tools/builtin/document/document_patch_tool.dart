@@ -17,8 +17,7 @@ import 'package:vagina/services/tools_runtime/tool_definition.dart';
 /// - Otherwise, returns as-is (ASCII-only library patches)
 String _encodePatchText(String patchText) {
   final lines = patchText.split('\n');
-  final headerPattern =
-      RegExp(r'^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@');
+  final headerPattern = RegExp(r'^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@');
 
   // Pattern to detect UTF-8 multi-byte characters in URL-encoded format
   // Matches patterns like %E3%81%82 (Japanese hiragana あ)
@@ -37,11 +36,14 @@ String _encodePatchText(String patchText) {
   for (final line in lines) {
     if (line.isNotEmpty &&
         !headerPattern.hasMatch(line) &&
-        (line.startsWith('+') || line.startsWith('-') || line.startsWith(' '))) {
+        (line.startsWith('+') ||
+            line.startsWith('-') ||
+            line.startsWith(' '))) {
       final content = line.substring(1);
 
       // Check for URL-encoded newline (%0A) or multi-byte characters
-      if (content.contains('%0A') || urlEncodedMultibytePattern.hasMatch(content)) {
+      if (content.contains('%0A') ||
+          urlEncodedMultibytePattern.hasMatch(content)) {
         hasUrlEncoding = true;
         break;
       }
@@ -98,7 +100,9 @@ String _encodePatchText(String patchText) {
 
       if (line.isEmpty) continue;
 
-      if (line.startsWith('+') || line.startsWith('-') || line.startsWith(' ')) {
+      if (line.startsWith('+') ||
+          line.startsWith('-') ||
+          line.startsWith(' ')) {
         final prefix = line[0];
         final content = line.substring(1);
 
@@ -180,8 +184,7 @@ class DocumentPatchTool implements Tool {
     } catch (e) {
       return jsonEncode({
         'success': false,
-        'error':
-            'Invalid patch format: $e. Please use unified diff format.',
+        'error': 'Invalid patch format: $e. Please use unified diff format.',
       });
     }
 
