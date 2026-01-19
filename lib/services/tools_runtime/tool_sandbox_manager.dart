@@ -12,6 +12,7 @@ import 'package:vagina/services/tools_runtime/host/notepad_host_api.dart';
 import 'package:vagina/services/tools_runtime/host/memory_host_api.dart';
 import 'package:vagina/services/tools_runtime/host/call_host_api.dart';
 import 'package:vagina/services/tools_runtime/host/text_agent_host_api.dart';
+import 'package:vagina/services/tools_runtime/tool.dart';
 
 // Platform-specific imports (conditional)
 import 'sandbox_platform_native.dart'
@@ -21,7 +22,7 @@ import 'tool_sandbox_worker.dart' show toolSandboxWorker;
 /// Event emitted when the set of available tools changes
 class ToolsChangedEvent {
   /// List of updated tool definitions
-  final List<Map<String, dynamic>> tools;
+  final List<Tool> tools;
 
   /// Reason for the change ('initial', 'added', 'removed', 'updated', 'mcp_sync')
   final String reason;
@@ -276,7 +277,7 @@ class ToolSandboxManager {
   /// - Not started or already disposed
   /// - Request timeout
   /// - Message send fails
-  Future<List<Map<String, dynamic>>> listSessionDefinitions() async {
+  Future<List<Tool>> getToolsFromWorker() async {
     if (!_isStarted) {
       throw StateError('ToolSandboxManager not started');
     }
@@ -331,8 +332,10 @@ class ToolSandboxManager {
           return [];
         }
 
-        return List<Map<String, dynamic>>.from(
-          tools.cast<Map<String, dynamic>>(),
+        return List<Tool>.from(
+          tools
+              .cast<Map<String, dynamic>>()
+              .map((json) => Tool.fromWorker(json)),
         );
       } finally {
         _pendingRequests.remove(messageId);
@@ -521,8 +524,10 @@ class ToolSandboxManager {
       }
 
       final event = ToolsChangedEvent(
-        tools: List<Map<String, dynamic>>.from(
-          tools.cast<Map<String, dynamic>>(),
+        tools: List<Tool>.from(
+          tools
+              .cast<Map<String, dynamic>>()
+              .map((json) => Tool.fromWorker(json)),
         ),
         reason: reason,
       );

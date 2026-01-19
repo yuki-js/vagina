@@ -1,3 +1,5 @@
+import 'package:vagina/services/tools_runtime/tool.dart';
+
 /// Configuration for OpenAI Realtime API session
 class RealtimeSessionConfig {
   /// Voice to use for audio output
@@ -7,7 +9,7 @@ class RealtimeSessionConfig {
   final String noiseReduction;
 
   /// Tools registered with the session
-  final List<Map<String, dynamic>> tools;
+  final List<Tool> tools;
 
   /// System instructions
   final String instructions;
@@ -22,7 +24,7 @@ class RealtimeSessionConfig {
   RealtimeSessionConfig copyWith({
     String? voice,
     String? noiseReduction,
-    List<Map<String, dynamic>>? tools,
+    List<Tool>? tools,
     String? instructions,
   }) {
     return RealtimeSessionConfig(
@@ -58,7 +60,8 @@ class RealtimeSessionConfig {
 
     // Add tools if any are configured
     if (tools.isNotEmpty) {
-      config['tools'] = tools;
+      config['tools'] =
+          tools.map((tool) => tool.definition.toRealtimeJson()).toList();
       config['tool_choice'] = 'auto';
     }
 

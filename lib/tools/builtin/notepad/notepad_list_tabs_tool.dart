@@ -4,10 +4,8 @@ import 'package:vagina/services/tools_runtime/tool.dart';
 import 'package:vagina/services/tools_runtime/tool_context.dart';
 import 'package:vagina/services/tools_runtime/tool_definition.dart';
 
-class NotepadListTabsTool implements Tool {
+class NotepadListTabsTool extends Tool {
   static const String toolKeyName = 'notepad_list_tabs';
-
-  final AsyncOnce<void> _initOnce = AsyncOnce<void>();
 
   @override
   ToolDefinition get definition => const ToolDefinition(
@@ -27,10 +25,7 @@ class NotepadListTabsTool implements Tool {
       );
 
   @override
-  Future<void> init() => _initOnce.run(() async {});
-
-  @override
-  Future<String> execute(ToolArgs args, ToolContext context) async {
+  Future<String> execute(Map<String, dynamic> args) async {
     final tabs = await context.notepadApi.listTabs();
     return jsonEncode({
       'success': true,

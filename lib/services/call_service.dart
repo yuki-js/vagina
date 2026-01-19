@@ -44,7 +44,6 @@ class CallService {
   final RealtimeApiClient _apiClient;
   final ConfigRepository _config;
   final CallSessionRepository _sessionRepository;
-  final ToolService _toolService;
   final NotepadService _notepadService;
   final MemoryRepository _memoryRepository;
   final LogService _logService;
@@ -53,12 +52,6 @@ class CallService {
   final TextAgentRepository _agentRepository;
   final TextAgentService _textAgentService;
   final TextAgentJobRunner _textAgentJobRunner;
-
-  /// Session-scoped allow-list of tool keys for the active call.
-  ///
-  /// Tools can be toggled from config; on changes we rebuild the runtime and
-  /// push updated tool definitions to the session.
-  Set<String>? _activeToolAllowList;
 
   /// Session-scoped ToolSandboxManager (spawned on call start, disposed on call end)
   ToolSandboxManager? _sandboxManager;
@@ -104,7 +97,6 @@ class CallService {
     required RealtimeApiClient apiClient,
     required ConfigRepository config,
     required CallSessionRepository sessionRepository,
-    required ToolService toolService,
     required NotepadService notepadService,
     required MemoryRepository memoryRepository,
     required TextAgentRepository agentRepository,
@@ -117,7 +109,6 @@ class CallService {
         _apiClient = apiClient,
         _config = config,
         _sessionRepository = sessionRepository,
-        _toolService = toolService,
         _notepadService = notepadService,
         _memoryRepository = memoryRepository,
         _agentRepository = agentRepository,
@@ -258,8 +249,11 @@ class CallService {
       await _sandboxManager!.start();
 
       // Get initial tool definitions from sandbox
-      final toolDefinitions = await _sandboxManager!.listSessionDefinitions();
-      _apiClient.setTools(toolDefinitions);
+      final toolsFromWorker = await _sandboxManager!.getToolsFromWorker();
+
+      _logService.debug("OKETUMANKO", "Tools from worker: $toolsFromWorker");
+
+      _apiClient.setTools(toolsFromWorker);
 
       // Listen for tool changes and update realtime session
       _toolsChangedSubscription = _sandboxManager!.toolsChanged.listen((event) {
@@ -656,8 +650,6 @@ class CallService {
     // Dispose sandbox
     await _sandboxManager?.dispose();
     _sandboxManager = null;
-
-    _activeToolAllowList = null;
 
     _callDuration = 0;
     _durationController.add(0);

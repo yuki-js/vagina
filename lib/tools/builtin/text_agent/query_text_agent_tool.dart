@@ -4,10 +4,8 @@ import 'package:vagina/services/tools_runtime/tool.dart';
 import 'package:vagina/services/tools_runtime/tool_context.dart';
 import 'package:vagina/services/tools_runtime/tool_definition.dart';
 
-class QueryTextAgentTool implements Tool {
+class QueryTextAgentTool extends Tool {
   static const String toolKeyName = 'query_text_agent';
-
-  final AsyncOnce<void> _initOnce = AsyncOnce<void>();
 
   @override
   ToolDefinition get definition => const ToolDefinition(
@@ -42,10 +40,7 @@ class QueryTextAgentTool implements Tool {
       );
 
   @override
-  Future<void> init() => _initOnce.run(() async {});
-
-  @override
-  Future<String> execute(ToolArgs args, ToolContext context) async {
+  Future<String> execute(Map<String, dynamic> args) async {
     // Validate parameters
     final agentId = args['agent_id'] as String?;
     final prompt = args['prompt'] as String?;

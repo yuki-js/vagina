@@ -1,14 +1,15 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:vagina/services/tools_runtime/sandbox_protocol.dart';
+import 'package:vagina/services/tools_runtime/tool.dart';
 import 'package:vagina/services/tools_runtime/tool_context.dart';
 import 'package:vagina/services/tools_runtime/apis/notepad_api.dart';
 import 'package:vagina/services/tools_runtime/apis/memory_api.dart';
 import 'package:vagina/services/tools_runtime/apis/call_api.dart';
 import 'package:vagina/services/tools_runtime/apis/text_agent_api.dart';
-import 'package:vagina/tools/builtin/builtin_tool_catalog.dart';
 import 'package:vagina/services/notepad_service.dart';
 import 'package:vagina/models/notepad_tab.dart';
+import 'package:vagina/tools/tools.dart';
 
 // Platform-specific imports (conditional)
 import 'sandbox_platform_native.dart'
@@ -59,7 +60,7 @@ class _WorkerController {
   late ReplyToPort? _hostReceivePort;
 
   // Tool registry
-  final Map<String, Map<String, dynamic>> _toolDefinitions = {};
+  final Map<String, Tool> _toolMap = {};
 
   // Pending hostCall requests
   final Map<String, Completer<Map<String, dynamic>>> _pendingHostCalls = {};
@@ -168,21 +169,11 @@ class _WorkerController {
       _hostReceivePort = port as ReplyToPort;
       _log('Stored host port');
 
-      // Initialize tool registry from BuiltinToolCatalog
-      _initializeToolRegistry();
-
-      // Create API clients with hostCall mechanism
       _createApiClients();
 
-      // Create ToolContext with API clients
-      _toolContext = ToolContext(
-        notepadApi: _notepadApiClient,
-        memoryApi: _memoryApiClient,
-        callApi: _callApiClient,
-        textAgentApi: _textAgentApiClient,
-      );
+      _initializeToolRegistry();
 
-      _log('Handshake complete: initialized ${_toolDefinitions.length} tools');
+      _log('Handshake complete: initialized ${_toolMap.length} tools');
     } catch (e) {
       _log('ERROR in handshake: $e');
     }
@@ -190,22 +181,17 @@ class _WorkerController {
 
   /// Initialize tool registry from BuiltinToolCatalog
   void _initializeToolRegistry() {
-    _log('Initializing tool registry');
+    _toolContext = ToolContext(
+      notepadApi: _notepadApiClient,
+      memoryApi: _memoryApiClient,
+      callApi: _callApiClient,
+      textAgentApi: _textAgentApiClient,
+    );
+    for (var tool in toolbox) {
+      _log('Registering tool: ${tool.definition.toolKey}');
+      tool.init(_toolContext); // boot up tool with context
 
-    _toolDefinitions.clear();
-
-    try {
-      final definitions = BuiltinToolCatalog.listDefinitions();
-
-      for (final definition in definitions) {
-        _toolDefinitions[definition.toolKey] = definition.toRealtimeJson();
-        _log('Registered tool: ${definition.toolKey}');
-      }
-
-      _log('Tool registry initialized with ${_toolDefinitions.length} tools');
-    } catch (e) {
-      _log('ERROR initializing tool registry: $e');
-      rethrow;
+      _toolMap[tool.definition.toolKey] = tool;
     }
   }
 
@@ -358,15 +344,13 @@ class _WorkerController {
       _log('Executing tool: $toolKey');
 
       try {
-        // Create tool instance
-        final tool = BuiltinToolCatalog.createTool(toolKey, _toolContext);
-
-        // Initialize tool
-        await tool.init();
-        _log('Tool initialized: $toolKey');
+        final resolved = _toolMap[toolKey];
+        if (resolved == null) {
+          throw UnknownToolException('Tool not found: $toolKey');
+        }
 
         // Execute tool
-        final result = await tool.execute(args, _toolContext);
+        final result = await resolved.execute(args);
         _log('Tool execution completed: $toolKey');
 
         // Send success response
@@ -417,9 +401,9 @@ class _WorkerController {
     Map<String, dynamic> message,
   ) async {
     try {
-      _log('Listing session definitions: ${_toolDefinitions.length} tools');
+      _log('Listing session definitions: ${_toolMap.length} tools');
 
-      final tools = _toolDefinitions.values.toList();
+      final tools = _toolMap.values.map((t) => t.toWorker()).toList();
 
       _sendResponse(
         requestId,
@@ -480,12 +464,13 @@ class _WorkerController {
       }
 
       // Register the tool
-      _toolDefinitions[toolKey] = toolDefinition;
+      //_toolDefinitions[toolKey] = toolDefinition;
+      _toolMap[toolKey] = Tool.fromWorker(toolDefinition);
       _log('Registered tool: $toolKey');
 
       // Emit toolsChanged event
       _emitToolsChanged(
-        _toolDefinitions.values.toList(),
+        _toolMap.values.map((t) => t.toWorker()).toList(),
         'added',
       );
 
@@ -536,13 +521,13 @@ class _WorkerController {
       }
 
       // Unregister the tool
-      if (_toolDefinitions.containsKey(toolKey)) {
-        _toolDefinitions.remove(toolKey);
+      if (_toolMap.containsKey(toolKey)) {
+        _toolMap.remove(toolKey);
         _log('Unregistered tool: $toolKey');
 
         // Emit toolsChanged event
         _emitToolsChanged(
-          _toolDefinitions.values.toList(),
+          _toolMap.values.map((t) => t.toWorker()).toList(),
           'removed',
         );
       } else {
@@ -628,104 +613,11 @@ void _log(String message) {
   print('[$_tag] $message');
 }
 
-/// Stub NotepadService implementation for use in isolate workers.
-///
-/// This provides a NotepadService interface that tools expect, while actual
-/// operations are delegated to the host via hostCall in the NotepadApiClient.
-/// This is temporary and will be replaced when ToolContext uses API clients directly.
-class _StubNotepadService implements NotepadService {
-  // ignore: unused_field - Will be used in next refactoring when ToolContext uses API clients
-  final NotepadApiClient _apiClient;
-  final StreamController<List<NotepadTab>> _tabsController =
-      StreamController.broadcast();
-  final StreamController<String?> _selectedTabController =
-      StreamController.broadcast();
+class UnknownToolException implements Exception {
+  final String message;
 
-  _StubNotepadService(this._apiClient);
+  UnknownToolException(this.message);
 
   @override
-  Stream<List<NotepadTab>> get tabsStream => _tabsController.stream;
-
-  @override
-  Stream<String?> get selectedTabStream => _selectedTabController.stream;
-
-  @override
-  List<NotepadTab> get tabs => []; // Stub: no local state
-
-  @override
-  String? get selectedTabId => null; // Stub: no selection tracking
-
-  @override
-  List<Map<String, dynamic>> listTabs() {
-    // Note: This is synchronous, but the API is async.
-    // In practice, tools should call this inside async functions.
-    // Return empty for now - actual data comes from API in async context.
-    return [];
-  }
-
-  @override
-  NotepadTab? getTab(String tabId) {
-    // Stub: synchronous interface doesn't support async API calls
-    return null;
-  }
-
-  @override
-  String? getTabContent(String tabId) {
-    return null;
-  }
-
-  @override
-  Map<String, dynamic>? getTabMetadata(String tabId) {
-    return null;
-  }
-
-  @override
-  String createTab({
-    required String content,
-    required String mimeType,
-    String? title,
-  }) {
-    // This would need to be async to work with hostCall
-    throw UnimplementedError('createTab() requires async context. '
-        'Call notepadApi.createTab() directly instead.');
-  }
-
-  @override
-  bool updateTab(String tabId,
-      {String? content, String? title, String? mimeType}) {
-    throw UnimplementedError('updateTab() requires async context. '
-        'Call notepadApi.updateTab() directly instead.');
-  }
-
-  @override
-  bool closeTab(String tabId) {
-    throw UnimplementedError('closeTab() requires async context. '
-        'Call notepadApi.closeTab() directly instead.');
-  }
-
-  @override
-  void selectTab(String? tabId) {
-    // Stub: no-op
-  }
-
-  @override
-  bool undo(String tabId) {
-    return false;
-  }
-
-  @override
-  bool redo(String tabId) {
-    return false;
-  }
-
-  @override
-  void clearTabs() {
-    // Stub: no-op
-  }
-
-  @override
-  void dispose() {
-    _tabsController.close();
-    _selectedTabController.close();
-  }
+  String toString() => 'UnknownToolException: $message';
 }

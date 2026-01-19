@@ -334,7 +334,7 @@ abstract class Tool {
 **Tool Example:**
 
 ```dart
-class GetCurrentTimeTool implements Tool {
+class GetCurrentTimeTool extends Tool {
   static const String toolKeyName = 'get_current_time';
   
   @override
@@ -359,7 +359,7 @@ class GetCurrentTimeTool implements Tool {
   );
   
   @override
-  Future<String> execute(ToolArgs args, ToolContext context) async {
+  Future<String> execute(Map<String, dynamic> args) async {
     final now = DateTime.now();
     return jsonEncode({
       'current_time': now.toIso8601String(),

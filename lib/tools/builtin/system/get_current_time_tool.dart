@@ -5,10 +5,8 @@ import 'package:vagina/services/tools_runtime/tool_context.dart';
 import 'package:vagina/services/tools_runtime/tool_definition.dart';
 import 'package:vagina/utils/duration_formatter.dart';
 
-class GetCurrentTimeTool implements Tool {
+class GetCurrentTimeTool extends Tool {
   static const String toolKeyName = 'get_current_time';
-
-  final AsyncOnce<void> _initOnce = AsyncOnce<void>();
 
   @override
   ToolDefinition get definition => const ToolDefinition(
@@ -34,10 +32,7 @@ class GetCurrentTimeTool implements Tool {
       );
 
   @override
-  Future<void> init() => _initOnce.run(() async {});
-
-  @override
-  Future<String> execute(ToolArgs args, ToolContext context) async {
+  Future<String> execute(Map<String, dynamic> args) async {
     final now = DateTime.now();
     final timezone = args['timezone'] as String?;
 

@@ -6,13 +6,13 @@ import 'package:vagina/services/log_service.dart';
 /// JSON-based implementation of ConfigRepository
 class JsonConfigRepository implements ConfigRepository {
   static const _tag = 'ConfigRepo';
-  
+
   // Config keys
   static const _apiKeyKey = 'api_key';
   static const _realtimeUrlKey = 'realtime_url';
   static const _androidAudioConfigKey = 'android_audio_config';
   static const _toolsKey = 'tools';
-  
+
   final KeyValueStore _store;
   final LogService _logService;
 
@@ -20,7 +20,7 @@ class JsonConfigRepository implements ConfigRepository {
       : _logService = logService ?? LogService();
 
   // Azure OpenAI Configuration
-  
+
   @override
   Future<void> saveApiKey(String apiKey) async {
     _logService.debug(_tag, 'Saving API key');
@@ -69,7 +69,7 @@ class JsonConfigRepository implements ConfigRepository {
   }
 
   // Android Audio Configuration
-  
+
   @override
   Future<void> saveAndroidAudioConfig(AndroidAudioConfig config) async {
     _logService.debug(_tag, 'Saving Android audio config');
@@ -79,16 +79,16 @@ class JsonConfigRepository implements ConfigRepository {
   @override
   Future<AndroidAudioConfig> getAndroidAudioConfig() async {
     final data = await _store.get(_androidAudioConfigKey);
-    
+
     if (data == null) {
       return const AndroidAudioConfig();
     }
-    
+
     return AndroidAudioConfig.fromJson(data as Map<String, dynamic>);
   }
 
   // Tool Configuration
-  
+
   @override
   Future<bool> isToolEnabled(String toolName) async {
     final tools = await _getToolsConfig();
@@ -96,51 +96,37 @@ class JsonConfigRepository implements ConfigRepository {
   }
 
   @override
-  Future<void> toggleTool(String toolName) async {
-    _logService.debug(_tag, 'Toggling tool: $toolName');
-    
-    final tools = await _getToolsConfig();
-    final isCurrentlyEnabled = tools[toolName] ?? true;
-    tools[toolName] = !isCurrentlyEnabled;
-    
-    await _store.set(_toolsKey, tools);
-    _logService.info(_tag, 'Tool $toolName ${!isCurrentlyEnabled ? "enabled" : "disabled"}');
+  Future<void> enableTool(String toolKey) async {
+    await _store.set(_toolsKey, {
+      ...await _getToolsConfig(),
+      toolKey: true,
+    });
   }
 
   @override
-  Future<List<String>> getEnabledTools() async {
-    final tools = await _getToolsConfig();
-    return tools.entries
-        .where((e) => e.value == true)
-        .map((e) => e.key)
-        .toList();
-  }
-
-  @override
-  Future<List<String>> getDisabledTools() async {
-    final tools = await _getToolsConfig();
-    return tools.entries
-        .where((e) => e.value == false)
-        .map((e) => e.key)
-        .toList();
+  Future<void> disableTool(String toolKey) async {
+    await _store.set(_toolsKey, {
+      ...await _getToolsConfig(),
+      toolKey: false,
+    });
   }
 
   Future<Map<String, bool>> _getToolsConfig() async {
     final data = await _store.get(_toolsKey);
-    
+
     if (data == null) {
       return {};
     }
-    
+
     if (data is! Map) {
       return {};
     }
-    
+
     return Map<String, bool>.from(data);
   }
 
   // General
-  
+
   @override
   Future<void> clearAll() async {
     _logService.info(_tag, 'Clearing all configuration');

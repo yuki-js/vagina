@@ -1,34 +1,36 @@
 import 'tool_context.dart';
 import 'tool_definition.dart';
 
-/// Parsed arguments passed to a tool.
-typedef ToolArgs = Map<String, dynamic>;
-
 /// Tool runtime interface.
 ///
 /// Implementations should be Flutter-free.
 abstract class Tool {
   ToolDefinition get definition;
 
-  /// Performs one-time initialization for this instance.
-  ///
-  /// This must be safe to call multiple times (at-most-once per instance).
-  /// Implementations may use [AsyncOnce] to enforce the latch semantics.
-  Future<void> init();
+  late final ToolContext context;
 
-  /// Executes the tool.
-  ///
-  /// [args] must already be parsed from JSON.
-  /// Returns a JSON payload string for compatibility with the existing
-  /// tool-call plumbing.
-  Future<String> execute(ToolArgs args, ToolContext context);
-}
+  Future<void> init(ToolContext c) async {
+    context = c;
+    toWorker();
+  }
 
-/// Helper for implementing at-most-once async initialization.
-class AsyncOnce<T> {
-  Future<T>? _future;
+  Future<String> execute(Map<String, dynamic> args);
 
-  Future<T> run(Future<T> Function() action) {
-    return _future ??= action();
+  static Tool fromWorker(Map<String, dynamic> json) {
+    final toolKey = json['toolKey'] as String;
+    if (_toolCache.containsKey(toolKey)) {
+      return _toolCache[toolKey]!;
+    }
+    throw Exception('Tool not found: $toolKey');
+  }
+
+  Map<String, dynamic> toWorker() {
+    _toolCache[definition.toolKey] = this;
+    return {
+      'toolKey': definition.toolKey,
+      '_badge': "ToolInstance",
+    };
   }
 }
+
+Map<String, Tool> _toolCache = {};

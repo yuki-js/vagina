@@ -45,7 +45,7 @@ class ToolDefinition {
   });
 
   /// Realtime API compatible tool definition (function tool).
-  Map<String, dynamic> toRealtimeJson() {
+  Map<String, Object> toRealtimeJson() {
     return {
       'type': 'function',
       'name': toolKey,

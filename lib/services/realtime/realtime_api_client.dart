@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:vagina/core/config/app_config.dart';
 import 'package:vagina/models/realtime_session_config.dart';
+import 'package:vagina/services/tools_runtime/tool.dart';
 import '../websocket_service.dart';
 import '../log_service.dart';
 import 'realtime_types.dart';
@@ -27,7 +28,7 @@ class RealtimeApiClient {
 
   StreamSubscription? _messageSubscription;
 
-  List<Map<String, dynamic>> _tools = [];
+  List<Tool> _tools = [];
   RealtimeSessionConfig _sessionConfig = const RealtimeSessionConfig();
 
   RealtimeApiClient({
@@ -135,7 +136,7 @@ class RealtimeApiClient {
   // ========== Configuration Methods ==========
 
   /// Set tools to be registered with the session
-  void setTools(List<Map<String, dynamic>> tools) {
+  void setTools(List<Tool> tools) {
     _tools = tools;
   }
 

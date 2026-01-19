@@ -4,10 +4,8 @@ import 'package:vagina/services/tools_runtime/tool.dart';
 import 'package:vagina/services/tools_runtime/tool_context.dart';
 import 'package:vagina/services/tools_runtime/tool_definition.dart';
 
-class EndCallTool implements Tool {
+class EndCallTool extends Tool {
   static const String toolKeyName = 'end_call';
-
-  final AsyncOnce<void> _initOnce = AsyncOnce<void>();
 
   @override
   ToolDefinition get definition => const ToolDefinition(
@@ -32,10 +30,7 @@ class EndCallTool implements Tool {
       );
 
   @override
-  Future<void> init() => _initOnce.run(() async {});
-
-  @override
-  Future<String> execute(ToolArgs args, ToolContext context) async {
+  Future<String> execute(Map<String, dynamic> args) async {
     final endContext = args['end_context'] as String?;
 
     try {

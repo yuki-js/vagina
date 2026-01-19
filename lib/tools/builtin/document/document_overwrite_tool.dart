@@ -4,10 +4,8 @@ import 'package:vagina/services/tools_runtime/tool.dart';
 import 'package:vagina/services/tools_runtime/tool_context.dart';
 import 'package:vagina/services/tools_runtime/tool_definition.dart';
 
-class DocumentOverwriteTool implements Tool {
+class DocumentOverwriteTool extends Tool {
   static const String toolKeyName = 'document_overwrite';
-
-  final AsyncOnce<void> _initOnce = AsyncOnce<void>();
 
   @override
   ToolDefinition get definition => const ToolDefinition(
@@ -47,10 +45,7 @@ class DocumentOverwriteTool implements Tool {
       );
 
   @override
-  Future<void> init() => _initOnce.run(() async {});
-
-  @override
-  Future<String> execute(ToolArgs args, ToolContext context) async {
+  Future<String> execute(Map<String, dynamic> args) async {
     final tabId = args['tabId'] as String?;
     final content = args['content'] as String;
     final mime = (args['mime'] as String?) ?? 'text/markdown';

@@ -1,11 +1,8 @@
 import 'package:vagina/interfaces/config_repository.dart';
-import 'package:vagina/interfaces/memory_repository.dart';
-import 'package:vagina/tools/builtin/builtin_tool_catalog.dart';
+import 'package:vagina/services/tools_runtime/tool.dart';
+import 'package:vagina/tools/tools.dart';
 
-import 'notepad_service.dart';
 import 'tool_metadata.dart';
-import 'tools_runtime/tool_factory.dart';
-import 'tools_runtime/tool_registry.dart' as runtime;
 
 export 'tool_metadata.dart' show ToolMetadata, ToolCategory, ToolSource;
 
@@ -15,128 +12,62 @@ export 'tool_metadata.dart' show ToolMetadata, ToolCategory, ToolSource;
 /// - ツールの有効/無効管理
 /// - 将来のMCP対応の基盤
 class ToolService {
-  final NotepadService _notepadService;
-  final MemoryRepository _memoryRepository;
   final ConfigRepository _configRepository;
-  bool _initialized = false;
-
-  /// Runtime tool factories keyed by toolKey.
-  late final Map<String, ToolFactory> _runtimeToolFactories;
 
   ToolService({
-    required NotepadService notepadService,
-    required MemoryRepository memoryRepository,
     required ConfigRepository configRepository,
-  })  : _notepadService = notepadService,
-        _memoryRepository = memoryRepository,
-        _configRepository = configRepository;
-
-  /// サービスを初期化（ビルトインツールを登録）
-  void initialize() {
-    if (_initialized) return;
-
-    // Ensure late fields are initialized before any getter uses them.
-    _runtimeToolFactories = <String, ToolFactory>{};
-
-    _initialized = true;
+  }) : _configRepository = configRepository {
+    setTools(toolbox);
   }
 
-  /// すべてのツール定義を取得（有効/無効問わず）
-  List<Map<String, dynamic>> get toolDefinitions {
-    if (!_initialized) initialize();
+  final Map<String, Tool> _tools = {};
 
-    final registry = runtime.ToolRegistry();
-
-    // Builtin tools.
-    for (final factory in BuiltinToolCatalog.listRuntimeFactories().values) {
-      registry.registerFactory(factory);
+  void setTools(List<Tool> tools) {
+    for (var tool in tools) {
+      setTool(tool);
     }
-
-    // Runtime/MCP tools (future).
-    for (final factory in _runtimeToolFactories.values) {
-      registry.registerFactory(factory);
-    }
-
-    return registry
-        .listDefinitions()
-        .map((d) => d.toRealtimeJson())
-        .toList(growable: false);
   }
 
-  /// すべてのツールとメタデータを取得
-  List<({String name, ToolMetadata metadata})> get allToolsWithMetadata {
-    if (!_initialized) initialize();
-
-    final registry = runtime.ToolRegistry();
-
-    // Builtin tools.
-    for (final factory in BuiltinToolCatalog.listRuntimeFactories().values) {
-      registry.registerFactory(factory);
-    }
-
-    // Runtime/MCP tools (future).
-    for (final factory in _runtimeToolFactories.values) {
-      registry.registerFactory(factory);
-    }
-
-    return registry.listDefinitions().map((d) {
-      final category = ToolCategory.values
-          .where((c) => c.name == d.categoryKey)
-          .cast<ToolCategory?>()
-          .firstWhere((c) => c != null, orElse: () => null);
-
-      final source = ToolSource.values
-          .where((s) => s.name == d.sourceKey)
-          .cast<ToolSource?>()
-          .firstWhere((s) => s != null, orElse: () => null);
-
-      return (
-        name: d.toolKey,
-        metadata: ToolMetadata(
-          name: d.toolKey,
-          displayName: d.displayName,
-          displayDescription: d.displayDescription,
-          description: d.description,
-          iconKey: d.iconKey,
-          category: category ?? ToolCategory.custom,
-          source: source ?? ToolSource.custom,
-          mcpServerUrl: d.mcpServerUrl,
-        ),
-      );
-    }).toList(growable: false);
+  void setTool(Tool tool) {
+    final String key = tool.definition.toolKey;
+    _tools[key] = tool;
   }
 
-  /// カテゴリ別にグループ化したツールを取得
-  Map<ToolCategory, List<ToolMetadata>> get toolsByCategory {
-    if (!_initialized) initialize();
-    final result = <ToolCategory, List<ToolMetadata>>{};
+  List<ToolMetadata> get registeredToolMeta {
+    return _tools.values
+        .map((tool) => ToolMetadata(
+            name: tool.definition.toolKey,
+            displayName: tool.definition.displayName,
+            displayDescription: tool.definition.displayDescription,
+            description: tool.definition.description,
+            iconKey: tool.definition.iconKey,
+            category: ToolCategory.fromKey(tool.definition.categoryKey),
+            source: ToolSource.fromKey(tool.definition.sourceKey),
+            mcpServerUrl: tool.definition.mcpServerUrl))
+        .toList();
+  }
 
-    for (final entry in allToolsWithMetadata) {
-      result
-          .putIfAbsent(entry.metadata.category, () => <ToolMetadata>[])
-          .add(entry.metadata);
+  Tool? getToolByKey(String toolKey) {
+    return _tools[toolKey];
+  }
+
+  List<Tool> get registeredTools {
+    return _tools.values.toList();
+  }
+
+  Future<List<Tool>> getEnabledTools() async {
+    List<Tool> enabledTools = [];
+    for (var tool in _tools.values) {
+      final isEnabled =
+          await _configRepository.isToolEnabled(tool.definition.toolKey);
+      if (isEnabled) {
+        enabledTools.add(tool);
+      }
     }
-
-    return result;
+    return enabledTools;
   }
 
-  /// ツールの有効状態を取得
-  Future<bool> isToolEnabled(String toolName) async {
-    return await _configRepository.isToolEnabled(toolName);
-  }
-
-  /// ツールの有効/無効を切り替え
-  Future<void> toggleTool(String toolName) async {
-    await _configRepository.toggleTool(toolName);
-  }
-
-  /// ツールメタデータを取得
-  ToolMetadata? getToolMetadata(String name) {
-    if (!_initialized) initialize();
-    try {
-      return allToolsWithMetadata.firstWhere((e) => e.name == name).metadata;
-    } catch (_) {
-      return null;
-    }
+  Future<List<Tool>> getRegisteredTools() async {
+    return _tools.values.toList();
   }
 }

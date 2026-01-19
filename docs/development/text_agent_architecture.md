@@ -408,7 +408,7 @@ class TextAgentHostApi {
 All tools follow this pattern:
 
 ```dart
-class QueryTextAgentTool implements Tool {
+class QueryTextAgentTool extends Tool {
   @override
   ToolDefinition get definition => /* ... */;
   
@@ -416,7 +416,7 @@ class QueryTextAgentTool implements Tool {
   Future<void> init() async { /* ... */ }
   
   @override
-  Future<String> execute(ToolArgs args, ToolContext context) async {
+  Future<String> execute(Map<String, dynamic> args) async {
     // 1. Validate parameters
     // 2. Call context API
     // 3. Return JSON result
@@ -581,15 +581,14 @@ To add a new text agent tool:
 
 1. Create tool class implementing `Tool`:
 ```dart
-class MyNewTool implements Tool {
+class MyNewTool extends Tool {
   @override
   ToolDefinition get definition => /* ... */;
   
-  @override
-  Future<void> init() async {}
+  
   
   @override
-  Future<String> execute(ToolArgs args, ToolContext context) async {
+  Future<String> execute(Map<String, dynamic> args) async {
     final result = await context.textAgentApi.myNewMethod(args);
     return jsonEncode(result);
   }

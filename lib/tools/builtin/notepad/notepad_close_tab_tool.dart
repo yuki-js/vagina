@@ -4,10 +4,8 @@ import 'package:vagina/services/tools_runtime/tool.dart';
 import 'package:vagina/services/tools_runtime/tool_context.dart';
 import 'package:vagina/services/tools_runtime/tool_definition.dart';
 
-class NotepadCloseTabTool implements Tool {
+class NotepadCloseTabTool extends Tool {
   static const String toolKeyName = 'notepad_close_tab';
-
-  final AsyncOnce<void> _initOnce = AsyncOnce<void>();
 
   @override
   ToolDefinition get definition => const ToolDefinition(
@@ -31,10 +29,7 @@ class NotepadCloseTabTool implements Tool {
       );
 
   @override
-  Future<void> init() => _initOnce.run(() async {});
-
-  @override
-  Future<String> execute(ToolArgs args, ToolContext context) async {
+  Future<String> execute(Map<String, dynamic> args) async {
     final tabId = args['tabId'] as String;
     final success = await context.notepadApi.closeTab(tabId);
 

@@ -59,12 +59,8 @@ RealtimeApiClient realtimeApiClient(Ref ref) {
 
 @Riverpod(keepAlive: true)
 ToolService toolService(Ref ref) {
-  final notepadService = ref.watch(notepadServiceProvider);
-  final memoryRepository = ref.watch(memoryRepositoryProvider);
   final configRepository = ref.watch(configRepositoryProvider);
   return ToolService(
-    notepadService: notepadService,
-    memoryRepository: memoryRepository,
     configRepository: configRepository,
   );
 }
@@ -88,7 +84,6 @@ CallService callService(Ref ref) {
     apiClient: ref.watch(realtimeApiClientProvider),
     config: ref.watch(configRepositoryProvider),
     sessionRepository: ref.watch(callSessionRepositoryProvider),
-    toolService: ref.watch(toolServiceProvider),
     notepadService: ref.watch(notepadServiceProvider),
     memoryRepository: ref.watch(memoryRepositoryProvider),
     agentRepository: ref.watch(textAgentRepositoryProvider),

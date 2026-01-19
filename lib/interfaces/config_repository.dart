@@ -7,25 +7,24 @@ abstract class ConfigRepository {
   Future<String?> getApiKey();
   Future<void> deleteApiKey();
   Future<bool> hasApiKey();
-  
+
   Future<void> saveRealtimeUrl(String url);
   Future<String?> getRealtimeUrl();
   Future<void> deleteRealtimeUrl();
   Future<bool> hasAzureConfig();
-  
+
   /// Android Audio Configuration
   Future<void> saveAndroidAudioConfig(AndroidAudioConfig config);
   Future<AndroidAudioConfig> getAndroidAudioConfig();
-  
+
   /// Tool Configuration
   Future<bool> isToolEnabled(String toolName);
-  Future<void> toggleTool(String toolName);
-  Future<List<String>> getEnabledTools();
-  Future<List<String>> getDisabledTools();
-  
+  Future<void> enableTool(String toolKey);
+  Future<void> disableTool(String toolKey);
+
   /// Clear all configuration
   Future<void> clearAll();
-  
+
   /// Get config file path (for debugging)
   Future<String> getConfigFilePath();
 }

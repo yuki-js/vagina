@@ -65,12 +65,9 @@ class _ToolsTabState extends ConsumerState<ToolsTab> {
 
     final configRepo = ref.read(configRepositoryProvider);
     for (final toolName in _selectedTools) {
-      final isEnabled = await configRepo.isToolEnabled(toolName);
-      if (!isEnabled) {
-        await configRepo.toggleTool(toolName);
-        ref.invalidate(toolEnabledProvider(toolName));
-      }
+      await configRepo.enableTool(toolName);
     }
+    ref.invalidate(toolServiceProvider);
 
     setState(() {
       _selectedTools.clear();
@@ -89,13 +86,10 @@ class _ToolsTabState extends ConsumerState<ToolsTab> {
 
     final configRepo = ref.read(configRepositoryProvider);
     for (final toolName in _selectedTools) {
-      final isEnabled = await configRepo.isToolEnabled(toolName);
-      if (isEnabled) {
-        await configRepo.toggleTool(toolName);
-        ref.invalidate(toolEnabledProvider(toolName));
-      }
+      await configRepo.disableTool(toolName);
     }
 
+    ref.invalidate(toolServiceProvider);
     setState(() {
       _selectedTools.clear();
       _isSelectionMode = false;
@@ -111,7 +105,16 @@ class _ToolsTabState extends ConsumerState<ToolsTab> {
   @override
   Widget build(BuildContext context) {
     final toolService = ref.watch(toolServiceProvider);
-    final toolsByCategory = toolService.toolsByCategory;
+    final toolList = toolService.registeredToolMeta;
+    final toolsByCategory =
+        toolList.fold<Map<ToolCategory, List<ToolMetadata>>>({}, (map, tool) {
+      final category = tool.category;
+      if (!map.containsKey(category)) {
+        map[category] = [];
+      }
+      map[category]!.add(tool);
+      return map;
+    });
 
     return Column(
       children: [

@@ -30,7 +30,7 @@ void main() {
       expect(sandboxManager.isStarted, true);
 
       // List tools to verify communication works
-      final tools = await sandboxManager.listSessionDefinitions();
+      final tools = await sandboxManager.getToolsFromWorker();
       expect(tools, isNotEmpty);
       expect(tools, isA<List<Map<String, dynamic>>>());
 
@@ -54,7 +54,7 @@ void main() {
       );
 
       expect(
-        () => sandboxManager.listSessionDefinitions(),
+        () => sandboxManager.getToolsFromWorker(),
         throwsA(isA<StateError>()),
       );
     });
@@ -72,7 +72,7 @@ void main() {
       await sandboxManager.dispose();
 
       expect(
-        () => sandboxManager.listSessionDefinitions(),
+        () => sandboxManager.getToolsFromWorker(),
         throwsA(isA<StateError>()),
       );
     });
@@ -230,9 +230,16 @@ void main() {
         'tools': [
           {
             'key': 'tool1',
-            'params': {'a': 1, 'b': 2, 'nested': {'deep': 'value'}},
+            'params': {
+              'a': 1,
+              'b': 2,
+              'nested': {'deep': 'value'}
+            },
           },
-          {'key': 'tool2', 'params': {'x': 'y'}},
+          {
+            'key': 'tool2',
+            'params': {'x': 'y'}
+          },
         ],
         'metadata': {'count': 2, 'timestamp': '2026-01-18T11:54:39Z'},
       });
@@ -389,7 +396,7 @@ void main() {
       expect(sandbox.isStarted, true);
 
       // List tools
-      final tools = await sandbox.listSessionDefinitions();
+      final tools = await sandbox.getToolsFromWorker();
       expect(tools, isNotEmpty);
 
       // Execute document operation

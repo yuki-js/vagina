@@ -68,10 +68,10 @@ import 'package:vagina/services/tools_runtime/tool.dart';
 import 'package:vagina/services/tools_runtime/tool_context.dart';
 import 'package:vagina/services/tools_runtime/tool_definition.dart';
 
-class MyNewTool implements Tool {
+class MyNewTool extends Tool {
   static const String toolKeyName = 'my_new_tool';
   
-  final AsyncOnce<void> _initOnce = AsyncOnce<void>();
+  
   
   @override
   ToolDefinition get definition => const ToolDefinition(
@@ -105,7 +105,7 @@ class MyNewTool implements Tool {
   });
   
   @override
-  Future<String> execute(ToolArgs args, ToolContext context) async {
+  Future<String> execute(Map<String, dynamic> args) async {
     // 1. Validate parameters
     final param1 = args['param1'] as String?;
     if (param1 == null || param1.isEmpty) {
@@ -422,7 +422,7 @@ Tools are registered automatically when the `ToolSandboxManager` starts. The reg
 ### 1. Always Validate Parameters
 
 ```dart
-Future<String> execute(ToolArgs args, ToolContext context) async {
+Future<String> execute(Map<String, dynamic> args) async {
   // Validate all parameters before use
   final param = args['param'] as String?;
   if (param == null || param.isEmpty) {
@@ -556,7 +556,7 @@ logService.info('MyNewTool', 'Executing with param: $param');
 
 ```dart
 @override
-Future<String> execute(ToolArgs args, ToolContext context) async {
+Future<String> execute(Map<String, dynamic> args) async {
   try {
     final result = await context.myApi.doSomething();
     return jsonEncode({'success': true, 'data': result});
@@ -570,7 +570,7 @@ Future<String> execute(ToolArgs args, ToolContext context) async {
 
 ```dart
 @override
-Future<String> execute(ToolArgs args, ToolContext context) async {
+Future<String> execute(Map<String, dynamic> args) async {
   // Validate
   final input = args['input'] as String?;
   if (input == null || input.isEmpty) {
@@ -591,7 +591,7 @@ Future<String> execute(ToolArgs args, ToolContext context) async {
 
 ```dart
 @override
-Future<String> execute(ToolArgs args, ToolContext context) async {
+Future<String> execute(Map<String, dynamic> args) async {
   final mode = args['mode'] as String? ?? 'sync';
   
   if (mode == 'sync') {

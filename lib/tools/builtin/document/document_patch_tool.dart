@@ -124,10 +124,8 @@ String _encodePatchText(String patchText) {
   return encodedSections.join('\n');
 }
 
-class DocumentPatchTool implements Tool {
+class DocumentPatchTool extends Tool {
   static const String toolKeyName = 'document_patch';
-
-  final AsyncOnce<void> _initOnce = AsyncOnce<void>();
 
   @override
   ToolDefinition get definition => const ToolDefinition(
@@ -157,10 +155,7 @@ class DocumentPatchTool implements Tool {
       );
 
   @override
-  Future<void> init() => _initOnce.run(() async {});
-
-  @override
-  Future<String> execute(ToolArgs args, ToolContext context) async {
+  Future<String> execute(Map<String, dynamic> args) async {
     final tabId = args['tabId'] as String;
     final patchText = args['patch'] as String;
 

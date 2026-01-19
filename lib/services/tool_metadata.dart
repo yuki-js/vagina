@@ -23,6 +23,13 @@ enum ToolCategory {
   final String iconKey;
 
   const ToolCategory({required this.displayName, required this.iconKey});
+
+  static ToolCategory fromKey(String key) {
+    return ToolCategory.values.firstWhere(
+      (category) => category.name == key,
+      orElse: () => ToolCategory.custom,
+    );
+  }
 }
 
 /// Tool source for UI labeling.
@@ -37,6 +44,13 @@ enum ToolSource {
   final String displayName;
 
   const ToolSource({required this.displayName});
+
+  static ToolSource fromKey(String key) {
+    return ToolSource.values.firstWhere(
+      (source) => source.name == key,
+      orElse: () => ToolSource.custom,
+    );
+  }
 }
 
 /// UI metadata for a tool.

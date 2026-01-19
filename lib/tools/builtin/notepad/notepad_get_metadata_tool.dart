@@ -4,10 +4,8 @@ import 'package:vagina/services/tools_runtime/tool.dart';
 import 'package:vagina/services/tools_runtime/tool_context.dart';
 import 'package:vagina/services/tools_runtime/tool_definition.dart';
 
-class NotepadGetMetadataTool implements Tool {
+class NotepadGetMetadataTool extends Tool {
   static const String toolKeyName = 'notepad_get_metadata';
-
-  final AsyncOnce<void> _initOnce = AsyncOnce<void>();
 
   @override
   ToolDefinition get definition => const ToolDefinition(
@@ -32,10 +30,7 @@ class NotepadGetMetadataTool implements Tool {
       );
 
   @override
-  Future<void> init() => _initOnce.run(() async {});
-
-  @override
-  Future<String> execute(ToolArgs args, ToolContext context) async {
+  Future<String> execute(Map<String, dynamic> args) async {
     final tabId = args['tabId'] as String;
     final tab = await context.notepadApi.getTab(tabId);
 
