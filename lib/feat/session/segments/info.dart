@@ -44,6 +44,10 @@ class SessionDetailInfoSegment extends ConsumerWidget {
                     DurationFormatter.formatCallDuration(session.duration)),
                 _buildInfoRow('メッセージ数', '${session.chatMessages.length}件'),
                 _buildInfoRow('ノートパッド', '${session.notepadTabs?.length ?? 0}件'),
+                if (session.endContext != null && session.endContext!.isNotEmpty) ...[
+                  const Divider(height: 16),
+                  _buildEndContextRow(session.endContext!),
+                ],
               ]),
 
               const SizedBox(height: 24),
@@ -151,6 +155,55 @@ class SessionDetailInfoSegment extends ConsumerWidget {
               fontSize: 14,
               fontWeight: FontWeight.w500,
               color: AppTheme.lightTextPrimary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEndContextRow(String endContext) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.info_outline,
+                size: 16,
+                color: AppTheme.primaryColor,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                '終了理由',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: AppTheme.lightTextSecondary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryColor.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: AppTheme.primaryColor.withValues(alpha: 0.2),
+              ),
+            ),
+            child: Text(
+              endContext,
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppTheme.lightTextPrimary,
+                height: 1.4,
+              ),
             ),
           ),
         ],

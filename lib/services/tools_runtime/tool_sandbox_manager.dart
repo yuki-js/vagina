@@ -2,9 +2,15 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:vagina/services/notepad_service.dart';
 import 'package:vagina/interfaces/memory_repository.dart';
+import 'package:vagina/interfaces/text_agent_repository.dart';
+import 'package:vagina/services/call_service.dart';
+import 'package:vagina/services/text_agent_service.dart';
+import 'package:vagina/services/text_agent_job_runner.dart';
 import 'package:vagina/services/tools_runtime/sandbox_protocol.dart';
 import 'package:vagina/services/tools_runtime/host/notepad_host_api.dart';
 import 'package:vagina/services/tools_runtime/host/memory_host_api.dart';
+import 'package:vagina/services/tools_runtime/host/call_host_api.dart';
+import 'package:vagina/services/tools_runtime/host/text_agent_host_api.dart';
 
 // Platform-specific imports (conditional)
 import 'sandbox_platform_native.dart'
@@ -15,7 +21,7 @@ import 'tool_sandbox_worker.dart' show toolSandboxWorker;
 class ToolsChangedEvent {
   /// List of updated tool definitions
   final List<Map<String, dynamic>> tools;
-  
+
   /// Reason for the change ('initial', 'added', 'removed', 'updated', 'mcp_sync')
   final String reason;
 
@@ -25,7 +31,8 @@ class ToolsChangedEvent {
   });
 
   @override
-  String toString() => 'ToolsChangedEvent(reason: $reason, toolCount: ${tools.length})';
+  String toString() =>
+      'ToolsChangedEvent(reason: $reason, toolCount: ${tools.length})';
 }
 
 /// Manages the lifecycle and message routing for a sandboxed tool worker
@@ -41,9 +48,15 @@ class ToolSandboxManager {
 
   final NotepadService _notepadService;
   final MemoryRepository _memoryRepository;
-  
+  final CallService? _callService;
+  final TextAgentService? _textAgentService;
+  final TextAgentJobRunner? _jobRunner;
+  final TextAgentRepository? _agentRepository;
+
   late NotepadHostApi _notepadHostApi;
   late MemoryHostApi _memoryHostApi;
+  late CallHostApi? _callHostApi;
+  late TextAgentHostApi? _textAgentHostApi;
 
   // Worker management (platform-agnostic)
   platform.PlatformIsolate? _worker;
@@ -63,10 +76,33 @@ class ToolSandboxManager {
   ToolSandboxManager({
     required NotepadService notepadService,
     required MemoryRepository memoryRepository,
+    CallService? callService,
+    TextAgentService? textAgentService,
+    TextAgentJobRunner? jobRunner,
+    TextAgentRepository? agentRepository,
   })  : _notepadService = notepadService,
-        _memoryRepository = memoryRepository {
+        _memoryRepository = memoryRepository,
+        _callService = callService,
+        _textAgentService = textAgentService,
+        _jobRunner = jobRunner,
+        _agentRepository = agentRepository {
     _notepadHostApi = NotepadHostApi(_notepadService);
     _memoryHostApi = MemoryHostApi(_memoryRepository);
+
+    // Initialize call API if call service is provided
+    _callHostApi = callService != null ? CallHostApi(callService) : null;
+
+    // Initialize text agent API if all required services are provided
+    _textAgentHostApi = (textAgentService != null &&
+            jobRunner != null &&
+            agentRepository != null)
+        ? TextAgentHostApi(
+            textAgentService: textAgentService,
+            jobRunner: jobRunner,
+            agentRepository: agentRepository,
+          )
+        : null;
+
     _toolsChangedController = StreamController<ToolsChangedEvent>.broadcast();
   }
 
@@ -101,7 +137,8 @@ class ToolSandboxManager {
 
     try {
       // Spawn worker and get ports
-      final (worker, receivePort, workerSendPort) = await platform.spawnPlatformWorker(
+      final (worker, receivePort, workerSendPort) =
+          await platform.spawnPlatformWorker(
         toolSandboxWorker,
         _defaultTimeout,
       );
@@ -167,14 +204,14 @@ class ToolSandboxManager {
 
     try {
       final messageId = generateMessageId();
-      
+
       // Create and validate the execute message
       final message = executeToolMessage(
         toolKey,
         args,
         id: messageId,
       );
-      
+
       final (valid, error) = validateMessageEnvelope(message);
       if (!valid) {
         throw StateError('Invalid message: $error');
@@ -222,6 +259,9 @@ class ToolSandboxManager {
         _pendingRequests.remove(messageId);
       }
     } catch (e) {
+      print('[$_tag:HOST] Failed to execute tool: $toolKey');
+      print('Error: $e');
+      print('Request Payload: ${jsonEncode(args)}');
       rethrow;
     }
   }
@@ -245,10 +285,10 @@ class ToolSandboxManager {
 
     try {
       final messageId = generateMessageId();
-      
+
       // Create and validate the request message
       final message = listSessionDefinitionsMessage(id: messageId);
-      
+
       final (valid, error) = validateMessageEnvelope(message);
       if (!valid) {
         throw StateError('Invalid message: $error');
@@ -382,7 +422,7 @@ class ToolSandboxManager {
       // Extract replyTo port from message
       final replyTo = message['replyTo'];
       if (replyTo == null) {
-        print('$_tag: hostCall missing replyTo port');
+        print('[$_tag:HOST] hostCall missing replyTo port');
         return;
       }
 
@@ -403,13 +443,19 @@ class ToolSandboxManager {
 
       // Route to appropriate host API
       Map<String, dynamic> result;
-      
+
       switch (api) {
         case 'notepad':
           result = await _notepadHostApi.handleCall(method, args);
           break;
         case 'memory':
           result = await _memoryHostApi.handleCall(method, args);
+          break;
+        case 'call':
+          result = await _callHostApi!.handleCall(method, args);
+          break;
+        case 'textAgent':
+          result = await _textAgentHostApi!.handleCall(method, args);
           break;
         default:
           _sendHostCallError(requestId, 'Unknown API: $api', replyTo);
@@ -422,15 +468,24 @@ class ToolSandboxManager {
       // If we have replyTo, send error there; otherwise log only
       final replyTo = message['replyTo'];
       if (replyTo != null) {
+        final payload = message['payload'] as Map<String, dynamic>?;
+        final api = payload?['api'] as String? ?? 'unknown';
+        final method = payload?['method'] as String? ?? 'unknown';
+        final args = payload?['args'] as Map<String, dynamic>? ?? {};
+        print('[$_tag:HOST] Failed to handle hostCall');
+        print('API: $api, Method: $method');
+        print('Error: $e');
+        print('Request Payload: ${jsonEncode(args)}');
         _sendHostCallError(requestId, 'Error: $e', replyTo);
       } else {
-        print('$_tag: Error in hostCall (no replyTo): $e');
+        print('[$_tag:HOST] Error in hostCall (no replyTo): $e');
       }
     }
   }
 
   /// Send a hostCall response to the worker via the replyTo port
-  void _sendHostCallResponse(String requestId, Map<String, dynamic> result, dynamic replyTo) {
+  void _sendHostCallResponse(
+      String requestId, Map<String, dynamic> result, dynamic replyTo) {
     try {
       final response = successResponse(requestId, result);
       (replyTo as dynamic).send(response);
@@ -481,7 +536,7 @@ class ToolSandboxManager {
   void _handleWorkerDone() {
     print('$_tag: Worker terminated');
     _isStarted = false;
-    
+
     // Complete all pending requests with error
     for (final completer in _pendingRequests.values) {
       if (!completer.isCompleted) {

@@ -5,12 +5,16 @@ import 'package:vagina/interfaces/config_repository.dart';
 import 'package:vagina/interfaces/key_value_store.dart';
 import 'package:vagina/interfaces/memory_repository.dart';
 import 'package:vagina/interfaces/speed_dial_repository.dart';
+import 'package:vagina/interfaces/text_agent_repository.dart';
+import 'package:vagina/interfaces/text_agent_job_repository.dart';
 import 'package:vagina/services/log_service.dart';
 
 import 'json_call_session_repository.dart';
 import 'json_config_repository.dart';
 import 'json_memory_repository.dart';
 import 'json_speed_dial_repository.dart';
+import 'json_text_agent_repository.dart';
+import 'json_text_agent_job_repository.dart';
 import 'preferences_repository.dart';
 
 /// Factory for creating repository instances
@@ -24,6 +28,8 @@ class RepositoryFactory {
   static MemoryRepository? _memoryRepo;
   static ConfigRepository? _configRepo;
   static PreferencesRepository? _preferencesRepo;
+  static TextAgentRepository? _textAgentRepo;
+  static TextAgentJobRepository? _textAgentJobRepo;
   static LogService? _logService;
 
   /// Initialize the repositories with a key-value store.
@@ -89,6 +95,20 @@ class RepositoryFactory {
     return _preferencesRepo ??= PreferencesRepository(_store!);
   }
 
+  /// Get the TextAgent repository
+  static TextAgentRepository get textAgents {
+    _ensureInitialized();
+    return _textAgentRepo ??=
+        JsonTextAgentRepository(_store!, logService: _logService);
+  }
+
+  /// Get the TextAgentJob repository
+  static TextAgentJobRepository get textAgentJobs {
+    _ensureInitialized();
+    return _textAgentJobRepo ??=
+        JsonTextAgentJobRepository(_store!, logService: _logService);
+  }
+
   /// Helper to ensure initialization
   static void _ensureInitialized() {
     if (_store == null) {
@@ -105,6 +125,8 @@ class RepositoryFactory {
     _memoryRepo = null;
     _configRepo = null;
     _preferencesRepo = null;
+    _textAgentRepo = null;
+    _textAgentJobRepo = null;
     _logService = null;
   }
 }

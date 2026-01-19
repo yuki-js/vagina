@@ -4,6 +4,8 @@ import 'package:vagina/services/tools_runtime/sandbox_protocol.dart';
 import 'package:vagina/services/tools_runtime/tool_context.dart';
 import 'package:vagina/services/tools_runtime/apis/notepad_api.dart';
 import 'package:vagina/services/tools_runtime/apis/memory_api.dart';
+import 'package:vagina/services/tools_runtime/apis/call_api.dart';
+import 'package:vagina/services/tools_runtime/apis/text_agent_api.dart';
 import 'package:vagina/tools/builtin/builtin_tool_catalog.dart';
 import 'package:vagina/services/notepad_service.dart';
 import 'package:vagina/models/notepad_tab.dart';
@@ -67,8 +69,9 @@ class _WorkerController {
 
   // Late API clients (created during handshake)
   late NotepadApiClient _notepadApiClient;
-  late MemoryApiClient
-      _memoryApiClient; // Created for future use in next subtask
+  late MemoryApiClient _memoryApiClient;
+  late CallApiClient _callApiClient;
+  late TextAgentApiClient _textAgentApiClient;
 
   _WorkerController({
     required this.hostSendPort,
@@ -175,6 +178,8 @@ class _WorkerController {
       _toolContext = ToolContext(
         notepadApi: _notepadApiClient,
         memoryApi: _memoryApiClient,
+        callApi: _callApiClient,
+        textAgentApi: _textAgentApiClient,
       );
 
       _log('Handshake complete: initialized ${_toolDefinitions.length} tools');
@@ -224,6 +229,18 @@ class _WorkerController {
       hostCall: (method, args) => _makeHostCall('memory', method, args),
     );
     _log('Created MemoryApiClient');
+
+    // Create CallApiClient with hostCall callback
+    _callApiClient = CallApiClient(
+      hostCall: (method, args) => _makeHostCall('call', method, args),
+    );
+    _log('Created CallApiClient');
+
+    // Create TextAgentApiClient with hostCall callback
+    _textAgentApiClient = TextAgentApiClient(
+      hostCall: (method, args) => _makeHostCall('textAgent', method, args),
+    );
+    _log('Created TextAgentApiClient');
   }
 
   /// Make a hostCall request to the host
@@ -302,7 +319,9 @@ class _WorkerController {
         replyReceivePort.close();
       }
     } catch (e) {
-      _log('ERROR in hostCall: $e');
+      _log('[TOOL:GUEST] Failed to call $api.$method');
+      _log('Error: $e');
+      _log('Request Payload: ${jsonEncode(args)}');
       rethrow;
     }
   }
@@ -360,7 +379,9 @@ class _WorkerController {
           },
         );
       } on UnknownToolException catch (e) {
-        _log('ERROR: Unknown tool: $toolKey');
+        _log('[TOOL:GUEST] Unknown tool: $toolKey');
+        _log('Error: $e');
+        _log('Request Payload: ${jsonEncode(args)}');
         _sendResponse(
           requestId,
           status: 'error',
@@ -368,7 +389,9 @@ class _WorkerController {
           code: 'UNKNOWN_TOOL',
         );
       } catch (e, stackTrace) {
-        _log('ERROR executing tool $toolKey: $e');
+        _log('[TOOL:GUEST] Failed to execute tool: $toolKey');
+        _log('Error: $e');
+        _log('Request Payload: ${jsonEncode(args)}');
         _log('Stack trace: $stackTrace');
         _sendResponse(
           requestId,
@@ -377,7 +400,7 @@ class _WorkerController {
         );
       }
     } catch (e, stackTrace) {
-      _log('ERROR in execute handler: $e');
+      _log('[TOOL:GUEST] ERROR in execute handler: $e');
       _log('Stack trace: $stackTrace');
       _sendResponse(
         requestId,

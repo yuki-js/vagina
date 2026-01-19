@@ -86,6 +86,8 @@ void main() {
       ctx = ToolContext(
         notepadApi: TestNotepadApi(notepadService),
         memoryApi: TestMemoryApi(InMemoryRepository()),
+        callApi: TestCallApi(),
+        textAgentApi: TestTextAgentApi(),
       );
       patchTool = DocumentPatchTool();
       overwriteTool = DocumentOverwriteTool();

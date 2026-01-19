@@ -1,7 +1,9 @@
 import 'package:vagina/services/tools_runtime/tool.dart';
 import 'package:vagina/services/tools_runtime/tool_context.dart';
 import 'package:vagina/services/tools_runtime/tool_definition.dart';
+import 'package:vagina/services/tools_runtime/tool_factory.dart' as runtime;
 
+// Import all builtin tools
 import 'calculator_tool.dart';
 import 'document_overwrite_tool.dart';
 import 'document_patch_tool.dart';
@@ -14,207 +16,85 @@ import 'notepad_close_tab_tool.dart';
 import 'notepad_get_content_tool.dart';
 import 'notepad_get_metadata_tool.dart';
 import 'notepad_list_tabs_tool.dart';
+import 'call/end_call_tool.dart';
+import 'text_agent/get_text_agent_response_tool.dart';
+import 'text_agent/list_available_agents_tool.dart';
+import 'text_agent/query_text_agent_tool.dart';
 
-/// Builtin tool catalog for listing definitions and creating tool instances.
-///
-/// This is a pure static class with no instance state, designed to support:
-/// 1. Pre-call UI listing of tool definitions (host-side)
-/// 2. Tool instantiation inside isolate workers (without closures crossing boundaries)
-///
-/// The catalog uses a switch-based factory pattern instead of closures,
-/// making it safe to use across isolate boundaries.
-class BuiltinToolCatalog {
-  // Prevent instantiation
-  BuiltinToolCatalog._();
-
-  /// Cached list of builtin tool definitions.
-  ///
-  /// Initialized lazily on first call to [listDefinitions].
-  static List<ToolDefinition>? _definitionsCache;
-
-  /// Tool definitions for Memory tools.
-  ///
-  /// These definitions are used in listDefinitions() but the actual
-  /// tool instances are created in createTool() like other tools.
-  static const ToolDefinition _memorySaveDefinition = ToolDefinition(
-    toolKey: 'memory_save',
-    displayName: 'メモリ保存',
-    displayDescription: '重要な情報を記憶します',
-    categoryKey: 'memory',
-    iconKey: 'save',
-    sourceKey: 'builtin',
-    description:
-        'Save information to long-term memory that persists across sessions. Use this when the user asks you to remember something.',
-    parametersSchema: {
-      'type': 'object',
-      'properties': {
-        'key': {
-          'type': 'string',
-          'description':
-              'A unique key to identify this memory (e.g., "user_name", "favorite_color")',
-        },
-        'value': {
-          'type': 'string',
-          'description': 'The information to remember',
-        },
-      },
-      'required': ['key', 'value'],
-    },
-  );
-
-  static const ToolDefinition _memoryRecallDefinition = ToolDefinition(
-    toolKey: 'memory_recall',
-    displayName: 'メモリ検索',
-    displayDescription: '記憶した情報を検索します',
-    categoryKey: 'memory',
-    iconKey: 'search',
-    sourceKey: 'builtin',
-    description:
-        'Recall information from long-term memory. Use this when you need to remember something the user previously asked you to save.',
-    parametersSchema: {
-      'type': 'object',
-      'properties': {
-        'key': {
-          'type': 'string',
-          'description':
-              'The key of the memory to recall. Use "all" to get all stored memories.',
-        },
-      },
-      'required': ['key'],
-    },
-  );
-
-  static const ToolDefinition _memoryDeleteDefinition = ToolDefinition(
-    toolKey: 'memory_delete',
-    displayName: 'メモリ削除',
-    displayDescription: '記憶した情報を削除します',
-    categoryKey: 'memory',
-    iconKey: 'delete',
-    sourceKey: 'builtin',
-    description:
-        'Delete information from long-term memory. Use this when the user asks you to forget something.',
-    parametersSchema: {
-      'type': 'object',
-      'properties': {
-        'key': {
-          'type': 'string',
-          'description':
-              'The key of the memory to delete. Use "all" to delete all memories.',
-        },
-      },
-      'required': ['key'],
-    },
-  );
-
-  /// Returns all builtin tool definitions.
-  ///
-  /// Used by the host UI for pre-call listing. Does NOT instantiate tools,
-  /// only returns their definitions.
-  ///
-  /// Results are cached after first call for efficiency.
-  static List<ToolDefinition> listDefinitions() {
-    if (_definitionsCache != null) {
-      return _definitionsCache!;
-    }
-
-    _definitionsCache = <ToolDefinition>[
-      CalculatorTool().definition,
-      DocumentOverwriteTool().definition,
-      DocumentPatchTool().definition,
-      DocumentReadTool().definition,
-      GetCurrentTimeTool().definition,
-      _memoryDeleteDefinition,
-      _memoryRecallDefinition,
-      _memorySaveDefinition,
-      NotepadCloseTabTool().definition,
-      NotepadGetContentTool().definition,
-      NotepadGetMetadataTool().definition,
-      NotepadListTabsTool().definition,
-    ];
-
-    return _definitionsCache!;
-  }
-
-  /// Creates a tool instance by toolKey.
-  ///
-  /// Uses a switch statement (no closures) to instantiate the appropriate tool
-  /// with the provided [context]. Safe to call from isolate workers.
-  ///
-  /// Throws [UnknownToolException] if the toolKey is not recognized.
-  ///
-  /// Note: Memory tools (memory_save, memory_recall, memory_delete) require
-  /// MemoryRepository which is currently not available in ToolContext.
-  /// These tools should be created through ToolService instead, which has
-  /// access to the repository. This limitation will be resolved in a later
-  /// refactoring when ToolContext includes MemoryRepository.
-  static Tool createTool(String toolKey, ToolContext context) {
-    switch (toolKey) {
-      case 'calculator':
-        return CalculatorTool();
-
-      case 'document_overwrite':
-        return DocumentOverwriteTool();
-
-      case 'document_patch':
-        return DocumentPatchTool();
-
-      case 'document_read':
-        return DocumentReadTool();
-
-      case 'get_current_time':
-        return GetCurrentTimeTool();
-
-      case 'memory_delete':
-        return MemoryDeleteTool();
-
-      case 'memory_recall':
-        return MemoryRecallTool();
-
-      case 'memory_save':
-        return MemorySaveTool();
-
-      case 'notepad_close_tab':
-        return NotepadCloseTabTool();
-
-      case 'notepad_get_content':
-        return NotepadGetContentTool();
-
-      case 'notepad_get_metadata':
-        return NotepadGetMetadataTool();
-
-      case 'notepad_list_tabs':
-        return NotepadListTabsTool();
-
-      default:
-        throw UnknownToolException(toolKey);
-    }
-  }
-}
-
-/// Exception thrown when an unknown tool key is requested.
+/// Exception thrown when an unknown tool is requested
 class UnknownToolException implements Exception {
   final String toolKey;
 
   UnknownToolException(this.toolKey);
 
   @override
-  String toString() =>
-      'UnknownToolException: Unknown tool key "$toolKey". '
-      'Available tools: calculator, document_read, document_overwrite, document_patch, '
-      'get_current_time, memory_save, memory_recall, memory_delete, '
-      'notepad_list_tabs, notepad_get_metadata, notepad_get_content, notepad_close_tab';
+  String toString() => 'Unknown tool: $toolKey';
 }
 
-/// Exception thrown when a Memory tool cannot be created due to missing dependencies.
+/// Factory function type for creating builtin tool instances.
 ///
-/// Memory tools require MemoryRepository which is not currently available
-/// in ToolContext. They should be created through ToolService instead.
-class MemoryToolException implements Exception {
-  final String toolKey;
-  final String message;
+/// Named to avoid colliding with runtime's `ToolFactory` interface.
+typedef BuiltinToolFactory = Tool Function();
 
-  MemoryToolException(this.toolKey, this.message);
+/// Catalog of all builtin tools
+class BuiltinToolCatalog {
+  /// Map of tool key to factory function
+  static final Map<String, BuiltinToolFactory> _factories = {
+    CalculatorTool.toolKeyName: () => CalculatorTool(),
+    DocumentOverwriteTool.toolKeyName: () => DocumentOverwriteTool(),
+    DocumentPatchTool.toolKeyName: () => DocumentPatchTool(),
+    DocumentReadTool.toolKeyName: () => DocumentReadTool(),
+    GetCurrentTimeTool.toolKeyName: () => GetCurrentTimeTool(),
+    MemoryDeleteTool.toolKeyName: () => MemoryDeleteTool(),
+    MemoryRecallTool.toolKeyName: () => MemoryRecallTool(),
+    MemorySaveTool.toolKeyName: () => MemorySaveTool(),
+    NotepadCloseTabTool.toolKeyName: () => NotepadCloseTabTool(),
+    NotepadGetContentTool.toolKeyName: () => NotepadGetContentTool(),
+    NotepadGetMetadataTool.toolKeyName: () => NotepadGetMetadataTool(),
+    NotepadListTabsTool.toolKeyName: () => NotepadListTabsTool(),
+    EndCallTool.toolKeyName: () => EndCallTool(),
+    GetTextAgentResponseTool.toolKeyName: () => GetTextAgentResponseTool(),
+    ListAvailableAgentsTool.toolKeyName: () => ListAvailableAgentsTool(),
+    QueryTextAgentTool.toolKeyName: () => QueryTextAgentTool(),
+  };
 
-  @override
-  String toString() => 'MemoryToolException: Cannot create "$toolKey" tool. $message';
+  /// List all builtin tool definitions
+  static List<ToolDefinition> listDefinitions() {
+    return _factories.values
+        .map((factory) => factory().definition)
+        .cast<ToolDefinition>()
+        .toList();
+  }
+
+  /// Exposes builtin tools as runtime [ToolFactory]s.
+  ///
+  /// This is used by UI code that reads tool definitions via the runtime
+  /// registry ([`ToolRegistry`](lib/services/tools_runtime/tool_registry.dart:13)).
+  static Map<String, runtime.ToolFactory> listRuntimeFactories() {
+    return _factories.map(
+      (toolKey, factory) => MapEntry(
+        toolKey,
+        runtime.SimpleToolFactory(create: factory),
+      ),
+    );
+  }
+
+  /// Create a tool instance by toolKey
+  static Tool createTool(String toolKey, ToolContext context) {
+    final factory = _factories[toolKey];
+    if (factory == null) {
+      throw UnknownToolException(toolKey);
+    }
+    return factory();
+  }
+
+  /// Get all registered tool keys
+  static Set<String> getAvailableToolKeys() {
+    return _factories.keys.toSet();
+  }
+
+  /// Check if a tool is registered
+  static bool isToolAvailable(String toolKey) {
+    return _factories.containsKey(toolKey);
+  }
 }

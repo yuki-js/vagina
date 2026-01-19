@@ -8,9 +8,12 @@ import 'package:vagina/core/config/app_config.dart';
 import 'package:vagina/interfaces/call_session_repository.dart';
 import 'package:vagina/interfaces/config_repository.dart';
 import 'package:vagina/interfaces/memory_repository.dart';
+import 'package:vagina/interfaces/text_agent_repository.dart';
 import 'package:vagina/models/call_session.dart';
 import 'package:vagina/models/chat_message.dart';
 import 'package:vagina/models/speed_dial.dart';
+import 'package:vagina/services/text_agent_job_runner.dart';
+import 'package:vagina/services/text_agent_service.dart';
 import 'package:vagina/services/tools_runtime/tool_sandbox_manager.dart';
 import 'package:vagina/utils/audio_utils.dart';
 
@@ -47,6 +50,9 @@ class CallService {
   final LogService _logService;
   final CallFeedbackService _feedback;
   final ChatMessageManager _chatManager = ChatMessageManager();
+  final TextAgentRepository _agentRepository;
+  final TextAgentService _textAgentService;
+  final TextAgentJobRunner _textAgentJobRunner;
 
   /// Session-scoped allow-list of tool keys for the active call.
   ///
@@ -90,6 +96,7 @@ class CallService {
   bool _isMuted = false;
   DateTime? _callStartTime;
   String _currentSpeedDialId = SpeedDial.defaultId;
+  String? _endContext; // Store end context from tool call
 
   CallService({
     required AudioRecorderService recorder,
@@ -100,6 +107,9 @@ class CallService {
     required ToolService toolService,
     required NotepadService notepadService,
     required MemoryRepository memoryRepository,
+    required TextAgentRepository agentRepository,
+    required TextAgentService textAgentService,
+    required TextAgentJobRunner textAgentJobRunner,
     LogService? logService,
     CallFeedbackService? feedbackService,
   })  : _recorder = recorder,
@@ -110,6 +120,9 @@ class CallService {
         _toolService = toolService,
         _notepadService = notepadService,
         _memoryRepository = memoryRepository,
+        _agentRepository = agentRepository,
+        _textAgentService = textAgentService,
+        _textAgentJobRunner = textAgentJobRunner,
         _logService = logService ?? LogService(),
         _feedback =
             feedbackService ?? CallFeedbackService(logService: logService);
@@ -194,6 +207,7 @@ class CallService {
     _logService.info(_tag, 'Starting call');
     _chatManager.clearChat();
     _notepadService.clearTabs(); // 前のセッションのノートパッドをクリア
+    _endContext = null; // Clear previous end context for new call
 
     try {
       _setState(CallState.connecting);
@@ -236,6 +250,10 @@ class CallService {
       _sandboxManager = ToolSandboxManager(
         notepadService: _notepadService,
         memoryRepository: _memoryRepository,
+        agentRepository: _agentRepository,
+        textAgentService: _textAgentService,
+        jobRunner: _textAgentJobRunner,
+        callService: this,
       );
       await _sandboxManager!.start();
 
@@ -248,9 +266,7 @@ class CallService {
         _apiClient.setTools(event.tools);
       });
 
-      _logService.debug(
-          _tag,
-          'Sandbox started and tools initialized');
+      _logService.debug(_tag, 'Sandbox started and tools initialized');
 
       _logService.info(_tag, 'Connecting to Azure OpenAI');
       await _apiClient.connect(realtimeUrl, apiKey);
@@ -455,10 +471,19 @@ class CallService {
   }
 
   /// End the call
-  Future<void> endCall() async {
+  ///
+  /// [endContext] - Optional context explaining why the call ended
+  /// (e.g., "ultra_long processing in progress", "natural conclusion")
+  Future<void> endCall({String? endContext}) async {
     if (!isCallActive && _currentState != CallState.error) {
       _logService.debug(_tag, 'Call not active, ignoring endCall');
       return;
+    }
+
+    // Store end context for session saving
+    if (endContext != null && endContext.isNotEmpty) {
+      _endContext = endContext;
+      _logService.info(_tag, 'Call ending with context: $endContext');
     }
 
     // Play call end tone
@@ -470,6 +495,60 @@ class CallService {
     await _cleanup();
     _setState(CallState.idle);
     _logService.info(_tag, 'Call ended');
+  }
+
+  /// Store end context for the current call
+  ///
+  /// This is called by the host API when the end_call tool is used with context
+  void setEndContext(String? context) {
+    if (context != null && context.isNotEmpty) {
+      _endContext = context;
+      _logService.debug(_tag, 'End context set: $context');
+    }
+  }
+
+  /// Get the last end context from the most recent session
+  ///
+  /// Returns the endContext from the last saved session within the last 24 hours,
+  /// or null if not available. Contexts older than 24 hours are considered expired.
+  Future<String?> getLastEndContext() async {
+    try {
+      final sessions = await _sessionRepository.getAll();
+      if (sessions.isEmpty) {
+        return null;
+      }
+
+      // Sort by end time descending to get the most recent
+      sessions.sort((a, b) {
+        final aTime = a.endTime ?? a.startTime;
+        final bTime = b.endTime ?? b.startTime;
+        return bTime.compareTo(aTime);
+      });
+
+      final lastSession = sessions.first;
+      final sessionEndTime = lastSession.endTime ?? lastSession.startTime;
+      final now = DateTime.now();
+      final hoursSinceEnd = now.difference(sessionEndTime).inHours;
+
+      // Context expires after 24 hours
+      if (hoursSinceEnd > 24) {
+        _logService.debug(
+            _tag, 'Last end context expired ($hoursSinceEnd hours old)');
+        return null;
+      }
+
+      final context = lastSession.endContext;
+
+      if (context != null) {
+        _logService.debug(_tag,
+            'Retrieved last end context: $context ($hoursSinceEnd hours old)');
+      }
+
+      return context;
+    } catch (e) {
+      _logService.error(_tag, 'Failed to retrieve last end context: $e');
+      return null;
+    }
   }
 
   Future<void> _saveSession() async {
@@ -510,6 +589,7 @@ class CallService {
         chatMessages: chatMessagesJson,
         notepadTabs: notepadTabsData,
         speedDialId: _currentSpeedDialId,
+        endContext: _endContext,
       );
 
       await _sessionRepository.save(session);

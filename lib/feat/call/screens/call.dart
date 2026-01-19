@@ -8,6 +8,7 @@ import 'package:vagina/feat/call/state/call_stream_providers.dart';
 import 'package:vagina/feat/call/state/call_ui_state_providers.dart';
 import 'package:vagina/models/speed_dial.dart';
 import 'package:vagina/core/theme/app_theme.dart';
+import 'package:vagina/services/call_service.dart';
 
 /// Call screen with PageView for swipe navigation between chat, call, and notepad
 /// Layout: Chat (left) ← Call (center) → Notepad (right)
@@ -141,6 +142,20 @@ class _CallScreenState extends ConsumerState<CallScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Listen for call state changes to detect when call ends
+    // This handles navigation when end_call is triggered from tools
+    ref.listen<AsyncValue<CallState>>(callStateProvider, (previous, next) {
+      next.whenData((state) {
+        if (state == CallState.idle && mounted) {
+          // Call has ended, navigate back to home
+          Navigator.of(context).pushNamedAndRemoveUntil(
+            '/',
+            (route) => false,
+          );
+        }
+      });
+    });
+
     // Listen for errors from call service via consolidated UI-state stream.
     // Dedupe so that amplitude/duration updates don't re-show the same error.
     ref.listen<AsyncValue<CallUiState>>(callUiStateProvider, (previous, next) {

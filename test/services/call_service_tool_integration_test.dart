@@ -4,7 +4,6 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:vagina/services/call_service.dart';
-import 'package:vagina/services/log_service.dart';
 import 'package:vagina/services/notepad_service.dart';
 import 'package:vagina/services/realtime/realtime_api_client.dart';
 import 'package:vagina/services/tool_service.dart';
@@ -24,6 +23,9 @@ void main() {
     late NotepadService notepadService;
     late MockLogService mockLogService;
     late MockCallFeedbackService mockFeedback;
+    late MockTextAgentRepository mockAgentRepository;
+    late MockTextAgentService mockTextAgentService;
+    late MockTextAgentJobRunner mockTextAgentJobRunner;
 
     late StreamController<Map<String, dynamic>> wsMessagesController;
     late CallService callService;
@@ -37,6 +39,9 @@ void main() {
       mockLogService = MockLogService();
       mockFeedback = MockCallFeedbackService();
       mockWs = MockWebSocketService();
+      mockAgentRepository = MockTextAgentRepository();
+      mockTextAgentService = MockTextAgentService();
+      mockTextAgentJobRunner = MockTextAgentJobRunner();
 
       notepadService = NotepadService(logService: mockLogService);
 
@@ -124,6 +129,9 @@ void main() {
         toolService: toolService,
         notepadService: notepadService,
         memoryRepository: mockMemoryRepository,
+        agentRepository: mockAgentRepository,
+        textAgentService: mockTextAgentService,
+        textAgentJobRunner: mockTextAgentJobRunner,
         logService: mockLogService,
         feedbackService: mockFeedback,
       );

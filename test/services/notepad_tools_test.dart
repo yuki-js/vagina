@@ -17,6 +17,8 @@ void main() {
       ctx = ToolContext(
         notepadApi: TestNotepadApi(notepadService),
         memoryApi: TestMemoryApi(InMemoryRepository()),
+        callApi: TestCallApi(),
+        textAgentApi: TestTextAgentApi(),
       );
       tool = NotepadListTabsTool();
     });
@@ -57,6 +59,8 @@ void main() {
       ctx = ToolContext(
         notepadApi: TestNotepadApi(notepadService),
         memoryApi: TestMemoryApi(InMemoryRepository()),
+        callApi: TestCallApi(),
+        textAgentApi: TestTextAgentApi(),
       );
       tool = NotepadGetMetadataTool();
     });
@@ -100,6 +104,8 @@ void main() {
       ctx = ToolContext(
         notepadApi: TestNotepadApi(notepadService),
         memoryApi: TestMemoryApi(InMemoryRepository()),
+        callApi: TestCallApi(),
+        textAgentApi: TestTextAgentApi(),
       );
       tool = NotepadGetContentTool();
     });
@@ -141,6 +147,8 @@ void main() {
       ctx = ToolContext(
         notepadApi: TestNotepadApi(notepadService),
         memoryApi: TestMemoryApi(InMemoryRepository()),
+        callApi: TestCallApi(),
+        textAgentApi: TestTextAgentApi(),
       );
       tool = NotepadCloseTabTool();
     });

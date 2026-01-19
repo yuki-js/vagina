@@ -1,14 +1,11 @@
-import 'dart:developer';
-
 import 'package:vagina/interfaces/config_repository.dart';
 import 'package:vagina/interfaces/memory_repository.dart';
+import 'package:vagina/tools/builtin/builtin_tool_catalog.dart';
 
 import 'notepad_service.dart';
 import 'tool_metadata.dart';
 import 'tools_runtime/tool_factory.dart';
 import 'tools_runtime/tool_registry.dart' as runtime;
-
-import 'package:vagina/tools/builtin/builtin_tools.dart' as runtime_tools;
 
 export 'tool_metadata.dart' show ToolMetadata, ToolCategory, ToolSource;
 
@@ -32,40 +29,15 @@ class ToolService {
     required ConfigRepository configRepository,
   })  : _notepadService = notepadService,
         _memoryRepository = memoryRepository,
-        _configRepository = configRepository {
-    _runtimeToolFactories = <String, ToolFactory>{
-      runtime_tools.GetCurrentTimeTool.toolKeyName:
-          SimpleToolFactory(create: () => runtime_tools.GetCurrentTimeTool()),
-      runtime_tools.CalculatorTool.toolKeyName:
-          SimpleToolFactory(create: () => runtime_tools.CalculatorTool()),
-      runtime_tools.MemorySaveTool.toolKeyName:
-          SimpleToolFactory(create: () => runtime_tools.MemorySaveTool()),
-      runtime_tools.MemoryRecallTool.toolKeyName:
-          SimpleToolFactory(create: () => runtime_tools.MemoryRecallTool()),
-      runtime_tools.MemoryDeleteTool.toolKeyName:
-          SimpleToolFactory(create: () => runtime_tools.MemoryDeleteTool()),
-      runtime_tools.DocumentReadTool.toolKeyName:
-          SimpleToolFactory(create: () => runtime_tools.DocumentReadTool()),
-      runtime_tools.DocumentOverwriteTool.toolKeyName: SimpleToolFactory(
-          create: () => runtime_tools.DocumentOverwriteTool()),
-      runtime_tools.DocumentPatchTool.toolKeyName:
-          SimpleToolFactory(create: () => runtime_tools.DocumentPatchTool()),
-      runtime_tools.NotepadListTabsTool.toolKeyName:
-          SimpleToolFactory(create: () => runtime_tools.NotepadListTabsTool()),
-      runtime_tools.NotepadGetMetadataTool.toolKeyName: SimpleToolFactory(
-          create: () => runtime_tools.NotepadGetMetadataTool()),
-      runtime_tools.NotepadGetContentTool.toolKeyName: SimpleToolFactory(
-          create: () => runtime_tools.NotepadGetContentTool()),
-      runtime_tools.NotepadCloseTabTool.toolKeyName:
-          SimpleToolFactory(create: () => runtime_tools.NotepadCloseTabTool()),
-    };
-  }
+        _configRepository = configRepository;
 
   /// サービスを初期化（ビルトインツールを登録）
   void initialize() {
     if (_initialized) return;
 
-    // Legacy registry is removed; UI reads definitions from the runtime registry.
+    // Ensure late fields are initialized before any getter uses them.
+    _runtimeToolFactories = <String, ToolFactory>{};
+
     _initialized = true;
   }
 
@@ -74,6 +46,13 @@ class ToolService {
     if (!_initialized) initialize();
 
     final registry = runtime.ToolRegistry();
+
+    // Builtin tools.
+    for (final factory in BuiltinToolCatalog.listRuntimeFactories().values) {
+      registry.registerFactory(factory);
+    }
+
+    // Runtime/MCP tools (future).
     for (final factory in _runtimeToolFactories.values) {
       registry.registerFactory(factory);
     }
@@ -89,6 +68,13 @@ class ToolService {
     if (!_initialized) initialize();
 
     final registry = runtime.ToolRegistry();
+
+    // Builtin tools.
+    for (final factory in BuiltinToolCatalog.listRuntimeFactories().values) {
+      registry.registerFactory(factory);
+    }
+
+    // Runtime/MCP tools (future).
     for (final factory in _runtimeToolFactories.values) {
       registry.registerFactory(factory);
     }

@@ -18,6 +18,8 @@ void main() {
       ctx = ToolContext(
         notepadApi: TestNotepadApi(notepadService),
         memoryApi: TestMemoryApi(InMemoryRepository()),
+        callApi: TestCallApi(),
+        textAgentApi: TestTextAgentApi(),
       );
       tool = DocumentOverwriteTool();
     });
@@ -114,6 +116,8 @@ void main() {
       ctx = ToolContext(
         notepadApi: TestNotepadApi(notepadService),
         memoryApi: TestMemoryApi(InMemoryRepository()),
+        callApi: TestCallApi(),
+        textAgentApi: TestTextAgentApi(),
       );
       tool = DocumentPatchTool();
       overwriteTool = DocumentOverwriteTool();
@@ -227,6 +231,8 @@ void main() {
       ctx = ToolContext(
         notepadApi: TestNotepadApi(notepadService),
         memoryApi: TestMemoryApi(InMemoryRepository()),
+        callApi: TestCallApi(),
+        textAgentApi: TestTextAgentApi(),
       );
       tool = DocumentReadTool();
       overwriteTool = DocumentOverwriteTool();

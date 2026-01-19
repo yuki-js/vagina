@@ -7,6 +7,8 @@ import 'package:vagina/services/audio_recorder_service.dart';
 import 'package:vagina/services/call_feedback_service.dart';
 import 'package:vagina/services/call_service.dart';
 import 'package:vagina/services/realtime_api_client.dart';
+import 'package:vagina/services/text_agent_job_runner.dart';
+import 'package:vagina/services/text_agent_service.dart';
 import 'package:vagina/services/tool_service.dart';
 import 'package:vagina/services/websocket_service.dart';
 
@@ -89,6 +91,9 @@ CallService callService(Ref ref) {
     toolService: ref.watch(toolServiceProvider),
     notepadService: ref.watch(notepadServiceProvider),
     memoryRepository: ref.watch(memoryRepositoryProvider),
+    agentRepository: ref.watch(textAgentRepositoryProvider),
+    textAgentService: ref.watch(textAgentServiceProvider),
+    textAgentJobRunner: ref.watch(textAgentJobRunnerProvider),
     logService: ref.watch(logServiceProvider),
     feedbackService: ref.watch(callFeedbackServiceProvider),
   );
