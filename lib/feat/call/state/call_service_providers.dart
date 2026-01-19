@@ -2,8 +2,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:vagina/core/state/log_provider.dart';
 import 'package:vagina/core/state/repository_providers.dart';
 import 'package:vagina/feat/call/state/notepad_providers.dart';
-import 'package:vagina/services/audio_player_service.dart';
-import 'package:vagina/services/audio_recorder_service.dart';
+import 'package:vagina/services/call_audio_service.dart';
 import 'package:vagina/services/call_feedback_service.dart';
 import 'package:vagina/services/call_service.dart';
 import 'package:vagina/services/realtime_api_client.dart';
@@ -14,23 +13,14 @@ import 'package:vagina/services/tool_service.dart';
 part 'call_service_providers.g.dart';
 
 @riverpod
-AudioRecorderService audioRecorderService(Ref ref) {
-  final recorder = AudioRecorderService();
-  ref.onDispose(() {
-    recorder.dispose();
-  });
-  return recorder;
-}
-
-@riverpod
-AudioPlayerService audioPlayerService(Ref ref) {
-  final player = AudioPlayerService(
+CallAudioService callAudioService(Ref ref) {
+  final service = CallAudioService(
     logService: ref.watch(logServiceProvider),
   );
   ref.onDispose(() {
-    player.dispose();
+    service.dispose();
   });
-  return player;
+  return service;
 }
 
 @riverpod
@@ -66,8 +56,7 @@ CallFeedbackService callFeedbackService(Ref ref) {
 @riverpod
 CallService callService(Ref ref) {
   final service = CallService(
-    recorder: ref.watch(audioRecorderServiceProvider),
-    player: ref.watch(audioPlayerServiceProvider),
+    audioService: ref.watch(callAudioServiceProvider),
     apiClient: ref.watch(realtimeApiClientProvider),
     config: ref.watch(configRepositoryProvider),
     sessionRepository: ref.watch(callSessionRepositoryProvider),

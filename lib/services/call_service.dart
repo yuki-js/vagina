@@ -17,8 +17,7 @@ import 'package:vagina/services/text_agent_service.dart';
 import 'package:vagina/services/tools_runtime/tool_sandbox_manager.dart';
 import 'package:vagina/utils/audio_utils.dart';
 
-import 'audio_player_service.dart';
-import 'audio_recorder_service.dart';
+import 'call_audio_service.dart';
 import 'call_feedback_service.dart';
 import 'chat/chat_message_manager.dart';
 import 'log_service.dart';
@@ -38,8 +37,7 @@ enum CallState {
 class CallService {
   static const _tag = 'CallService';
 
-  final AudioRecorderService _recorder;
-  final AudioPlayerService _player;
+  final CallAudioService _audioService;
   final RealtimeApiClient _apiClient;
   final ConfigRepository _config;
   final CallSessionRepository _sessionRepository;
@@ -91,8 +89,7 @@ class CallService {
   String? _endContext; // Store end context from tool call
 
   CallService({
-    required AudioRecorderService recorder,
-    required AudioPlayerService player,
+    required CallAudioService audioService,
     required RealtimeApiClient apiClient,
     required ConfigRepository config,
     required CallSessionRepository sessionRepository,
@@ -103,8 +100,7 @@ class CallService {
     required TextAgentJobRunner textAgentJobRunner,
     LogService? logService,
     CallFeedbackService? feedbackService,
-  })  : _recorder = recorder,
-        _player = player,
+  })  : _audioService = audioService,
         _apiClient = apiClient,
         _config = config,
         _sessionRepository = sessionRepository,
@@ -177,7 +173,7 @@ class CallService {
 
   /// Check microphone permission
   Future<bool> hasMicrophonePermission() async {
-    return await _recorder.hasPermission();
+    return await _audioService.hasPermission();
   }
 
   /// Send a text message (for chat input)
@@ -215,7 +211,7 @@ class CallService {
       }
 
       _logService.debug(_tag, 'Checking microphone permission');
-      final hasPermission = await _recorder.hasPermission();
+      final hasPermission = await _audioService.hasPermission();
       if (!hasPermission) {
         _logService.error(_tag, 'Microphone permission denied');
         _emitError('マイクの使用を許可してください');
@@ -266,7 +262,7 @@ class CallService {
       _setupApiSubscriptions();
 
       _logService.info(_tag, 'Starting microphone recording');
-      final audioStream = await _recorder.startRecording();
+      final audioStream = await _audioService.startRecording();
 
       _setupAudioStream(audioStream);
       _setupAmplitudeMonitoring();
@@ -307,13 +303,13 @@ class CallService {
 
     _responseAudioSubscription =
         _apiClient.audioStream.listen((audioData) async {
-      await _player.addAudioData(audioData);
+      await _audioService.addAudioData(audioData);
     });
 
     _audioDoneSubscription = _apiClient.audioDoneStream.listen((_) async {
       _logService.info(
           _tag, 'Audio done event received, marking response complete');
-      await _player.markResponseComplete();
+      await _audioService.markResponseComplete();
       _chatManager.completeCurrentAssistantMessage();
       // Haptic feedback: AI response ended, user's turn
       await _feedback.heavyImpact();
@@ -371,7 +367,7 @@ class CallService {
         _apiClient.responseStartedStream.listen((_) async {
       _logService.info(
           _tag, 'User speech detected, stopping audio for interrupt');
-      await _player.stop();
+      await _audioService.stop();
       _chatManager.completeCurrentAssistantMessage();
     });
 
@@ -404,7 +400,7 @@ class CallService {
   }
 
   void _setupAmplitudeMonitoring() {
-    final amplitudeStream = _recorder.amplitudeStream;
+    final amplitudeStream = _audioService.amplitudeStream;
     if (amplitudeStream != null) {
       _amplitudeSubscription = amplitudeStream.listen((amplitude) {
         if (!_isMuted && isCallActive) {
@@ -634,8 +630,8 @@ class CallService {
     await _responseAudioStartedSubscription?.cancel();
     _responseAudioStartedSubscription = null;
 
-    await _recorder.stopRecording();
-    await _player.stop();
+    await _audioService.stopRecording();
+    await _audioService.stop();
     await _apiClient.disconnect();
 
     // Disable wake lock to allow device to sleep normally

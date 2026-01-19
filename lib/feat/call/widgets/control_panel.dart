@@ -172,8 +172,8 @@ class ControlPanel extends ConsumerWidget {
   void _handleSpeakerToggle(WidgetRef ref) {
     ref.read(speakerMutedProvider.notifier).toggle();
     final speakerMuted = ref.read(speakerMutedProvider);
-    final audioPlayer = ref.read(audioPlayerServiceProvider);
-    audioPlayer.setVolume(speakerMuted ? 0.0 : 1.0);
+    final audioService = ref.read(callAudioServiceProvider);
+    audioService.setVolume(speakerMuted ? 0.0 : 1.0);
   }
 
   void _handleMuteToggle(WidgetRef ref) {
@@ -187,10 +187,10 @@ class ControlPanel extends ConsumerWidget {
     final isCallActive = ref.read(callStateInfoProvider).isActive;
     if (!isCallActive) return;
 
-    final audioPlayer = ref.read(audioPlayerServiceProvider);
+    final audioService = ref.read(callAudioServiceProvider);
     final apiClient = ref.read(realtimeApiClientProvider);
 
-    audioPlayer.stop();
+    audioService.stop();
     apiClient.cancelResponse();
   }
 

@@ -1,7 +1,7 @@
 import 'package:record/record.dart' show AndroidAudioSource, AudioManagerMode;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:vagina/core/state/repository_providers.dart';
-import 'package:vagina/feat/call/state/call_service_providers.dart' show audioRecorderServiceProvider;
+import 'package:vagina/feat/call/state/call_service_providers.dart' show callAudioServiceProvider;
 import 'package:vagina/models/android_audio_config.dart' as model;
 
 part 'android_audio_config_provider.g.dart';
@@ -18,8 +18,8 @@ class AndroidAudioConfig extends _$AndroidAudioConfig {
     final configRepo = ref.watch(configRepositoryProvider);
     final audioConfig = await configRepo.getAndroidAudioConfig();
 
-    // Apply to recorder service.
-    ref.read(audioRecorderServiceProvider).setAndroidAudioConfig(audioConfig);
+    // Apply to audio service.
+    ref.read(callAudioServiceProvider).setAndroidAudioConfig(audioConfig);
 
     return audioConfig;
   }
@@ -45,8 +45,8 @@ class AndroidAudioConfig extends _$AndroidAudioConfig {
     final configRepo = ref.read(configRepositoryProvider);
     await configRepo.saveAndroidAudioConfig(config);
 
-    // Apply to recorder service.
-    ref.read(audioRecorderServiceProvider).setAndroidAudioConfig(config);
+    // Apply to audio service.
+    ref.read(callAudioServiceProvider).setAndroidAudioConfig(config);
 
     state = AsyncData(config);
   }
