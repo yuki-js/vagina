@@ -90,6 +90,7 @@ class CallService {
   DateTime? _callStartTime;
   String _currentSpeedDialId = SpeedDial.defaultId;
   String? _endContext; // Store end context from tool call
+  bool _isCleanedUp = false; // Track cleanup state to prevent double cleanup
 
   CallService({
     required CallAudioService audioService,
@@ -597,6 +598,12 @@ class CallService {
   }
 
   Future<void> _cleanup() async {
+    if (_isCleanedUp) {
+      _logService.debug(_tag, 'Cleanup already completed, ignoring');
+      return;
+    }
+    _isCleanedUp = true;
+
     _logService.debug(_tag, 'リソースのクリーンアップ');
 
     _callTimer?.cancel();

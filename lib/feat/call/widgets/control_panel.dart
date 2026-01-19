@@ -198,11 +198,6 @@ class ControlPanel extends ConsumerWidget {
     final callService = ref.read(callServiceProvider);
     // Only end call functionality - start is triggered from home screen
     await callService.endCall();
-
-    // Navigate back to home screen after ending call
-    if (context.mounted) {
-      Navigator.of(context).pop();
-    }
   }
 
   Future<void> _handlePiPToggle(BuildContext context) async {

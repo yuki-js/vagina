@@ -311,6 +311,18 @@ class _CallSessionContentState extends ConsumerState<_CallSessionContent> {
 
  @override
  Widget build(BuildContext context) {
+   // Listen for call state changes - pop when call ends (idle state)
+   ref.listen<AsyncValue<CallState>>(callStateProvider, (previous, next) {
+     next.maybeWhen(
+       data: (state) {
+         if (state == CallState.idle && mounted) {
+           Navigator.of(context).pop();
+         }
+       },
+       orElse: () {},
+     );
+   });
+
    // Listen for errors from call service via consolidated UI-state stream.
    // Dedupe so that amplitude/duration updates don't re-show the same error.
    ref.listen<AsyncValue<CallUiState>>(callUiStateProvider, (previous, next) {
