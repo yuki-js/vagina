@@ -273,7 +273,11 @@ class _WorkerController {
         throw StateError('Invalid hostCall message: $error');
       }
 
-      _log('Sending hostCall: api=$api, method=$method, requestId=$requestId');
+      // Create a copy of message without replyTo for logging (replyTo is not JSON-serializable on Web)
+      final messageForLog = Map<String, dynamic>.from(message)
+        ..remove('replyTo');
+      _log(
+          'Sending hostCall: api=$api, method=$method, requestId=$requestId, message=${jsonEncode(messageForLog)}');
 
       // Register pending request
       final completer = Completer<Map<String, dynamic>>();
@@ -305,7 +309,7 @@ class _WorkerController {
           },
         );
 
-        _log('Received hostCall response for $requestId');
+        _log('Received hostCall response for $requestId, response: $response');
 
         if (response is Map<String, dynamic>) {
           return response;
