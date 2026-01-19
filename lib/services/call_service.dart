@@ -196,7 +196,6 @@ class CallService {
 
     _logService.info(_tag, 'Starting call');
     _chatManager.clearChat();
-    _notepadService.clearTabs(); // 前のセッションのノートパッドをクリア
     _endContext = null; // Clear previous end context for new call
 
     try {
