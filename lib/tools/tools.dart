@@ -17,21 +17,48 @@ import 'builtin/text_agent/get_text_agent_response_tool.dart';
 import 'builtin/text_agent/list_available_agents_tool.dart';
 import 'builtin/text_agent/query_text_agent_tool.dart';
 
-final List<Tool> toolbox = [
-  CalculatorTool(),
-  DocumentOverwriteTool(),
-  DocumentPatchTool(),
-  DocumentReadTool(),
-  GetCurrentTimeTool(),
-  MemoryDeleteTool(),
-  MemoryRecallTool(),
-  MemorySaveTool(),
-  NotepadCloseTabTool(),
-  NotepadGetContentTool(),
-  NotepadGetMetadataTool(),
-  NotepadListTabsTool(),
-  EndCallTool(),
-  GetTextAgentResponseTool(),
-  ListAvailableAgentsTool(),
-  QueryTextAgentTool(),
-];
+abstract class Toolbox {
+  final List<Toolbox> _chained = [];
+
+  List<Tool> get tools {
+    final allTools = <Tool>[];
+    allTools.addAll(create());
+    for (final chained in _chained) {
+      allTools.addAll(chained.tools);
+    }
+    return allTools;
+  }
+
+  List<Tool> create();
+
+  Toolbox chain(Toolbox next) {
+    _chained.add(next);
+    return this;
+  }
+}
+
+class RootToolbox extends Toolbox {
+  @override
+  List<Tool> create() {
+    return [
+      CalculatorTool(),
+      DocumentOverwriteTool(),
+      DocumentPatchTool(),
+      DocumentReadTool(),
+      GetCurrentTimeTool(),
+      MemoryDeleteTool(),
+      MemoryRecallTool(),
+      MemorySaveTool(),
+      NotepadCloseTabTool(),
+      NotepadGetContentTool(),
+      NotepadGetMetadataTool(),
+      NotepadListTabsTool(),
+      EndCallTool(),
+      GetTextAgentResponseTool(),
+      ListAvailableAgentsTool(),
+      QueryTextAgentTool(),
+    ];
+  }
+}
+
+Toolbox toolbox = RootToolbox();

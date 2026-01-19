@@ -185,7 +185,7 @@ class _WorkerController {
       callApi: _callApiClient,
       textAgentApi: _textAgentApiClient,
     );
-    for (var tool in toolbox) {
+    for (var tool in toolbox.tools) {
       _log('Registering tool: ${tool.definition.toolKey}');
       tool.init(_toolContext); // boot up tool with context
 

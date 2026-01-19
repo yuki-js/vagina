@@ -17,7 +17,7 @@ class ToolService {
   ToolService({
     required ConfigRepository configRepository,
   }) : _configRepository = configRepository {
-    setTools(toolbox);
+    setTools(toolbox.tools);
   }
 
   final Map<String, Tool> _tools = {};
