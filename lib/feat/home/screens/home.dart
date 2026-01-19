@@ -103,7 +103,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Future<void> _handleCallButton() async {
     await CallNavigationUtils.navigateToCallWithDefault(
       context: context,
-      ref: ref,
     );
   }
 

@@ -4,7 +4,7 @@ import 'package:vagina/services/notepad_service.dart';
 
 part 'notepad_providers.g.dart';
 
-@Riverpod(keepAlive: true)
+@riverpod
 NotepadService notepadService(Ref ref) {
   final service = NotepadService(
     logService: ref.watch(logServiceProvider),

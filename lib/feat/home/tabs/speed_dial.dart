@@ -198,7 +198,6 @@ class SpeedDialTab extends ConsumerWidget {
   ) async {
     await CallNavigationUtils.navigateToCallWithSpeedDial(
       context: context,
-      ref: ref,
       speedDial: speedDial,
     );
   }

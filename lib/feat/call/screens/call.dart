@@ -41,11 +41,6 @@ class _CallScreenState extends ConsumerState<CallScreen> {
     // Start on the call page (center)
     _pageController = PageController(initialPage: _callPageIndex);
     _pageController.addListener(_onPageChanged);
-
-    // Auto-start call when screen opens
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _startCallIfNeeded();
-    });
   }
 
   @override
@@ -174,47 +169,20 @@ class _CallScreenState extends ConsumerState<CallScreen> {
       }
     });
 
-    // Screen-scoped overrides: ensure call-only toggles reset on every CallScreen.
-    // NOTE: noiseReductionProvider is used in Settings, so we intentionally keep it global.
+    // CallSession scope: CallScoped providers are created/destroyed with this scope
+    // UI-state toggles (isMuted, speakerMuted) are reset on every CallScreen mount
     return ProviderScope(
-      overrides: [
-        isMutedProvider.overrideWith(IsMuted.new),
-        speakerMutedProvider.overrideWith(SpeakerMuted.new),
-      ],
-      child: PopScope(
+      child: _CallSessionContent(
+        pageController: _pageController,
+        currentPageIndex: _currentPageIndex,
+        speedDial: widget.speedDial,
         canPop: _canPop,
-        onPopInvokedWithResult: (didPop, result) {
-          if (!didPop) {
-            _handleBackButton();
-          }
-        },
-        child: Theme(
-          data: AppTheme.darkTheme, // Force dark theme for call screen
-          child: Scaffold(
-            body: Column(
-              children: [
-                Expanded(
-                  child: Container(
-                    decoration: AppTheme.backgroundGradient,
-                    child: SafeArea(
-                      child: LayoutBuilder(
-                        builder: (context, constraints) {
-                          // Use multi-column layout for wide screens (>= 900px)
-                          if (constraints.maxWidth >= 900) {
-                            return _buildThreeColumnLayout();
-                          } else {
-                            // Use PageView for mobile/narrow screens
-                            return _buildPageViewLayout();
-                          }
-                        },
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+        onBackButton: _handleBackButton,
+        onGoToChat: _goToChat,
+        onGoToCall: _goToCall,
+        onGoToNotepad: _goToNotepad,
+        buildPageViewLayout: _buildPageViewLayout,
+        buildThreeColumnLayout: _buildThreeColumnLayout,
       ),
     );
   }
@@ -292,4 +260,148 @@ class _CallScreenState extends ConsumerState<CallScreen> {
       ],
     );
   }
+}
+
+/// Content widget inside CallSession ProviderScope
+/// This ensures all CallScoped providers are created/destroyed together with this subtree
+class _CallSessionContent extends ConsumerStatefulWidget {
+ final PageController pageController;
+ final int currentPageIndex;
+ final SpeedDial speedDial;
+ final bool canPop;
+ final VoidCallback onBackButton;
+ final VoidCallback onGoToChat;
+ final VoidCallback onGoToCall;
+ final VoidCallback onGoToNotepad;
+ final Widget Function() buildPageViewLayout;
+ final Widget Function() buildThreeColumnLayout;
+
+ const _CallSessionContent({
+   required this.pageController,
+   required this.currentPageIndex,
+   required this.speedDial,
+   required this.canPop,
+   required this.onBackButton,
+   required this.onGoToChat,
+   required this.onGoToCall,
+   required this.onGoToNotepad,
+   required this.buildPageViewLayout,
+   required this.buildThreeColumnLayout,
+ });
+
+ @override
+ ConsumerState<_CallSessionContent> createState() =>
+     _CallSessionContentState();
+}
+
+class _CallSessionContentState extends ConsumerState<_CallSessionContent> {
+ @override
+ void initState() {
+   super.initState();
+   // Auto-start call when content widget mounts (inside CallSession scope)
+   WidgetsBinding.instance.addPostFrameCallback((_) {
+     _startCallIfNeeded();
+   });
+ }
+
+ Future<void> _startCallIfNeeded() async {
+   final callService = ref.read(callServiceProvider);
+   final isActive = ref.read(callStateInfoProvider).isActive;
+
+   // Only start if not already active
+   if (!isActive) {
+     // Set assistant config from SpeedDial before starting call
+     callService.setAssistantConfig(
+       widget.speedDial.voice,
+       widget.speedDial.systemPrompt,
+     );
+
+     // Set the speed dial ID for session tracking
+     callService.setSpeedDialId(widget.speedDial.id);
+
+     await callService.startCall();
+   }
+ }
+
+ @override
+ Widget build(BuildContext context) {
+   // Listen for call state changes to detect when call ends
+   // This handles navigation when end_call is triggered from tools
+   ref.listen<AsyncValue<CallState>>(callStateProvider, (previous, next) {
+     next.whenData((state) {
+       if (state == CallState.idle && mounted) {
+         // Call has ended, navigate back to home
+         Navigator.of(context).pushNamedAndRemoveUntil(
+           '/',
+           (route) => false,
+         );
+       }
+     });
+   });
+
+   // Listen for errors from call service via consolidated UI-state stream.
+   // Dedupe so that amplitude/duration updates don't re-show the same error.
+   ref.listen<AsyncValue<CallUiState>>(callUiStateProvider, (previous, next) {
+     final previousError = previous?.maybeWhen(
+       data: (ui) => ui.metrics.lastError,
+       orElse: () => null,
+     );
+     final nextError = next.maybeWhen(
+       data: (ui) => ui.metrics.lastError,
+       orElse: () => null,
+     );
+     if (nextError != null &&
+         nextError.isNotEmpty &&
+         nextError != previousError) {
+       _showSnackBar(nextError, isError: true);
+     }
+   });
+
+   return PopScope(
+     canPop: widget.canPop,
+     onPopInvokedWithResult: (didPop, result) {
+       if (!didPop) {
+         widget.onBackButton();
+       }
+     },
+     child: Theme(
+       data: AppTheme.darkTheme,
+       child: Scaffold(
+         body: Column(
+           children: [
+             Expanded(
+               child: Container(
+                 decoration: AppTheme.backgroundGradient,
+                 child: SafeArea(
+                   child: LayoutBuilder(
+                     builder: (context, constraints) {
+                       // Use multi-column layout for wide screens (>= 900px)
+                       if (constraints.maxWidth >= 900) {
+                         return widget.buildThreeColumnLayout();
+                       } else {
+                         // Use PageView for mobile/narrow screens
+                         return widget.buildPageViewLayout();
+                       }
+                     },
+                   ),
+                 ),
+               ),
+             ),
+           ],
+         ),
+       ),
+     ),
+   );
+ }
+
+ void _showSnackBar(String message, {bool isError = false}) {
+   if (!mounted) return;
+   ScaffoldMessenger.of(context).showSnackBar(
+     SnackBar(
+       content: Text(message),
+       backgroundColor: isError ? AppTheme.errorColor : AppTheme.successColor,
+       duration: const Duration(seconds: 3),
+     ),
+   );
+ }
 }

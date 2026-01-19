@@ -14,7 +14,7 @@ import 'package:vagina/services/websocket_service.dart';
 
 part 'call_service_providers.g.dart';
 
-@Riverpod(keepAlive: true)
+@riverpod
 AudioRecorderService audioRecorderService(Ref ref) {
   final recorder = AudioRecorderService();
   ref.onDispose(() {
@@ -23,7 +23,7 @@ AudioRecorderService audioRecorderService(Ref ref) {
   return recorder;
 }
 
-@Riverpod(keepAlive: true)
+@riverpod
 AudioPlayerService audioPlayerService(Ref ref) {
   final player = AudioPlayerService(
     logService: ref.watch(logServiceProvider),
@@ -34,7 +34,7 @@ AudioPlayerService audioPlayerService(Ref ref) {
   return player;
 }
 
-@Riverpod(keepAlive: true)
+@riverpod
 WebSocketService webSocketService(Ref ref) {
   final service = WebSocketService(
     logService: ref.watch(logServiceProvider),
@@ -45,7 +45,7 @@ WebSocketService webSocketService(Ref ref) {
   return service;
 }
 
-@Riverpod(keepAlive: true)
+@riverpod
 RealtimeApiClient realtimeApiClient(Ref ref) {
   final client = RealtimeApiClient(
     webSocket: ref.watch(webSocketServiceProvider),
@@ -65,7 +65,7 @@ ToolService toolService(Ref ref) {
   );
 }
 
-@Riverpod(keepAlive: true)
+@riverpod
 CallFeedbackService callFeedbackService(Ref ref) {
   final service = CallFeedbackService(
     logService: ref.watch(logServiceProvider),
@@ -76,7 +76,7 @@ CallFeedbackService callFeedbackService(Ref ref) {
   return service;
 }
 
-@Riverpod(keepAlive: true)
+@riverpod
 CallService callService(Ref ref) {
   final service = CallService(
     recorder: ref.watch(audioRecorderServiceProvider),
