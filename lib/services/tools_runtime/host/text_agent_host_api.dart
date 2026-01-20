@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:vagina/feat/text_agents/model/text_agent_job.dart';
-import 'package:vagina/interfaces/text_agent_repository.dart';
+import 'package:vagina/interfaces/config_repository.dart';
 import 'package:vagina/services/text_agent_service.dart';
 import 'package:vagina/services/text_agent_job_runner.dart';
 import 'package:vagina/services/log_service.dart';
@@ -14,17 +14,17 @@ class TextAgentHostApi {
 
   final TextAgentService _textAgentService;
   final TextAgentJobRunner _jobRunner;
-  final TextAgentRepository _agentRepository;
+  final ConfigRepository _configRepository;
   final LogService _logService;
 
   TextAgentHostApi({
     required TextAgentService textAgentService,
     required TextAgentJobRunner jobRunner,
-    required TextAgentRepository agentRepository,
+    required ConfigRepository configRepository,
     LogService? logService,
   })  : _textAgentService = textAgentService,
         _jobRunner = jobRunner,
-        _agentRepository = agentRepository,
+        _configRepository = configRepository,
         _logService = logService ?? LogService();
 
   /// Handle API calls from the isolate
@@ -89,7 +89,7 @@ class TextAgentHostApi {
     }
 
     // Get the agent
-    final agent = await _agentRepository.getById(agentId);
+    final agent = await _configRepository.getTextAgentById(agentId);
     if (agent == null) {
       print('[$_tag:HOST] sendQuery - Agent not found: $agentId');
       print('Request Payload: ${jsonEncode(args)}');
@@ -185,7 +185,7 @@ class TextAgentHostApi {
   ) async {
     _logService.debug(_tag, 'Listing available agents');
 
-    final agents = await _agentRepository.getAll();
+    final agents = await _configRepository.getAllTextAgents();
     
     return agents.map((agent) {
       return {

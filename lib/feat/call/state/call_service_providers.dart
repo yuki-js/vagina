@@ -64,7 +64,6 @@ CallService callService(Ref ref) {
     config: ref.watch(configRepositoryProvider),
     sessionRepository: ref.watch(callSessionRepositoryProvider),
     memoryRepository: ref.watch(memoryRepositoryProvider),
-    agentRepository: ref.watch(textAgentRepositoryProvider),
     textAgentService: ref.watch(textAgentServiceProvider),
     textAgentJobRunner: ref.watch(textAgentJobRunnerProvider),
     logService: _logService,

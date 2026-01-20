@@ -4,12 +4,11 @@ import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/feat/text_agents/model/text_agent_config.dart';
 import 'package:vagina/feat/text_agents/model/text_agent_provider.dart';
 import 'package:vagina/feat/text_agents/model/text_agent.dart';
-import 'package:vagina/feat/text_agents/state/text_agent_providers.dart';
 import 'package:vagina/feat/text_agents/util/provider_parser.dart';
 import 'package:vagina/core/state/repository_providers.dart';
 
 /// Screen for creating or editing a text agent with simplified multi-provider support
-/// 
+///
 /// Configuration fields (3 main + basic info):
 /// 1. Agent Name (basic info)
 /// 2. Description (basic info)
@@ -119,8 +118,8 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
         updatedAt: now,
       );
 
-      await ref.read(textAgentRepositoryProvider).save(agent);
-      ref.invalidate(textAgentsProvider);
+      final configRepository = ref.read(configRepositoryProvider);
+      await configRepository.saveTextAgent(agent);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -211,8 +210,7 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
                         filled: true,
                         fillColor: Colors.grey[50],
                       ),
-                      validator: (value) =>
-                          _validateRequired(value, 'エージェント名'),
+                      validator: (value) => _validateRequired(value, 'エージェント名'),
                       textInputAction: TextInputAction.next,
                     ),
                     const SizedBox(height: 16),
@@ -337,8 +335,7 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
                         fillColor: Colors.grey[50],
                         prefixIcon: const Icon(Icons.key),
                       ),
-                      validator: (value) =>
-                          _validateRequired(value, 'APIキー'),
+                      validator: (value) => _validateRequired(value, 'APIキー'),
                       obscureText: true,
                       textInputAction: TextInputAction.done,
                     ),

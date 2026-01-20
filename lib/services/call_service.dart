@@ -8,7 +8,6 @@ import 'package:vagina/core/config/app_config.dart';
 import 'package:vagina/interfaces/call_session_repository.dart';
 import 'package:vagina/interfaces/config_repository.dart';
 import 'package:vagina/interfaces/memory_repository.dart';
-import 'package:vagina/interfaces/text_agent_repository.dart';
 import 'package:vagina/models/call_session.dart';
 import 'package:vagina/models/chat_message.dart';
 import 'package:vagina/models/speed_dial.dart';
@@ -45,7 +44,6 @@ class CallService {
   final LogService _logService;
   final CallFeedbackService _feedback;
   final ChatMessageManager _chatManager = ChatMessageManager();
-  final TextAgentRepository _agentRepository;
   final TextAgentService _textAgentService;
   final TextAgentJobRunner _textAgentJobRunner;
 
@@ -98,7 +96,6 @@ class CallService {
     required ConfigRepository config,
     required CallSessionRepository sessionRepository,
     required MemoryRepository memoryRepository,
-    required TextAgentRepository agentRepository,
     required TextAgentService textAgentService,
     required TextAgentJobRunner textAgentJobRunner,
     LogService? logService,
@@ -108,7 +105,6 @@ class CallService {
         _config = config,
         _sessionRepository = sessionRepository,
         _memoryRepository = memoryRepository,
-        _agentRepository = agentRepository,
         _textAgentService = textAgentService,
         _textAgentJobRunner = textAgentJobRunner,
         _logService = logService ?? LogService(),
@@ -244,7 +240,7 @@ class CallService {
       _sandboxManager = ToolSandboxManager(
         notepadService: _notepadService,
         memoryRepository: _memoryRepository,
-        agentRepository: _agentRepository,
+        configRepository: _config,
         textAgentService: _textAgentService,
         jobRunner: _textAgentJobRunner,
         callService: this,

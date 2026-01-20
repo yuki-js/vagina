@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:vagina/services/notepad_service.dart';
 import 'package:vagina/interfaces/memory_repository.dart';
-import 'package:vagina/interfaces/text_agent_repository.dart';
+import 'package:vagina/interfaces/config_repository.dart';
 import 'package:vagina/services/call_service.dart';
 import 'package:vagina/services/text_agent_service.dart';
 import 'package:vagina/services/text_agent_job_runner.dart';
@@ -50,15 +50,15 @@ class ToolSandboxManager {
 
   final NotepadService _notepadService;
   final MemoryRepository _memoryRepository;
-  final CallService? _callService;
-  final TextAgentService? _textAgentService;
-  final TextAgentJobRunner? _jobRunner;
-  final TextAgentRepository? _agentRepository;
+  final ConfigRepository _configRepository;
+  final CallService _callService;
+  final TextAgentService _textAgentService;
+  final TextAgentJobRunner _jobRunner;
 
   late NotepadHostApi _notepadHostApi;
   late MemoryHostApi _memoryHostApi;
-  late CallHostApi? _callHostApi;
-  late TextAgentHostApi? _textAgentHostApi;
+  late CallHostApi _callHostApi;
+  late TextAgentHostApi _textAgentHostApi;
 
   // Worker management (platform-agnostic)
   platform.PlatformIsolate? _worker;
@@ -78,32 +78,24 @@ class ToolSandboxManager {
   ToolSandboxManager({
     required NotepadService notepadService,
     required MemoryRepository memoryRepository,
-    CallService? callService,
-    TextAgentService? textAgentService,
-    TextAgentJobRunner? jobRunner,
-    TextAgentRepository? agentRepository,
+    required CallService callService,
+    required TextAgentService textAgentService,
+    required TextAgentJobRunner jobRunner,
+    required ConfigRepository configRepository,
   })  : _notepadService = notepadService,
         _memoryRepository = memoryRepository,
+        _configRepository = configRepository,
         _callService = callService,
         _textAgentService = textAgentService,
-        _jobRunner = jobRunner,
-        _agentRepository = agentRepository {
+        _jobRunner = jobRunner {
     _notepadHostApi = NotepadHostApi(_notepadService);
     _memoryHostApi = MemoryHostApi(_memoryRepository);
-
-    // Initialize call API if call service is provided
-    _callHostApi = callService != null ? CallHostApi(callService) : null;
-
-    // Initialize text agent API if all required services are provided
-    _textAgentHostApi = (textAgentService != null &&
-            jobRunner != null &&
-            agentRepository != null)
-        ? TextAgentHostApi(
-            textAgentService: textAgentService,
-            jobRunner: jobRunner,
-            agentRepository: agentRepository,
-          )
-        : null;
+    _callHostApi = CallHostApi(_callService);
+    _textAgentHostApi = TextAgentHostApi(
+      textAgentService: _textAgentService,
+      jobRunner: _jobRunner,
+      configRepository: _configRepository,
+    );
 
     _toolsChangedController = StreamController<ToolsChangedEvent>.broadcast();
   }
@@ -457,10 +449,10 @@ class ToolSandboxManager {
           result = await _memoryHostApi.handleCall(method, args);
           break;
         case 'call':
-          result = await _callHostApi!.handleCall(method, args);
+          result = await _callHostApi.handleCall(method, args);
           break;
         case 'textAgent':
-          result = await _textAgentHostApi!.handleCall(method, args);
+          result = await _textAgentHostApi.handleCall(method, args);
           break;
         default:
           _sendHostCallError(requestId, 'Unknown API: $api', replyTo);

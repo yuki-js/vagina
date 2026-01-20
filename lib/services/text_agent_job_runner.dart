@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vagina/feat/text_agents/model/text_agent.dart';
 import 'package:vagina/feat/text_agents/model/text_agent_job.dart';
-import 'package:vagina/interfaces/text_agent_repository.dart';
+import 'package:vagina/interfaces/config_repository.dart';
 import 'package:vagina/interfaces/text_agent_job_repository.dart';
 import 'package:vagina/services/log_service.dart';
 import 'package:vagina/services/text_agent_service.dart';
@@ -13,7 +13,7 @@ class TextAgentJobRunner {
   static const _tag = 'TextAgentJobRunner';
 
   final TextAgentService _textAgentService;
-  final TextAgentRepository _agentRepository;
+  final ConfigRepository _configRepository;
   final TextAgentJobRepository _jobRepository;
   final LogService _logService;
 
@@ -30,14 +30,14 @@ class TextAgentJobRunner {
   static const Duration _processingInterval = Duration(seconds: 10);
 
   TextAgentJobRunner({
-    required TextAgentService textAgentService,
-    required TextAgentRepository agentRepository,
-    required TextAgentJobRepository jobRepository,
-    LogService? logService,
-  })  : _textAgentService = textAgentService,
-        _agentRepository = agentRepository,
-        _jobRepository = jobRepository,
-        _logService = logService ?? LogService();
+     required TextAgentService textAgentService,
+     required ConfigRepository configRepository,
+     required TextAgentJobRepository jobRepository,
+     LogService? logService,
+   })  : _textAgentService = textAgentService,
+         _configRepository = configRepository,
+         _jobRepository = jobRepository,
+         _logService = logService ?? LogService();
 
   /// Initialize the job runner on app startup
   ///
@@ -146,7 +146,7 @@ class TextAgentJobRunner {
     }
 
     // Get the agent
-    final agent = await _agentRepository.getById(job.agentId);
+    final agent = await _configRepository.getTextAgentById(job.agentId);
     if (agent == null) {
       _logService.error(_tag, 'Agent not found for job: $jobId');
       await _markJobFailed(job, 'Agent not found');
@@ -400,7 +400,7 @@ class TextAgentJobRunner {
 final textAgentJobRunnerProvider = Provider<TextAgentJobRunner>((ref) {
   final service = TextAgentJobRunner(
     textAgentService: ref.watch(textAgentServiceProvider),
-    agentRepository: ref.watch(textAgentRepositoryProvider),
+    configRepository: ref.watch(configRepositoryProvider),
     jobRepository: ref.watch(textAgentJobRepositoryProvider),
   );
   ref.onDispose(() => service.dispose());
