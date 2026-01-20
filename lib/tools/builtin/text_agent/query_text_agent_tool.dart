@@ -14,6 +14,7 @@ class QueryTextAgentTool extends Tool {
         categoryKey: 'text_agent',
         iconKey: 'chat',
         sourceKey: 'builtin',
+        publishedBy: 'aokiapp',
         description:
             'Query a text-based AI agent for deep reasoning or knowledge. Returns immediate response for "instant" queries, or a job token for "long"/"ultra_long" queries.',
         parametersSchema: {

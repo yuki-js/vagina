@@ -15,6 +15,7 @@ class GetCurrentTimeTool extends Tool {
         categoryKey: 'system',
         iconKey: 'access_time',
         sourceKey: 'builtin',
+        publishedBy: 'aokiapp',
         description:
             'Get the current date and time. Use this when the user asks about the current time or date.',
         parametersSchema: {

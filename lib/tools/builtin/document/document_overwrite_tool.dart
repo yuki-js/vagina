@@ -14,6 +14,7 @@ class DocumentOverwriteTool extends Tool {
         categoryKey: 'document',
         iconKey: 'edit_document',
         sourceKey: 'builtin',
+        publishedBy: 'aokiapp',
         description:
             'Create a new document or overwrite an existing one. If tabId is not provided, creates a new tab. If tabId is provided, replaces the content of that tab. Use this for creating and fully replacing documents.',
         parametersSchema: {

@@ -14,6 +14,7 @@ class GetTextAgentResponseTool extends Tool {
         categoryKey: 'text_agent',
         iconKey: 'download',
         sourceKey: 'builtin',
+        publishedBy: 'aokiapp',
         description:
             'Retrieve the response from a previously submitted async text agent query using its job token.',
         parametersSchema: {

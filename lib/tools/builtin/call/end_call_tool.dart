@@ -14,6 +14,7 @@ class EndCallTool extends Tool {
         categoryKey: 'call',
         iconKey: 'call_end',
         sourceKey: 'builtin',
+        publishedBy: 'aokiapp',
         description:
             'End the current voice call. Use when conversation naturally concludes or user requests to end.',
         parametersSchema: {

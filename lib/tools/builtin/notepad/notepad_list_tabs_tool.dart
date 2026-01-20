@@ -14,6 +14,7 @@ class NotepadListTabsTool extends Tool {
         categoryKey: 'notepad',
         iconKey: 'list',
         sourceKey: 'builtin',
+        publishedBy: 'aokiapp',
         description:
             'List all currently open artifact tabs. Returns metadata for each tab including id, title, mime type, and timestamps.',
         parametersSchema: {

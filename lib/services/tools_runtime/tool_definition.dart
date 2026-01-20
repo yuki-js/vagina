@@ -21,6 +21,10 @@ class ToolDefinition {
   /// Source identifier (e.g. builtin/mcp/custom).
   final String sourceKey;
 
+  /// Publisher/author
+  /// Tools from the same publisher can share some resources/configurations.
+  final String publishedBy;
+
   /// Optional MCP server URL (if this tool is backed by an MCP server).
   final String? mcpServerUrl;
 
@@ -39,6 +43,7 @@ class ToolDefinition {
     required this.categoryKey,
     required this.iconKey,
     required this.sourceKey,
+    required this.publishedBy,
     this.mcpServerUrl,
     required this.description,
     required this.parametersSchema,

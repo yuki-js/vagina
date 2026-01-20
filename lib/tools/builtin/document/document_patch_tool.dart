@@ -134,6 +134,7 @@ class DocumentPatchTool extends Tool {
         categoryKey: 'document',
         iconKey: 'edit',
         sourceKey: 'builtin',
+        publishedBy: 'aokiapp',
         description:
             'Apply a unified diff patch to an existing document. Use standard unified diff format (like git diff or diff -u). This is the preferred way to make small changes to existing documents.',
         parametersSchema: {

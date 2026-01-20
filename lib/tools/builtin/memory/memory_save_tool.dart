@@ -14,6 +14,7 @@ class MemorySaveTool extends Tool {
         categoryKey: 'memory',
         iconKey: 'save',
         sourceKey: 'builtin',
+        publishedBy: 'aokiapp',
         description:
             'Save information to long-term memory that persists across sessions. Use this when the user asks you to remember something.',
         parametersSchema: {

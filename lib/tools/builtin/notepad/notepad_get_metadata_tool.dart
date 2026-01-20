@@ -14,6 +14,7 @@ class NotepadGetMetadataTool extends Tool {
         categoryKey: 'notepad',
         iconKey: 'info',
         sourceKey: 'builtin',
+        publishedBy: 'aokiapp',
         description:
             'Get metadata of a specific artifact tab by its ID. Returns id, title, mime type, timestamps, and content length.',
         parametersSchema: {

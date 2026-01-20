@@ -14,6 +14,7 @@ class MemoryRecallTool extends Tool {
         categoryKey: 'memory',
         iconKey: 'search',
         sourceKey: 'builtin',
+        publishedBy: 'aokiapp',
         description:
             'Recall information from long-term memory. Use this when you need to remember something the user previously asked you to save.',
         parametersSchema: {

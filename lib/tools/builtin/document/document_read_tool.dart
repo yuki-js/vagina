@@ -14,6 +14,7 @@ class DocumentReadTool extends Tool {
         categoryKey: 'document',
         iconKey: 'visibility',
         sourceKey: 'builtin',
+        publishedBy: 'aokiapp',
         description:
             'Read the content of a document from an artifact tab. This returns the current content which may include modifications made by the user.',
         parametersSchema: {

@@ -14,6 +14,7 @@ class NotepadGetContentTool extends Tool {
         categoryKey: 'notepad',
         iconKey: 'article',
         sourceKey: 'builtin',
+        publishedBy: 'aokiapp',
         description: 'Get the content of a specific artifact tab by its ID.',
         parametersSchema: {
           'type': 'object',

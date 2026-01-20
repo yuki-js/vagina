@@ -14,6 +14,7 @@ class NotepadCloseTabTool extends Tool {
         categoryKey: 'notepad',
         iconKey: 'close',
         sourceKey: 'builtin',
+        publishedBy: 'aokiapp',
         description: 'Close an artifact tab by its ID.',
         parametersSchema: {
           'type': 'object',

@@ -14,6 +14,7 @@ class ListAvailableAgentsTool extends Tool {
         categoryKey: 'text_agent',
         iconKey: 'list',
         sourceKey: 'builtin',
+        publishedBy: 'aokiapp',
         description:
             'Get a list of all available text agents with their IDs, names, and capabilities.',
         parametersSchema: {

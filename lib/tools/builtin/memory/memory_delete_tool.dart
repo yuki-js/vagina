@@ -18,6 +18,7 @@ class MemoryDeleteTool extends Tool {
         categoryKey: 'memory',
         iconKey: 'delete',
         sourceKey: 'builtin',
+        publishedBy: 'aokiapp',
         description:
             'Delete information from tool-isolated long-term storage. '
             'Use this when the user asks you to forget something. '

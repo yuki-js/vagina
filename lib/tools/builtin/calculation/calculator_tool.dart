@@ -16,6 +16,7 @@ class CalculatorTool extends Tool {
         categoryKey: 'calculation',
         iconKey: 'calculate',
         sourceKey: 'builtin',
+        publishedBy: 'aokiapp',
         description:
             'Perform basic arithmetic calculations. Use this for mathematical operations.',
         parametersSchema: {
