@@ -3,7 +3,6 @@ import 'package:vagina/core/state/log_provider.dart';
 import 'package:vagina/core/data/permission_manager.dart';
 import 'package:vagina/interfaces/call_session_repository.dart';
 import 'package:vagina/interfaces/config_repository.dart';
-import 'package:vagina/interfaces/memory_repository.dart';
 import 'package:vagina/interfaces/speed_dial_repository.dart';
 import 'package:vagina/interfaces/text_agent_job_repository.dart';
 import 'package:vagina/interfaces/tool_storage.dart';
@@ -20,11 +19,6 @@ CallSessionRepository callSessionRepository(Ref ref) {
 @Riverpod(keepAlive: true)
 SpeedDialRepository speedDialRepository(Ref ref) {
   return RepositoryFactory.speedDials;
-}
-
-@Riverpod(keepAlive: true)
-MemoryRepository memoryRepository(Ref ref) {
-  return RepositoryFactory.memory;
 }
 
 @Riverpod(keepAlive: true)

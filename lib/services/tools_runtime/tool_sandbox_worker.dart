@@ -4,7 +4,6 @@ import 'package:vagina/services/tools_runtime/sandbox_protocol.dart';
 import 'package:vagina/services/tools_runtime/tool.dart';
 import 'package:vagina/services/tools_runtime/tool_context.dart';
 import 'package:vagina/services/tools_runtime/apis/notepad_api.dart';
-import 'package:vagina/services/tools_runtime/apis/memory_api.dart';
 import 'package:vagina/services/tools_runtime/apis/call_api.dart';
 import 'package:vagina/services/tools_runtime/apis/text_agent_api.dart';
 import 'package:vagina/services/tools_runtime/apis/tool_storage_api.dart';
@@ -69,7 +68,6 @@ class _WorkerController {
 
   // Late API clients (created during handshake)
   late NotepadApiClient _notepadApiClient;
-  late MemoryApiClient _memoryApiClient;
   late CallApiClient _callApiClient;
   late TextAgentApiClient _textAgentApiClient;
   late ToolStorageApiClient _toolStorageApiClient;
@@ -190,7 +188,6 @@ class _WorkerController {
       final toolContext = ToolContext(
         toolKey: tool.definition.toolKey,
         notepadApi: _notepadApiClient,
-        memoryApi: _memoryApiClient,
         callApi: _callApiClient,
         textAgentApi: _textAgentApiClient,
         toolStorageApi: _toolStorageApiClient,
@@ -212,12 +209,6 @@ class _WorkerController {
     );
 
     _log('Created NotepadApiClient');
-
-    // Create MemoryApiClient with hostCall callback
-    _memoryApiClient = MemoryApiClient(
-      hostCall: (method, args) => _makeHostCall('memory', method, args),
-    );
-    _log('Created MemoryApiClient');
 
     // Create CallApiClient with hostCall callback
     _callApiClient = CallApiClient(

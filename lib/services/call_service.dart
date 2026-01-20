@@ -7,7 +7,6 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:vagina/core/config/app_config.dart';
 import 'package:vagina/interfaces/call_session_repository.dart';
 import 'package:vagina/interfaces/config_repository.dart';
-import 'package:vagina/interfaces/memory_repository.dart';
 import 'package:vagina/interfaces/tool_storage.dart';
 import 'package:vagina/models/call_session.dart';
 import 'package:vagina/models/chat_message.dart';
