@@ -45,9 +45,9 @@ ToolService toolService(Ref ref) {
 
 @riverpod
 CallFeedbackService callFeedbackService(Ref ref) {
-  final _logService = ref.watch(logServiceProvider);
+  final logService = ref.watch(logServiceProvider);
   final service = CallFeedbackService(
-    logService: _logService,
+    logService: logService,
   );
   ref.onDispose(() {
     service.dispose();
@@ -63,7 +63,7 @@ CallService callService(Ref ref) {
     apiClient: ref.watch(realtimeApiClientProvider),
     config: ref.watch(configRepositoryProvider),
     sessionRepository: ref.watch(callSessionRepositoryProvider),
-    memoryRepository: ref.watch(memoryRepositoryProvider),
+    toolStorage: ref.watch(toolStorageProvider),
     textAgentService: ref.watch(textAgentServiceProvider),
     textAgentJobRunner: ref.watch(textAgentJobRunnerProvider),
     logService: _logService,

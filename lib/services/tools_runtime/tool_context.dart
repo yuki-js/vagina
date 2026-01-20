@@ -2,6 +2,7 @@ import 'package:vagina/services/tools_runtime/apis/notepad_api.dart';
 import 'package:vagina/services/tools_runtime/apis/memory_api.dart';
 import 'package:vagina/services/tools_runtime/apis/call_api.dart';
 import 'package:vagina/services/tools_runtime/apis/text_agent_api.dart';
+import 'package:vagina/services/tools_runtime/apis/tool_storage_api.dart';
 
 /// Per-call dependency container for tools.
 ///
@@ -11,11 +12,14 @@ import 'package:vagina/services/tools_runtime/apis/text_agent_api.dart';
 ///
 /// **Implementations:**
 /// - For isolate execution: Use [NotepadApiClient], [MemoryApiClient],
-///   [CallApiClient], and [TextAgentApiClient] which communicate with
-///   the host via message passing.
+///   [CallApiClient], [TextAgentApiClient], and [ToolStorageApiClient]
+///   which communicate with the host via message passing.
 /// - For testing/host-side: Create direct wrapper implementations that
 ///   delegate to actual services.
 class ToolContext {
+  /// Unique identifier of the tool (for storage isolation and tracking)
+  final String toolKey;
+
   /// Abstract API for notepad operations.
   ///
   /// Tools use this to access and mutate the current notepad state.
@@ -40,10 +44,19 @@ class ToolContext {
   /// This is Flutter-free and can be implemented via message passing for isolates.
   final TextAgentApi textAgentApi;
 
+  /// Abstract API for tool-isolated storage operations.
+  ///
+  /// Tools use this to persist and retrieve their own isolated data.
+  /// Each tool has its own namespace, preventing cross-tool data access.
+  /// This is Flutter-free and can be implemented via message passing for isolates.
+  final ToolStorageApi toolStorageApi;
+
   ToolContext({
+    required this.toolKey,
     required this.notepadApi,
     required this.memoryApi,
     required this.callApi,
     required this.textAgentApi,
+    required this.toolStorageApi,
   });
 }

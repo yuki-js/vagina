@@ -6,6 +6,7 @@ import 'package:vagina/interfaces/key_value_store.dart';
 import 'package:vagina/interfaces/memory_repository.dart';
 import 'package:vagina/interfaces/speed_dial_repository.dart';
 import 'package:vagina/interfaces/text_agent_job_repository.dart';
+import 'package:vagina/interfaces/tool_storage.dart';
 import 'package:vagina/services/log_service.dart';
 
 import 'json_call_session_repository.dart';
@@ -13,6 +14,7 @@ import 'json_config_repository.dart';
 import 'json_memory_repository.dart';
 import 'json_speed_dial_repository.dart';
 import 'json_text_agent_job_repository.dart';
+import 'json_tool_storage.dart';
 import 'preferences_repository.dart';
 
 /// Factory for creating repository instances
@@ -24,6 +26,7 @@ class RepositoryFactory {
   static CallSessionRepository? _callSessionRepo;
   static SpeedDialRepository? _speedDialRepo;
   static MemoryRepository? _memoryRepo;
+  static ToolStorage? _toolStorage;
   static ConfigRepository? _configRepo;
   static PreferencesRepository? _preferencesRepo;
   static TextAgentJobRepository? _textAgentJobRepo;
@@ -79,6 +82,13 @@ class RepositoryFactory {
         JsonMemoryRepository(_store!, logService: _logService);
   }
 
+  /// Get the Tool Storage repository (per-tool isolated storage)
+  static ToolStorage get toolStorage {
+    _ensureInitialized();
+    return _toolStorage ??=
+        JsonToolStorage(_store!, logService: _logService);
+  }
+
   /// Get the Config repository
   static ConfigRepository get config {
     _ensureInitialized();
@@ -113,6 +123,7 @@ class RepositoryFactory {
     _callSessionRepo = null;
     _speedDialRepo = null;
     _memoryRepo = null;
+    _toolStorage = null;
     _configRepo = null;
     _preferencesRepo = null;
     _textAgentJobRepo = null;

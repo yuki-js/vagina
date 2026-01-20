@@ -8,6 +8,7 @@ import 'package:vagina/core/config/app_config.dart';
 import 'package:vagina/interfaces/call_session_repository.dart';
 import 'package:vagina/interfaces/config_repository.dart';
 import 'package:vagina/interfaces/memory_repository.dart';
+import 'package:vagina/interfaces/tool_storage.dart';
 import 'package:vagina/models/call_session.dart';
 import 'package:vagina/models/chat_message.dart';
 import 'package:vagina/models/speed_dial.dart';
@@ -40,7 +41,7 @@ class CallService {
   final RealtimeApiClient _apiClient;
   final ConfigRepository _config;
   final CallSessionRepository _sessionRepository;
-  final MemoryRepository _memoryRepository;
+  final ToolStorage _toolStorage;
   final LogService _logService;
   final CallFeedbackService _feedback;
   final ChatMessageManager _chatManager = ChatMessageManager();
@@ -95,7 +96,7 @@ class CallService {
     required RealtimeApiClient apiClient,
     required ConfigRepository config,
     required CallSessionRepository sessionRepository,
-    required MemoryRepository memoryRepository,
+    required ToolStorage toolStorage,
     required TextAgentService textAgentService,
     required TextAgentJobRunner textAgentJobRunner,
     LogService? logService,
@@ -104,7 +105,7 @@ class CallService {
         _apiClient = apiClient,
         _config = config,
         _sessionRepository = sessionRepository,
-        _memoryRepository = memoryRepository,
+        _toolStorage = toolStorage,
         _textAgentService = textAgentService,
         _textAgentJobRunner = textAgentJobRunner,
         _logService = logService ?? LogService(),
@@ -239,7 +240,7 @@ class CallService {
       // Create and start sandbox
       _sandboxManager = ToolSandboxManager(
         notepadService: _notepadService,
-        memoryRepository: _memoryRepository,
+        toolStorage: _toolStorage,
         configRepository: _config,
         textAgentService: _textAgentService,
         jobRunner: _textAgentJobRunner,

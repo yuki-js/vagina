@@ -7,6 +7,7 @@ import 'package:vagina/services/tools_runtime/apis/notepad_api.dart';
 import 'package:vagina/services/tools_runtime/apis/memory_api.dart';
 import 'package:vagina/services/tools_runtime/apis/call_api.dart';
 import 'package:vagina/services/tools_runtime/apis/text_agent_api.dart';
+import 'package:vagina/services/tools_runtime/apis/tool_storage_api.dart';
 import 'package:vagina/tools/tools.dart';
 
 // Platform-specific imports (conditional)
@@ -71,6 +72,7 @@ class _WorkerController {
   late MemoryApiClient _memoryApiClient;
   late CallApiClient _callApiClient;
   late TextAgentApiClient _textAgentApiClient;
+  late ToolStorageApiClient _toolStorageApiClient;
 
   _WorkerController({
     required this.hostSendPort,
@@ -178,16 +180,23 @@ class _WorkerController {
   }
 
   /// Initialize tool registry from BuiltinToolCatalog
+  ///
+  /// Each tool gets its own ToolContext with its toolKey for isolated storage
   void _initializeToolRegistry() {
-    _toolContext = ToolContext(
-      notepadApi: _notepadApiClient,
-      memoryApi: _memoryApiClient,
-      callApi: _callApiClient,
-      textAgentApi: _textAgentApiClient,
-    );
     for (var tool in toolbox.tools) {
       _log('Registering tool: ${tool.definition.toolKey}');
-      tool.init(_toolContext); // boot up tool with context
+      
+      // Create a per-tool context with the tool's key for storage isolation
+      final toolContext = ToolContext(
+        toolKey: tool.definition.toolKey,
+        notepadApi: _notepadApiClient,
+        memoryApi: _memoryApiClient,
+        callApi: _callApiClient,
+        textAgentApi: _textAgentApiClient,
+        toolStorageApi: _toolStorageApiClient,
+      );
+      
+      tool.init(toolContext); // boot up tool with its own context
 
       _toolMap[tool.definition.toolKey] = tool;
     }
@@ -221,6 +230,12 @@ class _WorkerController {
       hostCall: (method, args) => _makeHostCall('textAgent', method, args),
     );
     _log('Created TextAgentApiClient');
+
+    // Create ToolStorageApiClient with hostCall callback
+    _toolStorageApiClient = ToolStorageApiClient(
+      hostCall: (method, args) => _makeHostCall('toolStorage', method, args),
+    );
+    _log('Created ToolStorageApiClient');
   }
 
   /// Make a hostCall request to the host

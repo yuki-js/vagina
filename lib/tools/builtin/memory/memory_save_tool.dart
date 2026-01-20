@@ -38,7 +38,9 @@ class MemorySaveTool extends Tool {
     final key = args['key'] as String;
     final value = args['value'] as String;
 
-    await context.memoryApi.save(key, value);
+    // Use tool-isolated storage (toolStorageApi)
+    // Each tool has its own namespace, so this memory is isolated per tool
+    await context.toolStorageApi.save(key, value);
 
     return jsonEncode({
       'success': true,

@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:vagina/services/notepad_service.dart';
-import 'package:vagina/interfaces/memory_repository.dart';
+import 'package:vagina/interfaces/tool_storage.dart';
 import 'package:vagina/interfaces/config_repository.dart';
 import 'package:vagina/services/call_service.dart';
 import 'package:vagina/services/text_agent_service.dart';
@@ -9,9 +9,9 @@ import 'package:vagina/services/text_agent_job_runner.dart';
 import 'package:vagina/services/tools_runtime/sandbox_platform_web.dart';
 import 'package:vagina/services/tools_runtime/sandbox_protocol.dart';
 import 'package:vagina/services/tools_runtime/host/notepad_host_api.dart';
-import 'package:vagina/services/tools_runtime/host/memory_host_api.dart';
 import 'package:vagina/services/tools_runtime/host/call_host_api.dart';
 import 'package:vagina/services/tools_runtime/host/text_agent_host_api.dart';
+import 'package:vagina/services/tools_runtime/host/tool_storage_host_api.dart';
 import 'package:vagina/services/tools_runtime/tool.dart';
 
 // Platform-specific imports (conditional)
@@ -49,16 +49,21 @@ class ToolSandboxManager {
   static const Duration _defaultTimeout = Duration(seconds: 30);
 
   final NotepadService _notepadService;
-  final MemoryRepository _memoryRepository;
+  final ToolStorage _toolStorage;
   final ConfigRepository _configRepository;
   final CallService _callService;
   final TextAgentService _textAgentService;
   final TextAgentJobRunner _jobRunner;
 
   late NotepadHostApi _notepadHostApi;
-  late MemoryHostApi _memoryHostApi;
   late CallHostApi _callHostApi;
   late TextAgentHostApi _textAgentHostApi;
+
+  // Tool storage API with context callback for dynamic tool key resolution
+  late ToolStorageHostApi _toolStorageHostApi;
+
+  // Track currently executing tool for hostCall routing
+  String? _currentExecutingToolKey;
 
   // Worker management (platform-agnostic)
   platform.PlatformIsolate? _worker;
@@ -77,24 +82,38 @@ class ToolSandboxManager {
 
   ToolSandboxManager({
     required NotepadService notepadService,
-    required MemoryRepository memoryRepository,
+    required ToolStorage toolStorage,
     required CallService callService,
     required TextAgentService textAgentService,
     required TextAgentJobRunner jobRunner,
     required ConfigRepository configRepository,
   })  : _notepadService = notepadService,
-        _memoryRepository = memoryRepository,
+        _toolStorage = toolStorage,
         _configRepository = configRepository,
         _callService = callService,
         _textAgentService = textAgentService,
         _jobRunner = jobRunner {
     _notepadHostApi = NotepadHostApi(_notepadService);
-    _memoryHostApi = MemoryHostApi(_memoryRepository);
     _callHostApi = CallHostApi(_callService);
     _textAgentHostApi = TextAgentHostApi(
       textAgentService: _textAgentService,
       jobRunner: _jobRunner,
       configRepository: _configRepository,
+    );
+    
+    // Tool storage API with context callback to get current tool key
+    // The callback will throw if called outside of tool execution context
+    _toolStorageHostApi = ToolStorageHostApi(
+      _toolStorage,
+      () {
+        if (_currentExecutingToolKey == null) {
+          throw StateError(
+            'toolStorage API called outside of tool execution context. '
+            'This is a programming error - toolStorage should only be called from within a tool.',
+          );
+        }
+        return _currentExecutingToolKey!;
+      },
     );
 
     _toolsChangedController = StreamController<ToolsChangedEvent>.broadcast();
@@ -197,6 +216,9 @@ class ToolSandboxManager {
     }
 
     try {
+      // Track current executing tool for hostCall routing
+      _currentExecutingToolKey = toolKey;
+      
       final messageId = generateMessageId();
 
       // Create and validate the execute message
@@ -251,11 +273,13 @@ class ToolSandboxManager {
         }
       } finally {
         _pendingRequests.remove(messageId);
+        _currentExecutingToolKey = null; // Clear tool context after execution
       }
     } catch (e) {
       print('[$_tag:HOST] Failed to execute tool: $toolKey');
       print('Error: $e');
       print('Request Payload: ${jsonEncode(args)}');
+      _currentExecutingToolKey = null; // Clear tool context on error
       rethrow;
     }
   }
@@ -411,7 +435,7 @@ class ToolSandboxManager {
 
   /// Handle a hostCall request from the worker
   ///
-  /// Routes to appropriate host adapter (NotepadHostApi or MemoryHostApi)
+  /// Routes to appropriate host adapter (NotepadHostApi, MemoryHostApi, ToolStorageHostApi, etc.)
   /// and sends response back to worker via the replyTo port
   void _handleHostCall(String requestId, Map<String, dynamic> message) async {
     try {
@@ -445,14 +469,15 @@ class ToolSandboxManager {
         case 'notepad':
           result = await _notepadHostApi.handleCall(method, args);
           break;
-        case 'memory':
-          result = await _memoryHostApi.handleCall(method, args);
-          break;
         case 'call':
           result = await _callHostApi.handleCall(method, args);
           break;
         case 'textAgent':
           result = await _textAgentHostApi.handleCall(method, args);
+          break;
+        case 'toolStorage':
+          // Tool storage API uses the injected callback to get current tool key
+          result = await _toolStorageHostApi.handleCall(method, args);
           break;
         default:
           _sendHostCallError(requestId, 'Unknown API: $api', replyTo);

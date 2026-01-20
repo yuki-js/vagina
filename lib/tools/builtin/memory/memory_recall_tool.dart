@@ -34,14 +34,17 @@ class MemoryRecallTool extends Tool {
     final key = args['key'] as String;
 
     if (key == 'all') {
-      final allMemories = await context.memoryApi.list();
+      // Use tool-isolated storage (toolStorageApi)
+      // This returns only memories for this specific tool
+      final allMemories = await context.toolStorageApi.list();
       return jsonEncode({
         'success': true,
         'memories': allMemories,
       });
     }
 
-    final value = await context.memoryApi.recall(key);
+    // Use tool-isolated storage (toolStorageApi)
+    final value = await context.toolStorageApi.get(key);
     if (value == null) {
       return jsonEncode({
         'success': false,
