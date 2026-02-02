@@ -21,7 +21,7 @@ dependencies:
 
   # Audio handling
   taudio: ^10.0.0
-  record: ^6.1.2
+  record: ^6.2.0
 
   # Network & WebSocket
   web_socket_channel: ^3.0.3
