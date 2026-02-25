@@ -204,6 +204,9 @@ class _WorkerController {
 
       _toolMap[tool.definition.toolKey] = tool;
     }
+    
+    // Update TextAgentApiClient with tool calling support
+    _updateTextAgentToolSupport();
   }
 
   /// Create and initialize API clients
@@ -226,9 +229,12 @@ class _WorkerController {
     );
     _log('Created CallApiClient');
 
-    // Create TextAgentApiClient (executes directly in worker)
+    // Create TextAgentApiClient with tool calling support
+    // Note: Tools list will be updated after tool registry initialization
     _textAgentApiClient = TextAgentApiClient(
       initialData: toolsData?['text_agents'],
+      executeToolCallback: _executeToolInternal,
+      availableTools: [], // Will be populated after _initializeToolRegistry
     );
     _log('Created TextAgentApiClient');
 
@@ -389,13 +395,8 @@ class _WorkerController {
       _log('Executing tool: $toolKey');
 
       try {
-        final resolved = _toolMap[toolKey];
-        if (resolved == null) {
-          throw UnknownToolException('Tool not found: $toolKey');
-        }
-
-        // Execute tool
-        final result = await resolved.execute(args);
+        // Execute tool using internal method
+        final result = await _executeToolInternal(toolKey, args);
         _log('Tool execution completed: $toolKey');
 
         // Send success response
@@ -622,6 +623,47 @@ class _WorkerController {
         error: 'Error unregistering tool: $e',
       );
     }
+  }
+
+  /// Execute a tool internally within the Worker Isolate
+  ///
+  /// This method allows tools to call other tools directly without
+  /// crossing Isolate boundaries. Used by TextAgentApiClient for tool calling.
+  Future<String> _executeToolInternal(
+    String toolKey,
+    Map<String, dynamic> args,
+  ) async {
+    _log('Internal tool execution: $toolKey');
+    
+    final tool = _toolMap[toolKey];
+    if (tool == null) {
+      throw UnknownToolException('Tool not found: $toolKey');
+    }
+    
+    // Execute tool and return result
+    return await tool.execute(args);
+  }
+  
+  /// Update TextAgentApiClient with available tools after registry initialization
+  void _updateTextAgentToolSupport() {
+    _log('Updating TextAgentApiClient with tool definitions');
+    
+    // Build Chat Completions API compatible tool list
+    final availableTools = _toolMap.values.map((tool) {
+      return {
+        'type': 'function',
+        'function': {
+          'name': tool.definition.toolKey,
+          'description': tool.definition.description,
+          'parameters': tool.definition.parametersSchema,
+        },
+      };
+    }).toList();
+    
+    // Update client with tools
+    _textAgentApiClient.updateTools(availableTools);
+    
+    _log('Updated ${availableTools.length} tools for TextAgentApiClient');
   }
 
   /// Send a response message to the host

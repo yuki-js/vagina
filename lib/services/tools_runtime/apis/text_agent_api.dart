@@ -164,11 +164,19 @@ class TextAgentApiClient implements TextAgentApi {
   final Map<String, WorkerTextAgent> _agents = {};
   final Map<String, _AsyncJob> _jobs = {};
   final http.Client _httpClient;
+  
+  // Tool execution support
+  final Future<String> Function(String toolKey, Map<String, dynamic> args)? _executeToolCallback;
+  List<Map<String, dynamic>>? _availableTools;
 
   TextAgentApiClient({
     http.Client? httpClient,
     dynamic initialData,
-  }) : _httpClient = httpClient ?? http.Client() {
+    Future<String> Function(String, Map<String, dynamic>)? executeToolCallback,
+    List<Map<String, dynamic>>? availableTools,
+  }) : _httpClient = httpClient ?? http.Client(),
+       _executeToolCallback = executeToolCallback,
+       _availableTools = availableTools ?? [] {
     // Initialize agents if provided
     if (initialData is List) {
       try {
@@ -195,6 +203,11 @@ class TextAgentApiClient implements TextAgentApi {
   /// Update agent configurations (for external updates)
   void updateAgents(List<WorkerTextAgent> agents) {
     _initializeAgents(agents);
+  }
+  
+  /// Update available tools for tool calling
+  void updateTools(List<Map<String, dynamic>> tools) {
+    _availableTools = tools;
   }
 
   @override
@@ -282,7 +295,7 @@ class TextAgentApiClient implements TextAgentApi {
     }).toList();
   }
 
-  /// Execute HTTP query to the agent
+  /// Execute HTTP query to the agent with tool calling support
   Future<String> _executeQuery(
     WorkerTextAgent agent,
     String prompt,
@@ -294,11 +307,14 @@ class TextAgentApiClient implements TextAgentApi {
     // Build headers
     final headers = agent.getRequestHeaders();
 
+    // Initialize conversation with user message
+    final messages = <Map<String, dynamic>>[
+      {'role': 'user', 'content': prompt},
+    ];
+
     // Build request body
-    final requestBody = {
-      'messages': [
-        {'role': 'user', 'content': prompt},
-      ],
+    final requestBody = <String, dynamic>{
+      'messages': messages,
       'max_tokens': 4096,
       'temperature': 1.0,
     };
@@ -308,37 +324,103 @@ class TextAgentApiClient implements TextAgentApi {
       requestBody['model'] = agent.getModelIdentifier();
     }
 
+    // Add tools if available
+    if (_availableTools != null && _availableTools!.isNotEmpty && _executeToolCallback != null) {
+      requestBody['tools'] = _availableTools;
+      requestBody['tool_choice'] = 'auto';
+    }
+
+    // Multi-turn conversation loop for tool calling
+    int turnCount = 0;
+    const maxTurns = 10; // Prevent infinite loops
+
     try {
-      final response = await _httpClient
-          .post(
-            url,
-            headers: headers,
-            body: jsonEncode(requestBody),
-          )
-          .timeout(timeout);
+      while (turnCount < maxTurns) {
+        turnCount++;
 
-      if (response.statusCode != 200) {
-        throw Exception('API error (${response.statusCode}): ${response.body}');
+        final response = await _httpClient
+            .post(
+              url,
+              headers: headers,
+              body: jsonEncode(requestBody),
+            )
+            .timeout(timeout);
+
+        if (response.statusCode != 200) {
+          throw Exception('API error (${response.statusCode}): ${response.body}');
+        }
+
+        final responseJson = jsonDecode(response.body) as Map<String, dynamic>;
+        final choices = responseJson['choices'] as List?;
+
+        if (choices == null || choices.isEmpty) {
+          throw Exception('No choices in response');
+        }
+
+        final message = choices[0]['message'] as Map<String, dynamic>?;
+        if (message == null) {
+          throw Exception('No message in response');
+        }
+
+        // Check if the response contains tool calls
+        final toolCalls = message['tool_calls'] as List?;
+
+        if (toolCalls != null && toolCalls.isNotEmpty) {
+          // AI wants to call tools
+          // Add assistant message with tool calls to conversation
+          messages.add(message);
+
+          // Execute each tool call
+          for (final toolCallData in toolCalls) {
+            final toolCallId = toolCallData['id'] as String;
+            final function = toolCallData['function'] as Map<String, dynamic>;
+            final toolName = function['name'] as String;
+            final argumentsStr = function['arguments'] as String;
+
+            try {
+              // Parse arguments
+              final arguments = jsonDecode(argumentsStr) as Map<String, dynamic>;
+
+              // Execute tool via callback
+              final result = await _executeToolCallback!(toolName, arguments);
+
+              // Add tool result to conversation
+              messages.add({
+                'role': 'tool',
+                'tool_call_id': toolCallId,
+                'name': toolName,
+                'content': result,
+              });
+            } catch (e) {
+              // Add error result
+              messages.add({
+                'role': 'tool',
+                'tool_call_id': toolCallId,
+                'name': toolName,
+                'content': jsonEncode({
+                  'success': false,
+                  'error': 'Tool execution failed: $e',
+                }),
+              });
+            }
+          }
+
+          // Update request with new messages and continue loop
+          requestBody['messages'] = messages;
+          continue;
+        }
+
+        // No tool calls, get final content
+        final content = message['content'] as String?;
+        if (content == null) {
+          throw Exception('No content in response');
+        }
+
+        return content;
       }
 
-      final responseJson = jsonDecode(response.body) as Map<String, dynamic>;
-      final choices = responseJson['choices'] as List?;
-
-      if (choices == null || choices.isEmpty) {
-        throw Exception('No choices in response');
-      }
-
-      final message = choices[0]['message'] as Map<String, dynamic>?;
-      if (message == null) {
-        throw Exception('No message in response');
-      }
-
-      final content = message['content'] as String?;
-      if (content == null) {
-        throw Exception('No content in response');
-      }
-
-      return content;
+      // Max turns reached
+      throw Exception('Max conversation turns ($maxTurns) reached without completion');
     } on TimeoutException {
       throw Exception('Request timeout after ${timeout.inSeconds}s');
     } catch (e) {
