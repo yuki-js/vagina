@@ -73,6 +73,9 @@ class ToolSandboxManager {
   // Message routing
   final Map<String, Completer<Map<String, dynamic>>> _pendingRequests = {};
 
+  // Latest tool registry from worker (SSoT for tool metadata on host side)
+  List<Tool> _latestTools = const [];
+
   // Tools changed stream
   late StreamController<ToolsChangedEvent> _toolsChangedController;
 
@@ -113,6 +116,15 @@ class ToolSandboxManager {
           );
         }
         return _currentExecutingToolKey!;
+      },
+      resolveStorageNamespace: (toolKey) {
+        // SSoT: resolve from the latest tool list, avoiding a separate cache.
+        for (final tool in _latestTools) {
+          if (tool.definition.toolKey == toolKey) {
+            return tool.definition.publishedBy;
+          }
+        }
+        return toolKey;
       },
     );
 
@@ -348,11 +360,15 @@ class ToolSandboxManager {
           return [];
         }
 
-        return List<Tool>.from(
+        final toolsList = List<Tool>.from(
           tools
               .cast<Map<String, dynamic>>()
               .map((json) => Tool.fromWorker(json)),
         );
+
+        _setToolRegistry(toolsList);
+
+        return toolsList;
       } finally {
         _pendingRequests.remove(messageId);
       }
@@ -525,6 +541,10 @@ class ToolSandboxManager {
     }
   }
 
+  void _setToolRegistry(List<Tool> tools) {
+    _latestTools = tools;
+  }
+
   /// Handle toolsChanged push event from the worker
   void _handleToolsChanged(Map<String, dynamic> message) {
     try {
@@ -540,12 +560,16 @@ class ToolSandboxManager {
         return;
       }
 
+      final toolsList = List<Tool>.from(
+        tools
+            .cast<Map<String, dynamic>>()
+            .map((json) => Tool.fromWorker(json)),
+      );
+
+      _setToolRegistry(toolsList);
+
       final event = ToolsChangedEvent(
-        tools: List<Tool>.from(
-          tools
-              .cast<Map<String, dynamic>>()
-              .map((json) => Tool.fromWorker(json)),
-        ),
+        tools: toolsList,
         reason: reason,
       );
 

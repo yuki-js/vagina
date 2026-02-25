@@ -14,12 +14,21 @@ class ToolStorageHostApi {
   /// Callback to get the currently executing tool key
   /// This is called for each request to ensure we use the correct tool context
   final String Function() _getCurrentToolKey;
+  
+  /// Resolve storage namespace for a given tool key.
+  ///
+  /// Provided by the runtime as the Single Source of Truth (SSoT) for tool
+  /// metadata, to avoid maintaining an additional cache here.
+  final String Function(String toolKey) _resolveStorageNamespace;
 
   ToolStorageHostApi(
     this._toolStorage,
     this._getCurrentToolKey, {
+    required String Function(String toolKey) resolveStorageNamespace,
     LogService? logService,
-  }) : _logService = logService ?? LogService();
+  })  : _resolveStorageNamespace = resolveStorageNamespace,
+        _logService = logService ?? LogService();
+
 
   /// Handle API calls from the isolate
   ///
@@ -61,8 +70,9 @@ class ToolStorageHostApi {
       throw Exception('Missing required parameter: key');
     }
 
+    final storageNamespace = _resolveStorageNamespace(toolKey);
     _logService.info(_tag, 'Saving tool $toolKey key=$key, value=$value');
-    await _toolStorage.save(toolKey, key, value);
+    await _toolStorage.save(storageNamespace, key, value);
     _logService.info(_tag, 'Saved successfully for tool $toolKey key=$key');
     
     // Return success response structure for the API client
@@ -78,8 +88,9 @@ class ToolStorageHostApi {
       throw Exception('Missing required parameter: key');
     }
 
+    final storageNamespace = _resolveStorageNamespace(toolKey);
     _logService.info(_tag, 'Getting tool $toolKey key=$key');
-    final value = await _toolStorage.get(toolKey, key);
+    final value = await _toolStorage.get(storageNamespace, key);
     _logService.info(_tag, 'Got value for tool $toolKey key=$key: $value');
     
     return {
@@ -89,8 +100,9 @@ class ToolStorageHostApi {
   }
 
   Future<dynamic> _handleList(String toolKey) async {
+    final storageNamespace = _resolveStorageNamespace(toolKey);
     _logService.info(_tag, 'Listing all for tool $toolKey');
-    final data = await _toolStorage.listAll(toolKey);
+    final data = await _toolStorage.listAll(storageNamespace);
     _logService.info(_tag, 'Listed ${data.length} entries for tool $toolKey');
     
     return {
@@ -105,8 +117,9 @@ class ToolStorageHostApi {
       throw Exception('Missing required parameter: key');
     }
 
+    final storageNamespace = _resolveStorageNamespace(toolKey);
     _logService.info(_tag, 'Deleting tool $toolKey key=$key');
-    final result = await _toolStorage.delete(toolKey, key);
+    final result = await _toolStorage.delete(storageNamespace, key);
     _logService.info(_tag, 'Delete result for tool $toolKey key=$key: $result');
     
     return {
@@ -116,8 +129,9 @@ class ToolStorageHostApi {
   }
 
   Future<dynamic> _handleDeleteAll(String toolKey) async {
+    final storageNamespace = _resolveStorageNamespace(toolKey);
     _logService.info(_tag, 'Deleting all for tool $toolKey');
-    await _toolStorage.deleteAll(toolKey);
+    await _toolStorage.deleteAll(storageNamespace);
     _logService.info(_tag, 'Deleted all for tool $toolKey');
     
     return {
