@@ -103,7 +103,7 @@ class ProviderParser {
       case TextAgentProvider.openai:
         return 'OpenAIの公式API。api.openai.comを使用します。';
       case TextAgentProvider.azure:
-        return 'Azure OpenAI Service。リソース固有のエンドポイントを指定します。';
+        return 'Azure OpenAI Service。ベースURL（https://{resource}.openai.azure.com）または完成済みのChat Completions URLを指定します。';
       case TextAgentProvider.litellm:
         return 'LiteLLMプロキシサービス。ローカルまたはリモートのプロキシURLを指定します。';
       case TextAgentProvider.custom:
@@ -117,7 +117,7 @@ class ProviderParser {
       case TextAgentProvider.openai:
         return 'gpt-4o';
       case TextAgentProvider.azure:
-        return 'https://myresource.openai.azure.com';
+        return 'https://myresource.openai.azure.com/openai/deployments/my-deployment/chat/completions?api-version=2024-10-01-preview';
       case TextAgentProvider.litellm:
         return 'http://localhost:4000';
       case TextAgentProvider.custom:

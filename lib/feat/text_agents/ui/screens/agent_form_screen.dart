@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:vagina/core/state/repository_providers.dart';
 import 'package:vagina/core/theme/app_theme.dart';
+import 'package:vagina/feat/text_agents/model/text_agent.dart';
 import 'package:vagina/feat/text_agents/model/text_agent_config.dart';
 import 'package:vagina/feat/text_agents/model/text_agent_provider.dart';
-import 'package:vagina/feat/text_agents/model/text_agent.dart';
+import 'package:vagina/feat/text_agents/state/text_agent_providers.dart';
 import 'package:vagina/feat/text_agents/util/provider_parser.dart';
-import 'package:vagina/core/state/repository_providers.dart';
 
 /// Screen for creating or editing a text agent with simplified multi-provider support
 ///
@@ -122,6 +123,7 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
       await configRepository.saveTextAgent(agent);
 
       if (mounted) {
+        ref.invalidate(textAgentsProvider);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(

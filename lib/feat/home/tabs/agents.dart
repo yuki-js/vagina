@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:vagina/feat/text_agents/model/text_agent.dart';
 import 'package:vagina/core/theme/app_theme.dart';
+import 'package:vagina/feat/text_agents/model/text_agent.dart';
+import 'package:vagina/feat/text_agents/state/text_agent_providers.dart';
 import 'package:vagina/feat/text_agents/ui/screens/agent_form_screen.dart';
-import 'package:vagina/core/state/repository_providers.dart';
 
 /// Agents tab - Text agent management
 class AgentsTab extends ConsumerWidget {
@@ -11,10 +11,7 @@ class AgentsTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final configRepo = ref.watch(configRepositoryProvider);
-    final agentsAsync = ref.watch(
-      FutureProvider((ref) => configRepo.getAllTextAgents()),
-    );
+    final agentsAsync = ref.watch(textAgentsProvider);
 
     return agentsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),

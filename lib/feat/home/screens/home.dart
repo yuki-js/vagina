@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/feat/about/screens/about.dart';
 import 'package:vagina/feat/home/tabs/agents.dart';
 import 'package:vagina/feat/home/tabs/sessions.dart';
@@ -7,7 +8,7 @@ import 'package:vagina/feat/home/tabs/speed_dial.dart';
 import 'package:vagina/feat/home/tabs/tools.dart';
 import 'package:vagina/feat/settings/screens/settings.dart';
 import 'package:vagina/feat/speed_dial/screens/config.dart';
-import 'package:vagina/core/theme/app_theme.dart';
+import 'package:vagina/feat/text_agents/ui/screens/agent_form_screen.dart';
 import 'package:vagina/utils/call_navigation_utils.dart';
 
 /// Main home screen with tab bar for phone app design
@@ -43,7 +44,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     _TabInfo(
       icon: Icons.person,
       label: 'エージェント',
-      canAdd: false,
+      canAdd: true,
     ),
   ];
 
@@ -86,9 +87,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final tab = _tabs[_currentTabIndex];
     if (!tab.canAdd) return;
 
-    if (_currentTabIndex == 0) {
-      // Speed dial tab
-      await _addSpeedDial();
+    switch (_currentTabIndex) {
+      case 0:
+        // Speed dial tab
+        await _addSpeedDial();
+        break;
+      case 3:
+        // Agents tab
+        await _addTextAgent();
+        break;
     }
   }
 
@@ -96,6 +103,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => const SpeedDialConfigScreen(),
+      ),
+    );
+  }
+
+  Future<void> _addTextAgent() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const AgentFormScreen(),
       ),
     );
   }

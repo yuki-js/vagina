@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/core/state/repository_providers.dart';
+import 'package:vagina/core/theme/app_theme.dart';
+import 'package:vagina/feat/text_agents/state/text_agent_providers.dart';
 
 /// Dialog for quickly selecting a text agent
 class AgentSelectionDialog extends ConsumerWidget {
@@ -9,13 +10,8 @@ class AgentSelectionDialog extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final configRepo = ref.watch(configRepositoryProvider);
-    final agentsAsync = ref.watch(
-      FutureProvider((ref) => configRepo.getAllTextAgents()),
-    );
-    final selectedIdAsync = ref.watch(
-      FutureProvider((ref) => configRepo.getSelectedTextAgentId()),
-    );
+    final agentsAsync = ref.watch(textAgentsProvider);
+    final selectedIdAsync = ref.watch(selectedTextAgentIdProvider);
 
     return Dialog(
       shape: RoundedRectangleBorder(
@@ -110,6 +106,7 @@ class AgentSelectionDialog extends ConsumerWidget {
                                 await ref
                                     .read(configRepositoryProvider)
                                     .setSelectedTextAgentId(agent.id);
+                                ref.invalidate(selectedTextAgentIdProvider);
                                 if (context.mounted) {
                                   Navigator.of(context).pop(agent);
                                 }

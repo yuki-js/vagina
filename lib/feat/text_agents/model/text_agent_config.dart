@@ -45,6 +45,46 @@ class TextAgentConfig {
     }
   }
 
+  /// Returns true if [url] already looks like a full Azure Chat Completions URL.
+  ///
+  /// We intentionally keep this permissive (substring/URI-path based) to avoid
+  /// misclassifying a full URL as a base endpoint and accidentally concatenating
+  /// another `/openai/deployments/...` path onto it.
+  static bool _looksLikeAzureChatCompletionsUrl(String url) {
+    final trimmed = url.trim();
+    final uri = Uri.tryParse(trimmed);
+
+    if (uri == null || !uri.hasScheme || uri.host.isEmpty) {
+      // If parsing fails, fall back to a simple check on the raw string.
+      final lower = trimmed.toLowerCase();
+      final hasHttpScheme =
+          lower.startsWith('https://') || lower.startsWith('http://');
+      return hasHttpScheme &&
+          lower.contains('/openai/deployments/') &&
+          lower.contains('/chat/completions');
+    }
+
+    final path = uri.path.toLowerCase();
+    return path.contains('/openai/deployments/') &&
+        path.contains('/chat/completions');
+  }
+
+  /// Try to extract Azure deployment name from a full Azure URL.
+  static String? _tryExtractAzureDeploymentFromUrl(String url) {
+    final trimmed = url.trim();
+    final uri = Uri.tryParse(trimmed);
+
+    // Prefer URI parsing when possible (avoids matching inside query strings).
+    final path = uri?.path ?? trimmed.split('?').first;
+
+    final match = RegExp(
+      r'/openai/deployments/([^/]+)/',
+      caseSensitive: false,
+    ).firstMatch(path);
+
+    return match?.group(1);
+  }
+
   TextAgentConfig copyWith({
     TextAgentProvider? provider,
     String? apiKey,
@@ -63,8 +103,17 @@ class TextAgentConfig {
       case TextAgentProvider.openai:
         return 'https://api.openai.com/v1/chat/completions';
       case TextAgentProvider.azure:
-        // apiIdentifier contains the base endpoint URL
-        return '$apiIdentifier/openai/deployments/default/chat/completions?api-version=2024-10-01-preview';
+        // apiIdentifier may be either:
+        // - base endpoint URL (e.g., https://{resource}.openai.azure.com)
+        // - full Chat Completions URL (e.g., https://{resource}.openai.azure.com/openai/deployments/{deployment}/chat/completions?api-version=...)
+        final trimmed = apiIdentifier.trim();
+        if (_looksLikeAzureChatCompletionsUrl(trimmed)) {
+          return trimmed;
+        }
+
+        // Fallback: treat as base endpoint URL.
+        final base = trimmed.replaceAll(RegExp(r'/$'), '');
+        return '$base/openai/deployments/default/chat/completions?api-version=2024-10-01-preview';
       case TextAgentProvider.litellm:
         // apiIdentifier contains the proxy URL
         return '${apiIdentifier.replaceAll(RegExp(r'/$'), '')}/chat/completions';
@@ -80,7 +129,9 @@ class TextAgentConfig {
       case TextAgentProvider.openai:
         return apiIdentifier; // apiIdentifier is the model name
       case TextAgentProvider.azure:
-        return 'gpt-4o'; // Azure uses deployment names, but model field is separate
+        // Azure identifies the model via the deployment name in the URL path.
+        // If the user provided a full endpoint URL, extract it for better logging/debugging.
+        return _tryExtractAzureDeploymentFromUrl(apiIdentifier) ?? 'gpt-4o';
       case TextAgentProvider.litellm:
         return 'gpt-4o'; // Default, can be overridden in request
       case TextAgentProvider.custom:

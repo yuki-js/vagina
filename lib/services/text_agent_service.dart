@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:http/http.dart' as http;
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:http/http.dart' as http;
 import 'package:vagina/feat/text_agents/model/text_agent.dart';
 import 'package:vagina/feat/text_agents/model/text_agent_job.dart';
+import 'package:vagina/feat/text_agents/model/text_agent_provider.dart';
 import 'package:vagina/services/log_service.dart';
 
 /// Service for making HTTP calls to OpenAI-compatible Chat Completions APIs
@@ -135,14 +137,18 @@ class TextAgentService {
     );
 
     // Build request body
-    final requestBody = {
-      'model': model,
+    final requestBody = <String, dynamic>{
       'messages': [
         {'role': 'user', 'content': prompt}
       ],
       'max_tokens': 4096,
       'temperature': 1.0,
     };
+
+    // Azure identifies the model via the deployment in the URL, not the body.
+    if (config.provider != TextAgentProvider.azure) {
+      requestBody['model'] = model;
+    }
 
     _logService.debug(
       _tag,
