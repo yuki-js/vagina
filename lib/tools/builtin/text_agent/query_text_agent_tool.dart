@@ -1,10 +1,37 @@
 import 'dart:convert';
 
+import 'package:vagina/interfaces/config_repository.dart';
 import 'package:vagina/services/tools_runtime/tool.dart';
 import 'package:vagina/services/tools_runtime/tool_definition.dart';
 
 class QueryTextAgentTool extends Tool {
   static const String toolKeyName = 'query_text_agent';
+
+  @override
+  Future<Map<String, dynamic>?> loadInitializationData(dynamic config) async {
+    if (config is! ConfigRepository) {
+      return null;
+    }
+
+    try {
+      final agents = await config.getAllTextAgents();
+      final agentConfigs = agents.map((agent) {
+        return {
+          'id': agent.id,
+          'name': agent.name,
+          'description': agent.description,
+          'provider': agent.config.provider.value,
+          'apiKey': agent.config.apiKey,
+          'apiIdentifier': agent.config.apiIdentifier,
+        };
+      }).toList();
+
+      return {'text_agents': agentConfigs};
+    } catch (e) {
+      print('QueryTextAgentTool: Error loading initialization data: $e');
+      return null;
+    }
+  }
 
   @override
   ToolDefinition get definition => const ToolDefinition(

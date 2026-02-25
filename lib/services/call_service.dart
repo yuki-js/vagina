@@ -11,8 +11,6 @@ import 'package:vagina/interfaces/tool_storage.dart';
 import 'package:vagina/models/call_session.dart';
 import 'package:vagina/models/chat_message.dart';
 import 'package:vagina/models/speed_dial.dart';
-import 'package:vagina/services/text_agent_job_runner.dart';
-import 'package:vagina/services/text_agent_service.dart';
 import 'package:vagina/services/tools_runtime/tool.dart';
 import 'package:vagina/services/tools_runtime/tool_sandbox_manager.dart';
 import 'package:vagina/utils/audio_utils.dart';
@@ -45,8 +43,6 @@ class CallService {
   final LogService _logService;
   final CallFeedbackService _feedback;
   final ChatMessageManager _chatManager = ChatMessageManager();
-  final TextAgentService _textAgentService;
-  final TextAgentJobRunner _textAgentJobRunner;
 
   /// NotepadService instance (initialized in constructor, scoped to CallService)
   /// This is owned by CallService, NOT by a provider
@@ -97,8 +93,6 @@ class CallService {
     required ConfigRepository config,
     required CallSessionRepository sessionRepository,
     required ToolStorage toolStorage,
-    required TextAgentService textAgentService,
-    required TextAgentJobRunner textAgentJobRunner,
     LogService? logService,
     CallFeedbackService? feedbackService,
   })  : _audioService = audioService,
@@ -106,8 +100,6 @@ class CallService {
         _config = config,
         _sessionRepository = sessionRepository,
         _toolStorage = toolStorage,
-        _textAgentService = textAgentService,
-        _textAgentJobRunner = textAgentJobRunner,
         _logService = logService ?? LogService(),
         _feedback =
             feedbackService ?? CallFeedbackService(logService: logService),
@@ -264,8 +256,6 @@ class CallService {
         notepadService: _notepadService,
         toolStorage: _toolStorage,
         configRepository: _config,
-        textAgentService: _textAgentService,
-        jobRunner: _textAgentJobRunner,
         callService: this,
       );
       await _sandboxManager!.start();

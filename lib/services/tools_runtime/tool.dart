@@ -1,6 +1,20 @@
 import 'tool_context.dart';
 import 'tool_definition.dart';
 
+/// Function signature for loading tool initialization data on the host side.
+///
+/// Tools that need initialization data (e.g., API keys, configs) should
+/// implement this pattern:
+/// ```dart
+/// class MyTool extends Tool {
+///   static Future<Map<String, dynamic>?> loadInitializationData(dynamic config) async {
+///     // Load data from config
+///     return {'my_data': ...};
+///   }
+/// }
+/// ```
+typedef ToolDataLoader = Future<Map<String, dynamic>?> Function(dynamic config);
+
 /// Tool runtime interface.
 ///
 /// Implementations should be Flutter-free.
@@ -20,6 +34,16 @@ abstract class Tool {
 
   /// Execute the tool and return a JSON string.
   Future<String> execute(Map<String, dynamic> args);
+
+  /// Load initialization data for this tool on the host side (optional).
+  ///
+  /// Override this to provide initialization data that will be sent to the
+  /// worker during handshake. Return null if no initialization is needed.
+  ///
+  /// Note: This is called on the HOST side before worker initialization.
+  Future<Map<String, dynamic>?> loadInitializationData(dynamic config) async {
+    return null;
+  }
 
   /// Serialize tool metadata for transport over the sandbox protocol.
   Map<String, dynamic> toWireJson() {

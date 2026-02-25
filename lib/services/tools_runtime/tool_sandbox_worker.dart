@@ -170,7 +170,11 @@ class _WorkerController {
       _hostReceivePort = port as ReplyToPort;
       _log('Stored host port');
 
-      _createApiClients();
+      // Extract toolsData for API client initialization
+      final toolsData = payload['toolsData'] as Map<String, dynamic>?;
+      
+      // Create and initialize API clients
+      _createApiClients(toolsData);
 
       _initializeToolRegistry();
 
@@ -202,8 +206,10 @@ class _WorkerController {
     }
   }
 
-  /// Create API clients with hostCall callback
-  void _createApiClients() {
+  /// Create and initialize API clients
+  ///
+  /// Each API client is responsible for its own initialization from toolsData
+  void _createApiClients(Map<String, dynamic>? toolsData) {
     _log('Creating API clients');
 
     // Create NotepadApiClient with hostCall callback
@@ -211,7 +217,6 @@ class _WorkerController {
       hostCall: (method, args) async =>
           await _makeHostCall('notepad', method, args),
     );
-
     _log('Created NotepadApiClient');
 
     // Create CallApiClient with hostCall callback
@@ -221,10 +226,9 @@ class _WorkerController {
     );
     _log('Created CallApiClient');
 
-    // Create TextAgentApiClient with hostCall callback
+    // Create TextAgentApiClient (executes directly in worker)
     _textAgentApiClient = TextAgentApiClient(
-      hostCall: (method, args) async =>
-          await _makeHostCall('textAgent', method, args),
+      initialData: toolsData?['text_agents'],
     );
     _log('Created TextAgentApiClient');
 
@@ -234,6 +238,11 @@ class _WorkerController {
           await _makeHostCall('toolStorage', method, args),
     );
     _log('Created ToolStorageApiClient');
+    
+    // Future: Other API clients can initialize themselves here
+    // if (toolsData?['database'] != null) {
+    //   _databaseApiClient.initialize(toolsData['database']);
+    // }
   }
 
   /// Make a hostCall request to the host

@@ -4,15 +4,13 @@ import 'package:vagina/services/notepad_service.dart';
 import 'package:vagina/interfaces/tool_storage.dart';
 import 'package:vagina/interfaces/config_repository.dart';
 import 'package:vagina/services/call_service.dart';
-import 'package:vagina/services/text_agent_service.dart';
-import 'package:vagina/services/text_agent_job_runner.dart';
 import 'package:vagina/services/tools_runtime/sandbox_platform_web.dart';
 import 'package:vagina/services/tools_runtime/sandbox_protocol.dart';
 import 'package:vagina/services/tools_runtime/host/notepad_host_api.dart';
 import 'package:vagina/services/tools_runtime/host/call_host_api.dart';
-import 'package:vagina/services/tools_runtime/host/text_agent_host_api.dart';
 import 'package:vagina/services/tools_runtime/host/tool_storage_host_api.dart';
 import 'package:vagina/services/tools_runtime/tool.dart';
+import 'package:vagina/tools/tools.dart';
 
 // Platform-specific imports (conditional)
 import 'sandbox_platform_native.dart'
@@ -52,12 +50,9 @@ class ToolSandboxManager {
   final ToolStorage _toolStorage;
   final ConfigRepository _configRepository;
   final CallService _callService;
-  final TextAgentService _textAgentService;
-  final TextAgentJobRunner _jobRunner;
 
   late NotepadHostApi _notepadHostApi;
   late CallHostApi _callHostApi;
-  late TextAgentHostApi _textAgentHostApi;
 
   // Tool storage API with context callback for dynamic tool key resolution
   late ToolStorageHostApi _toolStorageHostApi;
@@ -87,22 +82,13 @@ class ToolSandboxManager {
     required NotepadService notepadService,
     required ToolStorage toolStorage,
     required CallService callService,
-    required TextAgentService textAgentService,
-    required TextAgentJobRunner jobRunner,
     required ConfigRepository configRepository,
   })  : _notepadService = notepadService,
         _toolStorage = toolStorage,
         _configRepository = configRepository,
-        _callService = callService,
-        _textAgentService = textAgentService,
-        _jobRunner = jobRunner {
+        _callService = callService {
     _notepadHostApi = NotepadHostApi(_notepadService);
     _callHostApi = CallHostApi(_callService);
-    _textAgentHostApi = TextAgentHostApi(
-      textAgentService: _textAgentService,
-      jobRunner: _jobRunner,
-      configRepository: _configRepository,
-    );
 
     // Tool storage API with context callback to get current tool key
     // The callback will throw if called outside of tool execution context
@@ -172,11 +158,18 @@ class ToolSandboxManager {
       _receivePort = receivePort;
       _workerSendPort = workerSendPort;
 
-      // Send handshake message to worker to initialize it
-      final handshake = handshakeMessage(
-        _receivePort.sendPort,
-        [], // Empty tool definitions list (worker uses BuiltinToolCatalog)
-      );
+      // Load tool-specific initialization data
+      final toolsData = await _loadToolsData();
+
+      // Send handshake message with tools data
+      final handshake = {
+        'type': 'handshake',
+        'id': generateMessageId(),
+        'payload': {
+          'port': _receivePort.sendPort,
+          'toolsData': toolsData,
+        },
+      };
       (_workerSendPort as dynamic).send(handshake);
 
       // Start listening for incoming messages from worker
@@ -187,6 +180,40 @@ class ToolSandboxManager {
       await _cleanup();
       rethrow;
     }
+  }
+
+  /// Load tool-specific initialization data
+  ///
+  /// This collects data needed by various tools for initialization by
+  /// delegating to each tool's loadInitializationData method
+  Future<Map<String, dynamic>> _loadToolsData() async {
+    final toolsData = <String, dynamic>{};
+
+    try {
+      // Get all available tools from the catalog
+      final tools = toolbox.tools;
+      
+      // Ask each tool if it needs initialization data
+      for (final tool in tools) {
+        try {
+          final data = await tool.loadInitializationData(_configRepository);
+          if (data != null && data.isNotEmpty) {
+            // Merge tool's data into toolsData
+            toolsData.addAll(data);
+            print('$_tag: Loaded initialization data for ${tool.definition.toolKey}');
+          }
+        } catch (e) {
+          print('$_tag: Error loading data for ${tool.definition.toolKey}: $e');
+        }
+      }
+      
+      print('$_tag: Loaded initialization data for ${toolsData.keys.length} tool categories');
+      
+    } catch (e) {
+      print('$_tag: Error loading tools data: $e');
+    }
+
+    return toolsData;
   }
 
   /// Dispose the sandbox: kill worker and cleanup resources
@@ -440,9 +467,6 @@ class ToolSandboxManager {
           break;
         case 'call':
           result = await _callHostApi.handleCall(method, args);
-          break;
-        case 'textAgent':
-          result = await _textAgentHostApi.handleCall(method, args);
           break;
         case 'toolStorage':
           // Tool storage API uses the injected callback to get current tool key
