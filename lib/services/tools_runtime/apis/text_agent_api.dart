@@ -35,7 +35,8 @@ abstract class TextAgentApi {
 
 /// Client implementation of TextAgentApi that uses hostCall for isolate communication
 class TextAgentApiClient implements TextAgentApi {
-  final Future<dynamic> Function(String method, Map<String, dynamic> args) hostCall;
+  final Future<dynamic> Function(String method, Map<String, dynamic> args)
+      hostCall;
 
   TextAgentApiClient({required this.hostCall});
 

@@ -72,8 +72,7 @@ class RealtimeStreams {
 
   Stream<RealtimeResponse> get responseDoneStream =>
       _responseDoneController.stream;
-  Stream<FunctionCall> get functionCallStream =>
-      _functionCallController.stream;
+  Stream<FunctionCall> get functionCallStream => _functionCallController.stream;
   Stream<List<RateLimit>> get rateLimitsUpdatedStream =>
       _rateLimitsUpdatedController.stream;
 
@@ -108,8 +107,7 @@ class RealtimeStreams {
 
   void emitResponseDone(RealtimeResponse response) =>
       _responseDoneController.add(response);
-  void emitFunctionCall(FunctionCall call) =>
-      _functionCallController.add(call);
+  void emitFunctionCall(FunctionCall call) => _functionCallController.add(call);
   void emitRateLimitsUpdated(List<RateLimit> limits) =>
       _rateLimitsUpdatedController.add(limits);
 

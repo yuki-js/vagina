@@ -13,6 +13,7 @@ import 'package:vagina/models/chat_message.dart';
 import 'package:vagina/models/speed_dial.dart';
 import 'package:vagina/services/text_agent_job_runner.dart';
 import 'package:vagina/services/text_agent_service.dart';
+import 'package:vagina/services/tools_runtime/tool.dart';
 import 'package:vagina/services/tools_runtime/tool_sandbox_manager.dart';
 import 'package:vagina/utils/audio_utils.dart';
 
@@ -169,6 +170,28 @@ class CallService {
     _apiClient.setVoiceAndInstructions(voice, instructions);
   }
 
+  /// Sync the tool set (enable/disable) from persisted config into:
+  /// - the sandbox tool registry (hardening)
+  /// - the realtime session registration (context minimization)
+  Future<void> syncToolsFromConfig() async {
+    final sandbox = _sandboxManager;
+    if (sandbox == null) {
+      return;
+    }
+
+    final allTools = await sandbox.getToolsFromWorker();
+    final enabledTools = <Tool>[];
+
+    for (final t in allTools) {
+      final enabled = await _config.isToolEnabled(t.definition.toolKey);
+      await sandbox.setToolEnabled(t.definition.toolKey, enabled);
+      if (enabled) enabledTools.add(t);
+    }
+
+    _apiClient.setTools(enabledTools);
+    _apiClient.updateSessionConfig();
+  }
+
   /// Check if Azure configuration exists
   Future<bool> hasAzureConfig() async {
     return await _config.hasAzureConfig();
@@ -247,16 +270,25 @@ class CallService {
       );
       await _sandboxManager!.start();
 
-      // Get initial tool definitions from sandbox
-      final toolsFromWorker = await _sandboxManager!.getToolsFromWorker();
+      // Sync enabled tool set from config into the sandbox (hardening) and
+      // register only enabled tools with the realtime session.
+      final sandbox = _sandboxManager!;
+      final allTools = await sandbox.getToolsFromWorker();
+      final enabledTools = <Tool>[];
 
-      _logService.debug("OKETUMANKO", "Tools from worker: $toolsFromWorker");
+      for (final t in allTools) {
+        final enabled = await _config.isToolEnabled(t.definition.toolKey);
+        await sandbox.setToolEnabled(t.definition.toolKey, enabled);
+        if (enabled) enabledTools.add(t);
+      }
 
-      _apiClient.setTools(toolsFromWorker);
+      _apiClient.setTools(enabledTools);
+      _apiClient.updateSessionConfig();
 
       // Listen for tool changes and update realtime session
       _toolsChangedSubscription = _sandboxManager!.toolsChanged.listen((event) {
         _apiClient.setTools(event.tools);
+        _apiClient.updateSessionConfig();
       });
 
       _logService.debug(_tag, 'Sandbox started and tools initialized');
@@ -349,6 +381,22 @@ class CallService {
         return;
       }
 
+      // Enforce tool enable/disable at execution time as a safety net.
+      final isEnabled = await _config.isToolEnabled(functionCall.name);
+      if (!isEnabled) {
+        final output = jsonEncode({
+          'error': 'Tool is disabled: ${functionCall.name}',
+          'code': 'TOOL_DISABLED',
+        });
+        _chatManager.addToolCall(
+          functionCall.name,
+          functionCall.arguments,
+          output,
+        );
+        _apiClient.sendFunctionCallResult(functionCall.callId, output);
+        return;
+      }
+
       final argsMap = _parseFunctionCallArguments(functionCall.arguments);
       if (argsMap == null) {
         final output = jsonEncode({'error': 'Invalid or empty JSON arguments'});
@@ -410,7 +458,7 @@ class CallService {
       _amplitudeSubscription = amplitudeStream.listen((amplitude) {
         if (!_isMuted && isCallActive) {
           final normalizedLevel =
-              AudioUtils.normalizeAmplitude(amplitude?.current ?? 0.0);
+              AudioUtils.normalizeAmplitude(amplitude.current);
           _amplitudeController.add(normalizedLevel);
         } else {
           _amplitudeController.add(0.0);

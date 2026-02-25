@@ -103,7 +103,7 @@ class ToolSandboxManager {
       jobRunner: _jobRunner,
       configRepository: _configRepository,
     );
-    
+
     // Tool storage API with context callback to get current tool key
     // The callback will throw if called outside of tool execution context
     _toolStorageHostApi = ToolStorageHostApi(
@@ -206,19 +206,7 @@ class ToolSandboxManager {
     }
   }
 
-  /// Execute a tool in the sandbox
-  ///
-  /// Parameters:
-  /// - `toolKey`: Unique identifier of the tool
-  /// - `args`: Tool arguments as a map
-  ///
-  /// Returns: Tool output as a JSON string
-  ///
-  /// Throws if:
-  /// - Not started or already disposed
-  /// - Execution timeout
-  /// - Tool execution error
-  /// - Message send fails
+  /// Execute a tool in the sandbox.
   Future<String> execute(String toolKey, Map<String, dynamic> args) async {
     if (!_isStarted) {
       throw StateError('ToolSandboxManager not started');
@@ -227,85 +215,37 @@ class ToolSandboxManager {
       throw StateError('ToolSandboxManager has been disposed');
     }
 
-    try {
-      // Track current executing tool for hostCall routing
-      _currentExecutingToolKey = toolKey;
-      
-      final messageId = generateMessageId();
+    // Track current executing tool for hostCall routing.
+    _currentExecutingToolKey = toolKey;
 
-      // Create and validate the execute message
-      final message = executeToolMessage(
-        toolKey,
-        args,
-        id: messageId,
+    try {
+      final messageId = generateMessageId();
+      final response = await _request(
+        executeToolMessage(toolKey, args, id: messageId),
+        timeoutTag: 'execute:$toolKey',
       );
 
-      final (valid, error) = validateMessageEnvelope(message);
-      if (!valid) {
-        throw StateError('Invalid message: $error');
+      if (response['status'] != 'success') {
+        final error = response['error'] as String?;
+        throw Exception('Tool execution error: $error');
       }
 
-      // Register pending request
-      final completer = Completer<Map<String, dynamic>>();
-      _pendingRequests[messageId] = completer;
-
-      try {
-        // Send message to worker
-        (_workerSendPort as dynamic).send(message);
-
-        // Wait for response with timeout
-        final response = await completer.future.timeout(
-          _defaultTimeout,
-          onTimeout: () {
-            _pendingRequests.remove(messageId);
-            throw TimeoutException(
-              'Tool execution timeout: $toolKey did not respond within $_defaultTimeout',
-            );
-          },
-        );
-
-        // Check response status
-        if (response['status'] != 'success') {
-          final error = response['error'] as String?;
-          throw Exception('Tool execution error: $error');
-        }
-
-        // Get the result data
-        final data = response['data'] as Map<String, dynamic>?;
-        if (data == null) {
-          throw Exception('No data in response');
-        }
-
-        // Convert result to JSON string
-        final result = data['result'];
-        if (result is String) {
-          return result;
-        } else {
-          return jsonEncode(result);
-        }
-      } finally {
-        _pendingRequests.remove(messageId);
-        _currentExecutingToolKey = null; // Clear tool context after execution
+      final data = response['data'] as Map<String, dynamic>?;
+      if (data == null) {
+        throw Exception('No data in response');
       }
-    } catch (e) {
-      print('[$_tag:HOST] Failed to execute tool: $toolKey');
-      print('Error: $e');
-      print('Request Payload: ${jsonEncode(args)}');
-      _currentExecutingToolKey = null; // Clear tool context on error
-      rethrow;
+
+      final result = data['result'];
+      return result is String ? result : jsonEncode(result);
+    } finally {
+      _currentExecutingToolKey = null;
     }
   }
 
-  /// List all available tool definitions from the worker
-  ///
-  /// Returns: List of tool definitions in realtime format
-  /// (output of ToolDefinition.toRealtimeJson())
-  ///
-  /// Throws if:
-  /// - Not started or already disposed
-  /// - Request timeout
-  /// - Message send fails
-  Future<List<Tool>> getToolsFromWorker() async {
+  Future<Map<String, dynamic>> _request(
+    Map<String, dynamic> message, {
+    required String timeoutTag,
+  }) async {
     if (!_isStarted) {
       throw StateError('ToolSandboxManager not started');
     }
@@ -313,67 +253,80 @@ class ToolSandboxManager {
       throw StateError('ToolSandboxManager has been disposed');
     }
 
+    final messageId = message['id'] as String?;
+    if (messageId == null || messageId.isEmpty) {
+      throw StateError('Invalid message: missing id');
+    }
+
+    final (valid, error) = validateMessageEnvelope(message);
+    if (!valid) {
+      throw StateError('Invalid message: $error');
+    }
+
+    final completer = Completer<Map<String, dynamic>>();
+    _pendingRequests[messageId] = completer;
+
     try {
-      final messageId = generateMessageId();
+      (_workerSendPort as dynamic).send(message);
 
-      // Create and validate the request message
-      final message = listSessionDefinitionsMessage(id: messageId);
+      return await completer.future.timeout(
+        _defaultTimeout,
+        onTimeout: () {
+          _pendingRequests.remove(messageId);
+          throw TimeoutException(
+            '$timeoutTag timeout: request did not respond within $_defaultTimeout',
+          );
+        },
+      );
+    } finally {
+      _pendingRequests.remove(messageId);
+    }
+  }
 
-      final (valid, error) = validateMessageEnvelope(message);
-      if (!valid) {
-        throw StateError('Invalid message: $error');
-      }
+  List<Tool> _parseToolsFromResponse(Map<String, dynamic> response) {
+    if (response['status'] != 'success') {
+      final error = response['error'] as String?;
+      throw Exception('ToolSandbox response error: $error');
+    }
 
-      // Register pending request
-      final completer = Completer<Map<String, dynamic>>();
-      _pendingRequests[messageId] = completer;
+    final data = response['data'] as Map<String, dynamic>?;
+    if (data == null) return [];
 
-      try {
-        // Send message to worker
-        (_workerSendPort as dynamic).send(message);
+    final tools = data['tools'] as List?;
+    if (tools == null) return [];
 
-        // Wait for response with timeout
-        final response = await completer.future.timeout(
-          _defaultTimeout,
-          onTimeout: () {
-            _pendingRequests.remove(messageId);
-            throw TimeoutException(
-              'listSessionDefinitions timeout: request did not respond within $_defaultTimeout',
-            );
-          },
-        );
+    return List<Tool>.from(
+      tools.cast<Map<String, dynamic>>().map((json) => Tool.fromWireJson(json)),
+    );
+  }
 
-        // Check response status
-        if (response['status'] != 'success') {
-          final error = response['error'] as String?;
-          throw Exception('listSessionDefinitions error: $error');
-        }
+  /// List all available tool definitions from the worker.
+  Future<List<Tool>> getToolsFromWorker() async {
+    final messageId = generateMessageId();
+    final response = await _request(
+      listSessionDefinitionsMessage(id: messageId),
+      timeoutTag: 'listSessionDefinitions',
+    );
 
-        // Extract and return tools list
-        final data = response['data'] as Map<String, dynamic>?;
-        if (data == null) {
-          return [];
-        }
+    final toolsList = _parseToolsFromResponse(response);
+    _setToolRegistry(toolsList);
+    return toolsList;
+  }
 
-        final tools = data['tools'] as List?;
-        if (tools == null) {
-          return [];
-        }
+  /// Update a tool's enabled state in the sandbox worker.
+  ///
+  /// This changes the worker-side tool registry, and emits a toolsChanged event.
+  Future<void> setToolEnabled(String toolKey, bool enabled) async {
+    final messageId = generateMessageId();
+    final response = await _request(
+      setToolEnabledMessage(toolKey, enabled, id: messageId),
+      timeoutTag: 'setToolEnabled',
+    );
 
-        final toolsList = List<Tool>.from(
-          tools
-              .cast<Map<String, dynamic>>()
-              .map((json) => Tool.fromWorker(json)),
-        );
-
-        _setToolRegistry(toolsList);
-
-        return toolsList;
-      } finally {
-        _pendingRequests.remove(messageId);
-      }
-    } catch (e) {
-      rethrow;
+    if (response['status'] != 'success') {
+      final error = response['error'] as String?;
+      final code = response['code'];
+      throw Exception('setToolEnabled error: $error (code=$code)');
     }
   }
 
@@ -563,7 +516,7 @@ class ToolSandboxManager {
       final toolsList = List<Tool>.from(
         tools
             .cast<Map<String, dynamic>>()
-            .map((json) => Tool.fromWorker(json)),
+            .map((json) => Tool.fromWireJson(json)),
       );
 
       _setToolRegistry(toolsList);

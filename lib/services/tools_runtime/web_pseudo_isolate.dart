@@ -14,9 +14,9 @@ import 'dart:collection';
 /// Messages are delivered asynchronously via microtasks.
 class WebSendPort {
   final WebReceivePort _targetPort;
-  
+
   WebSendPort._(this._targetPort);
-  
+
   /// Send a message to the paired ReceivePort
   ///
   /// The message is enqueued and will be delivered asynchronously via
@@ -24,7 +24,7 @@ class WebSendPort {
   void send(Object? message) {
     _targetPort._enqueue(message);
   }
-  
+
   @override
   String toString() => 'WebSendPort($_targetPort)';
 }
@@ -35,15 +35,16 @@ class WebSendPort {
 /// Messages are delivered via a StreamController.
 class WebReceivePort {
   final Queue<Object?> _messageQueue = Queue<Object?>();
-  final StreamController<Object?> _controller = StreamController<Object?>.broadcast();
+  final StreamController<Object?> _controller =
+      StreamController<Object?>.broadcast();
   bool _isClosed = false;
   bool _isFlushing = false;
   late final WebSendPort sendPort;
-  
+
   WebReceivePort() {
     sendPort = WebSendPort._(this);
   }
-  
+
   /// Listen to incoming messages
   ///
   /// Only one listener is allowed (mimics ReceivePort behavior).
@@ -63,7 +64,7 @@ class WebReceivePort {
       cancelOnError: cancelOnError,
     );
   }
-  
+
   /// Close the port
   ///
   /// After closing:
@@ -72,45 +73,45 @@ class WebReceivePort {
   /// - onDone callbacks are invoked
   void close() {
     if (_isClosed) return;
-    
+
     _isClosed = true;
     _messageQueue.clear();
     _controller.close();
   }
-  
+
   /// Internal: Enqueue a message for delivery
   void _enqueue(Object? message) {
     if (_isClosed) {
       // Silently drop messages sent to closed port (matches ReceivePort behavior)
       return;
     }
-    
+
     _messageQueue.add(message);
     _scheduleFlush();
   }
-  
+
   /// Internal: Schedule message delivery via microtask
   void _scheduleFlush() {
     if (_isFlushing || _isClosed) return;
-    
+
     _isFlushing = true;
     scheduleMicrotask(() {
       _flush();
     });
   }
-  
+
   /// Internal: Flush queued messages to stream
   void _flush() {
     _isFlushing = false;
-    
+
     if (_isClosed) return;
-    
+
     while (_messageQueue.isNotEmpty && !_isClosed) {
       final message = _messageQueue.removeFirst();
       _controller.add(message);
     }
   }
-  
+
   @override
   String toString() => 'WebReceivePort(closed: $_isClosed)';
 }
@@ -160,7 +161,7 @@ Future<(WebPseudoIsolate, WebReceivePort)> spawnWorker(
 ) async {
   final workerReceivePort = WebReceivePort();
   final pseudoIsolate = WebPseudoIsolate._(workerReceivePort);
-  
+
   // Run worker entrypoint synchronously
   // (in real Web Worker version, this would be postMessage to worker)
   scheduleMicrotask(() {
@@ -172,7 +173,7 @@ Future<(WebPseudoIsolate, WebReceivePort)> spawnWorker(
       pseudoIsolate.kill();
     }
   });
-  
+
   return (pseudoIsolate, workerReceivePort);
 }
 
@@ -183,9 +184,9 @@ Future<(WebPseudoIsolate, WebReceivePort)> spawnWorker(
 class WebPseudoIsolate {
   final WebReceivePort _workerPort;
   bool _isKilled = false;
-  
+
   WebPseudoIsolate._(this._workerPort);
-  
+
   /// Kill the "worker"
   ///
   /// In single-threaded mode, this closes the worker's receive port,
@@ -195,9 +196,9 @@ class WebPseudoIsolate {
     _isKilled = true;
     _workerPort.close();
   }
-  
+
   bool get isKilled => _isKilled;
-  
+
   @override
   String toString() => 'WebPseudoIsolate(killed: $_isKilled)';
 }

@@ -17,7 +17,7 @@ import '../log_service.dart';
 ///
 /// Combines microphone recording (via PcmRecorder) and PCM audio playback,
 /// abstracting platform differences (Windows uses just_audio, others use flutter_sound).
-/// 
+///
 /// This service manages:
 /// - Microphone recording (delegated to PcmRecorder)
 /// - Audio playback with platform-specific implementations
@@ -26,7 +26,7 @@ class CallAudioService {
   static const _tag = 'CallAudioService';
 
   final LogService _logService;
-  
+
   // Use shared PcmRecorder for recording
   final PcmRecorder _recorder;
 
@@ -285,7 +285,7 @@ class CallAudioService {
 }
 
 /// Windows-specific PCM player using just_audio
-/// 
+///
 /// This is a private implementation detail, used internally by CallAudioService
 /// to provide audio playback on Windows where flutter_sound is not available.
 class _WindowsPcmPlayer {
@@ -337,9 +337,10 @@ class _WindowsPcmPlayer {
       await _player.play();
 
       // Clean up after playback
-      _player.playerStateStream.firstWhere(
-        (state) => state.processingState == ja.ProcessingState.completed
-      ).then((_) {
+      _player.playerStateStream
+          .firstWhere(
+              (state) => state.processingState == ja.ProcessingState.completed)
+          .then((_) {
         wavFile.deleteSync();
       });
     } catch (e) {
@@ -353,10 +354,8 @@ class _WindowsPcmPlayer {
   /// Convert PCM16 data to WAV file
   Future<File> _createWavFile(Uint8List pcm16Data) async {
     final tempDir = await getTemporaryDirectory();
-    final wavFilePath = path.join(
-      tempDir.path,
-      'audio_${_currentFileIndex++}_${DateTime.now().millisecondsSinceEpoch}.wav'
-    );
+    final wavFilePath = path.join(tempDir.path,
+        'audio_${_currentFileIndex++}_${DateTime.now().millisecondsSinceEpoch}.wav');
 
     // Create WAV header for 24kHz mono PCM16
     const sampleRate = 24000;
@@ -373,8 +372,8 @@ class _WindowsPcmPlayer {
     header.setUint32(4, 36 + dataSize, Endian.little);
 
     // "WAVE" format
-    header.setUint8(8, 0x57);  // 'W'
-    header.setUint8(9, 0x41);  // 'A'
+    header.setUint8(8, 0x57); // 'W'
+    header.setUint8(9, 0x41); // 'A'
     header.setUint8(10, 0x56); // 'V'
     header.setUint8(11, 0x45); // 'E'
 
@@ -387,7 +386,8 @@ class _WindowsPcmPlayer {
     header.setUint16(20, 1, Endian.little);
     header.setUint16(22, numChannels, Endian.little);
     header.setUint32(24, sampleRate, Endian.little);
-    header.setUint32(28, sampleRate * numChannels * bitsPerSample ~/ 8, Endian.little);
+    header.setUint32(
+        28, sampleRate * numChannels * bitsPerSample ~/ 8, Endian.little);
     header.setUint16(32, numChannels * bitsPerSample ~/ 8, Endian.little);
     header.setUint16(34, bitsPerSample, Endian.little);
 

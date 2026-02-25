@@ -9,9 +9,9 @@ sealed class ContentPart {
 /// Always use copy() when storing in immutable message lists.
 class TextPart extends ContentPart {
   String text;
-  
+
   TextPart(this.text);
-  
+
   @override
   TextPart copy() => TextPart(text);
 }
@@ -19,9 +19,9 @@ class TextPart extends ContentPart {
 /// Tool call content part
 class ToolCallPart extends ContentPart {
   final ToolCallInfo toolCall;
-  
+
   ToolCallPart(this.toolCall);
-  
+
   @override
   ToolCallPart copy() => ToolCallPart(toolCall);
 }
@@ -32,7 +32,7 @@ class ChatMessage {
   final String role; // 'user' or 'assistant'
   final DateTime timestamp;
   final bool isComplete;
-  
+
   /// Content parts in order (text and tool calls interleaved as generated)
   final List<ContentPart> contentParts;
 
@@ -43,15 +43,12 @@ class ChatMessage {
     this.isComplete = true,
     this.contentParts = const [],
   });
-  
+
   /// Get plain text content (concatenated from all text parts)
   String get content {
-    return contentParts
-        .whereType<TextPart>()
-        .map((p) => p.text)
-        .join();
+    return contentParts.whereType<TextPart>().map((p) => p.text).join();
   }
-  
+
   /// Get all tool calls in order
   List<ToolCallInfo> get toolCalls {
     return contentParts

@@ -1,7 +1,8 @@
 import 'package:record/record.dart' show AndroidAudioSource, AudioManagerMode;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:vagina/core/state/repository_providers.dart';
-import 'package:vagina/feat/call/state/call_service_providers.dart' show callAudioServiceProvider;
+import 'package:vagina/feat/call/state/call_service_providers.dart'
+    show callAudioServiceProvider;
 import 'package:vagina/models/android_audio_config.dart' as model;
 
 part 'android_audio_config_provider.g.dart';

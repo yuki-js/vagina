@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:vagina/services/tools_runtime/apis/tool_storage_api.dart';
 
 /// Utility for managing tool-specific configuration and settings
-/// 
+///
 /// Tools can use this to easily store and retrieve their configuration
 /// in the tool-isolated storage namespace.
 class ToolConfig {
@@ -12,18 +12,18 @@ class ToolConfig {
   ToolConfig(this._storage);
 
   /// Load all configuration at once
-  /// 
+  ///
   /// Returns a map of configuration settings, or an empty map if not set.
   Future<Map<String, dynamic>> loadAll() async {
     final data = await _storage.get(_configKey);
     if (data == null) {
       return {};
     }
-    
+
     if (data is Map<String, dynamic>) {
       return data;
     }
-    
+
     if (data is String) {
       try {
         return jsonDecode(data) as Map<String, dynamic>;
@@ -31,12 +31,12 @@ class ToolConfig {
         return {};
       }
     }
-    
+
     return {};
   }
 
   /// Get a specific configuration value
-  /// 
+  ///
   /// Returns the value if found, otherwise returns [defaultValue].
   Future<dynamic> get(String key, {dynamic defaultValue}) async {
     final config = await loadAll();
@@ -44,7 +44,7 @@ class ToolConfig {
   }
 
   /// Set a specific configuration value
-  /// 
+  ///
   /// The entire configuration map is updated and saved.
   Future<void> set(String key, dynamic value) async {
     final config = await loadAll();
@@ -53,7 +53,7 @@ class ToolConfig {
   }
 
   /// Remove a configuration entry
-  /// 
+  ///
   /// Returns true if the key existed and was removed.
   Future<bool> remove(String key) async {
     final config = await loadAll();

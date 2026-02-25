@@ -30,14 +30,14 @@ class TextAgentJobRunner {
   static const Duration _processingInterval = Duration(seconds: 10);
 
   TextAgentJobRunner({
-     required TextAgentService textAgentService,
-     required ConfigRepository configRepository,
-     required TextAgentJobRepository jobRepository,
-     LogService? logService,
-   })  : _textAgentService = textAgentService,
-         _configRepository = configRepository,
-         _jobRepository = jobRepository,
-         _logService = logService ?? LogService();
+    required TextAgentService textAgentService,
+    required ConfigRepository configRepository,
+    required TextAgentJobRepository jobRepository,
+    LogService? logService,
+  })  : _textAgentService = textAgentService,
+        _configRepository = configRepository,
+        _jobRepository = jobRepository,
+        _logService = logService ?? LogService();
 
   /// Initialize the job runner on app startup
   ///
@@ -276,8 +276,7 @@ class TextAgentJobRunner {
       // Check if we should retry
       if (retryCount < _maxRetries - 1) {
         // Calculate exponential backoff delay
-        final delaySeconds =
-            _initialRetryDelay.inSeconds * (1 << retryCount);
+        final delaySeconds = _initialRetryDelay.inSeconds * (1 << retryCount);
         final delay = Duration(seconds: delaySeconds);
         final cappedDelay = delay > _maxRetryDelay ? _maxRetryDelay : delay;
 

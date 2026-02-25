@@ -1,10 +1,10 @@
 /// Abstract API for notepad operations
-/// 
+///
 /// This API allows tools running in isolates to interact with the notepad service.
 /// All operations are asynchronous and return sendable types (Map, List, primitives).
 abstract class NotepadApi {
   /// List all tabs
-  /// 
+  ///
   /// Returns a list of tab metadata maps with structure:
   /// {
   ///   'id': String,
@@ -15,35 +15,35 @@ abstract class NotepadApi {
   ///   'contentLength': int
   /// }
   Future<List<Map<String, dynamic>>> listTabs();
-  
+
   /// Get a specific tab by ID
-  /// 
+  ///
   /// Returns tab metadata map with the same structure as listTabs,
   /// or null if tab not found.
   Future<Map<String, dynamic>?> getTab(String id);
-  
+
   /// Create a new tab
-  /// 
+  ///
   /// Arguments:
   /// - title: Display name for the tab (optional, auto-generated if not provided)
   /// - content: Content of the tab
   /// - mimeType: MIME type of the content (e.g., 'text/markdown', 'text/html')
-  /// 
+  ///
   /// Returns the ID of the created tab
   Future<String> createTab({
     required String content,
     required String mimeType,
     String? title,
   });
-  
+
   /// Update an existing tab
-  /// 
+  ///
   /// Arguments:
   /// - id: ID of the tab to update
   /// - content: New content (optional)
   /// - title: New title (optional)
   /// - mimeType: New MIME type (optional)
-  /// 
+  ///
   /// Returns true if successful, false if tab not found
   Future<bool> updateTab(
     String id, {
@@ -51,22 +51,23 @@ abstract class NotepadApi {
     String? title,
     String? mimeType,
   });
-  
+
   /// Close/delete a tab
-  /// 
+  ///
   /// Arguments:
   /// - id: ID of the tab to close
-  /// 
+  ///
   /// Returns true if successful, false if tab not found
   Future<bool> closeTab(String id);
 }
 
 /// Client implementation of NotepadApi that uses hostCall for isolate communication
 class NotepadApiClient implements NotepadApi {
-  final Future<dynamic> Function(String method, Map<String, dynamic> args) hostCall;
-  
+  final Future<dynamic> Function(String method, Map<String, dynamic> args)
+      hostCall;
+
   NotepadApiClient({required this.hostCall});
-  
+
   @override
   Future<List<Map<String, dynamic>>> listTabs() async {
     final data = await hostCall('listTabs', {});
@@ -81,7 +82,7 @@ class NotepadApiClient implements NotepadApi {
       'Invalid notepad.listTabs response type: ${data.runtimeType}',
     );
   }
-  
+
   @override
   Future<Map<String, dynamic>?> getTab(String id) async {
     final data = await hostCall('getTab', {'id': id});
@@ -98,7 +99,7 @@ class NotepadApiClient implements NotepadApi {
       'Invalid notepad.getTab response type: ${data.runtimeType}',
     );
   }
-  
+
   @override
   Future<String> createTab({
     required String content,
@@ -121,7 +122,7 @@ class NotepadApiClient implements NotepadApi {
       'Invalid notepad.createTab response type: ${data.runtimeType}',
     );
   }
-  
+
   @override
   Future<bool> updateTab(
     String id, {
@@ -146,7 +147,7 @@ class NotepadApiClient implements NotepadApi {
       'Invalid notepad.updateTab response type: ${data.runtimeType}',
     );
   }
-  
+
   @override
   Future<bool> closeTab(String id) async {
     final data = await hostCall('closeTab', {'id': id});

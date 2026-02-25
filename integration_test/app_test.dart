@@ -13,7 +13,7 @@ void main() {
       // Should show either OOBE or Home screen
       final oobeOrHomeFound = find.text('VAGINA').evaluate().isNotEmpty ||
           find.text('スピードダイヤル').evaluate().isNotEmpty;
-      
+
       expect(oobeOrHomeFound, isTrue);
     });
   });

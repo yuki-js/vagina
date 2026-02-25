@@ -101,7 +101,8 @@ class ToolStorageHostApi {
     return data;
   }
 
-  Future<dynamic> _handleDelete(String toolKey, Map<String, dynamic> args) async {
+  Future<dynamic> _handleDelete(
+      String toolKey, Map<String, dynamic> args) async {
     final key = args['key'] as String?;
     if (key == null) {
       throw Exception('Missing required parameter: key');

@@ -118,7 +118,8 @@ class AgentCard extends StatelessWidget {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
-              if (agent.description != null && agent.description!.isNotEmpty) ...[
+              if (agent.description != null &&
+                  agent.description!.isNotEmpty) ...[
                 const SizedBox(height: 8),
                 Text(
                   agent.description!,

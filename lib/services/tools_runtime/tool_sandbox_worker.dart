@@ -127,6 +127,10 @@ class _WorkerController {
           await _handleListSessionDefinitions(id, message);
           break;
 
+        case MessageType.setToolEnabled:
+          await _handleSetToolEnabled(id, message);
+          break;
+
         case MessageType.registerTool:
           await _handleRegisterTool(id, message);
           break;
@@ -182,7 +186,7 @@ class _WorkerController {
   void _initializeToolRegistry() {
     for (var tool in toolbox.tools) {
       _log('Registering tool: ${tool.definition.toolKey}');
-      
+
       // Create a per-tool context with the tool's key for storage isolation
       final toolContext = ToolContext(
         toolKey: tool.definition.toolKey,
@@ -191,7 +195,7 @@ class _WorkerController {
         textAgentApi: _textAgentApiClient,
         toolStorageApi: _toolStorageApiClient,
       );
-      
+
       tool.init(toolContext); // boot up tool with its own context
 
       _toolMap[tool.definition.toolKey] = tool;
@@ -212,7 +216,8 @@ class _WorkerController {
 
     // Create CallApiClient with hostCall callback
     _callApiClient = CallApiClient(
-      hostCall: (method, args) async => await _makeHostCall('call', method, args),
+      hostCall: (method, args) async =>
+          await _makeHostCall('call', method, args),
     );
     _log('Created CallApiClient');
 
@@ -434,7 +439,7 @@ class _WorkerController {
     try {
       _log('Listing session definitions: ${_toolMap.length} tools');
 
-      final tools = _toolMap.values.map((t) => t.toWorker()).toList();
+      final tools = _toolMap.values.map((t) => t.toWireJson()).toList();
 
       _sendResponse(
         requestId,
@@ -454,16 +459,14 @@ class _WorkerController {
     }
   }
 
-  /// Handle registerTool message (stub for future MCP integration)
+  /// Handle setToolEnabled message.
   ///
-  /// Adds a tool to the registry and emits toolsChanged event.
-  Future<void> _handleRegisterTool(
+  /// Enables/disables a tool by key and emits a toolsChanged event.
+  Future<void> _handleSetToolEnabled(
     String requestId,
     Map<String, dynamic> message,
   ) async {
     try {
-      _log('Handling registerTool (stub)');
-
       final payload = message['payload'] as Map<String, dynamic>?;
       if (payload == null) {
         _sendResponse(
@@ -474,35 +477,52 @@ class _WorkerController {
         return;
       }
 
-      final toolDefinition = payload['toolDefinition'] as Map<String, dynamic>?;
-      if (toolDefinition == null) {
+      final toolKey = payload['toolKey'] as String?;
+      final enabled = payload['enabled'] as bool?;
+      if (toolKey == null || enabled == null) {
         _sendResponse(
           requestId,
           status: 'error',
-          error: 'Missing toolDefinition',
+          error: 'Missing toolKey or enabled',
         );
         return;
       }
 
-      final toolKey = toolDefinition['toolKey'] as String?;
-      if (toolKey == null) {
-        _sendResponse(
-          requestId,
-          status: 'error',
-          error: 'toolDefinition missing toolKey',
+      if (enabled) {
+        // Re-register tool instance from builtins.
+        final tool = toolbox.tools
+            .where((t) => t.definition.toolKey == toolKey)
+            .cast<Tool?>()
+            .firstWhere((t) => t != null, orElse: () => null);
+
+        if (tool == null) {
+          _sendResponse(
+            requestId,
+            status: 'error',
+            error: 'Tool not found: $toolKey',
+            code: 'TOOL_NOT_FOUND',
+          );
+          return;
+        }
+
+        // Ensure context is initialized.
+        final toolContext = ToolContext(
+          toolKey: tool.definition.toolKey,
+          notepadApi: _notepadApiClient,
+          callApi: _callApiClient,
+          textAgentApi: _textAgentApiClient,
+          toolStorageApi: _toolStorageApiClient,
         );
-        return;
+        await tool.init(toolContext);
+
+        _toolMap[toolKey] = tool;
+      } else {
+        _toolMap.remove(toolKey);
       }
 
-      // Register the tool
-      //_toolDefinitions[toolKey] = toolDefinition;
-      _toolMap[toolKey] = Tool.fromWorker(toolDefinition);
-      _log('Registered tool: $toolKey');
-
-      // Emit toolsChanged event
       _emitToolsChanged(
-        _toolMap.values.map((t) => t.toWorker()).toList(),
-        'added',
+        _toolMap.values.map((t) => t.toWireJson()).toList(),
+        'updated',
       );
 
       _sendResponse(
@@ -511,14 +531,28 @@ class _WorkerController {
         data: {},
       );
     } catch (e, stackTrace) {
-      _log('ERROR in registerTool: $e');
+      _log('ERROR in setToolEnabled: $e');
       _log('Stack trace: $stackTrace');
       _sendResponse(
         requestId,
         status: 'error',
-        error: 'Error registering tool: $e',
+        error: 'Error setToolEnabled: $e',
       );
     }
+  }
+
+  /// Handle registerTool message (stub for future MCP integration)
+  Future<void> _handleRegisterTool(
+    String requestId,
+    Map<String, dynamic> message,
+  ) async {
+    _log('registerTool is not supported yet (stub)');
+    _sendResponse(
+      requestId,
+      status: 'error',
+      error: 'registerTool is not supported yet',
+      code: 'NOT_IMPLEMENTED',
+    );
   }
 
   /// Handle unregisterTool message (stub for future MCP integration)
@@ -558,7 +592,7 @@ class _WorkerController {
 
         // Emit toolsChanged event
         _emitToolsChanged(
-          _toolMap.values.map((t) => t.toWorker()).toList(),
+          _toolMap.values.map((t) => t.toWireJson()).toList(),
           'removed',
         );
       } else {

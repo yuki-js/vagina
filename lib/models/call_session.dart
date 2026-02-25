@@ -76,7 +76,8 @@ class CallSession {
       if (endTime != null) 'endTime': endTime!.toIso8601String(),
       'duration': duration,
       'chatMessages': chatMessages,
-      if (notepadTabs != null) 'notepadTabs': notepadTabs!.map((t) => t.toJson()).toList(),
+      if (notepadTabs != null)
+        'notepadTabs': notepadTabs!.map((t) => t.toJson()).toList(),
       'speedDialId': speedDialId,
       if (endContext != null) 'endContext': endContext,
     };
@@ -95,8 +96,8 @@ class CallSession {
               .toList() ??
           const [],
       notepadTabs: (json['notepadTabs'] as List<dynamic>?)
-              ?.map((e) => SessionNotepadTab.fromJson(e as Map<String, dynamic>))
-              .toList(),
+          ?.map((e) => SessionNotepadTab.fromJson(e as Map<String, dynamic>))
+          .toList(),
       speedDialId: json['speedDialId'] as String? ?? SpeedDial.defaultId,
       endContext: json['endContext'] as String?,
     );

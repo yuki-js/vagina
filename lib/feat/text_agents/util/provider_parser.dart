@@ -3,13 +3,13 @@ import 'package:vagina/feat/text_agents/model/text_agent_provider.dart';
 /// Utility class for parsing and validating LLM provider URLs
 class ProviderParser {
   /// Parse a URL to detect the provider type
-  /// 
+  ///
   /// Returns the detected provider type based on the URL hostname
   static TextAgentProvider detectProvider(String url) {
     try {
       final uri = Uri.parse(url);
       final host = uri.host.toLowerCase();
-      
+
       // Detect based on hostname patterns
       if (host.contains('openai.com') && !host.contains('azure')) {
         return TextAgentProvider.openai;
@@ -17,7 +17,7 @@ class ProviderParser {
       if (host.contains('azure') && host.contains('openai')) {
         return TextAgentProvider.azure;
       }
-      
+
       // If not recognized, default to custom
       return TextAgentProvider.custom;
     } catch (_) {
@@ -26,7 +26,7 @@ class ProviderParser {
   }
 
   /// Validate URL format for a given provider
-  /// 
+  ///
   /// Returns error message if invalid, null if valid
   static String? validateUrl(String url, TextAgentProvider provider) {
     if (url.trim().isEmpty) {
@@ -63,7 +63,7 @@ class ProviderParser {
     try {
       final uri = Uri.parse(url);
       final pathSegments = uri.pathSegments;
-      
+
       // Expected: /openai/deployments/{deployment-id}/chat/completions
       String? deployment;
       if (pathSegments.length >= 3 &&
@@ -71,7 +71,7 @@ class ProviderParser {
           pathSegments[1] == 'deployments') {
         deployment = pathSegments[2];
       }
-      
+
       // Extract resource name from host
       // Format: {resource}.openai.azure.com
       String? resource;
@@ -79,10 +79,10 @@ class ProviderParser {
       if (hostParts.isNotEmpty && hostParts[0].isNotEmpty) {
         resource = hostParts[0];
       }
-      
+
       // Extract API version from query parameters
       final version = uri.queryParameters['api-version'];
-      
+
       return {
         'resource': resource,
         'deployment': deployment,

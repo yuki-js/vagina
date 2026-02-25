@@ -75,8 +75,7 @@ class RepositoryFactory {
   /// Get the Tool Storage repository (per-tool isolated storage)
   static ToolStorage get toolStorage {
     _ensureInitialized();
-    return _toolStorage ??=
-        JsonToolStorage(_store!, logService: _logService);
+    return _toolStorage ??= JsonToolStorage(_store!, logService: _logService);
   }
 
   /// Get the Config repository

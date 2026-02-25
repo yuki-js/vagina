@@ -9,7 +9,7 @@ class AudioUtils {
   static const double dbfsRange = 60.0;
 
   /// Normalize a dBFS amplitude value to 0.0-1.0 range
-  /// 
+  ///
   /// [dbfs] - The amplitude in dBFS (typically -60.0 to 0.0)
   /// Returns a normalized value between 0.0 and 1.0
   static double normalizeAmplitude(double dbfs) {

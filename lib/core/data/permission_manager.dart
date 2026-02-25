@@ -6,7 +6,7 @@ import 'package:vagina/services/log_service.dart';
 /// Handles storage and other permissions
 class PermissionManager {
   static const _tag = 'PermissionManager';
-  
+
   final LogService _logService;
   int? _androidSdkVersion;
 
@@ -16,7 +16,7 @@ class PermissionManager {
   /// Get Android SDK version
   Future<int> _getAndroidSdkVersion() async {
     if (_androidSdkVersion != null) return _androidSdkVersion!;
-    
+
     if (PlatformCompat.isAndroid) {
       final deviceInfo = DeviceInfoPlugin();
       final androidInfo = await deviceInfo.androidInfo;
@@ -30,14 +30,15 @@ class PermissionManager {
   /// Request storage permission for writing to user's Documents directory
   Future<bool> requestStoragePermission() async {
     _logService.info(_tag, 'Requesting storage permission');
-    
+
     if (PlatformCompat.isAndroid) {
       final sdkVersion = await _getAndroidSdkVersion();
-      
+
       if (sdkVersion >= 30) {
         // Android 11+ (API 30+): Request MANAGE_EXTERNAL_STORAGE
         final status = await Permission.manageExternalStorage.request();
-        _logService.info(_tag, 'Manage external storage permission status: $status');
+        _logService.info(
+            _tag, 'Manage external storage permission status: $status');
         return status.isGranted;
       } else {
         // Android 10 and below: Request standard storage permission
@@ -46,7 +47,7 @@ class PermissionManager {
         return status.isGranted;
       }
     }
-    
+
     return true;
   }
 
@@ -54,7 +55,7 @@ class PermissionManager {
   Future<bool> hasStoragePermission() async {
     if (PlatformCompat.isAndroid) {
       final sdkVersion = await _getAndroidSdkVersion();
-      
+
       if (sdkVersion >= 30) {
         return await Permission.manageExternalStorage.isGranted;
       }

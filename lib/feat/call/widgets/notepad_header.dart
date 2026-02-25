@@ -70,11 +70,13 @@ class NotepadHeader extends StatelessWidget {
                   canUndo: selectedTab!.canUndo,
                   canRedo: selectedTab!.canRedo,
                   onUndo: () {
-                    final service = ref.read(callServiceProvider).notepadService;
+                    final service =
+                        ref.read(callServiceProvider).notepadService;
                     service.undo(selectedTab!.id);
                   },
                   onRedo: () {
-                    final service = ref.read(callServiceProvider).notepadService;
+                    final service =
+                        ref.read(callServiceProvider).notepadService;
                     service.redo(selectedTab!.id);
                   },
                 );

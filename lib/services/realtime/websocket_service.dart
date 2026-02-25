@@ -5,15 +5,15 @@ import '../log_service.dart';
 import 'package:vagina/utils/url_utils.dart';
 
 /// Service for WebSocket communication
-/// 
+///
 /// This is an internal dependency of RealtimeApiClient and should not be
 /// managed as a standalone Riverpod provider. It's part of the Realtime
 /// API module implementation.
 class WebSocketService {
   static const _tag = 'WebSocket';
-  
+
   final LogService _logService;
-  
+
   WebSocketChannel? _channel;
   StreamSubscription? _subscription;
   final StreamController<Map<String, dynamic>> _messageController =

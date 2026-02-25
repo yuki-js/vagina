@@ -101,6 +101,11 @@ abstract final class MessageType {
   /// Future: Used for MCP (Model Context Protocol) integration.
   static const String unregisterTool = 'unregisterTool';
 
+  /// Enable/disable a tool.
+  ///
+  /// Payload: `{toolKey: String, enabled: bool}`
+  static const String setToolEnabled = 'setToolEnabled';
+
   /// Push notification: tool set has changed.
   ///
   /// Payload: `{tools: List<Map>, reason: String}`
@@ -152,6 +157,7 @@ abstract final class MessageEnvelope {
     MessageType.hostCall,
     MessageType.registerTool,
     MessageType.unregisterTool,
+    MessageType.setToolEnabled,
     MessageType.toolsChanged,
   };
 
@@ -239,6 +245,33 @@ Map<String, dynamic> executeToolMessage(
     'payload': {
       'toolKey': toolKey,
       'args': args,
+    },
+  };
+  if (replyTo != null) {
+    message['replyTo'] = replyTo;
+  }
+  return message;
+}
+
+/// Enable/disable tool message builder.
+///
+/// Parameters:
+/// - `toolKey`: Tool identifier
+/// - `enabled`: Whether the tool should be enabled
+/// - `id`: Optional request ID (auto-generated if omitted)
+/// - `replyTo`: Optional ReplyToPort for acknowledgment
+Map<String, dynamic> setToolEnabledMessage(
+  String toolKey,
+  bool enabled, {
+  String? id,
+  ReplyToPort? replyTo,
+}) {
+  final message = {
+    'type': MessageType.setToolEnabled,
+    'id': id ?? generateMessageId(),
+    'payload': {
+      'toolKey': toolKey,
+      'enabled': enabled,
     },
   };
   if (replyTo != null) {

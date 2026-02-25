@@ -55,7 +55,8 @@ class RealtimeEventRouter {
 
       // ===== Input Audio Transcription Events =====
       case ServerEventType.conversationItemInputAudioTranscriptionCompleted:
-        _sessionHandlers.handleInputAudioTranscriptionCompleted(message, eventId);
+        _sessionHandlers.handleInputAudioTranscriptionCompleted(
+            message, eventId);
 
       case ServerEventType.conversationItemInputAudioTranscriptionDelta:
         _sessionHandlers.handleInputAudioTranscriptionDelta(message, eventId);

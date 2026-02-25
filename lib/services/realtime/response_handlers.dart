@@ -40,7 +40,8 @@ class ResponseHandlers {
     final responseJson = message['response'] as Map<String, dynamic>?;
 
     _log.info(_tag, 'Response created - AI is generating response');
-    _state.audioChunksReceived = 0; // Reset audio chunk counter for new response
+    _state.audioChunksReceived =
+        0; // Reset audio chunk counter for new response
 
     if (responseJson != null) {
       final response = RealtimeResponse.fromJson(responseJson);
@@ -114,8 +115,7 @@ class ResponseHandlers {
 
     if (itemJson != null) {
       final item = ConversationItem.fromJson(itemJson);
-      _log.debug(
-          _tag, 'Output item done: ${item.id} (status: ${item.status})');
+      _log.debug(_tag, 'Output item done: ${item.id} (status: ${item.status})');
     }
   }
 

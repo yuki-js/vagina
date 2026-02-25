@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vagina/core/state/repository_providers.dart';
 import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/feat/call/state/call_service_providers.dart';
+import 'package:vagina/feat/call/state/call_stream_providers.dart';
 import 'package:vagina/feat/home/tools/tool_icon_mapper.dart';
 import 'package:vagina/services/tool_metadata.dart';
 
@@ -69,6 +70,12 @@ class _ToolsTabState extends ConsumerState<ToolsTab> {
     }
     ref.invalidate(toolServiceProvider);
 
+    // If a call is active, immediately apply the change to the live session.
+    final isCallActive = ref.read(callStateInfoProvider).isActive;
+    if (isCallActive) {
+      await ref.read(callServiceProvider).syncToolsFromConfig();
+    }
+
     setState(() {
       _selectedTools.clear();
       _isSelectionMode = false;
@@ -90,6 +97,13 @@ class _ToolsTabState extends ConsumerState<ToolsTab> {
     }
 
     ref.invalidate(toolServiceProvider);
+
+    // If a call is active, immediately apply the change to the live session.
+    final isCallActive = ref.read(callStateInfoProvider).isActive;
+    if (isCallActive) {
+      await ref.read(callServiceProvider).syncToolsFromConfig();
+    }
+
     setState(() {
       _selectedTools.clear();
       _isSelectionMode = false;

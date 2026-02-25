@@ -82,8 +82,7 @@ class SessionHandlers {
 
   /// Handle conversation.created event
   /// Returned when a conversation is created, emitted right after session creation.
-  void handleConversationCreated(
-      Map<String, dynamic> message, String eventId) {
+  void handleConversationCreated(Map<String, dynamic> message, String eventId) {
     final conversationJson = message['conversation'] as Map<String, dynamic>?;
     if (conversationJson != null) {
       final conversation = RealtimeConversation.fromJson(conversationJson);
@@ -163,8 +162,7 @@ class SessionHandlers {
       _log.info(_tag, 'User transcript completed: $transcript');
       _streams.emitUserTranscript(transcript);
     } else {
-      _log.warn(
-          _tag, 'User transcript received but empty (item_id: $itemId)');
+      _log.warn(_tag, 'User transcript received but empty (item_id: $itemId)');
     }
   }
 

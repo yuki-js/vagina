@@ -38,7 +38,7 @@ class _OobeFlowScreenState extends ConsumerState<OobeFlowScreen> {
     // Mark first launch as completed using preferencesRepositoryProvider
     final preferences = ref.read(preferencesRepositoryProvider);
     await preferences.markFirstLaunchCompleted();
-    
+
     if (!mounted) return;
 
     // Navigate to HomeScreen with elegant transition
@@ -68,7 +68,8 @@ class _OobeFlowScreenState extends ConsumerState<OobeFlowScreen> {
             ),
           );
         },
-        transitionDuration: const Duration(milliseconds: 2000), // Elegant slow transition
+        transitionDuration:
+            const Duration(milliseconds: 2000), // Elegant slow transition
       ),
     );
   }

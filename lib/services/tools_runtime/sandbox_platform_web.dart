@@ -20,7 +20,8 @@ typedef PlatformIsolate = WebPseudoIsolate;
 /// Creates a pseudo-worker in the same thread using WebReceivePort/WebSendPort.
 ///
 /// Returns: (pseudo-isolate handle, host receive port, worker send port from handshake)
-Future<(PlatformIsolate, PlatformReceivePort, PlatformSendPort)> spawnPlatformWorker(
+Future<(PlatformIsolate, PlatformReceivePort, PlatformSendPort)>
+    spawnPlatformWorker(
   void Function(WebSendPort) entryPoint,
   Duration timeout,
 ) async {
@@ -36,14 +37,14 @@ Future<(PlatformIsolate, PlatformReceivePort, PlatformSendPort)> spawnPlatformWo
   // Wait for handshake response with worker's SendPort
   final completer = Completer<Object?>();
   late StreamSubscription<Object?> subscription;
-  
+
   subscription = receivePort.listen((msg) {
     if (!completer.isCompleted) {
       completer.complete(msg);
       subscription.cancel();
     }
   });
-  
+
   final handshakeMessage = await completer.future.timeout(
     timeout,
     onTimeout: () {

@@ -80,7 +80,8 @@ class TextAgentHostApi {
     try {
       expectLatency = TextAgentExpectLatency.fromString(expectLatencyStr);
     } catch (e) {
-      print('[$_tag:HOST] sendQuery - Invalid expectLatency: $expectLatencyStr');
+      print(
+          '[$_tag:HOST] sendQuery - Invalid expectLatency: $expectLatencyStr');
       print('Request Payload: ${jsonEncode(args)}');
       throw Exception(
         'Invalid expectLatency value: $expectLatencyStr. '
@@ -113,11 +114,10 @@ class TextAgentHostApi {
     } else {
       // Submit async job and return token
       final token = await _jobRunner.submitJob(agent, prompt, expectLatency);
-      
+
       // Determine poll interval based on latency
-      final pollAfterMs = expectLatency == TextAgentExpectLatency.long
-          ? 1500
-          : 3000;
+      final pollAfterMs =
+          expectLatency == TextAgentExpectLatency.long ? 1500 : 3000;
 
       return {
         'mode': 'async',
@@ -169,9 +169,8 @@ class TextAgentHostApi {
       case TextAgentJobStatus.pending:
       case TextAgentJobStatus.running:
         // Determine poll interval based on latency
-        final pollAfterMs = job.expectLatency == TextAgentExpectLatency.long
-            ? 1500
-            : 3000;
+        final pollAfterMs =
+            job.expectLatency == TextAgentExpectLatency.long ? 1500 : 3000;
 
         return {
           'status': job.status.value,
@@ -186,7 +185,7 @@ class TextAgentHostApi {
     _logService.debug(_tag, 'Listing available agents');
 
     final agents = await _configRepository.getAllTextAgents();
-    
+
     return agents.map((agent) {
       return {
         'id': agent.id,

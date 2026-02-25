@@ -44,7 +44,8 @@ class SessionDetailInfoSegment extends ConsumerWidget {
                     DurationFormatter.formatCallDuration(session.duration)),
                 _buildInfoRow('メッセージ数', '${session.chatMessages.length}件'),
                 _buildInfoRow('ノートパッド', '${session.notepadTabs?.length ?? 0}件'),
-                if (session.endContext != null && session.endContext!.isNotEmpty) ...[
+                if (session.endContext != null &&
+                    session.endContext!.isNotEmpty) ...[
                   const Divider(height: 16),
                   _buildEndContextRow(session.endContext!),
                 ],

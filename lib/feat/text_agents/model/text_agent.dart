@@ -50,7 +50,7 @@ class TextAgent {
 
   factory TextAgent.fromJson(Map<String, dynamic> json) {
     final configJson = json['config'] as Map<String, dynamic>;
-    
+
     // Try to parse as new format first, fall back to legacy Azure format
     TextAgentConfig config;
     if (configJson.containsKey('provider')) {
@@ -65,7 +65,7 @@ class TextAgent {
         deploymentName: legacyConfig.deploymentName,
       );
     }
-    
+
     return TextAgent(
       id: json['id'] as String,
       name: json['name'] as String,

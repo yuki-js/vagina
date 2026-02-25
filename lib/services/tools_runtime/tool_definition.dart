@@ -49,6 +49,37 @@ class ToolDefinition {
     required this.parametersSchema,
   });
 
+  Map<String, dynamic> toJson() {
+    return {
+      'toolKey': toolKey,
+      'displayName': displayName,
+      'displayDescription': displayDescription,
+      'categoryKey': categoryKey,
+      'iconKey': iconKey,
+      'sourceKey': sourceKey,
+      'publishedBy': publishedBy,
+      'mcpServerUrl': mcpServerUrl,
+      'description': description,
+      'parametersSchema': parametersSchema,
+    };
+  }
+
+  static ToolDefinition fromJson(Map<String, dynamic> json) {
+    return ToolDefinition(
+      toolKey: json['toolKey'] as String,
+      displayName: json['displayName'] as String,
+      displayDescription: json['displayDescription'] as String,
+      categoryKey: json['categoryKey'] as String,
+      iconKey: json['iconKey'] as String,
+      sourceKey: json['sourceKey'] as String,
+      publishedBy: json['publishedBy'] as String,
+      mcpServerUrl: json['mcpServerUrl'] as String?,
+      description: json['description'] as String,
+      parametersSchema:
+          Map<String, dynamic>.from(json['parametersSchema'] as Map),
+    );
+  }
+
   /// Realtime API compatible tool definition (function tool).
   Map<String, Object> toRealtimeJson() {
     return {

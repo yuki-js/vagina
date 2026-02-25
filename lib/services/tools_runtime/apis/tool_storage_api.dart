@@ -43,7 +43,8 @@ abstract class ToolStorageApi {
 
 /// Client implementation of ToolStorageApi for isolate communication
 class ToolStorageApiClient implements ToolStorageApi {
-  final Future<dynamic> Function(String method, Map<String, dynamic> args) hostCall;
+  final Future<dynamic> Function(String method, Map<String, dynamic> args)
+      hostCall;
 
   ToolStorageApiClient({required this.hostCall});
 

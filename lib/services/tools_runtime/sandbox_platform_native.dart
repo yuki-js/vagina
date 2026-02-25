@@ -20,7 +20,8 @@ typedef PlatformIsolate = Isolate;
 /// Spawns a real Dart Isolate running the given entrypoint.
 ///
 /// Returns: (isolate handle, host receive port, worker send port from handshake)
-Future<(PlatformIsolate, PlatformReceivePort, PlatformSendPort)> spawnPlatformWorker(
+Future<(PlatformIsolate, PlatformReceivePort, PlatformSendPort)>
+    spawnPlatformWorker(
   void Function(SendPort) entryPoint,
   Duration timeout,
 ) async {

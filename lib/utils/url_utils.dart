@@ -4,27 +4,27 @@ class UrlUtils {
 
   /// Parse Azure Realtime URL to extract components
   /// Returns null if URL is invalid
-  /// 
+  ///
   /// Expected format: https://{resource}.openai.azure.com/openai/realtime?api-version=YYYY-MM-DD&deployment=...
   static Map<String, String>? parseAzureRealtimeUrl(String url) {
     try {
       final uri = Uri.parse(url);
-      
+
       // Validate Azure OpenAI host
       if (!uri.host.endsWith('.openai.azure.com')) {
         return null;
       }
-      
+
       final deployment = uri.queryParameters['deployment'];
       final apiVersion = uri.queryParameters['api-version'];
-      
+
       if (deployment == null || deployment.isEmpty) {
         return null;
       }
-      
+
       // Build the endpoint (base URL without path/query)
       final endpoint = '${uri.scheme}://${uri.host}';
-      
+
       return {
         'endpoint': endpoint,
         'deployment': deployment,
@@ -44,18 +44,21 @@ class UrlUtils {
   }
 
   /// Redact sensitive query parameters from URL for logging
-  static String redactSensitiveParams(String url, {List<String> sensitiveParams = const ['api-key', 'key', 'token']}) {
+  static String redactSensitiveParams(String url,
+      {List<String> sensitiveParams = const ['api-key', 'key', 'token']}) {
     try {
       final uri = Uri.parse(url);
       final redactedParams = Map<String, dynamic>.from(uri.queryParameters);
-      
+
       for (final param in sensitiveParams) {
         if (redactedParams.containsKey(param)) {
           redactedParams[param] = '[REDACTED]';
         }
       }
-      
-      return uri.replace(queryParameters: redactedParams.cast<String, String>()).toString();
+
+      return uri
+          .replace(queryParameters: redactedParams.cast<String, String>())
+          .toString();
     } catch (e) {
       return url;
     }
