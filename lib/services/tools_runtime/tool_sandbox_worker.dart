@@ -60,11 +60,10 @@ class _WorkerController {
   // Tool registry
   final Map<String, Tool> _toolMap = {};
 
-  // Pending hostCall requests
-  final Map<String, Completer<Map<String, dynamic>>> _pendingHostCalls = {};
-
   // Per-session ToolContext (created during initialization)
-  late ToolContext _toolContext;
+  //
+  // Note: tools are initialized with their own ToolContext instances in
+  // _initializeToolRegistry(). We don't keep a separate session context here.
 
   // Late API clients (created during handshake)
   late NotepadApiClient _notepadApiClient;
@@ -205,26 +204,29 @@ class _WorkerController {
 
     // Create NotepadApiClient with hostCall callback
     _notepadApiClient = NotepadApiClient(
-      hostCall: (method, args) => _makeHostCall('notepad', method, args),
+      hostCall: (method, args) async =>
+          await _makeHostCall('notepad', method, args),
     );
 
     _log('Created NotepadApiClient');
 
     // Create CallApiClient with hostCall callback
     _callApiClient = CallApiClient(
-      hostCall: (method, args) => _makeHostCall('call', method, args),
+      hostCall: (method, args) async => await _makeHostCall('call', method, args),
     );
     _log('Created CallApiClient');
 
     // Create TextAgentApiClient with hostCall callback
     _textAgentApiClient = TextAgentApiClient(
-      hostCall: (method, args) => _makeHostCall('textAgent', method, args),
+      hostCall: (method, args) async =>
+          await _makeHostCall('textAgent', method, args),
     );
     _log('Created TextAgentApiClient');
 
     // Create ToolStorageApiClient with hostCall callback
     _toolStorageApiClient = ToolStorageApiClient(
-      hostCall: (method, args) => _makeHostCall('toolStorage', method, args),
+      hostCall: (method, args) async =>
+          await _makeHostCall('toolStorage', method, args),
     );
     _log('Created ToolStorageApiClient');
   }
@@ -232,7 +234,11 @@ class _WorkerController {
   /// Make a hostCall request to the host
   ///
   /// Sends a hostCall message and waits for the response with timeout.
-  Future<Map<String, dynamic>> _makeHostCall(
+  ///
+  /// This method also unwraps the hostCall response envelope:
+  /// - On success: returns the raw `data` payload
+  /// - On error: throws a [HostCallException]
+  Future<dynamic> _makeHostCall(
     String api,
     String method,
     Map<String, dynamic> args,
@@ -267,30 +273,25 @@ class _WorkerController {
       _log(
           'Sending hostCall: api=$api, method=$method, requestId=$requestId, message=${jsonEncode(messageForLog)}');
 
-      // Register pending request
-      final completer = Completer<Map<String, dynamic>>();
-      _pendingHostCalls[requestId] = completer;
-
       try {
         // Send request to host
         _hostReceivePort!.send(message);
 
         // Wait for response with timeout
-        final completer = Completer<Object?>();
+        final responseCompleter = Completer<Object?>();
         late StreamSubscription<Object?> subscription;
 
         subscription = replyReceivePort.listen((msg) {
-          if (!completer.isCompleted) {
-            completer.complete(msg);
+          if (!responseCompleter.isCompleted) {
+            responseCompleter.complete(msg);
             subscription.cancel();
           }
         });
 
-        final response = await completer.future.timeout(
+        final response = await responseCompleter.future.timeout(
           _hostCallTimeout,
           onTimeout: () {
             subscription.cancel();
-            _pendingHostCalls.remove(requestId);
             throw TimeoutException(
               'hostCall timeout: $api.$method did not respond within $_hostCallTimeout',
             );
@@ -299,13 +300,39 @@ class _WorkerController {
 
         _log('Received hostCall response for $requestId, response: $response');
 
-        if (response is Map<String, dynamic>) {
-          return response;
-        } else {
+        if (response is! Map) {
           throw StateError('Invalid response type: ${response.runtimeType}');
         }
+
+        final responseMap = Map<String, dynamic>.from(response);
+
+        final type = responseMap['type'];
+        final respRequestId = responseMap['requestId'];
+        final status = responseMap['status'];
+
+        if (type != 'response' || respRequestId != requestId) {
+          throw StateError(
+            'Invalid response envelope: type=$type requestId=$respRequestId expectedRequestId=$requestId',
+          );
+        }
+
+        if (status == 'success') {
+          return responseMap['data'];
+        }
+
+        if (status == 'error') {
+          final message = responseMap['error']?.toString() ?? 'Unknown error';
+          final code = responseMap['code'];
+          throw HostCallException(
+            api: api,
+            method: method,
+            message: message,
+            code: code is String ? code : null,
+          );
+        }
+
+        throw StateError('Invalid response status: $status');
       } finally {
-        _pendingHostCalls.remove(requestId);
         replyReceivePort.close();
       }
     } catch (e) {
@@ -615,6 +642,26 @@ class _WorkerController {
 /// Log a message from the worker isolate
 void _log(String message) {
   print('[$_tag] $message');
+}
+
+class HostCallException implements Exception {
+  final String api;
+  final String method;
+  final String message;
+  final String? code;
+
+  HostCallException({
+    required this.api,
+    required this.method,
+    required this.message,
+    this.code,
+  });
+
+  @override
+  String toString() {
+    final codePart = code == null ? '' : ' (code=$code)';
+    return 'HostCallException: $api.$method: $message$codePart';
+  }
 }
 
 class UnknownToolException implements Exception {

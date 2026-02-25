@@ -43,91 +43,54 @@ abstract class ToolStorageApi {
 
 /// Client implementation of ToolStorageApi for isolate communication
 class ToolStorageApiClient implements ToolStorageApi {
-  final Future<Map<String, dynamic>> Function(
-      String method, Map<String, dynamic> args) hostCall;
+  final Future<dynamic> Function(String method, Map<String, dynamic> args) hostCall;
 
   ToolStorageApiClient({required this.hostCall});
 
   @override
   Future<bool> save(String key, dynamic value) async {
-    try {
-      final args = {
-        'key': key,
-        'value': value,
-      };
+    final args = {
+      'key': key,
+      'value': value,
+    };
 
-      final result = await hostCall('save', args);
-
-      if (result['status'] == 'success') {
-        return true;
-      }
-
-      throw result['error'] ?? 'Failed to save';
-    } catch (e) {
-      throw Exception('Error saving to storage: $e');
-    }
+    await hostCall('save', args);
+    return true;
   }
 
   @override
   Future<dynamic> get(String key) async {
-    try {
-      final result = await hostCall('get', {'key': key});
-
-      if (result['status'] == 'success') {
-        return result['data'];
-      }
-
-      throw result['error'] ?? 'Failed to get value';
-    } catch (e) {
-      throw Exception('Error retrieving from storage: $e');
-    }
+    return hostCall('get', {'key': key});
   }
 
   @override
   Future<Map<String, dynamic>> list() async {
-    try {
-      final result = await hostCall('list', {});
+    final data = await hostCall('list', {});
 
-      if (result['status'] == 'success') {
-        final data = result['data'];
-        if (data is Map) {
-          return Map<String, dynamic>.from(data);
-        }
-        return {};
-      }
-
-      throw result['error'] ?? 'Failed to list storage';
-    } catch (e) {
-      throw Exception('Error listing storage: $e');
+    if (data is Map) {
+      return Map<String, dynamic>.from(data);
     }
+
+    throw StateError(
+      'Invalid toolStorage.list response type: ${data.runtimeType}',
+    );
   }
 
   @override
   Future<bool> delete(String key) async {
-    try {
-      final result = await hostCall('delete', {'key': key});
+    final data = await hostCall('delete', {'key': key});
 
-      if (result['status'] == 'success') {
-        final data = result['data'] as bool?;
-        return data ?? false;
-      }
-
-      throw result['error'] ?? 'Failed to delete';
-    } catch (e) {
-      throw Exception('Error deleting from storage: $e');
+    if (data is bool) {
+      return data;
     }
+
+    throw StateError(
+      'Invalid toolStorage.delete response type: ${data.runtimeType}',
+    );
   }
 
   @override
   Future<void> deleteAll() async {
-    try {
-      final result = await hostCall('deleteAll', {});
-
-      if (result['status'] != 'success') {
-        throw result['error'] ?? 'Failed to delete all';
-      }
-    } catch (e) {
-      throw Exception('Error deleting all from storage: $e');
-    }
+    await hostCall('deleteAll', {});
   }
 }

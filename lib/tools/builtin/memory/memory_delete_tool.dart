@@ -44,8 +44,7 @@ class MemoryDeleteTool extends Tool {
     final key = args['key'] as String;
 
     if (key == 'all') {
-      final allEntries = (await context.toolStorageApi.list())[
-          "data"]; // todo: list関数はdataをunwrapするべきだ。このレイヤーでunwrapなんてしたくない。
+      final allEntries = await context.toolStorageApi.list();
       final keysToDelete =
           allEntries.keys.where((k) => k.startsWith(_memoryKeyPrefix)).toList();
 

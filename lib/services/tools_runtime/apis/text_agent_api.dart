@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 /// Abstract API for text agent query operations
 ///
 /// This API allows tools running in isolates to query text agents.
@@ -37,9 +35,7 @@ abstract class TextAgentApi {
 
 /// Client implementation of TextAgentApi that uses hostCall for isolate communication
 class TextAgentApiClient implements TextAgentApi {
-  static const _tag = 'TextAgentApiClient';
-  final Future<Map<String, dynamic>> Function(
-      String method, Map<String, dynamic> args) hostCall;
+  final Future<dynamic> Function(String method, Map<String, dynamic> args) hostCall;
 
   TextAgentApiClient({required this.hostCall});
 
@@ -49,81 +45,48 @@ class TextAgentApiClient implements TextAgentApi {
     String prompt,
     String expectLatency,
   ) async {
-    try {
-      final payload = {
-        'agentId': agentId,
-        'prompt': prompt,
-        'expectLatency': expectLatency,
-      };
-      final result = await hostCall('sendQuery', payload);
+    final payload = {
+      'agentId': agentId,
+      'prompt': prompt,
+      'expectLatency': expectLatency,
+    };
 
-      if (result['status'] == 'success') {
-        final data = result['data'] as Map<String, dynamic>?;
-        if (data != null) {
-          return data;
-        }
-      }
+    final data = await hostCall('sendQuery', payload);
 
-      // Handle error
-      final error = result['error'] ?? 'Failed to send query';
-      print(
-          '[TOOL:GUEST] $_tag - Failed to call textAgent.sendQuery\nError: $error\nRequest Payload: ${jsonEncode(payload)}');
-      throw error;
-    } catch (e) {
-      print(
-          '[TOOL:GUEST] $_tag - Exception in sendQuery: $e\nRequest Payload: ${jsonEncode({
-            'agentId': agentId,
-            'prompt': prompt,
-            'expectLatency': expectLatency
-          })}');
-      throw Exception('Error sending query: $e');
+    if (data is Map) {
+      return Map<String, dynamic>.from(data);
     }
+
+    throw StateError(
+      'Invalid textAgent.sendQuery response type: ${data.runtimeType}',
+    );
   }
 
   @override
   Future<Map<String, dynamic>> getResult(String token) async {
-    try {
-      final payload = {'token': token};
-      final result = await hostCall('getResult', payload);
+    final data = await hostCall('getResult', {'token': token});
 
-      if (result['status'] == 'success') {
-        final data = result['data'] as Map<String, dynamic>?;
-        if (data != null) {
-          return data;
-        }
-      }
-
-      // Handle error
-      final error = result['error'] ?? 'Failed to get result';
-      print(
-          '[TOOL:GUEST] $_tag - Failed to call textAgent.getResult\nError: $error\nRequest Payload: ${jsonEncode(payload)}');
-      throw error;
-    } catch (e) {
-      print(
-          '[TOOL:GUEST] $_tag - Exception in getResult: $e\nRequest Payload: ${jsonEncode({
-            'token': token
-          })}');
-      throw Exception('Error getting result: $e');
+    if (data is Map) {
+      return Map<String, dynamic>.from(data);
     }
+
+    throw StateError(
+      'Invalid textAgent.getResult response type: ${data.runtimeType}',
+    );
   }
 
   @override
   Future<List<Map<String, dynamic>>> listAgents() async {
-    try {
-      final payload = <String, dynamic>{};
-      final result = await hostCall('listAgents', payload);
-      if (result['status'] == "success") {
-        final data = result['data'] as List<Map<String, dynamic>>;
-        return data;
-      } else {
-        // Handle error
-        final error = result['error'] ?? 'Failed to list text agents';
-        throw error;
-      }
-    } catch (e) {
-      print(
-          '[TOOL:GUEST] $_tag - Exception in listAgents: $e\nRequest Payload: ${jsonEncode({})}');
-      throw Exception('Error listing agents: $e');
+    final data = await hostCall('listAgents', <String, dynamic>{});
+
+    if (data is List) {
+      return List<Map<String, dynamic>>.from(
+        data.map((agent) => Map<String, dynamic>.from(agent as Map)),
+      );
     }
+
+    throw StateError(
+      'Invalid textAgent.listAgents response type: ${data.runtimeType}',
+    );
   }
 }

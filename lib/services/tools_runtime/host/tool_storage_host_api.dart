@@ -7,14 +7,14 @@ import 'package:vagina/services/log_service.dart';
 /// methods, with the toolKey obtained from the execution context callback.
 class ToolStorageHostApi {
   static const String _tag = 'ToolStorageHostApi';
-  
+
   final ToolStorage _toolStorage;
   final LogService _logService;
-  
+
   /// Callback to get the currently executing tool key
   /// This is called for each request to ensure we use the correct tool context
   final String Function() _getCurrentToolKey;
-  
+
   /// Resolve storage namespace for a given tool key.
   ///
   /// Provided by the runtime as the Single Source of Truth (SSoT) for tool
@@ -29,7 +29,6 @@ class ToolStorageHostApi {
   })  : _resolveStorageNamespace = resolveStorageNamespace,
         _logService = logService ?? LogService();
 
-
   /// Handle API calls from the isolate
   ///
   /// Routes to appropriate ToolStorage methods based on [method] parameter
@@ -40,7 +39,7 @@ class ToolStorageHostApi {
   ) async {
     final toolKey = _getCurrentToolKey();
     _logService.debug(_tag, 'hostCall: $method for tool $toolKey, args: $args');
-    
+
     try {
       switch (method) {
         case 'save':
@@ -74,12 +73,9 @@ class ToolStorageHostApi {
     _logService.info(_tag, 'Saving tool $toolKey key=$key, value=$value');
     await _toolStorage.save(storageNamespace, key, value);
     _logService.info(_tag, 'Saved successfully for tool $toolKey key=$key');
-    
-    // Return success response structure for the API client
-    return {
-      'status': 'success',
-      'data': null,
-    };
+
+    // Return raw value; the runtime wraps hostCall responses.
+    return null;
   }
 
   Future<dynamic> _handleGet(String toolKey, Map<String, dynamic> args) async {
@@ -92,11 +88,8 @@ class ToolStorageHostApi {
     _logService.info(_tag, 'Getting tool $toolKey key=$key');
     final value = await _toolStorage.get(storageNamespace, key);
     _logService.info(_tag, 'Got value for tool $toolKey key=$key: $value');
-    
-    return {
-      'status': 'success',
-      'data': value,
-    };
+
+    return value;
   }
 
   Future<dynamic> _handleList(String toolKey) async {
@@ -104,11 +97,8 @@ class ToolStorageHostApi {
     _logService.info(_tag, 'Listing all for tool $toolKey');
     final data = await _toolStorage.listAll(storageNamespace);
     _logService.info(_tag, 'Listed ${data.length} entries for tool $toolKey');
-    
-    return {
-      'status': 'success',
-      'data': data,
-    };
+
+    return data;
   }
 
   Future<dynamic> _handleDelete(String toolKey, Map<String, dynamic> args) async {
@@ -121,11 +111,8 @@ class ToolStorageHostApi {
     _logService.info(_tag, 'Deleting tool $toolKey key=$key');
     final result = await _toolStorage.delete(storageNamespace, key);
     _logService.info(_tag, 'Delete result for tool $toolKey key=$key: $result');
-    
-    return {
-      'status': 'success',
-      'data': result,
-    };
+
+    return result;
   }
 
   Future<dynamic> _handleDeleteAll(String toolKey) async {
@@ -133,10 +120,8 @@ class ToolStorageHostApi {
     _logService.info(_tag, 'Deleting all for tool $toolKey');
     await _toolStorage.deleteAll(storageNamespace);
     _logService.info(_tag, 'Deleted all for tool $toolKey');
-    
-    return {
-      'status': 'success',
-      'data': null,
-    };
+
+    // Return raw value; the runtime wraps hostCall responses.
+    return null;
   }
 }

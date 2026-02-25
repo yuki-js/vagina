@@ -63,50 +63,40 @@ abstract class NotepadApi {
 
 /// Client implementation of NotepadApi that uses hostCall for isolate communication
 class NotepadApiClient implements NotepadApi {
-  final Future<Map<String, dynamic>> Function(String method, Map<String, dynamic> args) hostCall;
+  final Future<dynamic> Function(String method, Map<String, dynamic> args) hostCall;
   
   NotepadApiClient({required this.hostCall});
   
   @override
   Future<List<Map<String, dynamic>>> listTabs() async {
-    try {
-      final result = await hostCall('listTabs', {});
-      
-      if (result['status'] == 'success') {
-        final data = result['data'];
-        if (data is List) {
-          return List<Map<String, dynamic>>.from(
-            data.map((tab) => Map<String, dynamic>.from(tab as Map))
-          );
-        }
-        return [];
-      }
-      
-      // Handle error
-      throw result['error'] ?? 'Failed to list tabs';
-    } catch (e) {
-      throw Exception('Error listing tabs: $e');
+    final data = await hostCall('listTabs', {});
+
+    if (data is List) {
+      return List<Map<String, dynamic>>.from(
+        data.map((tab) => Map<String, dynamic>.from(tab as Map)),
+      );
     }
+
+    throw StateError(
+      'Invalid notepad.listTabs response type: ${data.runtimeType}',
+    );
   }
   
   @override
   Future<Map<String, dynamic>?> getTab(String id) async {
-    try {
-      final result = await hostCall('getTab', {'id': id});
-      
-      if (result['status'] == 'success') {
-        final data = result['data'];
-        if (data != null) {
-          return Map<String, dynamic>.from(data as Map);
-        }
-        return null;
-      }
-      
-      // Handle error
-      throw result['error'] ?? 'Failed to get tab';
-    } catch (e) {
-      throw Exception('Error getting tab: $e');
+    final data = await hostCall('getTab', {'id': id});
+
+    if (data == null) {
+      return null;
     }
+
+    if (data is Map) {
+      return Map<String, dynamic>.from(data);
+    }
+
+    throw StateError(
+      'Invalid notepad.getTab response type: ${data.runtimeType}',
+    );
   }
   
   @override
@@ -115,27 +105,21 @@ class NotepadApiClient implements NotepadApi {
     required String mimeType,
     String? title,
   }) async {
-    try {
-      final args = {
-        'content': content,
-        'mimeType': mimeType,
-        if (title != null) 'title': title,
-      };
-      
-      final result = await hostCall('createTab', args);
-      
-      if (result['status'] == 'success') {
-        final data = result['data'];
-        if (data is String) {
-          return data;
-        }
-      }
-      
-      // Handle error
-      throw result['error'] ?? 'Failed to create tab';
-    } catch (e) {
-      throw Exception('Error creating tab: $e');
+    final args = {
+      'content': content,
+      'mimeType': mimeType,
+      if (title != null) 'title': title,
+    };
+
+    final data = await hostCall('createTab', args);
+
+    if (data is String) {
+      return data;
     }
+
+    throw StateError(
+      'Invalid notepad.createTab response type: ${data.runtimeType}',
+    );
   }
   
   @override
@@ -145,42 +129,34 @@ class NotepadApiClient implements NotepadApi {
     String? title,
     String? mimeType,
   }) async {
-    try {
-      final args = {
-        'id': id,
-        if (content != null) 'content': content,
-        if (title != null) 'title': title,
-        if (mimeType != null) 'mimeType': mimeType,
-      };
-      
-      final result = await hostCall('updateTab', args);
-      
-      if (result['status'] == 'success') {
-        final data = result['data'] as bool?;
-        return data ?? false;
-      }
-      
-      // Handle error
-      throw result['error'] ?? 'Failed to update tab';
-    } catch (e) {
-      throw Exception('Error updating tab: $e');
+    final args = {
+      'id': id,
+      if (content != null) 'content': content,
+      if (title != null) 'title': title,
+      if (mimeType != null) 'mimeType': mimeType,
+    };
+
+    final data = await hostCall('updateTab', args);
+
+    if (data is bool) {
+      return data;
     }
+
+    throw StateError(
+      'Invalid notepad.updateTab response type: ${data.runtimeType}',
+    );
   }
   
   @override
   Future<bool> closeTab(String id) async {
-    try {
-      final result = await hostCall('closeTab', {'id': id});
-      
-      if (result['status'] == 'success') {
-        final data = result['data'] as bool?;
-        return data ?? false;
-      }
-      
-      // Handle error
-      throw result['error'] ?? 'Failed to close tab';
-    } catch (e) {
-      throw Exception('Error closing tab: $e');
+    final data = await hostCall('closeTab', {'id': id});
+
+    if (data is bool) {
+      return data;
     }
+
+    throw StateError(
+      'Invalid notepad.closeTab response type: ${data.runtimeType}',
+    );
   }
 }
