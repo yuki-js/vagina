@@ -164,9 +164,10 @@ class TextAgentApiClient implements TextAgentApi {
   final Map<String, WorkerTextAgent> _agents = {};
   final Map<String, _AsyncJob> _jobs = {};
   final http.Client _httpClient;
-  
+
   // Tool execution support
-  final Future<String> Function(String toolKey, Map<String, dynamic> args)? _executeToolCallback;
+  final Future<String> Function(String toolKey, Map<String, dynamic> args)?
+      _executeToolCallback;
   List<Map<String, dynamic>>? _availableTools;
 
   TextAgentApiClient({
@@ -174,9 +175,9 @@ class TextAgentApiClient implements TextAgentApi {
     dynamic initialData,
     Future<String> Function(String, Map<String, dynamic>)? executeToolCallback,
     List<Map<String, dynamic>>? availableTools,
-  }) : _httpClient = httpClient ?? http.Client(),
-       _executeToolCallback = executeToolCallback,
-       _availableTools = availableTools ?? [] {
+  })  : _httpClient = httpClient ?? http.Client(),
+        _executeToolCallback = executeToolCallback,
+        _availableTools = availableTools ?? [] {
     // Initialize agents if provided
     if (initialData is List) {
       try {
@@ -204,7 +205,7 @@ class TextAgentApiClient implements TextAgentApi {
   void updateAgents(List<WorkerTextAgent> agents) {
     _initializeAgents(agents);
   }
-  
+
   /// Update available tools for tool calling
   void updateTools(List<Map<String, dynamic>> tools) {
     _availableTools = tools;
@@ -223,7 +224,8 @@ class TextAgentApiClient implements TextAgentApi {
 
     if (expectLatency == 'instant') {
       // Execute immediately
-      final result = await _executeQuery(agent, prompt, const Duration(seconds: 30));
+      final result =
+          await _executeQuery(agent, prompt, const Duration(seconds: 30));
       return {
         'mode': 'instant',
         'text': result,
@@ -235,19 +237,19 @@ class TextAgentApiClient implements TextAgentApi {
       final timeout = expectLatency == 'long'
           ? const Duration(minutes: 10)
           : const Duration(minutes: 60);
-      
+
       final job = _AsyncJob(
         token: token,
         agentId: agentId,
         prompt: prompt,
         timeout: timeout,
       );
-      
+
       _jobs[token] = job;
-      
+
       // Start execution in background (don't await)
       _executeAsyncJob(job, agent);
-      
+
       final pollAfterMs = expectLatency == 'long' ? 1500 : 3000;
       return {
         'mode': 'async',
@@ -315,8 +317,6 @@ class TextAgentApiClient implements TextAgentApi {
     // Build request body
     final requestBody = <String, dynamic>{
       'messages': messages,
-      'max_tokens': 4096,
-      'temperature': 1.0,
     };
 
     // Add model for non-Azure providers
@@ -325,7 +325,9 @@ class TextAgentApiClient implements TextAgentApi {
     }
 
     // Add tools if available
-    if (_availableTools != null && _availableTools!.isNotEmpty && _executeToolCallback != null) {
+    if (_availableTools != null &&
+        _availableTools!.isNotEmpty &&
+        _executeToolCallback != null) {
       requestBody['tools'] = _availableTools;
       requestBody['tool_choice'] = 'auto';
     }
@@ -347,7 +349,8 @@ class TextAgentApiClient implements TextAgentApi {
             .timeout(timeout);
 
         if (response.statusCode != 200) {
-          throw Exception('API error (${response.statusCode}): ${response.body}');
+          throw Exception(
+              'API error (${response.statusCode}): ${response.body}');
         }
 
         final responseJson = jsonDecode(response.body) as Map<String, dynamic>;
@@ -379,7 +382,8 @@ class TextAgentApiClient implements TextAgentApi {
 
             try {
               // Parse arguments
-              final arguments = jsonDecode(argumentsStr) as Map<String, dynamic>;
+              final arguments =
+                  jsonDecode(argumentsStr) as Map<String, dynamic>;
 
               // Execute tool via callback
               final result = await _executeToolCallback!(toolName, arguments);
@@ -420,7 +424,8 @@ class TextAgentApiClient implements TextAgentApi {
       }
 
       // Max turns reached
-      throw Exception('Max conversation turns ($maxTurns) reached without completion');
+      throw Exception(
+          'Max conversation turns ($maxTurns) reached without completion');
     } on TimeoutException {
       throw Exception('Request timeout after ${timeout.inSeconds}s');
     } catch (e) {
@@ -457,7 +462,7 @@ class _AsyncJob {
   final String agentId;
   final String prompt;
   final Duration timeout;
-  
+
   bool isCompleted = false;
   bool isFailed = false;
   String? error;
