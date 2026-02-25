@@ -3,12 +3,16 @@ import 'dart:convert';
 import 'package:vagina/services/tools_runtime/tool.dart';
 import 'package:vagina/services/tools_runtime/tool_definition.dart';
 
-/// Tool to delete information from tool-isolated storage
-/// 
-/// Each tool has its own isolated memory namespace.
-/// Deletion only affects the current tool's memories.
+/// Tool to delete information from long-term memory.
+///
+/// Storage may be shared across tools from the same publisher.
+/// This tool only touches entries under the `memory/` prefix to avoid deleting
+/// other tools' data.
 class MemoryDeleteTool extends Tool {
   static const String toolKeyName = 'memory_delete';
+
+  /// Sub-namespace under the publisher-level storage namespace.
+  static const String _memoryKeyPrefix = 'memory/';
 
   @override
   ToolDefinition get definition => const ToolDefinition(
@@ -19,8 +23,7 @@ class MemoryDeleteTool extends Tool {
         iconKey: 'delete',
         sourceKey: 'builtin',
         publishedBy: 'aokiapp',
-        description:
-            'Delete information from tool-isolated long-term storage. '
+        description: 'Delete information from tool-isolated long-term storage. '
             'Use this when the user asks you to forget something. '
             'Each tool only sees and deletes its own isolated memories.',
         parametersSchema: {
@@ -41,30 +44,34 @@ class MemoryDeleteTool extends Tool {
     final key = args['key'] as String;
 
     if (key == 'all') {
-      // Use tool-isolated storage (toolStorageApi)
-      // This only deletes memories from this specific tool
-      final allMemories = await context.toolStorageApi.list();
-      for (final memoryKey in allMemories.keys) {
+      final allEntries = (await context.toolStorageApi.list())[
+          "data"]; // todo: list関数はdataをunwrapするべきだ。このレイヤーでunwrapなんてしたくない。
+      final keysToDelete =
+          allEntries.keys.where((k) => k.startsWith(_memoryKeyPrefix)).toList();
+
+      for (final memoryKey in keysToDelete) {
         await context.toolStorageApi.delete(memoryKey);
       }
+
       return jsonEncode({
         'success': true,
-        'message': 'All memories deleted successfully (tool-isolated storage)',
+        'message': 'All memories deleted successfully',
+        'deletedCount': keysToDelete.length,
       });
     }
 
-    // Use tool-isolated storage (toolStorageApi)
-    final existed = await context.toolStorageApi.delete(key);
+    final storageKey = '$_memoryKeyPrefix$key';
+    final existed = await context.toolStorageApi.delete(storageKey);
     if (!existed) {
       return jsonEncode({
         'success': false,
-        'message': 'Memory not found for key: $key (tool-isolated storage)',
+        'message': 'Memory not found for key: $key',
       });
     }
 
     return jsonEncode({
       'success': true,
-      'message': 'Memory deleted successfully (tool-isolated storage)',
+      'message': 'Memory deleted successfully',
       'key': key,
     });
   }

@@ -6,6 +6,12 @@ import 'package:vagina/services/tools_runtime/tool_definition.dart';
 class MemorySaveTool extends Tool {
   static const String toolKeyName = 'memory_save';
 
+  /// Sub-namespace under the publisher-level storage namespace.
+  ///
+  /// Storage can be shared across tools from the same publisher, so we scope all
+  /// memory entries under a dedicated prefix to avoid collisions.
+  static const String _memoryKeyPrefix = 'memory/';
+
   @override
   ToolDefinition get definition => const ToolDefinition(
         toolKey: toolKeyName,
@@ -39,9 +45,10 @@ class MemorySaveTool extends Tool {
     final key = args['key'] as String;
     final value = args['value'] as String;
 
-    // Use tool-isolated storage (toolStorageApi)
-    // Each tool has its own namespace, so this memory is isolated per tool
-    await context.toolStorageApi.save(key, value);
+    // Storage may be shared across tools from the same publisher.
+    // Keep memory entries isolated within that shared namespace.
+    final storageKey = '$_memoryKeyPrefix$key';
+    await context.toolStorageApi.save(storageKey, value);
 
     return jsonEncode({
       'success': true,

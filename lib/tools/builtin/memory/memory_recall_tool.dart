@@ -6,6 +6,9 @@ import 'package:vagina/services/tools_runtime/tool_definition.dart';
 class MemoryRecallTool extends Tool {
   static const String toolKeyName = 'memory_recall';
 
+  /// Sub-namespace under the publisher-level storage namespace.
+  static const String _memoryKeyPrefix = 'memory/';
+
   @override
   ToolDefinition get definition => const ToolDefinition(
         toolKey: toolKeyName,
@@ -35,17 +38,25 @@ class MemoryRecallTool extends Tool {
     final key = args['key'] as String;
 
     if (key == 'all') {
-      // Use tool-isolated storage (toolStorageApi)
-      // This returns only memories for this specific tool
-      final allMemories = await context.toolStorageApi.list();
+      final allEntries =
+          (await context.toolStorageApi.list())["data"]; // todo: list関数はdataをunwrapするべきだ。このレイヤーでunwrapなんてしたくない。
+      final memories = <String, dynamic>{};
+
+      for (final entry in allEntries.entries) {
+        final k = entry.key;
+        if (k.startsWith(_memoryKeyPrefix)) {
+          memories[k.substring(_memoryKeyPrefix.length)] = entry.value;
+        }
+      }
+
       return jsonEncode({
         'success': true,
-        'memories': allMemories,
+        'memories': memories,
       });
     }
 
-    // Use tool-isolated storage (toolStorageApi)
-    final value = await context.toolStorageApi.get(key);
+    final storageKey = '$_memoryKeyPrefix$key';
+    final value = await context.toolStorageApi.get(storageKey);
     if (value == null) {
       return jsonEncode({
         'success': false,
