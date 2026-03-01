@@ -4,16 +4,19 @@ import 'speed_dial.dart';
 class SessionNotepadTab {
   final String title;
   final String content;
+  final String mimeType;
 
   const SessionNotepadTab({
     required this.title,
     required this.content,
+    required this.mimeType,
   });
 
   Map<String, dynamic> toJson() {
     return {
       'title': title,
       'content': content,
+      'mimeType': mimeType,
     };
   }
 
@@ -21,6 +24,7 @@ class SessionNotepadTab {
     return SessionNotepadTab(
       title: json['title'] as String,
       content: json['content'] as String,
+      mimeType: json['mimeType'] as String,
     );
   }
 }

@@ -136,7 +136,10 @@ class DocumentPatchTool extends Tool {
         sourceKey: 'builtin',
         publishedBy: 'aokiapp',
         description:
-            'Apply a unified diff patch to an existing document. Use standard unified diff format (like git diff or diff -u). This is the preferred way to make small changes to existing documents.',
+            'Apply a unified diff patch to an existing text document. Use standard unified diff format (like git diff or diff -u). '
+            'This is the preferred way to make small changes to existing text documents (text/markdown, text/plain, text/html). '
+            'Do NOT use this for tabular/spreadsheet documents (text/csv, application/vagina-2d+json, application/vagina-2d+jsonl). '
+            'For spreadsheet edits, use spreadsheet_add_rows, spreadsheet_update_rows, or spreadsheet_delete_rows instead.',
         parametersSchema: {
           'type': 'object',
           'properties': {

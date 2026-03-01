@@ -606,6 +606,7 @@ class CallService {
           return SessionNotepadTab(
             title: tab.title,
             content: tab.content,
+            mimeType: tab.mimeType,
           );
         }).toList();
       }

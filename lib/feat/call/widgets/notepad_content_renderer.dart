@@ -3,6 +3,7 @@ import 'package:vagina/models/notepad_tab.dart';
 import 'notepad_markdown_content.dart';
 import 'notepad_plain_text_content.dart';
 import 'notepad_html_content.dart';
+import 'notepad_spreadsheet_content.dart';
 
 /// Routes notepad content to the appropriate renderer based on MIME type
 class NotepadContentRenderer extends StatelessWidget {
@@ -20,6 +21,15 @@ class NotepadContentRenderer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     switch (tab.mimeType) {
+      case 'text/csv':
+      case 'application/vagina-2d+json':
+      case 'application/vagina-2d+jsonl':
+        return SpreadsheetContent(
+          content: tab.content,
+          mimeType: tab.mimeType,
+          isEditing: isEditing,
+          onContentChanged: onContentChanged,
+        );
       case 'text/markdown':
         return MarkdownContent(
           content: tab.content,

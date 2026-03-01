@@ -13,6 +13,9 @@ import 'builtin/notepad/notepad_get_content_tool.dart';
 import 'builtin/notepad/notepad_get_metadata_tool.dart';
 import 'builtin/notepad/notepad_list_tabs_tool.dart';
 import 'builtin/call/end_call_tool.dart';
+import 'builtin/spreadsheet/spreadsheet_add_rows_tool.dart';
+import 'builtin/spreadsheet/spreadsheet_delete_rows_tool.dart';
+import 'builtin/spreadsheet/spreadsheet_update_rows_tool.dart';
 import 'builtin/text_agent/get_text_agent_response_tool.dart';
 import 'builtin/text_agent/list_available_agents_tool.dart';
 import 'builtin/text_agent/query_text_agent_tool.dart';
@@ -54,6 +57,9 @@ class RootToolbox extends Toolbox {
       NotepadGetMetadataTool(),
       NotepadListTabsTool(),
       EndCallTool(),
+      SpreadsheetAddRowsTool(),
+      SpreadsheetDeleteRowsTool(),
+      SpreadsheetUpdateRowsTool(),
       GetTextAgentResponseTool(),
       ListAvailableAgentsTool(),
       QueryTextAgentTool(),

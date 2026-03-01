@@ -1,6 +1,19 @@
 import 'dart:async';
 import 'package:vagina/models/notepad_tab.dart';
+import 'package:vagina/models/tabular_data.dart';
 import 'log_service.dart';
+
+/// Check if a MIME type is tabular
+bool _isTabularMimeType(String mimeType) {
+  switch (mimeType) {
+    case 'text/csv':
+    case 'application/vagina-2d+json':
+    case 'application/vagina-2d+jsonl':
+      return true;
+    default:
+      return false;
+  }
+}
 
 /// Service for managing artifact tabs
 ///
@@ -49,11 +62,19 @@ class NotepadService {
 
   /// Create a new tab with the given content
   /// Returns the tab ID
+  ///
+  /// Throws [TabularDataException] if the content does not match the
+  /// declared tabular MIME type.
   String createTab({
     required String content,
     required String mimeType,
     String? title,
   }) {
+    // Validate tabular content before creating the tab
+    if (_isTabularMimeType(mimeType)) {
+      TabularData.validate(content, mimeType);
+    }
+
     final id = _generateId();
     final now = DateTime.now();
 
@@ -85,6 +106,9 @@ class NotepadService {
 
   /// Update an existing tab's content
   /// Returns true if successful, false if tab not found
+  ///
+  /// Throws [TabularDataException] if the content does not match the
+  /// effective tabular MIME type (new or existing).
   bool updateTab(String tabId,
       {String? content, String? title, String? mimeType}) {
     final index = _tabs.indexWhere((t) => t.id == tabId);
@@ -94,7 +118,14 @@ class NotepadService {
     }
 
     final oldTab = _tabs[index];
+    final effectiveMimeType = mimeType ?? oldTab.mimeType;
     final newContent = content ?? oldTab.content;
+
+    // Validate tabular content before updating
+    if (_isTabularMimeType(effectiveMimeType) && content != null) {
+      TabularData.validate(newContent, effectiveMimeType);
+    }
+
     final now = DateTime.now();
 
     // Add to history if content changed
@@ -286,6 +317,21 @@ class NotepadService {
     final firstLine = content.split('\n').first.trim();
     if (firstLine.isNotEmpty && firstLine.length <= 30) {
       return firstLine;
+    }
+
+    // Tabular types: show column names + row count
+    if (_isTabularMimeType(mimeType)) {
+      try {
+        final data = TabularData.parse(content, mimeType);
+        if (data.columns.isEmpty) {
+          return 'Empty Table';
+        }
+        final colPreview = data.columns.take(3).join(', ');
+        final suffix = data.columns.length > 3 ? ', ...' : '';
+        return '$colPreview$suffix (${data.rows.length} rows)';
+      } catch (_) {
+        return 'Table';
+      }
     }
 
     // Default title based on MIME type

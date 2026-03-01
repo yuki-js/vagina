@@ -74,6 +74,10 @@ class NotepadTabItem extends StatelessWidget {
 
   IconData _getMimeTypeIcon(String mimeType) {
     switch (mimeType) {
+      case 'text/csv':
+      case 'application/vagina-2d+json':
+      case 'application/vagina-2d+jsonl':
+        return Icons.table_chart;
       case 'text/markdown':
         return Icons.article;
       case 'text/html':
