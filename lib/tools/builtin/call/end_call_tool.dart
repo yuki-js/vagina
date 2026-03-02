@@ -23,7 +23,7 @@ class EndCallTool extends Tool {
             'end_context': {
               'type': 'string',
               'description':
-                  'Optional context about why the call is ending (e.g., "natural conclusion", "user request", "ultra_long processing")',
+                  'Optional context about why the call is ending (e.g., "natural conclusion", "user request", "processing in progress")',
             },
           },
         },

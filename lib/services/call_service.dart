@@ -479,7 +479,7 @@ class CallService {
   /// End the call
   ///
   /// [endContext] - Optional context explaining why the call ended
-  /// (e.g., "ultra_long processing in progress", "natural conclusion")
+  /// (e.g., "processing in progress", "natural conclusion")
   Future<void> endCall({String? endContext}) async {
     if (!isCallActive && _currentState != CallState.error) {
       _logService.debug(_tag, 'Call not active, ignoring endCall');

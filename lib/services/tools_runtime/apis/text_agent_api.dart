@@ -9,29 +9,13 @@ import 'package:http/http.dart' as http;
 /// This API allows tools running in isolates to query text agents.
 /// All operations are asynchronous and return sendable types (Map, List, primitives).
 abstract class TextAgentApi {
-  /// Send a query to a text agent
+  /// Send a query to a text agent and return the response text.
   ///
-  /// Arguments:
-  /// - agentId: ID of the text agent to query
-  /// - prompt: The query prompt
-  /// - expectLatency: Expected latency tier ('instant', 'long', 'ultra_long')
-  ///
-  /// Returns a map with:
-  /// - For instant: { "mode": "instant", "text": "...", "agentId": "..." }
-  /// - For async: { "mode": "async", "token": "job_...", "agentId": "...", "pollAfterMs": 1500 }
-  Future<Map<String, dynamic>> sendQuery(
+  /// Sends a query and returns the response text with a fixed 30 second timeout.
+  Future<String> sendQuery(
     String agentId,
     String prompt,
-    String expectLatency,
   );
-
-  /// Get the result of an async query by token
-  ///
-  /// Arguments:
-  /// - token: The job token from sendQuery
-  ///
-  /// Returns a map with status and result/error
-  Future<Map<String, dynamic>> getResult(String token);
 
   /// List all available text agents
   ///
@@ -162,14 +146,13 @@ class WorkerTextAgent {
 /// Client implementation that executes HTTP requests directly in the worker isolate
 class TextAgentApiClient implements TextAgentApi {
   final Map<String, WorkerTextAgent> _agents = {};
-  final Map<String, _AsyncJob> _jobs = {};
   final http.Client _httpClient;
 
   // Tool execution support
   final Future<String> Function(String toolKey, Map<String, dynamic> args)?
       _executeToolCallback;
   List<Map<String, dynamic>>? _availableTools;
-  
+
   // Per-agent tool filtering configuration
   final Map<String, Map<String, bool>> _agentToolConfigs = {};
 
@@ -213,95 +196,36 @@ class TextAgentApiClient implements TextAgentApi {
   void updateTools(List<Map<String, dynamic>> tools) {
     _availableTools = tools;
   }
-  
+
   /// Update agent-specific tool configuration
   void updateAgentTools(String agentId, Map<String, bool> toolConfig) {
     _agentToolConfigs[agentId] = toolConfig;
   }
-  
+
   /// Get filtered tools for a specific agent
   List<Map<String, dynamic>> _getToolsForAgent(String agentId) {
     final agentConfig = _agentToolConfigs[agentId];
     if (agentConfig == null || agentConfig.isEmpty) {
-      return _availableTools ?? [];  // No config → all tools enabled
+      return _availableTools ?? []; // No config => all tools enabled
     }
     return (_availableTools ?? []).where((tool) {
       final toolKey = tool['function']['name'] as String;
-      return agentConfig[toolKey] ?? true;  // Key absent = true
+      return agentConfig[toolKey] ?? true; // Key absent = true
     }).toList();
   }
 
   @override
-  Future<Map<String, dynamic>> sendQuery(
+  Future<String> sendQuery(
     String agentId,
     String prompt,
-    String expectLatency,
   ) async {
     final agent = _agents[agentId];
     if (agent == null) {
       throw Exception('Agent not found: $agentId');
     }
 
-    if (expectLatency == 'instant') {
-      // Execute immediately
-      final result =
-          await _executeQuery(agent, prompt, const Duration(seconds: 30));
-      return {
-        'mode': 'instant',
-        'text': result,
-        'agentId': agentId,
-      };
-    } else {
-      // Create async job
-      final token = _generateJobToken();
-      final timeout = expectLatency == 'long'
-          ? const Duration(minutes: 10)
-          : const Duration(minutes: 60);
-
-      final job = _AsyncJob(
-        token: token,
-        agentId: agentId,
-        prompt: prompt,
-        timeout: timeout,
-      );
-
-      _jobs[token] = job;
-
-      // Start execution in background (don't await)
-      _executeAsyncJob(job, agent);
-
-      final pollAfterMs = expectLatency == 'long' ? 1500 : 3000;
-      return {
-        'mode': 'async',
-        'token': token,
-        'agentId': agentId,
-        'pollAfterMs': pollAfterMs,
-      };
-    }
-  }
-
-  @override
-  Future<Map<String, dynamic>> getResult(String token) async {
-    final job = _jobs[token];
-    if (job == null) {
-      throw Exception('Job not found: $token');
-    }
-
-    if (job.isCompleted) {
-      final result = await job.future;
-      return {
-        'status': 'succeeded',
-        'text': result,
-      };
-    } else if (job.isFailed) {
-      throw Exception('Job failed: ${job.error}');
-    } else {
-      // Still running
-      return {
-        'status': 'running',
-        'pollAfterMs': 1500,
-      };
-    }
+    // Execute query with 30-second timeout
+    return await _executeQuery(agent, prompt, const Duration(seconds: 30));
   }
 
   @override
@@ -368,8 +292,7 @@ class TextAgentApiClient implements TextAgentApi {
             .timeout(timeout);
 
         if (response.statusCode != 200) {
-          throw Exception(
-              'API error (${response.statusCode}): ${response.body}');
+          throw Exception('API error (${response.statusCode}): ${response.body}');
         }
 
         final responseJson = jsonDecode(response.body) as Map<String, dynamic>;
@@ -452,45 +375,7 @@ class TextAgentApiClient implements TextAgentApi {
     }
   }
 
-  /// Execute async job in background
-  void _executeAsyncJob(_AsyncJob job, WorkerTextAgent agent) {
-    job.future = _executeQuery(agent, job.prompt, job.timeout).then((result) {
-      job.isCompleted = true;
-      return result;
-    }).catchError((error) {
-      job.isFailed = true;
-      job.error = error.toString();
-      throw error;
-    });
-  }
-
-  String _generateJobToken() {
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-    final random = DateTime.now().microsecondsSinceEpoch % 10000;
-    return 'job_${timestamp}_$random';
-  }
-
   void dispose() {
     _httpClient.close();
   }
-}
-
-/// Internal async job tracker
-class _AsyncJob {
-  final String token;
-  final String agentId;
-  final String prompt;
-  final Duration timeout;
-
-  bool isCompleted = false;
-  bool isFailed = false;
-  String? error;
-  late Future<String> future;
-
-  _AsyncJob({
-    required this.token,
-    required this.agentId,
-    required this.prompt,
-    required this.timeout,
-  });
 }

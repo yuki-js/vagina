@@ -4,7 +4,6 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:vagina/feat/text_agents/model/text_agent.dart';
-import 'package:vagina/feat/text_agents/model/text_agent_job.dart';
 import 'package:vagina/feat/text_agents/model/text_agent_provider.dart';
 import 'package:vagina/services/log_service.dart';
 
@@ -21,16 +20,16 @@ class TextAgentService {
   })  : _logService = logService ?? LogService(),
         _httpClient = httpClient ?? http.Client();
 
-  /// Send an instant query that waits for the response synchronously
+  /// Send a query that waits for the response synchronously.
   ///
-  /// Throws [TimeoutException] if the request times out
-  /// Throws [Exception] for other errors
-  Future<String> sendInstantQuery(
+  /// Throws [TimeoutException] if the request times out.
+  /// Throws [Exception] for other errors.
+  Future<String> sendQuery(
     TextAgent agent,
     String prompt, {
     Duration? timeout,
   }) async {
-    _logService.info(_tag, 'Sending instant query to agent: ${agent.name}');
+    _logService.info(_tag, 'Sending query to agent: ${agent.name}');
 
     final effectiveTimeout = timeout ?? const Duration(seconds: 30);
 
@@ -43,77 +42,12 @@ class TextAgentService {
 
       _logService.info(
         _tag,
-        'Instant query completed for agent: ${agent.name}',
+        'Query completed for agent: ${agent.name}',
       );
 
       return response;
     } catch (e) {
-      _logService.error(_tag, 'Instant query failed: $e');
-      rethrow;
-    }
-  }
-
-  /// Send an async query that returns immediately with a job token
-  ///
-  /// The actual query execution should be handled by the job runner
-  /// This method only validates the request
-  Future<String> sendAsyncQuery(
-    TextAgent agent,
-    String prompt,
-    TextAgentExpectLatency latency,
-  ) async {
-    _logService.info(
-      _tag,
-      'Validating async query for agent: ${agent.name}, latency: ${latency.value}',
-    );
-
-    // Validate prompt is not empty
-    if (prompt.trim().isEmpty) {
-      throw ArgumentError('Prompt cannot be empty');
-    }
-
-    // Generate a job token
-    final token = _generateJobToken();
-
-    _logService.info(
-      _tag,
-      'Async query validation passed, token: $token',
-    );
-
-    return token;
-  }
-
-  /// Poll for async job result by executing the query
-  ///
-  /// Returns the result if successful, null if still processing
-  /// Throws [Exception] if the query fails
-  Future<String?> pollAsyncResult(
-    TextAgent agent,
-    String prompt,
-    TextAgentExpectLatency latency,
-  ) async {
-    _logService.debug(
-      _tag,
-      'Polling async result for agent: ${agent.name}',
-    );
-
-    final timeout = _getTimeoutForLatency(latency);
-
-    try {
-      final response = await _sendHttpRequest(
-        agent,
-        prompt,
-        timeout: timeout,
-      );
-
-      _logService.info(
-        _tag,
-        'Async query completed for agent: ${agent.name}',
-      );
-
-      return response;
-    } catch (e) {
-      _logService.error(_tag, 'Async query failed: $e');
+      _logService.error(_tag, 'Query failed: $e');
       rethrow;
     }
   }
@@ -213,25 +147,6 @@ class TextAgentService {
     } catch (e) {
       _logService.error(_tag, 'Unexpected error: $e');
       rethrow;
-    }
-  }
-
-  /// Generate a unique job token
-  String _generateJobToken() {
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-    final random = DateTime.now().microsecondsSinceEpoch % 10000;
-    return 'job_${timestamp}_$random';
-  }
-
-  /// Get timeout duration based on latency tier
-  Duration _getTimeoutForLatency(TextAgentExpectLatency latency) {
-    switch (latency) {
-      case TextAgentExpectLatency.instant:
-        return const Duration(seconds: 30);
-      case TextAgentExpectLatency.long:
-        return const Duration(minutes: 10);
-      case TextAgentExpectLatency.ultraLong:
-        return const Duration(minutes: 60);
     }
   }
 

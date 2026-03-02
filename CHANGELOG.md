@@ -16,19 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Support for custom system prompts and specialization tags
   - Agent CRUD operations with persistent storage
 
-#### Latency Modes
-- **Three Latency Tiers** for text agent queries:
-  - `instant`: < 30 seconds - Immediate responses for quick questions
-  - `long`: < 10 minutes - Detailed analysis and medium-length content
-  - `ultra_long`: < 1 hour - Comprehensive research and long-form reports
-  
-#### Background Job Processing
-- **Persistent Job Runner**: Background processing for long-running tasks
-  - Jobs persist across app restarts
-  - Automatic retry with exponential backoff
-  - Job expiration handling (1 hour for long, 24 hours for ultra_long)
-  - Status tracking: pending, running, completed, failed, expired
-  - Job cleanup and maintenance
+#### Latency
+- Text agent queries are synchronous with a fixed 30-second timeout.
 
 #### New Voice Agent Tools
 - **end_call Tool**: Programmatic call termination
@@ -38,14 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   
 - **query_text_agent Tool**: Query text agents from voice calls
   - Select agent by ID
-  - Specify latency mode (instant/long/ultra_long)
-  - Instant mode returns results immediately
-  - Async modes return job tokens for later retrieval
+  - Returns response synchronously with 30-second timeout
   
-- **get_text_agent_response Tool**: Retrieve async job results
-  - Poll for job status
-  - Get completed results
-  - Handle failures and expirations
   
 - **list_available_agents Tool**: List configured text agents
   - Discover available agents
@@ -56,23 +39,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - JSON-based storage in vagina_config.json
   - CRUD operations for agents
   
-- **TextAgentJobRepository**: Job persistence
-  - Track async job status
-  - Store job results
-  - Cleanup expired jobs
 
 #### Services
 - **TextAgentService**: Azure OpenAI Chat Completions integration
   - HTTP client for text completion API
-  - Support for instant and async queries
-  - Configurable timeouts per latency tier
+  - Synchronous queries with a fixed 30-second timeout
   - Error handling and logging
-  
-- **TextAgentJobRunner**: Background job execution
-  - Periodic job processing (every 10 seconds)
-  - Concurrent job support
-  - Rehydration on app startup
-  - Retry logic with backoff
 
 #### UI Components
 - **Agents Tab**: Complete text agent management interface
@@ -148,10 +120,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 **Focus**: Extended voice agents with powerful text-based AI assistants for deep reasoning and long-form content generation.
 
 **Key Features**:
-- Text Agent system with three latency modes
-- Four new tools for voice-text agent collaboration
-- Background job processing
-- Persistent async tasks
+- Text Agent system (synchronous queries with 30-second timeout)
+- Three voice-text agent collaboration tools
 
 **Impact**: Voice agents can now delegate complex tasks to specialized text agents, enabling much more sophisticated workflows while keeping voice interactions natural and responsive.
 
@@ -184,20 +154,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 3. **Breaking Changes**: None
 4. **New Providers**: Text agent providers are available via Riverpod:
    - `textAgentServiceProvider`
-   - `textAgentJobRunnerProvider`
    - `textAgentsProvider`
 
 #### Configuration Changes
 
 **New JSON Keys** (automatically added):
 - `text_agents`: Array of configured text agents
-- `text_agent_jobs`: Array of job states
 
 **Example**:
 ```json
 {
-  "text_agents": [],
-  "text_agent_jobs": [],
+  "text_agents": []
   // existing keys remain unchanged
 }
 ```
@@ -209,14 +176,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Version 1.2.0 (Planned)
 - **Streaming Responses**: Real-time streaming for text agent responses
 - **OpenAI API Support**: Direct OpenAI API in addition to Azure
-- **Job Notifications**: Push notifications when long jobs complete
-- **Job History UI**: View past job results
 - **Agent Templates**: Predefined agent configurations
 
 ### Version 1.3.0 (Planned)
 - **Multi-Agent Workflows**: Chain multiple agents together
 - **Agent Marketplace**: Share agent configurations
-- **Advanced Job Control**: Pause, resume, cancel jobs
 - **Cost Tracking**: Monitor API usage and costs
 
 ### Future Considerations
@@ -239,7 +203,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Version 1.1.0
 - API keys stored locally (consider secure storage in future)
 - All text agent operations require valid Azure credentials
-- Job tokens are opaque and non-guessable
 - No API keys transmitted except to Azure OpenAI
 
 ---
@@ -247,9 +210,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Known Issues
 
 ### Version 1.1.0
-- Job cancellation not yet implemented (jobs run to completion or timeout)
 - No streaming support for text responses (planned for 1.2.0)
-- Job cleanup runs on app startup only (no background cleanup on mobile)
 
 ---
 

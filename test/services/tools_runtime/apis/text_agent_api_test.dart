@@ -114,12 +114,10 @@ void main() {
       final result = await client.sendQuery(
         'agent-1',
         'Test prompt',
-        'instant',
       );
 
       // Assert
-      expect(result['mode'], 'instant');
-      expect(result['text'], 'Test response');
+      expect(result, 'Test response');
 
       // Verify that all tools were sent
       final captured = verify(mockHttpClient.post(
@@ -168,12 +166,10 @@ void main() {
       final result = await client.sendQuery(
         'agent-1',
         'Test prompt',
-        'instant',
       );
 
       // Assert
-      expect(result['mode'], 'instant');
-      expect(result['text'], 'Test response');
+      expect(result, 'Test response');
 
       // Verify that only enabled tools were sent
       final captured = verify(mockHttpClient.post(
@@ -222,11 +218,10 @@ void main() {
       final result = await client.sendQuery(
         'agent-1',
         'Test prompt',
-        'instant',
       );
 
       // Assert
-      expect(result['mode'], 'instant');
+      expect(result, 'Test response');
 
       // Verify that all tools were sent (empty config = all tools enabled)
       final captured = verify(mockHttpClient.post(
@@ -274,7 +269,6 @@ void main() {
       await client.sendQuery(
         'agent-1',
         'Test prompt',
-        'instant',
       );
 
       // Assert - verify that tool2 and tool3 are included (default true)
@@ -322,7 +316,7 @@ void main() {
       )).thenAnswer((_) async => mockResponse);
 
       // Act - query agent-1
-      await client.sendQuery('agent-1', 'Test prompt 1', 'instant');
+      await client.sendQuery('agent-1', 'Test prompt 1');
 
       final captured1 = verify(mockHttpClient.post(
         captureAny,
@@ -340,7 +334,7 @@ void main() {
       expect(toolNames1, contains('tool3')); // enabled
 
       // Act - query agent-2
-      await client.sendQuery('agent-2', 'Test prompt 2', 'instant');
+      await client.sendQuery('agent-2', 'Test prompt 2');
 
       final captured2 = verify(mockHttpClient.post(
         captureAny,
@@ -394,7 +388,7 @@ void main() {
       )).thenAnswer((_) async => mockResponse);
 
       // Act
-      await client.sendQuery('agent-1', 'Test prompt', 'instant');
+      await client.sendQuery('agent-1', 'Test prompt');
 
       // Assert - verify new tools are used
       final captured = verify(mockHttpClient.post(
@@ -446,7 +440,7 @@ void main() {
       )).thenAnswer((_) async => mockResponse);
 
       // Act
-      await clientWithoutTools.sendQuery('agent-3', 'Test prompt', 'instant');
+      await clientWithoutTools.sendQuery('agent-3', 'Test prompt');
 
       // Assert - verify no tools in request
       final captured = verify(mockHttpClient.post(
