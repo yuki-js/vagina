@@ -1,4 +1,3 @@
-import 'package:vagina/interfaces/config_repository.dart';
 import 'package:vagina/services/tools_runtime/tool.dart';
 import 'package:vagina/tools/tools.dart';
 
@@ -9,14 +8,9 @@ export 'tool_metadata.dart' show ToolMetadata, ToolCategory, ToolSource;
 /// ツールサービス
 ///
 /// アプリケーション全体のツール管理を担当する。
-/// - ツールの有効/無効管理
 /// - 将来のMCP対応の基盤
 class ToolService {
-  final ConfigRepository _configRepository;
-
-  ToolService({
-    required ConfigRepository configRepository,
-  }) : _configRepository = configRepository {
+  ToolService() {
     setTools(toolbox.tools);
   }
 
@@ -53,18 +47,6 @@ class ToolService {
 
   List<Tool> get registeredTools {
     return _tools.values.toList();
-  }
-
-  Future<List<Tool>> getEnabledTools() async {
-    List<Tool> enabledTools = [];
-    for (var tool in _tools.values) {
-      final isEnabled =
-          await _configRepository.isToolEnabled(tool.definition.toolKey);
-      if (isEnabled) {
-        enabledTools.add(tool);
-      }
-    }
-    return enabledTools;
   }
 
   Future<List<Tool>> getRegisteredTools() async {

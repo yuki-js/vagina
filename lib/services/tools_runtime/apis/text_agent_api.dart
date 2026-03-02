@@ -169,6 +169,9 @@ class TextAgentApiClient implements TextAgentApi {
   final Future<String> Function(String toolKey, Map<String, dynamic> args)?
       _executeToolCallback;
   List<Map<String, dynamic>>? _availableTools;
+  
+  // Per-agent tool filtering configuration
+  final Map<String, Map<String, bool>> _agentToolConfigs = {};
 
   TextAgentApiClient({
     http.Client? httpClient,
@@ -209,6 +212,23 @@ class TextAgentApiClient implements TextAgentApi {
   /// Update available tools for tool calling
   void updateTools(List<Map<String, dynamic>> tools) {
     _availableTools = tools;
+  }
+  
+  /// Update agent-specific tool configuration
+  void updateAgentTools(String agentId, Map<String, bool> toolConfig) {
+    _agentToolConfigs[agentId] = toolConfig;
+  }
+  
+  /// Get filtered tools for a specific agent
+  List<Map<String, dynamic>> _getToolsForAgent(String agentId) {
+    final agentConfig = _agentToolConfigs[agentId];
+    if (agentConfig == null || agentConfig.isEmpty) {
+      return _availableTools ?? [];  // No config → all tools enabled
+    }
+    return (_availableTools ?? []).where((tool) {
+      final toolKey = tool['function']['name'] as String;
+      return agentConfig[toolKey] ?? true;  // Key absent = true
+    }).toList();
   }
 
   @override
@@ -324,11 +344,10 @@ class TextAgentApiClient implements TextAgentApi {
       requestBody['model'] = agent.getModelIdentifier();
     }
 
-    // Add tools if available
-    if (_availableTools != null &&
-        _availableTools!.isNotEmpty &&
-        _executeToolCallback != null) {
-      requestBody['tools'] = _availableTools;
+    // Add tools if available (filtered per agent)
+    final agentTools = _getToolsForAgent(agent.id);
+    if (agentTools.isNotEmpty && _executeToolCallback != null) {
+      requestBody['tools'] = agentTools;
       requestBody['tool_choice'] = 'auto';
     }
 

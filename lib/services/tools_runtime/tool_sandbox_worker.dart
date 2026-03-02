@@ -237,6 +237,23 @@ class _WorkerController {
       availableTools: [], // Will be populated after _initializeToolRegistry
     );
     _log('Created TextAgentApiClient');
+    
+    // Extract and register per-agent tool configurations
+    if (toolsData?['text_agents'] is List) {
+      final agentConfigs = toolsData!['text_agents'] as List;
+      for (final agentData in agentConfigs) {
+        if (agentData is Map<String, dynamic>) {
+          final agentId = agentData['id'] as String?;
+          final enabledTools = agentData['enabledTools'];
+          
+          if (agentId != null && enabledTools is Map) {
+            final toolConfig = Map<String, bool>.from(enabledTools);
+            _textAgentApiClient.updateAgentTools(agentId, toolConfig);
+            _log('Registered tool config for agent $agentId: ${toolConfig.length} entries');
+          }
+        }
+      }
+    }
 
     // Create ToolStorageApiClient with hostCall callback
     _toolStorageApiClient = ToolStorageApiClient(

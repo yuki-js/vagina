@@ -7,6 +7,7 @@ class TextAgent {
   final String name;
   final String? description;
   final TextAgentConfig config;
+  final Map<String, bool> enabledTools;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -15,6 +16,7 @@ class TextAgent {
     required this.name,
     this.description,
     required this.config,
+    this.enabledTools = const {},
     required this.createdAt,
     required this.updatedAt,
   });
@@ -24,6 +26,7 @@ class TextAgent {
     String? name,
     String? description,
     TextAgentConfig? config,
+    Map<String, bool>? enabledTools,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -32,6 +35,7 @@ class TextAgent {
       name: name ?? this.name,
       description: description ?? this.description,
       config: config ?? this.config,
+      enabledTools: enabledTools ?? this.enabledTools,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -43,6 +47,7 @@ class TextAgent {
       'name': name,
       if (description != null) 'description': description,
       'config': config.toJson(),
+      'enabledTools': enabledTools,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
     };
@@ -71,6 +76,9 @@ class TextAgent {
       name: json['name'] as String,
       description: json['description'] as String?,
       config: config,
+      enabledTools: json['enabledTools'] != null
+          ? Map<String, bool>.from(json['enabledTools'] as Map)
+          : const {}, // フォールバック: 空Map（キー不在=true規約により全ツール有効と同等）
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
     );

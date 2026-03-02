@@ -9,6 +9,7 @@ class SpeedDial {
         name: 'Default',
         systemPrompt: 'You are a helpful AI assistant.',
         voice: 'alloy',
+        enabledTools: const {},
       );
 
   final String id;
@@ -16,6 +17,7 @@ class SpeedDial {
   final String systemPrompt;
   final String? iconEmoji; // Optional emoji icon
   final String voice;
+  final Map<String, bool> enabledTools;
   final DateTime? createdAt;
 
   /// Returns true if this is the default speed dial
@@ -27,6 +29,7 @@ class SpeedDial {
     required this.systemPrompt,
     this.iconEmoji,
     this.voice = 'alloy',
+    this.enabledTools = const {},
     this.createdAt,
   });
 
@@ -36,6 +39,7 @@ class SpeedDial {
     String? systemPrompt,
     String? iconEmoji,
     String? voice,
+    Map<String, bool>? enabledTools,
     DateTime? createdAt,
   }) {
     return SpeedDial(
@@ -44,6 +48,7 @@ class SpeedDial {
       systemPrompt: systemPrompt ?? this.systemPrompt,
       iconEmoji: iconEmoji ?? this.iconEmoji,
       voice: voice ?? this.voice,
+      enabledTools: enabledTools ?? this.enabledTools,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -55,6 +60,7 @@ class SpeedDial {
       'systemPrompt': systemPrompt,
       if (iconEmoji != null) 'iconEmoji': iconEmoji,
       'voice': voice,
+      'enabledTools': enabledTools,
       if (createdAt != null) 'createdAt': createdAt!.toIso8601String(),
     };
   }
@@ -66,6 +72,9 @@ class SpeedDial {
       systemPrompt: json['systemPrompt'] as String,
       iconEmoji: json['iconEmoji'] as String?,
       voice: json['voice'] as String? ?? 'alloy',
+      enabledTools: json['enabledTools'] != null
+          ? Map<String, bool>.from(json['enabledTools'] as Map)
+          : const {}, // フォールバック: 空Map（キー不在=true規約により全ツール有効と同等）
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'] as String)
           : null,

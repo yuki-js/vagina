@@ -23,6 +23,7 @@ class QueryTextAgentTool extends Tool {
           'provider': agent.config.provider.value,
           'apiKey': agent.config.apiKey,
           'apiIdentifier': agent.config.apiIdentifier,
+          'enabledTools': agent.enabledTools,
         };
       }).toList();
 

@@ -3,9 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/feat/about/screens/about.dart';
 import 'package:vagina/feat/home/tabs/agents.dart';
+import 'package:vagina/feat/home/tabs/marketplace.dart';
 import 'package:vagina/feat/home/tabs/sessions.dart';
 import 'package:vagina/feat/home/tabs/speed_dial.dart';
-import 'package:vagina/feat/home/tabs/tools.dart';
 import 'package:vagina/feat/settings/screens/settings.dart';
 import 'package:vagina/feat/speed_dial/screens/config.dart';
 import 'package:vagina/feat/text_agents/ui/screens/agent_form_screen.dart';
@@ -37,8 +37,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       canAdd: false,
     ),
     _TabInfo(
-      icon: Icons.build, // Using build (wrench-like) instead of cog
-      label: 'ツール',
+      icon: Icons.storefront,
+      label: 'マケプレ',
       canAdd: false,
     ),
     _TabInfo(
@@ -51,7 +51,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   static final List<Widget> _pages = [
     const SpeedDialTab(),
     const SessionsTab(),
-    const ToolsTab(),
+    const MarketplaceTab(),
     const AgentsTab(),
   ];
 

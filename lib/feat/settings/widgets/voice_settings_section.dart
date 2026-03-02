@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vagina/feat/call/state/call_service_providers.dart';
-import 'package:vagina/feat/call/state/call_stream_providers.dart';
 import 'package:vagina/feat/call/state/call_ui_state_providers.dart';
 import 'package:vagina/core/theme/app_theme.dart';
 import 'settings_card.dart';
@@ -85,11 +84,5 @@ class VoiceSettingsSection extends ConsumerWidget {
     // Update the API client
     final apiClient = ref.read(realtimeApiClientProvider);
     apiClient.setNoiseReduction(value);
-
-    // If connected, update session config
-    final isCallActive = ref.read(callStateInfoProvider).isActive;
-    if (isCallActive) {
-      apiClient.updateSessionConfig();
-    }
   }
 }

@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vagina/core/state/repository_providers.dart';
-import 'package:vagina/feat/speed_dial/state/speed_dial_providers.dart';
-import 'package:vagina/models/speed_dial.dart';
 import 'package:vagina/core/theme/app_theme.dart';
+import 'package:vagina/feat/shared/widgets/tool_config_section.dart';
+import 'package:vagina/feat/speed_dial/state/speed_dial_providers.dart';
 import 'package:vagina/feat/speed_dial/widgets/emoji_picker.dart';
+import 'package:vagina/models/speed_dial.dart';
 
 /// Speed dial configuration screen
 /// Accessed from speed dial tab when tapping on a speed dial
@@ -28,6 +29,7 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
   late TextEditingController _instructionsController;
   late String _selectedVoice;
   late String _selectedEmoji;
+  late Map<String, bool> _enabledTools;
   bool _isNewSpeedDial = false;
 
   @override
@@ -40,12 +42,14 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
       _instructionsController = TextEditingController();
       _selectedVoice = 'alloy';
       _selectedEmoji = '⭐';
+      _enabledTools = {}; // Empty map = all tools enabled
     } else {
       _nameController = TextEditingController(text: widget.speedDial!.name);
       _instructionsController =
           TextEditingController(text: widget.speedDial!.systemPrompt);
       _selectedVoice = widget.speedDial!.voice;
       _selectedEmoji = widget.speedDial!.iconEmoji ?? '⭐';
+      _enabledTools = Map<String, bool>.from(widget.speedDial!.enabledTools);
     }
   }
 
@@ -101,6 +105,7 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
       systemPrompt: _instructionsController.text,
       voice: _selectedVoice,
       iconEmoji: _selectedEmoji,
+      enabledTools: _enabledTools,
       createdAt: _isNewSpeedDial ? DateTime.now() : widget.speedDial!.createdAt,
     );
 
@@ -368,6 +373,35 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
                       ),
                       style: const TextStyle(color: AppTheme.lightTextPrimary),
                       maxLines: 8,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Tool Configuration Section
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'ツール設定',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.lightTextSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    ToolConfigSection(
+                      enabledTools: _enabledTools,
+                      onChanged: (newTools) {
+                        setState(() {
+                          _enabledTools = newTools;
+                        });
+                      },
                     ),
                   ],
                 ),

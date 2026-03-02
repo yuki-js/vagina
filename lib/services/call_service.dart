@@ -7,6 +7,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:vagina/core/config/app_config.dart';
 import 'package:vagina/interfaces/call_session_repository.dart';
 import 'package:vagina/interfaces/config_repository.dart';
+import 'package:vagina/interfaces/speed_dial_repository.dart';
 import 'package:vagina/interfaces/tool_storage.dart';
 import 'package:vagina/models/call_session.dart';
 import 'package:vagina/models/chat_message.dart';
@@ -38,6 +39,7 @@ class CallService {
   final CallAudioService _audioService;
   final RealtimeApiClient _apiClient;
   final ConfigRepository _config;
+  final SpeedDialRepository _speedDialRepo;
   final CallSessionRepository _sessionRepository;
   final ToolStorage _toolStorage;
   final LogService _logService;
@@ -91,6 +93,7 @@ class CallService {
     required CallAudioService audioService,
     required RealtimeApiClient apiClient,
     required ConfigRepository config,
+    required SpeedDialRepository speedDialRepo,
     required CallSessionRepository sessionRepository,
     required ToolStorage toolStorage,
     LogService? logService,
@@ -98,6 +101,7 @@ class CallService {
   })  : _audioService = audioService,
         _apiClient = apiClient,
         _config = config,
+        _speedDialRepo = speedDialRepo,
         _sessionRepository = sessionRepository,
         _toolStorage = toolStorage,
         _logService = logService ?? LogService(),
@@ -160,28 +164,6 @@ class CallService {
   /// Set assistant configuration (voice and instructions) before starting a call
   void setAssistantConfig(String voice, String instructions) {
     _apiClient.setVoiceAndInstructions(voice, instructions);
-  }
-
-  /// Sync the tool set (enable/disable) from persisted config into:
-  /// - the sandbox tool registry (hardening)
-  /// - the realtime session registration (context minimization)
-  Future<void> syncToolsFromConfig() async {
-    final sandbox = _sandboxManager;
-    if (sandbox == null) {
-      return;
-    }
-
-    final allTools = await sandbox.getToolsFromWorker();
-    final enabledTools = <Tool>[];
-
-    for (final t in allTools) {
-      final enabled = await _config.isToolEnabled(t.definition.toolKey);
-      await sandbox.setToolEnabled(t.definition.toolKey, enabled);
-      if (enabled) enabledTools.add(t);
-    }
-
-    _apiClient.setTools(enabledTools);
-    _apiClient.updateSessionConfig();
   }
 
   /// Check if Azure configuration exists
@@ -260,14 +242,18 @@ class CallService {
       );
       await _sandboxManager!.start();
 
-      // Sync enabled tool set from config into the sandbox (hardening) and
+      // Get SpeedDial to read per-agent tool configuration
+      final speedDial = await _speedDialRepo.getById(_currentSpeedDialId);
+      final toolConfig = speedDial?.enabledTools ?? {};
+
+      // Sync enabled tool set from SpeedDial into the sandbox (hardening) and
       // register only enabled tools with the realtime session.
       final sandbox = _sandboxManager!;
       final allTools = await sandbox.getToolsFromWorker();
       final enabledTools = <Tool>[];
 
       for (final t in allTools) {
-        final enabled = await _config.isToolEnabled(t.definition.toolKey);
+        final enabled = toolConfig[t.definition.toolKey] ?? true;
         await sandbox.setToolEnabled(t.definition.toolKey, enabled);
         if (enabled) enabledTools.add(t);
       }
@@ -368,22 +354,6 @@ class CallService {
       final sandbox = _sandboxManager;
       if (sandbox == null) {
         _logService.error(_tag, 'Tool sandbox not available');
-        return;
-      }
-
-      // Enforce tool enable/disable at execution time as a safety net.
-      final isEnabled = await _config.isToolEnabled(functionCall.name);
-      if (!isEnabled) {
-        final output = jsonEncode({
-          'error': 'Tool is disabled: ${functionCall.name}',
-          'code': 'TOOL_DISABLED',
-        });
-        _chatManager.addToolCall(
-          functionCall.name,
-          functionCall.arguments,
-          output,
-        );
-        _apiClient.sendFunctionCallResult(functionCall.callId, output);
         return;
       }
 

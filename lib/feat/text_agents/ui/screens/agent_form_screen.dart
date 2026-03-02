@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vagina/core/state/repository_providers.dart';
 import 'package:vagina/core/theme/app_theme.dart';
+import 'package:vagina/feat/shared/widgets/tool_config_section.dart';
 import 'package:vagina/feat/text_agents/model/text_agent.dart';
 import 'package:vagina/feat/text_agents/model/text_agent_config.dart';
 import 'package:vagina/feat/text_agents/model/text_agent_provider.dart';
@@ -35,6 +36,7 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
   late TextEditingController _apiKeyController;
   late TextEditingController _apiEndpointController;
   late TextAgentProvider _provider;
+  late Map<String, bool> _enabledTools;
   bool _isNewAgent = false;
   bool _isSaving = false;
 
@@ -49,6 +51,7 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
       _apiKeyController = TextEditingController();
       _apiEndpointController = TextEditingController();
       _provider = TextAgentProvider.openai;
+      _enabledTools = {}; // Empty map = all tools enabled
     } else {
       final agent = widget.agent!;
       _nameController = TextEditingController(text: agent.name);
@@ -58,6 +61,7 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
       _apiEndpointController =
           TextEditingController(text: agent.config.apiIdentifier);
       _provider = agent.config.provider;
+      _enabledTools = Map<String, bool>.from(agent.enabledTools);
     }
   }
 
@@ -115,6 +119,7 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
             ? _descriptionController.text.trim()
             : null,
         config: config,
+        enabledTools: _enabledTools,
         createdAt: _isNewAgent ? now : widget.agent!.createdAt,
         updatedAt: now,
       );
@@ -343,6 +348,19 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
                     ),
                   ],
                 ),
+              ),
+              const SizedBox(height: 24),
+
+              // Tool Configuration Section
+              _buildSectionHeader('ツール設定'),
+              const SizedBox(height: 12),
+              ToolConfigSection(
+                enabledTools: _enabledTools,
+                onChanged: (newTools) {
+                  setState(() {
+                    _enabledTools = newTools;
+                  });
+                },
               ),
               const SizedBox(height: 24),
 

@@ -12,7 +12,6 @@ class JsonConfigRepository implements ConfigRepository {
   static const _apiKeyKey = 'api_key';
   static const _realtimeUrlKey = 'realtime_url';
   static const _androidAudioConfigKey = 'android_audio_config';
-  static const _toolsKey = 'tools';
   static const _textAgentsKey = 'text_agents';
   static const _selectedTextAgentIdKey = 'selected_text_agent_id';
 
@@ -88,44 +87,6 @@ class JsonConfigRepository implements ConfigRepository {
     }
 
     return AndroidAudioConfig.fromJson(data as Map<String, dynamic>);
-  }
-
-  // Tool Configuration
-
-  @override
-  Future<bool> isToolEnabled(String toolName) async {
-    final tools = await _getToolsConfig();
-    return tools[toolName] ?? true; // Default to enabled
-  }
-
-  @override
-  Future<void> enableTool(String toolKey) async {
-    await _store.set(_toolsKey, {
-      ...await _getToolsConfig(),
-      toolKey: true,
-    });
-  }
-
-  @override
-  Future<void> disableTool(String toolKey) async {
-    await _store.set(_toolsKey, {
-      ...await _getToolsConfig(),
-      toolKey: false,
-    });
-  }
-
-  Future<Map<String, bool>> _getToolsConfig() async {
-    final data = await _store.get(_toolsKey);
-
-    if (data == null) {
-      return {};
-    }
-
-    if (data is! Map) {
-      return {};
-    }
-
-    return Map<String, bool>.from(data);
   }
 
   // Text Agent Configuration

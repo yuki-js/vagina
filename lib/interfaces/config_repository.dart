@@ -18,11 +18,6 @@ abstract class ConfigRepository {
   Future<void> saveAndroidAudioConfig(AndroidAudioConfig config);
   Future<AndroidAudioConfig> getAndroidAudioConfig();
 
-  /// Tool Configuration
-  Future<bool> isToolEnabled(String toolName);
-  Future<void> enableTool(String toolKey);
-  Future<void> disableTool(String toolKey);
-
   /// Text Agent Configuration
   Future<List<TextAgent>> getAllTextAgents();
   Future<TextAgent?> getTextAgentById(String id);

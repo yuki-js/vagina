@@ -35,10 +35,7 @@ RealtimeApiClient realtimeApiClient(Ref ref) {
 
 @Riverpod(keepAlive: true)
 ToolService toolService(Ref ref) {
-  final configRepository = ref.watch(configRepositoryProvider);
-  return ToolService(
-    configRepository: configRepository,
-  );
+  return ToolService();
 }
 
 @riverpod
@@ -60,6 +57,7 @@ CallService callService(Ref ref) {
     audioService: ref.watch(callAudioServiceProvider),
     apiClient: ref.watch(realtimeApiClientProvider),
     config: ref.watch(configRepositoryProvider),
+    speedDialRepo: ref.watch(speedDialRepositoryProvider),
     sessionRepository: ref.watch(callSessionRepositoryProvider),
     toolStorage: ref.watch(toolStorageProvider),
     logService: _logService,
