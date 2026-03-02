@@ -101,18 +101,6 @@ class NotepadHostApi {
     return _notepadService.closeTab(id);
   }
 
-  /// Convert a NotepadTab object to a sendable Map (metadata only, no content)
-  Map<String, dynamic> _tabToMap(NotepadTab tab) {
-    return {
-      'id': tab.id,
-      'title': tab.title,
-      'mimeType': tab.mimeType,
-      'createdAt': tab.createdAt.toIso8601String(),
-      'updatedAt': tab.updatedAt.toIso8601String(),
-      'contentLength': tab.content.length,
-    };
-  }
-
   /// Convert a NotepadTab object to a sendable Map with content included
   Map<String, dynamic> _tabToMapWithContent(NotepadTab tab) {
     return {

@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vagina/core/state/repository_providers.dart';
 import 'package:vagina/models/call_session.dart';
 import 'package:vagina/core/theme/app_theme.dart';
-import 'package:vagina/core/widgets/adaptive_widgets.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:vagina/feat/session/segments/chat.dart';
 import 'package:vagina/feat/session/segments/info.dart';
 import 'package:vagina/feat/session/segments/notepad.dart';
@@ -40,7 +40,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
             body: Container(
               decoration: AppTheme.lightBackgroundGradient,
               child: const Center(
-                child: AdaptiveProgressIndicator(
+                child: CupertinoActivityIndicator(
                   color: AppTheme.primaryColor,
                 ),
               ),
@@ -86,10 +86,10 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
         decoration: AppTheme.lightBackgroundGradient,
         child: Column(
           children: [
-            // セグメントコントロール - アダプティブウィジェットを使用
+            // セグメントコントロール
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: AdaptiveSegmentedControl<int>(
+              child: CupertinoSegmentedControl<int>(
                 children: const {
                   0: Padding(
                     padding: EdgeInsets.symmetric(horizontal: 8),
