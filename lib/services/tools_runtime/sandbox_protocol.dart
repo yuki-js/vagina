@@ -87,42 +87,10 @@ abstract final class MessageType {
   /// ```
   static const String hostCall = 'hostCall';
 
-  /// Register a new tool dynamically.
-  ///
-  /// Payload: `{toolDefinition: Map}`
-  ///
-  /// Future: Used for MCP (Model Context Protocol) integration.
-  static const String registerTool = 'registerTool';
-
-  /// Unregister an existing tool.
-  ///
-  /// Payload: `{toolKey: String}`
-  ///
-  /// Future: Used for MCP (Model Context Protocol) integration.
-  static const String unregisterTool = 'unregisterTool';
-
   /// Enable/disable a tool.
   ///
   /// Payload: `{toolKey: String, enabled: bool}`
   static const String setToolEnabled = 'setToolEnabled';
-
-  /// Push notification: tool set has changed.
-  ///
-  /// Payload: `{tools: List<Map>, reason: String}`
-  ///
-  /// Reasons: 'initial', 'added', 'removed', 'updated', 'mcp_sync'
-  ///
-  /// Example:
-  /// ```dart
-  /// toolsChangedMessage(
-  ///   [
-  ///     {'key': 'calculator.add', 'name': 'Add Numbers'},
-  ///     {'key': 'calculator.multiply', 'name': 'Multiply Numbers'},
-  ///   ],
-  ///   'initial'
-  /// )
-  /// ```
-  static const String toolsChanged = 'toolsChanged';
 }
 
 // ============================================================================
@@ -155,10 +123,7 @@ abstract final class MessageEnvelope {
     MessageType.execute,
     MessageType.listSessionDefinitions,
     MessageType.hostCall,
-    MessageType.registerTool,
-    MessageType.unregisterTool,
     MessageType.setToolEnabled,
-    MessageType.toolsChanged,
   };
 
   /// Required envelope keys.
@@ -354,121 +319,6 @@ Map<String, dynamic> hostCallMessage(
     message['replyTo'] = replyTo;
   }
   return message;
-}
-
-/// Register tool message builder.
-///
-/// Registers a new tool dynamically. Used for MCP (Model Context Protocol)
-/// integration where tools may be added at runtime.
-///
-/// Parameters:
-/// - `toolDefinition`: Complete tool definition map
-/// - `id`: Optional request ID (auto-generated if omitted)
-/// - `replyTo`: Optional ReplyToPort for acknowledgment
-///
-/// Returns: Complete message envelope ready to send
-///
-/// Example:
-/// ```dart
-/// final request = registerToolMessage(
-///   {
-///     'key': 'mcp.new_tool',
-///     'name': 'New Tool',
-///     'description': 'Tool from MCP server',
-///   },
-///   replyTo: hostPort,
-/// );
-/// ```
-Map<String, dynamic> registerToolMessage(
-  Map<String, dynamic> toolDefinition, {
-  String? id,
-  ReplyToPort? replyTo,
-}) {
-  final message = {
-    'type': MessageType.registerTool,
-    'id': id ?? generateMessageId(),
-    'payload': {
-      'toolDefinition': toolDefinition,
-    },
-  };
-  if (replyTo != null) {
-    message['replyTo'] = replyTo;
-  }
-  return message;
-}
-
-/// Unregister tool message builder.
-///
-/// Unregisters an existing tool. Used for MCP (Model Context Protocol)
-/// integration where tools may be removed at runtime.
-///
-/// Parameters:
-/// - `toolKey`: Unique identifier of tool to unregister
-/// - `id`: Optional request ID (auto-generated if omitted)
-/// - `replyTo`: Optional ReplyToPort for acknowledgment
-///
-/// Returns: Complete message envelope ready to send
-///
-/// Example:
-/// ```dart
-/// final request = unregisterToolMessage(
-///   'mcp.old_tool',
-///   replyTo: hostPort,
-/// );
-/// ```
-Map<String, dynamic> unregisterToolMessage(
-  String toolKey, {
-  String? id,
-  ReplyToPort? replyTo,
-}) {
-  final message = {
-    'type': MessageType.unregisterTool,
-    'id': id ?? generateMessageId(),
-    'payload': {
-      'toolKey': toolKey,
-    },
-  };
-  if (replyTo != null) {
-    message['replyTo'] = replyTo;
-  }
-  return message;
-}
-
-/// Tools changed notification message builder.
-///
-/// Notifies worker that the set of available tools has changed. This is
-/// a push event (no response expected).
-///
-/// Parameters:
-/// - `tools`: Updated list of tool definitions
-/// - `reason`: Why tools changed ('initial', 'added', 'removed', 'updated', 'mcp_sync')
-/// - `id`: Optional request ID (auto-generated if omitted)
-///
-/// Returns: Complete message envelope ready to send
-///
-/// Example:
-/// ```dart
-/// final notification = toolsChangedMessage(
-///   [
-///     {'key': 'calc.add', 'name': 'Add'},
-///     {'key': 'calc.multiply', 'name': 'Multiply'},
-///   ],
-///   'added',
-/// );
-/// ```
-Map<String, dynamic> toolsChangedMessage(
-  List<Map<String, dynamic>> tools,
-  String reason, {
-  String? id,
-}) {
-  return {
-    'type': MessageType.toolsChanged,
-    'id': id ?? generateMessageId(),
-    'payload': {
-      'tools': tools,
-      'reason': reason,
-    },
-  };
 }
 
 // ============================================================================

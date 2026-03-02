@@ -17,24 +17,6 @@ import 'sandbox_platform_native.dart'
     if (dart.library.html) 'sandbox_platform_web.dart' as platform;
 import 'tool_sandbox_worker.dart' show toolSandboxWorker;
 
-/// Event emitted when the set of available tools changes
-class ToolsChangedEvent {
-  /// List of updated tool definitions
-  final List<Tool> tools;
-
-  /// Reason for the change ('initial', 'added', 'removed', 'updated', 'mcp_sync')
-  final String reason;
-
-  ToolsChangedEvent({
-    required this.tools,
-    required this.reason,
-  });
-
-  @override
-  String toString() =>
-      'ToolsChangedEvent(reason: $reason, toolCount: ${tools.length})';
-}
-
 /// Manages the lifecycle and message routing for a sandboxed tool worker
 ///
 /// This coordinator:
@@ -70,9 +52,6 @@ class ToolSandboxManager {
 
   // Latest tool registry from worker (SSoT for tool metadata on host side)
   List<Tool> _latestTools = const [];
-
-  // Tools changed stream
-  late StreamController<ToolsChangedEvent> _toolsChangedController;
 
   // Lifecycle state
   bool _isStarted = false;
@@ -113,12 +92,7 @@ class ToolSandboxManager {
         return toolKey;
       },
     );
-
-    _toolsChangedController = StreamController<ToolsChangedEvent>.broadcast();
   }
-
-  /// Stream of tool set change events from the worker
-  Stream<ToolsChangedEvent> get toolsChanged => _toolsChangedController.stream;
 
   /// Whether the sandbox manager is currently running
   bool get isStarted => _isStarted;
@@ -342,7 +316,8 @@ class ToolSandboxManager {
 
   /// Update a tool's enabled state in the sandbox worker.
   ///
-  /// This changes the worker-side tool registry, and emits a toolsChanged event.
+  /// This method is intended for initialization only (during call start).
+  /// It updates the worker-side tool registry to match the configuration.
   Future<void> setToolEnabled(String toolKey, bool enabled) async {
     final messageId = generateMessageId();
     final response = await _request(
@@ -362,7 +337,6 @@ class ToolSandboxManager {
   /// Sets up the main message loop that handles:
   /// - Response messages (completing pending requests)
   /// - hostCall requests (routing to appropriate APIs)
-  /// - Push events (toolsChanged notifications)
   void _startMessageListener() {
     _receivePort.listen(
       (dynamic message) {
@@ -397,12 +371,6 @@ class ToolSandboxManager {
       // Handle hostCall requests (have id and type=hostCall)
       if (id != null && type == 'hostCall') {
         _handleHostCall(id, message);
-        return;
-      }
-
-      // Handle toolsChanged push events
-      if (type == 'toolsChanged') {
-        _handleToolsChanged(message);
         return;
       }
 
@@ -522,40 +490,6 @@ class ToolSandboxManager {
     _latestTools = tools;
   }
 
-  /// Handle toolsChanged push event from the worker
-  void _handleToolsChanged(Map<String, dynamic> message) {
-    try {
-      final payload = message['payload'] as Map<String, dynamic>?;
-      if (payload == null) {
-        return;
-      }
-
-      final tools = payload['tools'] as List?;
-      final reason = payload['reason'] as String?;
-
-      if (tools == null || reason == null) {
-        return;
-      }
-
-      final toolsList = List<Tool>.from(
-        tools
-            .cast<Map<String, dynamic>>()
-            .map((json) => Tool.fromWireJson(json)),
-      );
-
-      _setToolRegistry(toolsList);
-
-      final event = ToolsChangedEvent(
-        tools: toolsList,
-        reason: reason,
-      );
-
-      _toolsChangedController.add(event);
-    } catch (e) {
-      print('$_tag: Error handling toolsChanged: $e');
-    }
-  }
-
   /// Handle worker termination
   void _handleWorkerDone() {
     print('$_tag: Worker terminated');
@@ -589,9 +523,6 @@ class ToolSandboxManager {
 
       // Close receive port
       _receivePort.close();
-
-      // Close stream controller
-      await _toolsChangedController.close();
 
       _isStarted = false;
     } catch (e) {

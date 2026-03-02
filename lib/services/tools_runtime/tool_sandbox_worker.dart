@@ -131,14 +131,6 @@ class _WorkerController {
           await _handleSetToolEnabled(id, message);
           break;
 
-        case MessageType.registerTool:
-          await _handleRegisterTool(id, message);
-          break;
-
-        case MessageType.unregisterTool:
-          await _handleUnregisterTool(id, message);
-          break;
-
         default:
           _log('WARNING: Unknown message type: $type');
       }
@@ -547,11 +539,6 @@ class _WorkerController {
         _toolMap.remove(toolKey);
       }
 
-      _emitToolsChanged(
-        _toolMap.values.map((t) => t.toWireJson()).toList(),
-        'updated',
-      );
-
       _sendResponse(
         requestId,
         status: 'success',
@@ -564,80 +551,6 @@ class _WorkerController {
         requestId,
         status: 'error',
         error: 'Error setToolEnabled: $e',
-      );
-    }
-  }
-
-  /// Handle registerTool message (stub for future MCP integration)
-  Future<void> _handleRegisterTool(
-    String requestId,
-    Map<String, dynamic> message,
-  ) async {
-    _log('registerTool is not supported yet (stub)');
-    _sendResponse(
-      requestId,
-      status: 'error',
-      error: 'registerTool is not supported yet',
-      code: 'NOT_IMPLEMENTED',
-    );
-  }
-
-  /// Handle unregisterTool message (stub for future MCP integration)
-  ///
-  /// Removes a tool from the registry and emits toolsChanged event.
-  Future<void> _handleUnregisterTool(
-    String requestId,
-    Map<String, dynamic> message,
-  ) async {
-    try {
-      _log('Handling unregisterTool (stub)');
-
-      final payload = message['payload'] as Map<String, dynamic>?;
-      if (payload == null) {
-        _sendResponse(
-          requestId,
-          status: 'error',
-          error: 'Missing payload',
-        );
-        return;
-      }
-
-      final toolKey = payload['toolKey'] as String?;
-      if (toolKey == null) {
-        _sendResponse(
-          requestId,
-          status: 'error',
-          error: 'Missing toolKey',
-        );
-        return;
-      }
-
-      // Unregister the tool
-      if (_toolMap.containsKey(toolKey)) {
-        _toolMap.remove(toolKey);
-        _log('Unregistered tool: $toolKey');
-
-        // Emit toolsChanged event
-        _emitToolsChanged(
-          _toolMap.values.map((t) => t.toWireJson()).toList(),
-          'removed',
-        );
-      } else {
-        _log('WARNING: Tool not found for removal: $toolKey');
-      }
-
-      _sendResponse(
-        requestId,
-        status: 'success',
-        data: {},
-      );
-    } catch (e, stackTrace) {
-      _log('ERROR in unregisterTool: $e');
-      _log('Stack trace: $stackTrace');
-      _sendResponse(
-        requestId,
-        status: 'error',
-        error: 'Error unregistering tool: $e',
       );
     }
   }
@@ -709,34 +622,6 @@ class _WorkerController {
       _log('Sent response for request $requestId: status=$status');
     } catch (e) {
       _log('ERROR sending response: $e');
-    }
-  }
-
-  /// Emit a toolsChanged event to the host
-  void _emitToolsChanged(
-    List<Map<String, dynamic>> tools,
-    String reason,
-  ) {
-    try {
-      if (_hostReceivePort == null) {
-        _log(
-            'ERROR: Cannot send toolsChanged - host ReceivePort not initialized');
-        return;
-      }
-
-      final event = toolsChangedMessage(tools, reason);
-
-      final (valid, error) = validateMessageEnvelope(event);
-      if (!valid) {
-        _log('ERROR: Invalid toolsChanged message: $error');
-        return;
-      }
-
-      _hostReceivePort!.send(event);
-      _log(
-          'Sent toolsChanged event: reason=$reason, toolCount=${tools.length}');
-    } catch (e) {
-      _log('ERROR sending toolsChanged event: $e');
     }
   }
 }

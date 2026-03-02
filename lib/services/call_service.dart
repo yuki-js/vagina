@@ -53,9 +53,6 @@ class CallService {
   /// Session-scoped ToolSandboxManager (spawned on call start, disposed on call end)
   ToolSandboxManager? _sandboxManager;
 
-  /// Subscription to tool definition changes from the sandbox
-  StreamSubscription<ToolsChangedEvent>? _toolsChangedSubscription;
-
   StreamSubscription<Uint8List>? _audioStreamSubscription;
   StreamSubscription<Amplitude>? _amplitudeSubscription;
   StreamSubscription<Uint8List>? _responseAudioSubscription;
@@ -230,44 +227,8 @@ class CallService {
         return;
       }
 
-      // NotepadService is already initialized in constructor
-      _logService.debug(_tag, 'Notepad service ready for this call');
-
-      // Create and start sandbox
-      _sandboxManager = ToolSandboxManager(
-        notepadService: _notepadService,
-        toolStorage: _toolStorage,
-        configRepository: _config,
-        callService: this,
-      );
-      await _sandboxManager!.start();
-
-      // Get SpeedDial to read per-agent tool configuration
-      final speedDial = await _speedDialRepo.getById(_currentSpeedDialId);
-      final toolConfig = speedDial?.enabledTools ?? {};
-
-      // Sync enabled tool set from SpeedDial into the sandbox (hardening) and
-      // register only enabled tools with the realtime session.
-      final sandbox = _sandboxManager!;
-      final allTools = await sandbox.getToolsFromWorker();
-      final enabledTools = <Tool>[];
-
-      for (final t in allTools) {
-        final enabled = toolConfig[t.definition.toolKey] ?? true;
-        await sandbox.setToolEnabled(t.definition.toolKey, enabled);
-        if (enabled) enabledTools.add(t);
-      }
-
-      _apiClient.setTools(enabledTools);
-      _apiClient.updateSessionConfig();
-
-      // Listen for tool changes and update realtime session
-      _toolsChangedSubscription = _sandboxManager!.toolsChanged.listen((event) {
-        _apiClient.setTools(event.tools);
-        _apiClient.updateSessionConfig();
-      });
-
-      _logService.debug(_tag, 'Sandbox started and tools initialized');
+      // Initialize tools for the call session
+      await _initializeToolsForCall();
 
       _logService.info(_tag, 'Connecting to Azure OpenAI');
       await _apiClient.connect(realtimeUrl, apiKey);
@@ -303,10 +264,56 @@ class CallService {
     }
   }
 
-  // Kept for future mid-call tool-set updates.
-  //
-  // Current app semantics only change tools via config toggles, which are
-  // read when building the runtime.
+  /// Initialize tools for the call session
+  ///
+  /// This method:
+  /// 1. Creates and starts the tool sandbox
+  /// 2. Retrieves tool configuration from the current SpeedDial
+  /// 3. Applies the configuration to the sandbox (enable/disable tools)
+  /// 4. Registers only enabled tools with the Realtime API
+  ///
+  /// This is called once during call initialization. Tool configuration
+  /// is immutable for the duration of the call.
+  Future<void> _initializeToolsForCall() async {
+    _logService.debug(_tag, 'Initializing tools for call session');
+
+    // 1. Create and start the tool sandbox
+    _sandboxManager = ToolSandboxManager(
+      notepadService: _notepadService,
+      toolStorage: _toolStorage,
+      configRepository: _config,
+      callService: this,
+    );
+    await _sandboxManager!.start();
+    _logService.debug(_tag, 'Tool sandbox started');
+
+    // 2. Get tool configuration from current SpeedDial
+    final speedDial = await _speedDialRepo.getById(_currentSpeedDialId);
+    final toolConfig = speedDial?.enabledTools ?? {};
+    _logService.debug(
+        _tag, 'Loaded tool config for SpeedDial: $_currentSpeedDialId');
+
+    // 3. Apply configuration to sandbox and collect enabled tools
+    final sandbox = _sandboxManager!;
+    final allTools = await sandbox.getToolsFromWorker();
+    final enabledTools = <Tool>[];
+
+    for (final tool in allTools) {
+      final enabled = toolConfig[tool.definition.toolKey] ?? true;
+      await sandbox.setToolEnabled(tool.definition.toolKey, enabled);
+      if (enabled) {
+        enabledTools.add(tool);
+      }
+    }
+
+    _logService.info(_tag,
+        'Tool initialization complete: ${enabledTools.length}/${allTools.length} tools enabled');
+
+    // 4. Register enabled tools with Realtime API
+    _apiClient.setTools(enabledTools);
+    _apiClient.updateSessionConfig();
+    _logService.debug(_tag, 'Registered tools with Realtime API');
+  }
 
   void _setupApiSubscriptions() {
     _errorSubscription = _apiClient.errorStream.listen((error) {
@@ -656,10 +663,6 @@ class CallService {
 
     // Disable wake lock to allow device to sleep normally
     await _disableWakeLock();
-
-    // Cancel tools changed subscription
-    await _toolsChangedSubscription?.cancel();
-    _toolsChangedSubscription = null;
 
     // Dispose sandbox
     await _sandboxManager?.dispose();
