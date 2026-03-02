@@ -151,54 +151,14 @@ class _SessionsTabState extends ConsumerState<SessionsTab> {
                 ),
               ),
             Expanded(
-              child: ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  const Text(
-                    'セッション履歴',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.lightTextPrimary,
+              child: sessions.isEmpty
+                  ? _buildEmptyState()
+                  : ListView.builder(
+                      itemCount: sessions.length,
+                      itemBuilder: (context, index) {
+                        return _buildSessionItem(context, sessions[index]);
+                      },
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '過去の通話履歴を確認',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppTheme.lightTextSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  // Session list or empty state
-                  if (sessions.isEmpty)
-                    Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.history,
-                            size: 64,
-                            color: AppTheme.lightTextSecondary
-                                .withValues(alpha: 0.5),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            '通話履歴がまだありません',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: AppTheme.lightTextSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  else
-                    ...sessions
-                        .map((session) => _buildSessionItem(context, session)),
-                ],
-              ),
             ),
           ],
         );
@@ -206,23 +166,83 @@ class _SessionsTabState extends ConsumerState<SessionsTab> {
     );
   }
 
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.history,
+            size: 80,
+            color: AppTheme.lightTextSecondary.withValues(alpha: 0.5),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            '通話履歴がありません',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.lightTextPrimary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '電話ボタンから通話を開始できます',
+            style: TextStyle(
+              fontSize: 14,
+              color: AppTheme.lightTextSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSessionItem(BuildContext context, CallSession session) {
     final isSelected = _selectedSessionIds.contains(session.id);
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+    return Container(
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: Colors.grey[200]!,
+            width: 0.5,
+          ),
+        ),
+        color: Colors.white,
+      ),
       child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+        hoverColor: AppTheme.primaryColor.withValues(alpha: 0.05),
+        splashColor: AppTheme.primaryColor.withValues(alpha: 0.1),
         leading: _isSelectionMode
             ? Checkbox(
                 value: isSelected,
                 onChanged: (_) => _toggleSelection(session.id),
               )
             : const Icon(Icons.phone, color: AppTheme.primaryColor),
-        title: Text(DurationFormatter.formatRelativeDate(session.startTime,
-            includeTime: true)),
-        subtitle:
-            Text(DurationFormatter.formatDurationCompact(session.duration)),
-        trailing: _isSelectionMode ? null : const Icon(Icons.chevron_right),
+        title: Text(
+          DurationFormatter.formatRelativeDate(session.startTime,
+              includeTime: true),
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: AppTheme.lightTextPrimary,
+          ),
+        ),
+        subtitle: Text(
+          DurationFormatter.formatDurationCompact(session.duration),
+          style: TextStyle(
+            fontSize: 14,
+            color: AppTheme.lightTextSecondary,
+          ),
+        ),
+        trailing: _isSelectionMode
+            ? null
+            : Icon(
+                Icons.chevron_right,
+                color: AppTheme.lightTextSecondary,
+              ),
         onTap: () {
           if (_isSelectionMode) {
             _toggleSelection(session.id);

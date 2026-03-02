@@ -5,12 +5,26 @@ import 'package:vagina/feat/text_agents/model/text_agent.dart';
 import 'package:vagina/feat/text_agents/state/text_agent_providers.dart';
 import 'package:vagina/feat/text_agents/ui/screens/agent_form_screen.dart';
 
-/// Agents tab - Text agent management
-class AgentsTab extends ConsumerWidget {
+/// Agents tab - Text agent management with phone book interface
+class AgentsTab extends ConsumerStatefulWidget {
   const AgentsTab({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AgentsTab> createState() => _AgentsTabState();
+}
+
+class _AgentsTabState extends ConsumerState<AgentsTab> {
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final agentsAsync = ref.watch(textAgentsProvider);
 
     return agentsAsync.when(
@@ -23,51 +37,28 @@ class AgentsTab extends ConsumerWidget {
           return _buildEmptyState(context);
         }
 
-        return ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            const Text(
-              'テキストエージェント',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: AppTheme.lightTextPrimary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'テキスト処理用のエージェントを管理',
-              style: TextStyle(
-                fontSize: 14,
-                color: AppTheme.lightTextSecondary,
-              ),
-            ),
-            const SizedBox(height: 24),
-            // Agent grid with fixed-size cards
-            LayoutBuilder(
-              builder: (context, constraints) {
-                // Calculate number of columns based on screen width
-                // Each card should be approximately 160px wide
-                final cardWidth = 160.0;
-                final crossAxisCount =
-                    (constraints.maxWidth / cardWidth).floor().clamp(2, 6);
+        // Filter agents based on search query
+        final filteredAgents = _searchQuery.isEmpty
+            ? agents
+            : agents.where((agent) {
+                final query = _searchQuery.toLowerCase();
+                return agent.name.toLowerCase().contains(query) ||
+                    (agent.description?.toLowerCase().contains(query) ??
+                        false) ||
+                    agent.config.provider.displayName
+                        .toLowerCase()
+                        .contains(query);
+              }).toList();
 
-                return GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: crossAxisCount,
-                    childAspectRatio: 0.85,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                  ),
-                  itemCount: agents.length,
-                  itemBuilder: (context, index) {
-                    final agent = agents[index];
-                    return _buildAgentCard(context, ref, agent);
-                  },
-                );
-              },
+        return Column(
+          children: [
+            // Search bar
+            _buildSearchBar(),
+            // Agent list
+            Expanded(
+              child: filteredAgents.isEmpty
+                  ? _buildNoResultsState()
+                  : _buildAgentList(filteredAgents),
             ),
           ],
         );
@@ -75,119 +66,189 @@ class AgentsTab extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmptyState(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        const Text(
-          'テキストエージェント',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
+  Widget _buildSearchBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: TextField(
+        controller: _searchController,
+        onChanged: (value) {
+          setState(() {
+            _searchQuery = value;
+          });
+        },
+        decoration: InputDecoration(
+          hintText: 'エージェントを検索...',
+          hintStyle: TextStyle(
+            color: AppTheme.lightTextSecondary,
+            fontSize: 16,
+          ),
+          prefixIcon: Icon(
+            Icons.search,
+            color: AppTheme.lightTextSecondary,
+          ),
+          suffixIcon: _searchQuery.isNotEmpty
+              ? IconButton(
+                  icon: Icon(
+                    Icons.clear,
+                    color: AppTheme.lightTextSecondary,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _searchController.clear();
+                      _searchQuery = '';
+                    });
+                  },
+                )
+              : null,
+          filled: true,
+          fillColor: Colors.white,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide.none,
+          ),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 12,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAgentList(List<TextAgent> agents) {
+    return ListView.builder(
+      itemCount: agents.length,
+      itemBuilder: (context, index) {
+        return _buildAgentListTile(agents[index]);
+      },
+    );
+  }
+
+  Widget _buildAgentListTile(TextAgent agent) {
+    // Generate a color based on agent name for avatar
+    final colorIndex =
+        agent.name.codeUnits.isNotEmpty ? agent.name.codeUnits.first % 10 : 0;
+    final avatarColor = _getAvatarColor(colorIndex);
+    final initial = agent.name.isNotEmpty ? agent.name[0].toUpperCase() : '?';
+
+    return Container(
+      decoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(
+            color: Colors.grey[300]!,
+            width: 0.5,
+          ),
+        ),
+        color: Colors.white,
+      ),
+      child: ListTile(
+        enableFeedback: true,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        leading: CircleAvatar(
+          radius: 24,
+          backgroundColor: avatarColor.withValues(alpha: 0.2),
+          child: Text(
+            initial,
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: avatarColor,
+            ),
+          ),
+        ),
+        title: Text(
+          agent.name,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
             color: AppTheme.lightTextPrimary,
           ),
         ),
-        const SizedBox(height: 8),
-        Text(
-          'テキスト処理用のエージェントを管理',
+        subtitle: Text(
+          agent.config.provider.displayName,
           style: TextStyle(
             fontSize: 14,
             color: AppTheme.lightTextSecondary,
           ),
         ),
-        const SizedBox(height: 100),
-        Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.smart_toy_outlined,
-                size: 64,
-                color: AppTheme.lightTextSecondary.withValues(alpha: 0.5),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'エージェントがまだありません',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: AppTheme.lightTextSecondary,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '右上の + ボタンで追加できます',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: AppTheme.lightTextSecondary,
-                ),
-              ),
-            ],
-          ),
+        trailing: Icon(
+          Icons.chevron_right,
+          color: AppTheme.lightTextSecondary,
         ),
-      ],
-    );
-  }
-
-  Widget _buildAgentCard(
-    BuildContext context,
-    WidgetRef ref,
-    TextAgent agent,
-  ) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: InkWell(
-        onTap: () => _viewAgent(context, agent),
-        onLongPress: () => _editAgent(context, agent),
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Icon
-              Icon(
-                Icons.smart_toy,
-                size: 48,
-                color: AppTheme.primaryColor,
-              ),
-              const SizedBox(height: 12),
-              // Name
-              Text(
-                agent.name,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.lightTextPrimary,
-                ),
-                maxLines: 2,
-                textAlign: TextAlign.center,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 4),
-              // Provider
-              Text(
-                agent.config.provider.displayName,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: AppTheme.lightTextSecondary,
-                ),
-              ),
-            ],
-          ),
-        ),
+        onTap: () => _editAgent(context, agent),
       ),
     );
   }
 
-  Future<void> _viewAgent(
-    BuildContext context,
-    TextAgent agent,
-  ) async {
-    // Placeholder for view agent action
-    // Could show agent details, chat, or other functionality
+  Color _getAvatarColor(int index) {
+    final colors = [
+      AppTheme.primaryColor,
+      const Color(0xFF2196F3), // Blue
+      const Color(0xFF4CAF50), // Green
+      const Color(0xFF9C27B0), // Purple
+      const Color(0xFFFF9800), // Orange
+      const Color(0xFFE91E63), // Pink
+      const Color(0xFF00BCD4), // Cyan
+      const Color(0xFFFF5722), // Deep Orange
+      const Color(0xFF673AB7), // Deep Purple
+      const Color(0xFF009688), // Teal
+    ];
+    return colors[index % colors.length];
+  }
+
+  Widget _buildEmptyState(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.contacts_outlined,
+            size: 80,
+            color: AppTheme.lightTextSecondary.withValues(alpha: 0.5),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'エージェントがありません',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.lightTextPrimary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '右上の + ボタンで追加できます',
+            style: TextStyle(
+              fontSize: 14,
+              color: AppTheme.lightTextSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNoResultsState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.search_off,
+            size: 64,
+            color: AppTheme.lightTextSecondary.withValues(alpha: 0.5),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            '検索結果がありません',
+            style: TextStyle(
+              fontSize: 16,
+              color: AppTheme.lightTextSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _editAgent(

@@ -157,6 +157,58 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
     }
   }
 
+  Future<void> _deleteAgent() async {
+    if (_isNewAgent) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('エージェントを削除'),
+        content: Text('「${widget.agent!.name}」を削除してもよろしいですか？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('キャンセル'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(
+              foregroundColor: AppTheme.errorColor,
+            ),
+            child: const Text('削除'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      try {
+        final configRepository = ref.read(configRepositoryProvider);
+        await configRepository.deleteTextAgent(widget.agent!.id);
+        ref.invalidate(textAgentsProvider);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('エージェントを削除しました'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+          Navigator.of(context).pop();
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('削除に失敗しました: $e'),
+              backgroundColor: AppTheme.errorColor,
+            ),
+          );
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -167,6 +219,12 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
         foregroundColor: AppTheme.lightTextPrimary,
         elevation: 0,
         actions: [
+          if (!_isNewAgent)
+            IconButton(
+              icon: const Icon(Icons.delete),
+              onPressed: _deleteAgent,
+              color: AppTheme.errorColor,
+            ),
           if (_isSaving)
             const Padding(
               padding: EdgeInsets.all(16),
