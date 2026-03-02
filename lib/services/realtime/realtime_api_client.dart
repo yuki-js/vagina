@@ -127,6 +127,14 @@ class RealtimeApiClient {
   /// Stream of completed text (for text-only responses)
   Stream<String> get textDoneStream => _streams.textDoneStream;
 
+  /// Stream of tool call started events (generating state)
+  Stream<ToolCallStarted> get toolCallStartedStream =>
+      _streams.toolCallStartedStream;
+
+  /// Stream of tool call arguments delta events (during argument streaming)
+  Stream<ToolCallArgumentsDelta> get toolCallArgumentsDeltaStream =>
+      _streams.toolCallArgumentsDeltaStream;
+
   // ========== Configuration Methods ==========
 
   /// Set tools to be registered with the session

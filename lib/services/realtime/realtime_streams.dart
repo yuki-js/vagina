@@ -39,6 +39,12 @@ class RealtimeStreams {
   final _rateLimitsUpdatedController =
       StreamController<List<RateLimit>>.broadcast();
 
+  // Tool call lifecycle streams
+  final _toolCallStartedController =
+      StreamController<ToolCallStarted>.broadcast();
+  final _toolCallArgumentsDeltaController =
+      StreamController<ToolCallArgumentsDelta>.broadcast();
+
   // Error stream
   final _errorController = StreamController<String>.broadcast();
 
@@ -76,6 +82,11 @@ class RealtimeStreams {
   Stream<List<RateLimit>> get rateLimitsUpdatedStream =>
       _rateLimitsUpdatedController.stream;
 
+  Stream<ToolCallStarted> get toolCallStartedStream =>
+      _toolCallStartedController.stream;
+  Stream<ToolCallArgumentsDelta> get toolCallArgumentsDeltaStream =>
+      _toolCallArgumentsDeltaController.stream;
+
   Stream<String> get errorStream => _errorController.stream;
 
   // ========== Emit Methods (for handlers) ==========
@@ -111,6 +122,11 @@ class RealtimeStreams {
   void emitRateLimitsUpdated(List<RateLimit> limits) =>
       _rateLimitsUpdatedController.add(limits);
 
+  void emitToolCallStarted(ToolCallStarted event) =>
+      _toolCallStartedController.add(event);
+  void emitToolCallArgumentsDelta(ToolCallArgumentsDelta event) =>
+      _toolCallArgumentsDeltaController.add(event);
+
   void emitError(String error) => _errorController.add(error);
 
   // ========== Lifecycle ==========
@@ -135,6 +151,8 @@ class RealtimeStreams {
       _responseDoneController.close(),
       _functionCallController.close(),
       _rateLimitsUpdatedController.close(),
+      _toolCallStartedController.close(),
+      _toolCallArgumentsDeltaController.close(),
       _errorController.close(),
     ]);
   }

@@ -159,7 +159,7 @@ class RealtimeError {
   }
 }
 
-/// Function call from the AI
+/// Function call from the AI (emitted when arguments are complete)
 class FunctionCall {
   final String callId;
   final String name;
@@ -169,6 +169,28 @@ class FunctionCall {
     required this.callId,
     required this.name,
     required this.arguments,
+  });
+}
+
+/// Tool call started event (emitted when function_call item is added)
+class ToolCallStarted {
+  final String callId;
+  final String name;
+
+  const ToolCallStarted({
+    required this.callId,
+    required this.name,
+  });
+}
+
+/// Tool call arguments delta event (emitted during argument streaming)
+class ToolCallArgumentsDelta {
+  final String callId;
+  final String delta;
+
+  const ToolCallArgumentsDelta({
+    required this.callId,
+    required this.delta,
   });
 }
 

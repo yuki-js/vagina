@@ -12,6 +12,7 @@ import 'package:vagina/interfaces/tool_storage.dart';
 import 'package:vagina/models/call_session.dart';
 import 'package:vagina/models/chat_message.dart';
 import 'package:vagina/models/speed_dial.dart';
+import 'package:vagina/services/realtime/realtime_types.dart';
 import 'package:vagina/services/tools_runtime/tool.dart';
 import 'package:vagina/services/tools_runtime/tool_sandbox_manager.dart';
 import 'package:vagina/utils/audio_utils.dart';
@@ -64,6 +65,8 @@ class CallService {
   StreamSubscription<void>? _responseStartedSubscription;
   StreamSubscription<void>? _speechStartedSubscription;
   StreamSubscription<void>? _responseAudioStartedSubscription;
+  StreamSubscription<ToolCallStarted>? _toolCallStartedSubscription;
+  StreamSubscription<ToolCallArgumentsDelta>? _toolCallArgumentsDeltaSubscription;
   Timer? _callTimer;
   Timer? _silenceTimer;
 
@@ -354,39 +357,86 @@ class CallService {
           _tag, 'Updated user message placeholder with transcript');
     });
 
+    // Tool call lifecycle: Start (generating state)
+    _toolCallStartedSubscription =
+        _apiClient.toolCallStartedStream.listen((event) {
+      _chatManager.startToolCall(event.callId, event.name);
+      _logService.debug(_tag, 'Tool call started: ${event.name} (${event.callId})');
+    });
+
+    // Tool call lifecycle: Arguments streaming
+    _toolCallArgumentsDeltaSubscription =
+        _apiClient.toolCallArgumentsDeltaStream.listen((event) {
+      _chatManager.updateToolCallArguments(event.callId, event.delta);
+    });
+
+    // Tool call lifecycle: Execute and complete
     _functionCallSubscription =
         _apiClient.functionCallStream.listen((functionCall) async {
       _logService.info(_tag, 'Handling function call: ${functionCall.name}');
 
+      // Check if cancelled before execution
+      if (_chatManager.isToolCallCancelled(functionCall.callId)) {
+        _logService.debug(_tag,
+            'Skipping execution for cancelled tool: ${functionCall.callId}');
+        return;
+      }
+
+      // Transition to executing state
+      _chatManager.transitionToolCallToExecuting(
+          functionCall.callId, functionCall.arguments);
+
       final sandbox = _sandboxManager;
       if (sandbox == null) {
         _logService.error(_tag, 'Tool sandbox not available');
+        _chatManager.failToolCall(
+            functionCall.callId, 'Tool sandbox not available');
         return;
       }
 
       final argsMap = _parseFunctionCallArguments(functionCall.arguments);
       if (argsMap == null) {
         final output = jsonEncode({'error': 'Invalid or empty JSON arguments'});
-        _chatManager.addToolCall(
-            functionCall.name, functionCall.arguments, output);
+        _chatManager.failToolCall(functionCall.callId, 'Invalid arguments');
         _apiClient.sendFunctionCallResult(functionCall.callId, output);
         return;
       }
 
-      final output = await sandbox.execute(
-        functionCall.name,
-        argsMap,
-      );
+      try {
+        final output = await sandbox.execute(
+          functionCall.name,
+          argsMap,
+        );
 
-      _chatManager.addToolCall(
-          functionCall.name, functionCall.arguments, output);
-      _apiClient.sendFunctionCallResult(functionCall.callId, output);
+        // Check if cancelled after execution
+        if (_chatManager.isToolCallCancelled(functionCall.callId)) {
+          _logService.debug(_tag,
+              'Discarding result for cancelled tool: ${functionCall.callId}');
+          return;
+        }
+
+        // Complete successfully
+        _chatManager.completeToolCall(functionCall.callId, output);
+        _apiClient.sendFunctionCallResult(functionCall.callId, output);
+      } catch (e) {
+        // Handle execution error
+        _logService.error(_tag, 'Tool execution failed: $e');
+        final errorOutput = jsonEncode({'error': e.toString()});
+
+        // Only update if not cancelled
+        if (!_chatManager.isToolCallCancelled(functionCall.callId)) {
+          _chatManager.failToolCall(functionCall.callId, e.toString());
+          _apiClient.sendFunctionCallResult(functionCall.callId, errorOutput);
+        }
+      }
     });
 
     _responseStartedSubscription =
         _apiClient.responseStartedStream.listen((_) async {
       _logService.info(
           _tag, 'User speech detected, stopping audio for interrupt');
+      // Cancel all pending tool calls on interrupt
+      _chatManager.cancelAllPendingToolCalls();
       await _audioService.stop();
       _chatManager.completeCurrentAssistantMessage();
     });
@@ -618,6 +668,9 @@ class CallService {
 
     _logService.debug(_tag, 'リソースのクリーンアップ');
 
+    // Cancel all pending tool calls before cleanup
+    _chatManager.cancelAllPendingToolCalls();
+
     _callTimer?.cancel();
     _callTimer = null;
 
@@ -656,6 +709,12 @@ class CallService {
 
     await _responseAudioStartedSubscription?.cancel();
     _responseAudioStartedSubscription = null;
+
+    await _toolCallStartedSubscription?.cancel();
+    _toolCallStartedSubscription = null;
+
+    await _toolCallArgumentsDeltaSubscription?.cancel();
+    _toolCallArgumentsDeltaSubscription = null;
 
     await _audioService.stopRecording();
     await _audioService.stop();

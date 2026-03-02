@@ -18,44 +18,92 @@ class ChatBubble extends StatelessWidget {
   }
 }
 
-/// Tool badge widget displayed inline
+/// Tool badge widget displayed inline with status indication
 class _ToolBadge extends StatelessWidget {
   final ToolCallInfo toolCall;
 
   const _ToolBadge({required this.toolCall});
 
+  /// Get badge color based on status
+  Color _getBadgeColor() {
+    switch (toolCall.status) {
+      case ToolCallStatus.generating:
+      case ToolCallStatus.executing:
+        return AppTheme.secondaryColor;
+      case ToolCallStatus.completed:
+        return AppTheme.secondaryColor;
+      case ToolCallStatus.error:
+        return Colors.red;
+      case ToolCallStatus.cancelled:
+        return Colors.grey;
+    }
+  }
+
+  /// Get icon based on status
+  IconData _getIcon() {
+    switch (toolCall.status) {
+      case ToolCallStatus.generating:
+      case ToolCallStatus.executing:
+        return Icons.build;
+      case ToolCallStatus.completed:
+        return Icons.build;
+      case ToolCallStatus.error:
+        return Icons.error_outline;
+      case ToolCallStatus.cancelled:
+        return Icons.cancel_outlined;
+    }
+  }
+
+  /// Check if spinner should be shown
+  bool get _showSpinner =>
+      toolCall.status == ToolCallStatus.generating ||
+      toolCall.status == ToolCallStatus.executing;
+
   @override
   Widget build(BuildContext context) {
+    final badgeColor = _getBadgeColor();
+
     return GestureDetector(
-      onTap: () => showToolDetailsSheet(context, toolCall),
+      onTap: () => showToolDetailsSheet(context, toolCall.callId),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: AppTheme.secondaryColor.withValues(alpha: 0.15),
+          color: badgeColor.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: AppTheme.secondaryColor.withValues(alpha: 0.25),
+            color: badgeColor.withValues(alpha: 0.25),
           ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.build, size: 12, color: AppTheme.secondaryColor),
+            Icon(_getIcon(), size: 12, color: badgeColor),
             const SizedBox(width: 4),
             Text(
               toolCall.name,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11,
-                color: AppTheme.secondaryColor,
+                color: badgeColor,
                 fontWeight: FontWeight.w500,
               ),
             ),
-            const SizedBox(width: 2),
-            Icon(
-              Icons.chevron_right,
-              size: 12,
-              color: AppTheme.secondaryColor.withValues(alpha: 0.7),
-            ),
+            const SizedBox(width: 4),
+            // Show spinner for generating/executing states
+            if (_showSpinner)
+              SizedBox(
+                width: 10,
+                height: 10,
+                child: CircularProgressIndicator(
+                  strokeWidth: 1.5,
+                  color: badgeColor,
+                ),
+              )
+            else
+              Icon(
+                Icons.chevron_right,
+                size: 12,
+                color: badgeColor.withValues(alpha: 0.7),
+              ),
           ],
         ),
       ),
