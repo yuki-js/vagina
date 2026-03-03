@@ -4,6 +4,8 @@ import 'dart:convert';
 // Platform-agnostic HTTP client
 import 'package:http/http.dart' as http;
 
+import '../models/text_agent_thread.dart';
+
 /// Abstract API for text agent query operations
 ///
 /// This API allows tools running in isolates to query text agents.
@@ -156,6 +158,9 @@ class TextAgentApiClient implements TextAgentApi {
   // Per-agent tool filtering configuration
   final Map<String, Map<String, bool>> _agentToolConfigs = {};
 
+  // Conversation threads (one per agent, persists during isolate lifetime)
+  final Map<String, TextAgentThread> _threads = {};
+
   TextAgentApiClient({
     http.Client? httpClient,
     dynamic initialData,
@@ -224,8 +229,34 @@ class TextAgentApiClient implements TextAgentApi {
       throw Exception('Agent not found: $agentId');
     }
 
-    // Execute query with 30-second timeout
-    return await _executeQuery(agent, prompt, const Duration(seconds: 30));
+    // Get or create conversation thread for this agent
+    final thread = _threads.putIfAbsent(agentId, () => TextAgentThread());
+
+    // Add user message to thread
+    thread.addUser(prompt);
+
+    try {
+      // Execute query with 30-second timeout
+      return await _executeQuery(agent, thread, const Duration(seconds: 30));
+    } catch (e) {
+      // Handle context length errors with automatic retry
+      if (_isContextLengthError(e) && thread.length > 0) {
+        // Calculate how many messages to trim (approximately 25%)
+        final trimCount = (thread.length * 0.25).ceil().clamp(1, 10);
+        
+        // Remove oldest messages
+        thread.trimOldest(trimCount);
+        
+        // Re-add the current user message (it was removed by trimming)
+        thread.addUser(prompt);
+        
+        // Retry once with reduced history
+        return await _executeQuery(agent, thread, const Duration(seconds: 30));
+      }
+      
+      // Re-throw if not a context length error or retry failed
+      rethrow;
+    }
   }
 
   @override
@@ -244,7 +275,7 @@ class TextAgentApiClient implements TextAgentApi {
   /// Execute HTTP query to the agent with tool calling support
   Future<String> _executeQuery(
     WorkerTextAgent agent,
-    String prompt,
+    TextAgentThread thread,
     Duration timeout,
   ) async {
     // Build URL
@@ -253,14 +284,9 @@ class TextAgentApiClient implements TextAgentApi {
     // Build headers
     final headers = agent.getRequestHeaders();
 
-    // Initialize conversation with user message
-    final messages = <Map<String, dynamic>>[
-      {'role': 'user', 'content': prompt},
-    ];
-
-    // Build request body
+    // Build request body with conversation history
     final requestBody = <String, dynamic>{
-      'messages': messages,
+      'messages': thread.messages.toList(),
     };
 
     // Add model for non-Azure providers
@@ -313,7 +339,7 @@ class TextAgentApiClient implements TextAgentApi {
         if (toolCalls != null && toolCalls.isNotEmpty) {
           // AI wants to call tools
           // Add assistant message with tool calls to conversation
-          messages.add(message);
+          thread.addAssistant(message);
 
           // Execute each tool call
           for (final toolCallData in toolCalls) {
@@ -330,29 +356,23 @@ class TextAgentApiClient implements TextAgentApi {
               // Execute tool via callback
               final result = await _executeToolCallback!(toolName, arguments);
 
-              // Add tool result to conversation
-              messages.add({
-                'role': 'tool',
-                'tool_call_id': toolCallId,
-                'name': toolName,
-                'content': result,
-              });
+              // Add tool result to conversation thread
+              thread.addTool(toolCallId, toolName, result);
             } catch (e) {
-              // Add error result
-              messages.add({
-                'role': 'tool',
-                'tool_call_id': toolCallId,
-                'name': toolName,
-                'content': jsonEncode({
+              // Add error result to thread
+              thread.addTool(
+                toolCallId,
+                toolName,
+                jsonEncode({
                   'success': false,
                   'error': 'Tool execution failed: $e',
                 }),
-              });
+              );
             }
           }
 
-          // Update request with new messages and continue loop
-          requestBody['messages'] = messages;
+          // Update request with updated thread messages and continue loop
+          requestBody['messages'] = thread.messages.toList();
           continue;
         }
 
@@ -361,6 +381,9 @@ class TextAgentApiClient implements TextAgentApi {
         if (content == null) {
           throw Exception('No content in response');
         }
+
+        // Add final assistant message to thread
+        thread.addAssistant(message);
 
         return content;
       }
@@ -375,7 +398,18 @@ class TextAgentApiClient implements TextAgentApi {
     }
   }
 
+  /// Check if an error is related to context length limits
+  bool _isContextLengthError(dynamic error) {
+    final errorStr = error.toString().toLowerCase();
+    return errorStr.contains('context_length_exceeded') ||
+        errorStr.contains('context length') ||
+        errorStr.contains('maximum context') ||
+        errorStr.contains('token limit') ||
+        errorStr.contains('tokens exceeded');
+  }
+
   void dispose() {
+    _threads.clear();
     _httpClient.close();
   }
 }

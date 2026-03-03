@@ -44,7 +44,11 @@ class QueryTextAgentTool extends Tool {
         sourceKey: 'builtin',
         publishedBy: 'aokiapp',
         description:
-            'Query a text-based AI agent and return its response text (synchronous, ~30s timeout).',
+            'Query a text-based AI agent and return its response text (synchronous, ~30s timeout). '
+            'IMPORTANT: Conversation history is maintained per agent_id during the call session. '
+            'You can call the same agent multiple times to build on previous responses - '
+            'the agent will remember the context of earlier queries in the same call. '
+            'Use this for complex tasks that require multiple steps or clarifications.',
         parametersSchema: {
           'type': 'object',
           'properties': {
