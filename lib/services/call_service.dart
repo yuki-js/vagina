@@ -12,7 +12,6 @@ import 'package:vagina/interfaces/tool_storage.dart';
 import 'package:vagina/models/call_session.dart';
 import 'package:vagina/models/chat_message.dart';
 import 'package:vagina/models/speed_dial.dart';
-import 'package:vagina/services/realtime/realtime_types.dart';
 import 'package:vagina/services/tools_runtime/tool.dart';
 import 'package:vagina/services/tools_runtime/tool_sandbox_manager.dart';
 import 'package:vagina/utils/audio_utils.dart';
@@ -88,6 +87,9 @@ class CallService {
   String _currentSpeedDialId = SpeedDial.defaultId;
   String? _endContext; // Store end context from tool call
   bool _isCleanedUp = false; // Track cleanup state to prevent double cleanup
+
+  final Set<String> _activeToolCallIds = <String>{};
+  final Set<String> _executingToolCallIds = <String>{};
 
   CallService({
     required CallAudioService audioService,
@@ -361,7 +363,9 @@ class CallService {
     _toolCallStartedSubscription =
         _apiClient.toolCallStartedStream.listen((event) {
       _chatManager.startToolCall(event.callId, event.name);
-      _logService.debug(_tag, 'Tool call started: ${event.name} (${event.callId})');
+      _activeToolCallIds.add(event.callId);
+      _logService.debug(
+          _tag, 'Tool call started: ${event.name} (${event.callId})');
     });
 
     // Tool call lifecycle: Arguments streaming
@@ -385,12 +389,14 @@ class CallService {
       // Transition to executing state
       _chatManager.transitionToolCallToExecuting(
           functionCall.callId, functionCall.arguments);
+      _onToolCallExecuting(functionCall.callId);
 
       final sandbox = _sandboxManager;
       if (sandbox == null) {
         _logService.error(_tag, 'Tool sandbox not available');
         _chatManager.failToolCall(
             functionCall.callId, 'Tool sandbox not available');
+        _onToolCallFailed(functionCall.callId);
         return;
       }
 
@@ -399,6 +405,7 @@ class CallService {
         final output = jsonEncode({'error': 'Invalid or empty JSON arguments'});
         _chatManager.failToolCall(functionCall.callId, 'Invalid arguments');
         _apiClient.sendFunctionCallResult(functionCall.callId, output);
+        _onToolCallFailed(functionCall.callId);
         return;
       }
 
@@ -412,21 +419,28 @@ class CallService {
         if (_chatManager.isToolCallCancelled(functionCall.callId)) {
           _logService.debug(_tag,
               'Discarding result for cancelled tool: ${functionCall.callId}');
+          _onToolCallFinished(functionCall.callId);
           return;
         }
 
         // Complete successfully
         _chatManager.completeToolCall(functionCall.callId, output);
         _apiClient.sendFunctionCallResult(functionCall.callId, output);
+        _onToolCallCompleted(functionCall.callId);
       } catch (e) {
         // Handle execution error
         _logService.error(_tag, 'Tool execution failed: $e');
         final errorOutput = jsonEncode({'error': e.toString()});
 
+        final isCancelled = _chatManager.isToolCallCancelled(functionCall.callId);
+
         // Only update if not cancelled
-        if (!_chatManager.isToolCallCancelled(functionCall.callId)) {
+        if (!isCancelled) {
           _chatManager.failToolCall(functionCall.callId, e.toString());
           _apiClient.sendFunctionCallResult(functionCall.callId, errorOutput);
+          _onToolCallFailed(functionCall.callId);
+        } else {
+          _onToolCallFinished(functionCall.callId);
         }
       }
     });
@@ -437,6 +451,7 @@ class CallService {
           _tag, 'User speech detected, stopping audio for interrupt');
       // Cancel all pending tool calls on interrupt
       _chatManager.cancelAllPendingToolCalls();
+      _handleToolCallsCancelled(playSound: true);
       await _audioService.stop();
       _chatManager.completeCurrentAssistantMessage();
     });
@@ -670,6 +685,7 @@ class CallService {
 
     // Cancel all pending tool calls before cleanup
     _chatManager.cancelAllPendingToolCalls();
+    _handleToolCallsCancelled(playSound: false);
 
     _callTimer?.cancel();
     _callTimer = null;
@@ -785,6 +801,57 @@ class CallService {
       return null;
     } catch (_) {
       return null;
+    }
+  }
+
+  void _onToolCallExecuting(String callId) {
+    _activeToolCallIds.add(callId);
+
+    final wasEmpty = _executingToolCallIds.isEmpty;
+    final added = _executingToolCallIds.add(callId);
+    if (added && wasEmpty) {
+      unawaited(_feedback.playToolExecuting());
+    }
+  }
+
+  void _onToolCallCompleted(String callId) {
+    _activeToolCallIds.remove(callId);
+    _executingToolCallIds.remove(callId);
+
+    if (_executingToolCallIds.isEmpty) {
+      unawaited(_feedback.stopToolExecuting());
+    }
+  }
+
+  void _onToolCallFailed(String callId) {
+    _activeToolCallIds.remove(callId);
+    _executingToolCallIds.remove(callId);
+
+    if (_executingToolCallIds.isEmpty) {
+      unawaited(_feedback.stopToolExecuting());
+    }
+    unawaited(_feedback.playToolError());
+  }
+
+  void _onToolCallFinished(String callId) {
+    _activeToolCallIds.remove(callId);
+    _executingToolCallIds.remove(callId);
+
+    if (_executingToolCallIds.isEmpty) {
+      unawaited(_feedback.stopToolExecuting());
+    }
+  }
+
+  void _handleToolCallsCancelled({required bool playSound}) {
+    final hadPendingToolCalls = _activeToolCallIds.isNotEmpty;
+
+    _activeToolCallIds.clear();
+    _executingToolCallIds.clear();
+
+    unawaited(_feedback.stopToolExecuting());
+
+    if (playSound && hadPendingToolCalls) {
+      unawaited(_feedback.playToolCancelled());
     }
   }
 

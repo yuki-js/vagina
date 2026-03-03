@@ -12,6 +12,7 @@ class CallFeedbackService {
   final LogService _logService;
   AudioPlayer? _dialTonePlayer;
   AudioPlayer? _endTonePlayer;
+  AudioPlayer? _toolExecutingPlayer;
 
   CallFeedbackService({LogService? logService})
       : _logService = logService ?? LogService();
@@ -76,6 +77,81 @@ class CallFeedbackService {
     }
   }
 
+  /// Start looping the tool executing sound
+  Future<void> playToolExecuting() async {
+    try {
+      _logService.debug(_tag, 'Playing tool executing sound');
+
+      // Stop any existing tool executing sound
+      await stopToolExecuting();
+
+      _toolExecutingPlayer = AudioPlayer();
+      await _toolExecutingPlayer!.setAsset('assets/audio/tool_executing.wav');
+      await _toolExecutingPlayer!.setLoopMode(LoopMode.one);
+      await _toolExecutingPlayer!.setVolume(0.15);
+      await _toolExecutingPlayer!.play();
+
+      _logService.info(_tag, 'Tool executing sound started');
+    } catch (e) {
+      _logService.error(_tag, 'Tool executing sound error: $e');
+    }
+  }
+
+  /// Stop the tool executing sound
+  Future<void> stopToolExecuting() async {
+    if (_toolExecutingPlayer != null) {
+      try {
+        _logService.debug(_tag, 'Stopping tool executing sound');
+        await _toolExecutingPlayer!.stop();
+        await _toolExecutingPlayer!.dispose();
+      } catch (e) {
+        _logService.error(_tag, 'Stop tool executing sound error: $e');
+      } finally {
+        _toolExecutingPlayer = null;
+      }
+    }
+  }
+
+  /// Play tool error sound (single shot)
+  Future<void> playToolError() async {
+    try {
+      _logService.debug(_tag, 'Playing tool error sound');
+
+      final player = AudioPlayer();
+      await player.setAsset('assets/audio/tool_error.wav');
+      await player.setVolume(0.4);
+      await player.play();
+
+      _logService.info(_tag, 'Tool error sound played');
+
+      // Dispose after playing
+      await Future.delayed(const Duration(milliseconds: 500));
+      await player.dispose();
+    } catch (e) {
+      _logService.error(_tag, 'Tool error sound error: $e');
+    }
+  }
+
+  /// Play tool cancelled sound (single shot)
+  Future<void> playToolCancelled() async {
+    try {
+      _logService.debug(_tag, 'Playing tool cancelled sound');
+
+      final player = AudioPlayer();
+      await player.setAsset('assets/audio/tool_cancelled.wav');
+      await player.setVolume(0.25);
+      await player.play();
+
+      _logService.info(_tag, 'Tool cancelled sound played');
+
+      // Dispose after playing
+      await Future.delayed(const Duration(milliseconds: 250));
+      await player.dispose();
+    } catch (e) {
+      _logService.error(_tag, 'Tool cancelled sound error: $e');
+    }
+  }
+
   // ==========================================================================
   // Haptic Feedback
   // ==========================================================================
@@ -122,6 +198,8 @@ class CallFeedbackService {
   /// Dispose of all audio players
   Future<void> dispose() async {
     await stopDialTone();
+    await stopToolExecuting();
+
     if (_endTonePlayer != null) {
       try {
         await _endTonePlayer!.dispose();
