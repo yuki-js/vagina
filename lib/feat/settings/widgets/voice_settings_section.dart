@@ -26,51 +26,47 @@ class VoiceSettingsSection extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 12),
-          Column(
-            children: [
-              RadioListTile<String>(
-                value: 'near',
-                groupValue: noiseReduction,
-                onChanged: (value) {
-                  if (value != null && value != noiseReduction) {
-                    _handleNoiseReductionChange(ref, value);
-                  }
-                },
-                title: const Text(
-                  '近距離',
-                  style: TextStyle(color: AppTheme.lightTextPrimary),
-                ),
-                subtitle: Text(
-                  '近くで話すときに適しています',
-                  style: TextStyle(
-                    color: AppTheme.lightTextSecondary.withValues(alpha: 0.7),
-                    fontSize: 12,
+          RadioGroup<String>(
+            groupValue: noiseReduction,
+            onChanged: (value) {
+              if (value != null && value != noiseReduction) {
+                _handleNoiseReductionChange(ref, value);
+              }
+            },
+            child: Column(
+              children: [
+                RadioListTile<String>(
+                  value: 'near',
+                  title: const Text(
+                    '近距離',
+                    style: TextStyle(color: AppTheme.lightTextPrimary),
                   ),
-                ),
-                activeColor: AppTheme.primaryColor,
-              ),
-              RadioListTile<String>(
-                value: 'far',
-                groupValue: noiseReduction,
-                onChanged: (value) {
-                  if (value != null && value != noiseReduction) {
-                    _handleNoiseReductionChange(ref, value);
-                  }
-                },
-                title: const Text(
-                  '遠距離',
-                  style: TextStyle(color: AppTheme.lightTextPrimary),
-                ),
-                subtitle: Text(
-                  '遠くから話すときに適しています',
-                  style: TextStyle(
-                    color: AppTheme.lightTextSecondary.withValues(alpha: 0.7),
-                    fontSize: 12,
+                  subtitle: Text(
+                    '近くで話すときに適しています',
+                    style: TextStyle(
+                      color: AppTheme.lightTextSecondary.withValues(alpha: 0.7),
+                      fontSize: 12,
+                    ),
                   ),
+                  activeColor: AppTheme.primaryColor,
                 ),
-                activeColor: AppTheme.primaryColor,
-              ),
-            ],
+                RadioListTile<String>(
+                  value: 'far',
+                  title: const Text(
+                    '遠距離',
+                    style: TextStyle(color: AppTheme.lightTextPrimary),
+                  ),
+                  subtitle: Text(
+                    '遠くから話すときに適しています',
+                    style: TextStyle(
+                      color: AppTheme.lightTextSecondary.withValues(alpha: 0.7),
+                      fontSize: 12,
+                    ),
+                  ),
+                  activeColor: AppTheme.primaryColor,
+                ),
+              ],
+            ),
           ),
         ],
       ),

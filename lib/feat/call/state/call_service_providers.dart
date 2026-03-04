@@ -11,9 +11,9 @@ part 'call_service_providers.g.dart';
 
 @riverpod
 CallAudioService callAudioService(Ref ref) {
-  final _logService = ref.watch(logServiceProvider);
+  final logService = ref.watch(logServiceProvider);
   final service = CallAudioService(
-    logService: _logService,
+    logService: logService,
   );
   ref.onDispose(() {
     service.dispose();
@@ -23,9 +23,9 @@ CallAudioService callAudioService(Ref ref) {
 
 @riverpod
 RealtimeApiClient realtimeApiClient(Ref ref) {
-  final _logService = ref.watch(logServiceProvider);
+  final logService = ref.watch(logServiceProvider);
   final client = RealtimeApiClient(
-    logService: _logService,
+    logService: logService,
   );
   ref.onDispose(() {
     client.dispose();
@@ -52,7 +52,7 @@ CallFeedbackService callFeedbackService(Ref ref) {
 
 @riverpod
 CallService callService(Ref ref) {
-  final _logService = ref.watch(logServiceProvider);
+  final logService = ref.watch(logServiceProvider);
   final service = CallService(
     audioService: ref.watch(callAudioServiceProvider),
     apiClient: ref.watch(realtimeApiClientProvider),
@@ -60,12 +60,12 @@ CallService callService(Ref ref) {
     speedDialRepo: ref.watch(speedDialRepositoryProvider),
     sessionRepository: ref.watch(callSessionRepositoryProvider),
     toolStorage: ref.watch(toolStorageProvider),
-    logService: _logService,
+    logService: logService,
     feedbackService: ref.watch(callFeedbackServiceProvider),
   );
 
   ref.onDispose(() {
-    _logService.debug('CallServiceProvider', 'Disposing CallService');
+    logService.debug('CallServiceProvider', 'Disposing CallService');
     service.dispose();
   });
 

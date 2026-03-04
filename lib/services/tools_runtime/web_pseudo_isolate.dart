@@ -3,7 +3,7 @@
 /// Provides SendPort/ReceivePort-like APIs that work in single-threaded
 /// JavaScript environments. Messages are delivered via microtasks to
 /// emulate asynchronous behavior while maintaining protocol compatibility.
-library web_pseudo_isolate;
+library;
 
 import 'dart:async';
 import 'dart:collection';

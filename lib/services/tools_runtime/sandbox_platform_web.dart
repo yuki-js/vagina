@@ -1,7 +1,7 @@
 /// Web platform abstraction for sandbox spawning
 ///
 /// Provides platform-specific types and spawn function for Web (pseudo-isolate)
-library sandbox_platform;
+library;
 
 import 'dart:async';
 import 'web_pseudo_isolate.dart';

@@ -14,7 +14,7 @@
 /// 2. **Tool Operations**: Host sends [executeToolMessage], worker responds with result
 /// 3. **Dynamic Changes**: Host notifies worker of tool changes via [toolsChangedMessage]
 /// 4. **Host Calls**: Worker requests host services via [hostCallMessage]
-library sandbox_protocol;
+library;
 
 // Conditional import for platform-specific port types
 import 'sandbox_protocol_platform_native.dart'

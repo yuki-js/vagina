@@ -1,7 +1,7 @@
 /// Native platform abstraction for sandbox spawning
 ///
 /// Provides platform-specific types and spawn function for Native (dart:isolate)
-library sandbox_platform;
+library;
 
 import 'dart:async';
 import 'dart:isolate' show Isolate, ReceivePort, SendPort;

@@ -1,5 +1,5 @@
 /// Platform-specific protocol validation for Native (dart:isolate)
-library sandbox_protocol_platform;
+library;
 
 import 'dart:isolate' show SendPort;
 

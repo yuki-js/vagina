@@ -280,7 +280,7 @@ class ChatMessageManager {
   /// Add a tool call to the current assistant turn (legacy method)
   /// This is deprecated in favor of the new lifecycle methods.
   /// Kept for backward compatibility if needed.
-  @deprecated
+  @Deprecated('Use the new lifecycle methods instead.')
   void addToolCall(String toolName, String arguments, String result) {
     // For backward compatibility, create a completed tool call directly
     // Generate a pseudo call_id since we don't have one

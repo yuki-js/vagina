@@ -1,5 +1,5 @@
 /// Platform-specific protocol validation for Web (pseudo-isolate)
-library sandbox_protocol_platform;
+library;
 
 import 'web_pseudo_isolate.dart' show WebSendPort;
 
