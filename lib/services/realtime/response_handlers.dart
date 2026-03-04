@@ -94,17 +94,17 @@ class ResponseHandlers {
       if (item.type == 'function_call') {
         final callId = item.callId ?? '';
         final name = item.name ?? '';
-        
+
         // Initialize accumulator (existing logic)
         _state.pendingFunctionCalls[callId] = StringBuffer();
         _state.pendingFunctionNames[callId] = name;
-        
+
         // NEW: Emit early tool call creation event
         _streams.emitToolCallStarted(ToolCallStarted(
           callId: callId,
           name: name,
         ));
-        
+
         _log.info(_tag, 'Function call started: $name (call_id: $callId)');
       } else {
         _log.debug(
@@ -273,13 +273,13 @@ class ResponseHandlers {
     if (callId != null && delta != null) {
       // Accumulate arguments (existing)
       _state.pendingFunctionCalls[callId]?.write(delta);
-      
+
       // NEW: Emit delta event for UI updates
       _streams.emitToolCallArgumentsDelta(ToolCallArgumentsDelta(
         callId: callId,
         delta: delta,
       ));
-      
+
       _log.debug(_tag, 'Function call arguments delta: $delta');
     }
   }

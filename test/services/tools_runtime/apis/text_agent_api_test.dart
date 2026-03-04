@@ -88,7 +88,8 @@ void main() {
       expect(true, true);
     });
 
-    test('sendQuery with no tool config should send all available tools', () async {
+    test('sendQuery with no tool config should send all available tools',
+        () async {
       // Arrange
       final mockResponse = http.Response(
         jsonEncode({
@@ -190,7 +191,9 @@ void main() {
       expect(toolNames, isNot(contains('tool2'))); // tool2 is disabled
     });
 
-    test('sendQuery with empty tool config should send all tools (key not in map = true)', () async {
+    test(
+        'sendQuery with empty tool config should send all tools (key not in map = true)',
+        () async {
       // Arrange
       client.updateAgentTools('agent-1', {}); // Empty config
 
@@ -237,7 +240,8 @@ void main() {
       expect(tools.length, 3); // All 3 tools
     });
 
-    test('tool key not in config map should default to enabled (true)', () async {
+    test('tool key not in config map should default to enabled (true)',
+        () async {
       // Arrange
       final toolConfig = {
         'tool1': false, // Only tool1 explicitly disabled
@@ -285,15 +289,20 @@ void main() {
       final toolNames = tools.map((t) => t['function']['name']).toList();
 
       expect(toolNames, isNot(contains('tool1'))); // tool1 explicitly false
-      expect(toolNames, contains('tool2')); // tool2 not in map, defaults to true
-      expect(toolNames, contains('tool3')); // tool3 not in map, defaults to true
+      expect(
+          toolNames, contains('tool2')); // tool2 not in map, defaults to true
+      expect(
+          toolNames, contains('tool3')); // tool3 not in map, defaults to true
       expect(tools.length, 2);
     });
 
-    test('different agents should have independent tool configurations', () async {
+    test('different agents should have independent tool configurations',
+        () async {
       // Arrange
-      client.updateAgentTools('agent-1', {'tool1': false, 'tool2': true, 'tool3': true});
-      client.updateAgentTools('agent-2', {'tool1': true, 'tool2': false, 'tool3': true});
+      client.updateAgentTools(
+          'agent-1', {'tool1': false, 'tool2': true, 'tool3': true});
+      client.updateAgentTools(
+          'agent-2', {'tool1': true, 'tool2': false, 'tool3': true});
 
       final mockResponse = http.Response(
         jsonEncode({
@@ -324,7 +333,8 @@ void main() {
         body: captureAnyNamed('body'),
       )).captured;
 
-      final requestBody1 = jsonDecode(captured1[2] as String) as Map<String, dynamic>;
+      final requestBody1 =
+          jsonDecode(captured1[2] as String) as Map<String, dynamic>;
       final tools1 = requestBody1['tools'] as List;
       final toolNames1 = tools1.map((t) => t['function']['name']).toList();
 
@@ -342,7 +352,8 @@ void main() {
         body: captureAnyNamed('body'),
       )).captured;
 
-      final requestBody2 = jsonDecode(captured2.last as String) as Map<String, dynamic>;
+      final requestBody2 =
+          jsonDecode(captured2.last as String) as Map<String, dynamic>;
       final tools2 = requestBody2['tools'] as List;
       final toolNames2 = tools2.map((t) => t['function']['name']).toList();
 
@@ -397,13 +408,15 @@ void main() {
         body: captureAnyNamed('body'),
       )).captured;
 
-      final requestBody = jsonDecode(captured[2] as String) as Map<String, dynamic>;
+      final requestBody =
+          jsonDecode(captured[2] as String) as Map<String, dynamic>;
       final tools = requestBody['tools'] as List;
       expect(tools.length, 1);
       expect(tools[0]['function']['name'], 'newTool');
     });
 
-    test('sendQuery without tools should not include tools in request', () async {
+    test('sendQuery without tools should not include tools in request',
+        () async {
       // Arrange
       final clientWithoutTools = TextAgentApiClient(
         httpClient: mockHttpClient,
@@ -449,7 +462,8 @@ void main() {
         body: captureAnyNamed('body'),
       )).captured;
 
-      final requestBody = jsonDecode(captured[2] as String) as Map<String, dynamic>;
+      final requestBody =
+          jsonDecode(captured[2] as String) as Map<String, dynamic>;
       expect(requestBody.containsKey('tools'), false);
 
       clientWithoutTools.dispose();

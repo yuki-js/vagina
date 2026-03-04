@@ -65,7 +65,8 @@ class CallService {
   StreamSubscription<void>? _speechStartedSubscription;
   StreamSubscription<void>? _responseAudioStartedSubscription;
   StreamSubscription<ToolCallStarted>? _toolCallStartedSubscription;
-  StreamSubscription<ToolCallArgumentsDelta>? _toolCallArgumentsDeltaSubscription;
+  StreamSubscription<ToolCallArgumentsDelta>?
+      _toolCallArgumentsDeltaSubscription;
   Timer? _callTimer;
   Timer? _silenceTimer;
 
@@ -432,7 +433,8 @@ class CallService {
         _logService.error(_tag, 'Tool execution failed: $e');
         final errorOutput = jsonEncode({'error': e.toString()});
 
-        final isCancelled = _chatManager.isToolCallCancelled(functionCall.callId);
+        final isCancelled =
+            _chatManager.isToolCallCancelled(functionCall.callId);
 
         // Only update if not cancelled
         if (!isCancelled) {

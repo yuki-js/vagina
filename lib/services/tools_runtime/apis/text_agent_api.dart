@@ -243,17 +243,17 @@ class TextAgentApiClient implements TextAgentApi {
       if (_isContextLengthError(e) && thread.length > 0) {
         // Calculate how many messages to trim (approximately 25%)
         final trimCount = (thread.length * 0.25).ceil().clamp(1, 10);
-        
+
         // Remove oldest messages
         thread.trimOldest(trimCount);
-        
+
         // Re-add the current user message (it was removed by trimming)
         thread.addUser(prompt);
-        
+
         // Retry once with reduced history
         return await _executeQuery(agent, thread, const Duration(seconds: 30));
       }
-      
+
       // Re-throw if not a context length error or retry failed
       rethrow;
     }
@@ -318,7 +318,8 @@ class TextAgentApiClient implements TextAgentApi {
             .timeout(timeout);
 
         if (response.statusCode != 200) {
-          throw Exception('API error (${response.statusCode}): ${response.body}');
+          throw Exception(
+              'API error (${response.statusCode}): ${response.body}');
         }
 
         final responseJson = jsonDecode(response.body) as Map<String, dynamic>;

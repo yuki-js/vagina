@@ -75,7 +75,9 @@ void main() {
       expect(agent.enabledTools.length, 3);
     });
 
-    test('fromJson() should fallback to empty Map when enabledTools key is missing (backward compatibility)', () {
+    test(
+        'fromJson() should fallback to empty Map when enabledTools key is missing (backward compatibility)',
+        () {
       // Arrange
       final now = DateTime.now();
       final json = {
@@ -101,7 +103,8 @@ void main() {
       expect(agent.enabledTools, const <String, bool>{});
     });
 
-    test('fromJson() should fallback to empty Map when enabledTools is null', () {
+    test('fromJson() should fallback to empty Map when enabledTools is null',
+        () {
       // Arrange
       final now = DateTime.now();
       final json = {
@@ -155,7 +158,7 @@ void main() {
       expect(copied.enabledTools['tool1'], false);
       expect(copied.enabledTools['tool2'], true);
       expect(copied.enabledTools['tool3'], true);
-      
+
       // Original should remain unchanged
       expect(original.enabledTools['tool1'], true);
       expect(original.enabledTools['tool2'], false);
@@ -220,7 +223,9 @@ void main() {
       expect(deserialized.enabledTools['tool4'], false);
     });
 
-    test('fromJson() should handle legacy Azure format and preserve enabledTools', () {
+    test(
+        'fromJson() should handle legacy Azure format and preserve enabledTools',
+        () {
       // Arrange
       final now = DateTime.now();
       final json = {
@@ -249,7 +254,8 @@ void main() {
       expect(agent.name, 'Legacy Azure Agent');
       expect(agent.enabledTools['toolX'], true);
       expect(agent.enabledTools['toolY'], false);
-      expect(agent.config.provider, TextAgentProvider.azure); // Should be migrated to new format
+      expect(agent.config.provider,
+          TextAgentProvider.azure); // Should be migrated to new format
     });
 
     test('default enabledTools should be empty Map', () {

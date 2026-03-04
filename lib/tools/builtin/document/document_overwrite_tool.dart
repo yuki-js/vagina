@@ -45,8 +45,8 @@ class DocumentOverwriteTool extends Tool {
               'type': 'string',
               'description':
                   'MIME type of the content (e.g., "text/markdown", "text/plain", "text/html", '
-                  '"text/csv", "application/vagina-2d+json", "application/vagina-2d+jsonl"). '
-                  'Defaults to "text/markdown".',
+                      '"text/csv", "application/vagina-2d+json", "application/vagina-2d+jsonl"). '
+                      'Defaults to "text/markdown".',
             },
             'title': {
               'type': 'string',
@@ -70,7 +70,7 @@ class DocumentOverwriteTool extends Tool {
         // 既存タブを更新
         // まず既存タブの情報を取得してMIMEタイプをチェック
         final existingTab = await context.notepadApi.getTab(tabId);
-        
+
         if (existingTab == null) {
           return jsonEncode({
             'success': false,
@@ -86,8 +86,8 @@ class DocumentOverwriteTool extends Tool {
             'success': false,
             'error':
                 'MIME type mismatch: Cannot change document type from "$existingMime" to "$mime". '
-                'To change the document type, please create a new document with a different tabId, '
-                'or use the same MIME type "$existingMime" for updates.',
+                    'To change the document type, please create a new document with a different tabId, '
+                    'or use the same MIME type "$existingMime" for updates.',
           });
         }
 

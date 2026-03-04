@@ -61,9 +61,8 @@ class SpreadsheetDeleteRowsTool extends Tool {
       default:
         return jsonEncode({
           'success': false,
-          'error':
-              'Tab "$tabId" is not a tabular type (mimeType: $mimeType). '
-                  'Expected one of: text/csv, application/vagina-2d+json, application/vagina-2d+jsonl',
+          'error': 'Tab "$tabId" is not a tabular type (mimeType: $mimeType). '
+              'Expected one of: text/csv, application/vagina-2d+json, application/vagina-2d+jsonl',
         });
     }
 
@@ -93,8 +92,7 @@ class SpreadsheetDeleteRowsTool extends Tool {
         'tabId': tabId,
         'deletedRows': indices.toSet().length,
         'remainingRows': updated.rows.length,
-        'message':
-            '${indices.toSet().length} row(s) deleted successfully',
+        'message': '${indices.toSet().length} row(s) deleted successfully',
       });
     } on TabularDataException catch (e) {
       return jsonEncode({

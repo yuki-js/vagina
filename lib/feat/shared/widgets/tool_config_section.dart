@@ -211,7 +211,9 @@ class _ToolConfigSectionState extends ConsumerState<ToolConfigSection> {
                   // カテゴリ全選択/解除ボタン
                   IconButton(
                     icon: Icon(
-                      allEnabled ? Icons.check_box : Icons.check_box_outline_blank,
+                      allEnabled
+                          ? Icons.check_box
+                          : Icons.check_box_outline_blank,
                       size: 20,
                     ),
                     color: allEnabled
@@ -247,9 +249,8 @@ class _ToolConfigSectionState extends ConsumerState<ToolConfigSection> {
                     tool.displayDescription,
                     style: TextStyle(
                       fontSize: 12,
-                      color: isEnabled
-                          ? AppTheme.lightTextSecondary
-                          : Colors.grey,
+                      color:
+                          isEnabled ? AppTheme.lightTextSecondary : Colors.grey,
                     ),
                   ),
                   secondary: Icon(
