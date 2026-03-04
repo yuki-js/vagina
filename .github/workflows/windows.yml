@@ -48,7 +48,7 @@ jobs:
 
       # Cache the .dart_tool directory for Windows builds
       - name: Upload .dart_tool cache
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: dart-tool-cache
           path: .dart_tool
@@ -112,7 +112,7 @@ jobs:
         shell: powershell
 
       - name: Upload Debug Build
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: windows-debug-build
           path: build\windows\vagina-debug-windows.zip
@@ -176,7 +176,7 @@ jobs:
         shell: powershell
 
       - name: Upload Release Build
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: windows-release-build
           path: build\windows\vagina-release-windows.zip
@@ -223,7 +223,7 @@ jobs:
         shell: powershell
 
       - name: Upload Release Build
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: windows-release-build
           path: build\windows\vagina-release-windows-signed.zip
