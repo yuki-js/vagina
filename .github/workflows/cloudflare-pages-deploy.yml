@@ -38,7 +38,7 @@ jobs:
 
     steps:
       - name: Download production artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: build-output
           path: ${{ github.workspace }}/dist
