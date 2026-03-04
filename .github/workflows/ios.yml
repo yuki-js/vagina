@@ -90,14 +90,14 @@ jobs:
           cd ios
           pod install --repo-update
       
-      - name: Build iOS (debug, simulator)
-        run: flutter build ios --debug --simulator
+      - name: Build iOS (debug, no codesign)
+        run: flutter build ipa --debug --no-codesign
 
-      - name: Upload Debug App Bundle
+      - name: Upload Debug IPA
         uses: actions/upload-artifact@v7
         with:
-          name: ios-debug-app
-          path: build/ios/iphonesimulator/Runner.app
+          name: ios-debug-ipa
+          path: build/ios/ipa/*.ipa
           retention-days: 14
 
   build-ios-release:
@@ -145,12 +145,12 @@ jobs:
           cd ios
           pod install --repo-update
       
-      - name: Build iOS (release, simulator)
-        run: flutter build ios --release --simulator
+      - name: Build iOS (release, no codesign)
+        run: flutter build ipa --release --no-codesign
 
-      - name: Upload Release App Bundle
+      - name: Upload Release IPA
         uses: actions/upload-artifact@v7
         with:
-          name: ios-release-app
-          path: build/ios/iphonesimulator/Runner.app
+          name: ios-release-ipa
+          path: build/ios/ipa/*.ipa
           retention-days: 30
