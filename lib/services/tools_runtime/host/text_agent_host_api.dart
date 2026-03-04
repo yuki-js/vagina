@@ -36,8 +36,8 @@ class TextAgentHostApi {
       case 'listAgents':
         return await _handleListAgents(args);
       default:
-        print('[$_tag:HOST] Unknown method: $method');
-        print('Request Payload: ${jsonEncode(args)}');
+        _logService.error(_tag, 'Unknown method: $method');
+        _logService.error(_tag, 'Request Payload: ${jsonEncode(args)}');
         throw Exception('Unknown method: $method');
     }
   }
@@ -50,22 +50,22 @@ class TextAgentHostApi {
 
     // Validate parameters
     if (agentId == null || agentId.isEmpty) {
-      print('[$_tag:HOST] sendQuery - Missing or empty agentId');
-      print('Request Payload: ${jsonEncode(args)}');
+      _logService.error(_tag, 'sendQuery - Missing or empty agentId');
+      _logService.error(_tag, 'Request Payload: ${jsonEncode(args)}');
       throw Exception('Missing or empty required parameter: agentId');
     }
 
     if (prompt == null || prompt.trim().isEmpty) {
-      print('[$_tag:HOST] sendQuery - Missing or empty prompt');
-      print('Request Payload: ${jsonEncode(args)}');
+      _logService.error(_tag, 'sendQuery - Missing or empty prompt');
+      _logService.error(_tag, 'Request Payload: ${jsonEncode(args)}');
       throw Exception('Missing or empty required parameter: prompt');
     }
 
     // Get the agent
     final agent = await _configRepository.getTextAgentById(agentId);
     if (agent == null) {
-      print('[$_tag:HOST] sendQuery - Agent not found: $agentId');
-      print('Request Payload: ${jsonEncode(args)}');
+      _logService.error(_tag, 'sendQuery - Agent not found: $agentId');
+      _logService.error(_tag, 'Request Payload: ${jsonEncode(args)}');
       throw Exception('Agent not found: $agentId');
     }
 

@@ -6,6 +6,7 @@
 library;
 
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'dart:collection';
 
 /// Pseudo SendPort for Web environments
@@ -168,8 +169,15 @@ Future<(WebPseudoIsolate, WebReceivePort)> spawnWorker(
     try {
       entryPoint(message);
     } catch (e, stack) {
-      print('WebPseudoIsolate: Worker error: $e');
-      print(stack);
+      if (kDebugMode) {
+        // ignore: avoid_print
+        print('WebPseudoIsolate: Worker error: $e');
+        // ignore: avoid_print
+        print(stack);
+      }
+      // Note: Worker errors should ideally be sent to host via log message,
+      // but at this point the worker may not be fully initialized.
+      // The worker's _log() function will handle log forwarding once initialized.
       pseudoIsolate.kill();
     }
   });

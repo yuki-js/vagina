@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:vagina/services/call_service.dart';
+import 'package:vagina/services/log_service.dart';
 
 /// Host-side adapter for handling call control API calls from the isolate sandbox
 ///
@@ -8,8 +9,10 @@ import 'package:vagina/services/call_service.dart';
 class CallHostApi {
   static const _tag = 'CallHostApi';
   final CallService _callService;
+  final LogService _logService;
 
-  CallHostApi(this._callService);
+  CallHostApi(this._callService, {LogService? logService})
+      : _logService = logService ?? LogService();
 
   /// Handle API calls from the isolate
   ///
@@ -23,8 +26,8 @@ class CallHostApi {
       case 'end':
         return await _handleEnd(args);
       default:
-        print('[$_tag:HOST] Unknown method: $method');
-        print('Request Payload: ${jsonEncode(args)}');
+        _logService.error(_tag, 'Unknown method: $method');
+        _logService.error(_tag, 'Request Payload: ${jsonEncode(args)}');
         throw Exception('Unknown method: $method');
     }
   }

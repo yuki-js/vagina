@@ -4,6 +4,7 @@ import 'package:vagina/services/notepad_service.dart';
 import 'package:vagina/interfaces/tool_storage.dart';
 import 'package:vagina/interfaces/config_repository.dart';
 import 'package:vagina/services/call_service.dart';
+import 'package:vagina/services/log_service.dart';
 import 'package:vagina/services/tools_runtime/sandbox_platform_web.dart';
 import 'package:vagina/services/tools_runtime/sandbox_protocol.dart';
 import 'package:vagina/services/tools_runtime/host/notepad_host_api.dart';
@@ -32,6 +33,7 @@ class ToolSandboxManager {
   final ToolStorage _toolStorage;
   final ConfigRepository _configRepository;
   final CallService _callService;
+  final LogService _logService;
 
   late NotepadHostApi _notepadHostApi;
   late CallHostApi _callHostApi;
@@ -62,10 +64,12 @@ class ToolSandboxManager {
     required ToolStorage toolStorage,
     required CallService callService,
     required ConfigRepository configRepository,
+    LogService? logService,
   })  : _notepadService = notepadService,
         _toolStorage = toolStorage,
         _configRepository = configRepository,
-        _callService = callService {
+        _callService = callService,
+        _logService = logService ?? LogService() {
     _notepadHostApi = NotepadHostApi(_notepadService);
     _callHostApi = CallHostApi(_callService);
 
@@ -174,17 +178,17 @@ class ToolSandboxManager {
           if (data != null && data.isNotEmpty) {
             // Merge tool's data into toolsData
             toolsData.addAll(data);
-            print('$_tag: Loaded initialization data for ${tool.definition.toolKey}');
+            _logService.debug(_tag, 'Loaded initialization data for ${tool.definition.toolKey}');
           }
         } catch (e) {
-          print('$_tag: Error loading data for ${tool.definition.toolKey}: $e');
+          _logService.error(_tag, 'Error loading data for ${tool.definition.toolKey}: $e');
         }
       }
       
-      print('$_tag: Loaded initialization data for ${toolsData.keys.length} tool categories');
+      _logService.info(_tag, 'Loaded initialization data for ${toolsData.keys.length} tool categories');
       
     } catch (e) {
-      print('$_tag: Error loading tools data: $e');
+      _logService.error(_tag, 'Error loading tools data: $e');
     }
 
     return toolsData;
@@ -346,7 +350,7 @@ class ToolSandboxManager {
       },
       onError: (error) {
         // Log error but don't crash
-        print('$_tag: Error in message listener: $error');
+        _logService.error(_tag, 'Error in message listener: $error');
       },
       onDone: () {
         // Worker terminated
@@ -374,9 +378,15 @@ class ToolSandboxManager {
         return;
       }
 
-      print('$_tag: Unknown message type: $type');
+      // Handle log messages (one-way notification from worker)
+      if (type == 'log') {
+        _handleLogMessage(message);
+        return;
+      }
+
+      _logService.warn(_tag, 'Unknown message type: $type');
     } catch (e) {
-      print('$_tag: Error handling message: $e');
+      _logService.error(_tag, 'Error handling message: $e');
     }
   }
 
@@ -386,14 +396,52 @@ class ToolSandboxManager {
   void _handleResponseMessage(String requestId, Map<String, dynamic> message) {
     final completer = _pendingRequests[requestId];
     if (completer == null) {
-      print('$_tag: Received response for unknown request: $requestId');
+      _logService.warn(_tag, 'Received response for unknown request: $requestId');
       return;
     }
 
     try {
       completer.complete(message);
     } catch (e) {
-      print('$_tag: Error completing request $requestId: $e');
+      _logService.error(_tag, 'Error completing request $requestId: $e');
+    }
+  }
+
+  /// Handle a log message from the worker
+  ///
+  /// Forwards worker logs to the host's LogService.
+  /// This is a one-way notification (no response needed).
+  void _handleLogMessage(Map<String, dynamic> message) {
+    try {
+      final payload = message['payload'] as Map<String, dynamic>?;
+      if (payload == null) {
+        _logService.warn(_tag, 'Log message missing payload');
+        return;
+      }
+
+      final level = payload['level'] as String? ?? 'info';
+      final tag = payload['tag'] as String? ?? 'Worker';
+      final logMessage = payload['message'] as String? ?? '';
+
+      // Route to appropriate LogService method based on level
+      switch (level) {
+        case 'debug':
+          _logService.debug(tag, logMessage);
+          break;
+        case 'info':
+          _logService.info(tag, logMessage);
+          break;
+        case 'warn':
+          _logService.warn(tag, logMessage);
+          break;
+        case 'error':
+          _logService.error(tag, logMessage);
+          break;
+        default:
+          _logService.info(tag, logMessage);
+      }
+    } catch (e) {
+      _logService.error(_tag, 'Error handling log message: $e');
     }
   }
 
@@ -405,7 +453,7 @@ class ToolSandboxManager {
     try {
       // Extract replyTo port from message
       if (message['replyTo'] == null) {
-        print('[$_tag:HOST] hostCall missing replyTo port');
+        _logService.error(_tag, 'hostCall missing replyTo port');
         return;
       }
 
@@ -455,11 +503,12 @@ class ToolSandboxManager {
         final api = payload?['api'] as String? ?? 'unknown';
         final method = payload?['method'] as String? ?? 'unknown';
         final args = payload?['args'] as Map<String, dynamic>? ?? {};
-        print(
-            '[$_tag:HOST] Failed to handle hostCall for $api.$method\nError: $e\nRequest Payload: ${jsonEncode(args)}');
+        _logService.error(
+            _tag,
+            'Failed to handle hostCall for $api.$method\nError: $e\nRequest Payload: ${jsonEncode(args)}');
         _sendHostCallError(requestId, 'Error: $e', replyTo);
       } else {
-        print('[$_tag:HOST] Error in hostCall (no replyTo): $e');
+        _logService.error(_tag, 'Error in hostCall (no replyTo): $e');
       }
     }
   }
@@ -471,7 +520,7 @@ class ToolSandboxManager {
       final response = successResponse(requestId, result);
       replyTo.send(response);
     } catch (e) {
-      print('$_tag: Error sending hostCall response: $e');
+      _logService.error(_tag, 'Error sending hostCall response: $e');
     }
   }
 
@@ -482,7 +531,7 @@ class ToolSandboxManager {
       final response = errorResponse(requestId, error);
       replyTo.send(response);
     } catch (e) {
-      print('$_tag: Error sending hostCall error: $e');
+      _logService.error(_tag, 'Error sending hostCall error: $e');
     }
   }
 
@@ -492,7 +541,7 @@ class ToolSandboxManager {
 
   /// Handle worker termination
   void _handleWorkerDone() {
-    print('$_tag: Worker terminated');
+    _logService.info(_tag, 'Worker terminated');
     _isStarted = false;
 
     // Complete all pending requests with error
@@ -526,7 +575,7 @@ class ToolSandboxManager {
 
       _isStarted = false;
     } catch (e) {
-      print('$_tag: Error during cleanup: $e');
+      _logService.error(_tag, 'Error during cleanup: $e');
     }
   }
 }

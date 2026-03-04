@@ -94,6 +94,7 @@ void main() {
   generateErrorTone(outputDir);
   generateCancelTone(outputDir);
 
+  // ignore: avoid_print
   print('All sound effects generated successfully!');
 }
 
@@ -607,6 +608,7 @@ void _writeWavFile({required File file, required Int16List pcmSamples}) {
 
   final bytesOnDisk = file.lengthSync();
   final durationSeconds = pcmSamples.length / _sampleRate;
+  // ignore: avoid_print
   print(
     'Wrote ${file.path}: '
     '$bytesOnDisk bytes, '

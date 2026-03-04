@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:vagina/services/tools_runtime/sandbox_protocol.dart';
 import 'package:vagina/services/tools_runtime/tool.dart';
 import 'package:vagina/services/tools_runtime/tool_context.dart';
@@ -14,6 +15,9 @@ import 'sandbox_platform_native.dart'
     if (dart.library.html) 'sandbox_platform_web.dart' as platform;
 
 const String _tag = 'ToolSandboxWorker';
+
+/// Global reference to the current worker controller for logging
+_WorkerController? _currentController;
 
 /// Worker isolate entrypoint for tool sandbox execution.
 ///
@@ -39,6 +43,9 @@ void toolSandboxWorker(platform.PlatformSendPort hostSendPort) {
       hostSendPort: hostSendPort,
       workerReceivePort: workerReceivePort,
     );
+
+    // Set global controller reference for logging
+    _currentController = controller;
 
     // Start listening for messages
     controller.start();
@@ -627,8 +634,39 @@ class _WorkerController {
 }
 
 /// Log a message from the worker isolate
-void _log(String message) {
-  print('[$_tag] $message');
+void _log(String message, {String level = 'debug'}) {
+  // In debug mode, also print to console for immediate visibility
+  if (kDebugMode) {
+    // ignore: avoid_print
+    print('[$_tag] $message');
+  }
+
+  // Always send to host via log message
+  _sendLogToHost(level, _tag, message);
+}
+
+/// Send a log message to the host
+void _sendLogToHost(String level, String tag, String message) {
+  try {
+    final controller = _currentController;
+    if (controller == null) {
+      // Worker not initialized yet, fallback to print in debug mode
+      if (kDebugMode) {
+        // ignore: avoid_print
+        print('[$tag] (not connected) $message');
+      }
+      return;
+    }
+
+    final logMsg = logMessage(level, tag, message);
+    controller.hostSendPort.send(logMsg);
+  } catch (e) {
+    // If sending fails, fallback to print in debug mode
+    if (kDebugMode) {
+      // ignore: avoid_print
+      print('[$tag] (send failed) $message: $e');
+    }
+  }
 }
 
 class HostCallException implements Exception {

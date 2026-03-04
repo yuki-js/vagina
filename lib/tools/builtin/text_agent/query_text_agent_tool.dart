@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:vagina/interfaces/config_repository.dart';
+import 'package:vagina/services/log_service.dart';
 import 'package:vagina/services/tools_runtime/tool.dart';
 import 'package:vagina/services/tools_runtime/tool_definition.dart';
 
@@ -29,7 +30,7 @@ class QueryTextAgentTool extends Tool {
 
       return {'text_agents': agentConfigs};
     } catch (e) {
-      print('QueryTextAgentTool: Error loading initialization data: $e');
+      LogService().error('QueryTextAgentTool', 'Error loading initialization data: $e');
       return null;
     }
   }

@@ -91,6 +91,32 @@ abstract final class MessageType {
   ///
   /// Payload: `{toolKey: String, enabled: bool}`
   static const String setToolEnabled = 'setToolEnabled';
+
+  /// Worker-to-Host log message (one-way notification).
+  ///
+  /// Payload: `{level: String, tag: String, message: String}`
+  ///
+  /// This is a one-way notification that does not require a response.
+  /// The host will forward the log to LogService.
+  ///
+  /// Example:
+  /// ```dart
+  /// logMessage(
+  ///   'error',
+  ///   'ToolWorker',
+  ///   'Failed to initialize tool: permission denied'
+  /// )
+  /// // => {
+  /// //   type: 'log',
+  /// //   id: 'msg-12345-6',
+  /// //   payload: {
+  /// //     level: 'error',
+  /// //     tag: 'ToolWorker',
+  /// //     message: 'Failed to initialize tool: permission denied'
+  /// //   }
+  /// // }
+  /// ```
+  static const String log = 'log';
 }
 
 // ============================================================================
@@ -124,6 +150,7 @@ abstract final class MessageEnvelope {
     MessageType.listSessionDefinitions,
     MessageType.hostCall,
     MessageType.setToolEnabled,
+    MessageType.log,
   };
 
   /// Required envelope keys.
@@ -319,6 +346,45 @@ Map<String, dynamic> hostCallMessage(
     message['replyTo'] = replyTo;
   }
   return message;
+}
+
+/// Log message builder.
+///
+/// Sends a one-way log notification from worker to host.
+/// The host will forward this to LogService.
+///
+/// Parameters:
+/// - `level`: Log level ('debug', 'info', 'warn', 'error')
+/// - `tag`: Log tag (typically component name)
+/// - `message`: Log message
+/// - `id`: Optional message ID (auto-generated if omitted)
+///
+/// Returns: Complete message envelope ready to send
+///
+/// Example:
+/// ```dart
+/// final logMsg = logMessage(
+///   'error',
+///   'ToolWorker',
+///   'Failed to load tool definition',
+/// );
+/// hostPort.send(logMsg);
+/// ```
+Map<String, dynamic> logMessage(
+  String level,
+  String tag,
+  String message, {
+  String? id,
+}) {
+  return {
+    'type': MessageType.log,
+    'id': id ?? generateMessageId(),
+    'payload': {
+      'level': level,
+      'tag': tag,
+      'message': message,
+    },
+  };
 }
 
 // ============================================================================
