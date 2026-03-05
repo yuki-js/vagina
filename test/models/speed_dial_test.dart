@@ -52,7 +52,9 @@ void main() {
       expect(speedDial.enabledTools.length, 2);
     });
 
-    test('fromJson() should fallback to empty Map when enabledTools key is missing', () {
+    test(
+        'fromJson() should fallback to empty Map when enabledTools key is missing',
+        () {
       // Arrange
       final json = {
         'id': 'test-3',
@@ -71,7 +73,8 @@ void main() {
       expect(speedDial.enabledTools, const <String, bool>{});
     });
 
-    test('fromJson() should fallback to empty Map when enabledTools is null', () {
+    test('fromJson() should fallback to empty Map when enabledTools is null',
+        () {
       // Arrange
       final json = {
         'id': 'test-4',
@@ -116,7 +119,7 @@ void main() {
       expect(copied.enabledTools['tool1'], false);
       expect(copied.enabledTools['tool2'], true);
       expect(copied.enabledTools['tool3'], true);
-      
+
       // Original should remain unchanged
       expect(original.enabledTools['tool1'], true);
       expect(original.enabledTools['tool2'], false);

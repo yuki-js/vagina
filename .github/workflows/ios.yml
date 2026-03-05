@@ -38,6 +38,9 @@ jobs:
       
       - name: Install dependencies
         run: flutter pub get
+
+      - name: Generate code
+        run: dart run build_runner build --delete-conflicting-outputs
       
       - name: Analyze project source
         run: flutter analyze --no-fatal-infos
@@ -78,6 +81,9 @@ jobs:
       
       - name: Install dependencies
         run: flutter pub get
+
+      - name: Generate code
+        run: dart run build_runner build --delete-conflicting-outputs
       
       - name: Install CocoaPods
         run: |
@@ -85,21 +91,13 @@ jobs:
           pod install --repo-update
       
       - name: Build iOS (debug, no codesign)
-        run: flutter build ios --debug --no-codesign
-      
-      - name: Create Debug IPA
-        run: |
-          mkdir -p build/ios/ipa
-          cd build/ios/iphoneos
-          mkdir Payload
-          cp -r Runner.app Payload/
-          zip -r ../ipa/app-debug.ipa Payload
-      
+        run: flutter build ipa --debug --no-codesign
+
       - name: Upload Debug IPA
         uses: actions/upload-artifact@v7
         with:
           name: ios-debug-ipa
-          path: build/ios/ipa/app-debug.ipa
+          path: build/ios/ipa/*.ipa
           retention-days: 14
 
   build-ios-release:
@@ -138,6 +136,9 @@ jobs:
       
       - name: Install dependencies
         run: flutter pub get
+
+      - name: Generate code
+        run: dart run build_runner build --delete-conflicting-outputs
       
       - name: Install CocoaPods
         run: |
@@ -145,19 +146,11 @@ jobs:
           pod install --repo-update
       
       - name: Build iOS (release, no codesign)
-        run: flutter build ios --release --no-codesign
-      
-      - name: Create Release IPA
-        run: |
-          mkdir -p build/ios/ipa
-          cd build/ios/iphoneos
-          mkdir Payload
-          cp -r Runner.app Payload/
-          zip -r ../ipa/app-release.ipa Payload
-      
+        run: flutter build ipa --release --no-codesign
+
       - name: Upload Release IPA
         uses: actions/upload-artifact@v7
         with:
           name: ios-release-ipa
-          path: build/ios/ipa/app-release.ipa
+          path: build/ios/ipa/*.ipa
           retention-days: 30

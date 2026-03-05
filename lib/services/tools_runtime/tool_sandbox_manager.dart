@@ -170,7 +170,7 @@ class ToolSandboxManager {
     try {
       // Get all available tools from the catalog
       final tools = toolbox.tools;
-      
+
       // Ask each tool if it needs initialization data
       for (final tool in tools) {
         try {
@@ -178,15 +178,17 @@ class ToolSandboxManager {
           if (data != null && data.isNotEmpty) {
             // Merge tool's data into toolsData
             toolsData.addAll(data);
-            _logService.debug(_tag, 'Loaded initialization data for ${tool.definition.toolKey}');
+            _logService.debug(_tag,
+                'Loaded initialization data for ${tool.definition.toolKey}');
           }
         } catch (e) {
-          _logService.error(_tag, 'Error loading data for ${tool.definition.toolKey}: $e');
+          _logService.error(
+              _tag, 'Error loading data for ${tool.definition.toolKey}: $e');
         }
       }
-      
-      _logService.info(_tag, 'Loaded initialization data for ${toolsData.keys.length} tool categories');
-      
+
+      _logService.info(_tag,
+          'Loaded initialization data for ${toolsData.keys.length} tool categories');
     } catch (e) {
       _logService.error(_tag, 'Error loading tools data: $e');
     }
@@ -396,7 +398,8 @@ class ToolSandboxManager {
   void _handleResponseMessage(String requestId, Map<String, dynamic> message) {
     final completer = _pendingRequests[requestId];
     if (completer == null) {
-      _logService.warn(_tag, 'Received response for unknown request: $requestId');
+      _logService.warn(
+          _tag, 'Received response for unknown request: $requestId');
       return;
     }
 
@@ -503,8 +506,7 @@ class ToolSandboxManager {
         final api = payload?['api'] as String? ?? 'unknown';
         final method = payload?['method'] as String? ?? 'unknown';
         final args = payload?['args'] as Map<String, dynamic>? ?? {};
-        _logService.error(
-            _tag,
+        _logService.error(_tag,
             'Failed to handle hostCall for $api.$method\nError: $e\nRequest Payload: ${jsonEncode(args)}');
         _sendHostCallError(requestId, 'Error: $e', replyTo);
       } else {

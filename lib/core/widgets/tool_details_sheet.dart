@@ -43,7 +43,7 @@ class ToolDetailsSheet extends ConsumerWidget {
     return chatMessagesAsync.when(
       data: (messages) {
         final toolCall = _findToolCall(messages);
-        
+
         if (toolCall == null) {
           return _buildErrorState(context, 'Tool call not found');
         }
@@ -215,7 +215,7 @@ class ToolDetailsSheet extends ConsumerWidget {
 
   Widget _buildResultSection(ToolCallInfo toolCall) {
     final isError = toolCall.status == ToolCallStatus.error;
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

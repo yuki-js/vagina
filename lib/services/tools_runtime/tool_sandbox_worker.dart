@@ -171,7 +171,7 @@ class _WorkerController {
 
       // Extract toolsData for API client initialization
       final toolsData = payload['toolsData'] as Map<String, dynamic>?;
-      
+
       // Create and initialize API clients
       _createApiClients(toolsData);
 
@@ -203,7 +203,7 @@ class _WorkerController {
 
       _toolMap[tool.definition.toolKey] = tool;
     }
-    
+
     // Update TextAgentApiClient with tool calling support
     _updateTextAgentToolSupport();
   }
@@ -236,7 +236,7 @@ class _WorkerController {
       availableTools: [], // Will be populated after _initializeToolRegistry
     );
     _log('Created TextAgentApiClient');
-    
+
     // Extract and register per-agent tool configurations
     if (toolsData?['text_agents'] is List) {
       final agentConfigs = toolsData!['text_agents'] as List;
@@ -244,11 +244,12 @@ class _WorkerController {
         if (agentData is Map<String, dynamic>) {
           final agentId = agentData['id'] as String?;
           final enabledTools = agentData['enabledTools'];
-          
+
           if (agentId != null && enabledTools is Map) {
             final toolConfig = Map<String, bool>.from(enabledTools);
             _textAgentApiClient.updateAgentTools(agentId, toolConfig);
-            _log('Registered tool config for agent $agentId: ${toolConfig.length} entries');
+            _log(
+                'Registered tool config for agent $agentId: ${toolConfig.length} entries');
           }
         }
       }
@@ -260,7 +261,7 @@ class _WorkerController {
           await _makeHostCall('toolStorage', method, args),
     );
     _log('Created ToolStorageApiClient');
-    
+
     // Future: Other API clients can initialize themselves here
     // if (toolsData?['database'] != null) {
     //   _databaseApiClient.initialize(toolsData['database']);
@@ -571,20 +572,20 @@ class _WorkerController {
     Map<String, dynamic> args,
   ) async {
     _log('Internal tool execution: $toolKey');
-    
+
     final tool = _toolMap[toolKey];
     if (tool == null) {
       throw UnknownToolException('Tool not found: $toolKey');
     }
-    
+
     // Execute tool and return result
     return await tool.execute(args);
   }
-  
+
   /// Update TextAgentApiClient with available tools after registry initialization
   void _updateTextAgentToolSupport() {
     _log('Updating TextAgentApiClient with tool definitions');
-    
+
     // Build Chat Completions API compatible tool list
     final availableTools = _toolMap.values.map((tool) {
       return {
@@ -596,10 +597,10 @@ class _WorkerController {
         },
       };
     }).toList();
-    
+
     // Update client with tools
     _textAgentApiClient.updateTools(availableTools);
-    
+
     _log('Updated ${availableTools.length} tools for TextAgentApiClient');
   }
 

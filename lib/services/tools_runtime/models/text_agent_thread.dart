@@ -1,10 +1,10 @@
 import 'dart:collection';
 
 /// A single text agent's conversation thread (mutable).
-/// 
+///
 /// Manages the message history for Chat Completions API calls,
 /// storing messages as `Map<String, dynamic>` to match the API format.
-/// 
+///
 /// Messages are accumulated during a call session and automatically
 /// cleared when the isolate is disposed (at call end).
 class TextAgentThread {
@@ -23,13 +23,14 @@ class TextAgentThread {
   }
 
   /// Add an assistant message (directly from API response).
-  /// 
+  ///
   /// The [message] map should be the assistant message object from
   /// the Chat Completions API response, which may contain `content`
   /// and/or `tool_calls`.
   void addAssistant(Map<String, dynamic> message) {
     if (message['role'] != 'assistant') {
-      throw ArgumentError('Expected assistant message, got: ${message['role']}');
+      throw ArgumentError(
+          'Expected assistant message, got: ${message['role']}');
     }
     _messages.add(message);
   }
@@ -45,7 +46,7 @@ class TextAgentThread {
   }
 
   /// Remove the oldest [count] messages from the thread.
-  /// 
+  ///
   /// Used for context length error recovery.
   /// If [count] is greater than the current message count, all messages are removed.
   void trimOldest(int count) {

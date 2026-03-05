@@ -30,7 +30,8 @@ class QueryTextAgentTool extends Tool {
 
       return {'text_agents': agentConfigs};
     } catch (e) {
-      LogService().error('QueryTextAgentTool', 'Error loading initialization data: $e');
+      LogService()
+          .error('QueryTextAgentTool', 'Error loading initialization data: $e');
       return null;
     }
   }

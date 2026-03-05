@@ -199,14 +199,16 @@ class TabularData {
 
     final columns = records.first;
     if (columns.isEmpty) {
-      throw const TabularDataException('CSV header row must have at least one column');
+      throw const TabularDataException(
+          'CSV header row must have at least one column');
     }
 
     // Check for duplicate column names
     final seen = <String>{};
     for (final col in columns) {
       if (!seen.add(col)) {
-        throw TabularDataException('Duplicate column name in CSV header: "$col"');
+        throw TabularDataException(
+            'Duplicate column name in CSV header: "$col"');
       }
     }
 
@@ -293,7 +295,9 @@ class TabularData {
     }
 
     // Remove trailing empty record (e.g., trailing newline)
-    if (records.isNotEmpty && records.last.length == 1 && records.last[0].isEmpty) {
+    if (records.isNotEmpty &&
+        records.last.length == 1 &&
+        records.last[0].isEmpty) {
       // Only remove if it was caused by a trailing newline, not a real single-field row
       // Check: if header has more than 1 column and last row is just [''], remove it
       if (records.length > 1 && records.first.length > 1) {
@@ -367,7 +371,8 @@ class TabularData {
   // ---------------------------------------------------------------------------
 
   static TabularData _parseJsonl2d(String content) {
-    final lines = content.split('\n').where((l) => l.trim().isNotEmpty).toList();
+    final lines =
+        content.split('\n').where((l) => l.trim().isNotEmpty).toList();
 
     if (lines.isEmpty) {
       return const TabularData(columns: [], rows: []);

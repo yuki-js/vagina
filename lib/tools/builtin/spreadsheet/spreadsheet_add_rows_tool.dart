@@ -62,9 +62,8 @@ class SpreadsheetAddRowsTool extends Tool {
       default:
         return jsonEncode({
           'success': false,
-          'error':
-              'Tab "$tabId" is not a tabular type (mimeType: $mimeType). '
-                  'Expected one of: text/csv, application/vagina-2d+json, application/vagina-2d+jsonl',
+          'error': 'Tab "$tabId" is not a tabular type (mimeType: $mimeType). '
+              'Expected one of: text/csv, application/vagina-2d+json, application/vagina-2d+jsonl',
         });
     }
 
@@ -73,9 +72,8 @@ class SpreadsheetAddRowsTool extends Tool {
     try {
       final data = TabularData.parse(content, mimeType);
 
-      final newRows = rowsRaw
-          .map((r) => Map<String, dynamic>.from(r as Map))
-          .toList();
+      final newRows =
+          rowsRaw.map((r) => Map<String, dynamic>.from(r as Map)).toList();
 
       final updated = data.addRows(newRows);
       final serialized = updated.serialize(mimeType);

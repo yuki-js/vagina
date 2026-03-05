@@ -285,7 +285,7 @@ class ChatMessageManager {
     // For backward compatibility, create a completed tool call directly
     // Generate a pseudo call_id since we don't have one
     final callId = 'legacy_${DateTime.now().millisecondsSinceEpoch}';
-    
+
     final toolCallInfo = ToolCallInfo(
       callId: callId,
       name: toolName,
