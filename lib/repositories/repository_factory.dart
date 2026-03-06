@@ -3,12 +3,14 @@ import 'package:vagina/core/data/json_file_store.dart';
 import 'package:vagina/interfaces/call_session_repository.dart';
 import 'package:vagina/interfaces/config_repository.dart';
 import 'package:vagina/interfaces/key_value_store.dart';
+import 'package:vagina/interfaces/skill_repository.dart';
 import 'package:vagina/interfaces/speed_dial_repository.dart';
 import 'package:vagina/interfaces/tool_storage.dart';
 import 'package:vagina/services/log_service.dart';
 
 import 'json_call_session_repository.dart';
 import 'json_config_repository.dart';
+import 'json_skill_repository.dart';
 import 'json_speed_dial_repository.dart';
 import 'json_tool_storage.dart';
 import 'preferences_repository.dart';
@@ -21,6 +23,7 @@ class RepositoryFactory {
   static KeyValueStore? _store;
   static CallSessionRepository? _callSessionRepo;
   static SpeedDialRepository? _speedDialRepo;
+  static SkillRepository? _skillRepo;
   static ToolStorage? _toolStorage;
   static ConfigRepository? _configRepo;
   static PreferencesRepository? _preferencesRepo;
@@ -69,6 +72,12 @@ class RepositoryFactory {
         JsonSpeedDialRepository(_store!, logService: _logService);
   }
 
+  /// Get the Skill repository
+  static SkillRepository get skills {
+    _ensureInitialized();
+    return _skillRepo ??= JsonSkillRepository(_store!, logService: _logService);
+  }
+
   /// Get the Tool Storage repository (per-tool isolated storage)
   static ToolStorage get toolStorage {
     _ensureInitialized();
@@ -101,6 +110,7 @@ class RepositoryFactory {
     _store = null;
     _callSessionRepo = null;
     _speedDialRepo = null;
+    _skillRepo = null;
     _toolStorage = null;
     _configRepo = null;
     _preferencesRepo = null;
