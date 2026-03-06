@@ -190,6 +190,7 @@ vagina/
 - [テキストエージェント アーキテクチャ](docs/development/text_agent_architecture.md) - システム設計とコンポーネント
 - [ツール開発ガイド](docs/development/tool_development.md) - 新しいツールの作成方法
 - [API リファレンス](docs/api/text_agent_api.md) - テキストエージェント API仕様
+- [日本の確定申告機能 設計書](docs/development/japan-tax-return-feature-design.md) - 確定申告/決算支援機能の検討・設計
 
 ### その他のドキュメント
 - [アーキテクチャ](docs/ARCHITECTURE.md) - 全体システム設計
