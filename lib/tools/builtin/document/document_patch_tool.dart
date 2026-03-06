@@ -1,126 +1,201 @@
 import 'dart:convert';
 
-import 'package:diff_match_patch/diff_match_patch.dart';
 import 'package:vagina/services/tools_runtime/tool.dart';
 import 'package:vagina/services/tools_runtime/tool_definition.dart';
 
-/// unified diff形式のパッチをdiff_match_patchライブラリの形式に変換
-///
-/// diff_match_patchライブラリは2種類のパッチを処理できる：
-/// 1. ライブラリ生成パッチ: URLエンコードされたコンテンツ (%0A, %E3など)
-/// 2. AI生成パッチ: 非ASCIIにはエンコードが必要なプレーンテキスト
-///
-/// This function:
-/// - If patch already has URL-encoding, returns as-is
-/// - If patch has non-ASCII characters, encodes them and adds %0A line endings
-/// - Otherwise, returns as-is (ASCII-only library patches)
-String _encodePatchText(String patchText) {
-  final lines = patchText.split('\n');
-  final headerPattern = RegExp(r'^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@');
+class _DocumentPatchFailure implements Exception {
+  final Map<String, dynamic> details;
 
-  // Pattern to detect UTF-8 multi-byte characters in URL-encoded format
-  // Matches patterns like %E3%81%82 (Japanese hiragana あ)
-  // First byte: %C0-%DF (2-byte), %E0-%EF (3-byte), %F0-%F7 (4-byte)
-  // Continuation bytes: %80-%BF
-  final urlEncodedMultibytePattern =
-      RegExp(r'%[EeDdCc][0-9A-Fa-f]%[89AaBb][0-9A-Fa-f]');
+  _DocumentPatchFailure(this.details);
 
-  // Pattern to detect non-ASCII characters (any character outside 0x00-0x7F range)
-  final nonAsciiPattern = RegExp(r'[^\x00-\x7F]');
+  @override
+  String toString() => jsonEncode(details);
+}
 
-  // Check if patch content contains URL-encoded sequences or non-ASCII characters
-  var hasUrlEncoding = false;
-  var hasNonAscii = false;
+Map<String, dynamic> _coercePatchToObject(dynamic rawPatch) {
+  if (rawPatch is Map<String, dynamic>) {
+    return rawPatch;
+  }
+  if (rawPatch is Map) {
+    return Map<String, dynamic>.from(rawPatch);
+  }
 
-  for (final line in lines) {
-    if (line.isNotEmpty &&
-        !headerPattern.hasMatch(line) &&
-        (line.startsWith('+') ||
-            line.startsWith('-') ||
-            line.startsWith(' '))) {
-      final content = line.substring(1);
+  if (rawPatch is String) {
+    final trimmed = rawPatch.trim();
+    if (trimmed.isEmpty) {
+      throw _DocumentPatchFailure({
+        'success': false,
+        'errorCode': 'INVALID_PATCH_SCHEMA',
+        'error': 'patch must be a non-empty object',
+      });
+    }
 
-      // Check for URL-encoded newline (%0A) or multi-byte characters
-      if (content.contains('%0A') ||
-          urlEncodedMultibytePattern.hasMatch(content)) {
-        hasUrlEncoding = true;
-        break;
+    try {
+      final decoded = jsonDecode(trimmed);
+      if (decoded is Map) {
+        return Map<String, dynamic>.from(decoded);
       }
 
-      // Check for non-ASCII characters
-      if (nonAsciiPattern.hasMatch(content)) {
-        hasNonAscii = true;
-      }
+      throw _DocumentPatchFailure({
+        'success': false,
+        'errorCode': 'INVALID_PATCH_SCHEMA',
+        'error': 'patch must be a JSON object',
+      });
+    } catch (_) {
+      // Backward-incompatible change: unified diff is no longer supported.
+      throw _DocumentPatchFailure({
+        'success': false,
+        'errorCode': 'UNSUPPORTED_PATCH_FORMAT',
+        'error':
+            'document_patch no longer accepts unified diff strings. Provide a structured patch object instead.',
+      });
     }
   }
 
-  // If already URL-encoded, return as-is
-  if (hasUrlEncoding) {
-    return patchText;
+  throw _DocumentPatchFailure({
+    'success': false,
+    'errorCode': 'INVALID_PATCH_SCHEMA',
+    'error': 'patch must be an object',
+  });
+}
+
+int _findNthOccurrence(String content, String target, int occurrence) {
+  if (occurrence < 1) return -1;
+
+  var fromIndex = 0;
+  var idx = -1;
+
+  for (var i = 0; i < occurrence; i++) {
+    idx = content.indexOf(target, fromIndex);
+    if (idx < 0) return -1;
+    fromIndex = idx + target.length;
   }
 
-  // If no non-ASCII characters, assume it's a library patch and return as-is
-  if (!hasNonAscii) {
-    return patchText;
+  return idx;
+}
+
+String _applyOperation(
+  String content,
+  Map<String, dynamic> op,
+  int index,
+) {
+  final opType = op['op'];
+  final target = op['target'];
+
+  if (opType is! String) {
+    throw _DocumentPatchFailure({
+      'success': false,
+      'errorCode': 'INVALID_PATCH_SCHEMA',
+      'error': 'operations[$index].op must be a string',
+      'failedOperationIndex': index,
+    });
+  }
+  if (target is! String || target.isEmpty) {
+    throw _DocumentPatchFailure({
+      'success': false,
+      'errorCode': 'INVALID_PATCH_SCHEMA',
+      'error': 'operations[$index].target must be a non-empty string',
+      'failedOperationIndex': index,
+    });
   }
 
-  // Has non-ASCII, needs encoding - this is an AI-generated patch
-  // Find all patch sections
-  final sections = <List<String>>[];
-  List<String>? currentSection;
-
-  for (final line in lines) {
-    if (headerPattern.hasMatch(line)) {
-      if (currentSection != null) {
-        sections.add(currentSection);
-      }
-      currentSection = [line];
-    } else if (currentSection != null) {
-      currentSection.add(line);
+  final rawOccurrence = op['occurrence'];
+  var occurrence = 1;
+  if (rawOccurrence != null) {
+    if (rawOccurrence is int) {
+      occurrence = rawOccurrence;
+    } else if (rawOccurrence is num && rawOccurrence % 1 == 0) {
+      occurrence = rawOccurrence.toInt();
+    } else {
+      throw _DocumentPatchFailure({
+        'success': false,
+        'errorCode': 'INVALID_PATCH_SCHEMA',
+        'error': 'operations[$index].occurrence must be an integer >= 1',
+        'failedOperationIndex': index,
+      });
+    }
+    if (occurrence < 1) {
+      throw _DocumentPatchFailure({
+        'success': false,
+        'errorCode': 'INVALID_PATCH_SCHEMA',
+        'error': 'operations[$index].occurrence must be an integer >= 1',
+        'failedOperationIndex': index,
+      });
     }
   }
-  if (currentSection != null && currentSection.isNotEmpty) {
-    sections.add(currentSection);
+
+  final start = _findNthOccurrence(content, target, occurrence);
+  if (start < 0) {
+    throw _DocumentPatchFailure({
+      'success': false,
+      'errorCode': 'TARGET_NOT_FOUND',
+      'error':
+          'Target text not found for operations[$index] (occurrence=$occurrence). Ensure target is copied exactly from the current document.',
+      'failedOperationIndex': index,
+      'op': opType,
+      'occurrence': occurrence,
+    });
   }
 
-  if (sections.isEmpty) {
-    return patchText;
-  }
-
-  final encodedSections = <String>[];
-
-  for (final section in sections) {
-    final header = section[0];
-    final processedLines = <String>[];
-    processedLines.add(header);
-
-    for (var i = 1; i < section.length; i++) {
-      final line = section[i];
-
-      if (line.isEmpty) continue;
-
-      if (line.startsWith('+') ||
-          line.startsWith('-') ||
-          line.startsWith(' ')) {
-        final prefix = line[0];
-        final content = line.substring(1);
-
-        // URL encode the content
-        var encoded = Uri.encodeFull(content);
-        encoded = encoded.replaceAll('%20', ' ');
-        // Add newline at end - AI patches represent full lines
-        encoded = '$encoded%0A';
-
-        processedLines.add('$prefix$encoded');
-      } else {
-        processedLines.add(line);
+  switch (opType) {
+    case 'replace':
+      final newText = op['newText'];
+      if (newText is! String) {
+        throw _DocumentPatchFailure({
+          'success': false,
+          'errorCode': 'INVALID_PATCH_SCHEMA',
+          'error': 'operations[$index].newText must be a string for op=replace',
+          'failedOperationIndex': index,
+        });
       }
-    }
+      return content.replaceRange(start, start + target.length, newText);
 
-    encodedSections.add(processedLines.join('\n'));
+    case 'insert_before':
+      final newText = op['newText'];
+      if (newText is! String) {
+        throw _DocumentPatchFailure({
+          'success': false,
+          'errorCode': 'INVALID_PATCH_SCHEMA',
+          'error':
+              'operations[$index].newText must be a string for op=insert_before',
+          'failedOperationIndex': index,
+        });
+      }
+      return content.replaceRange(start, start, newText);
+
+    case 'insert_after':
+      final newText = op['newText'];
+      if (newText is! String) {
+        throw _DocumentPatchFailure({
+          'success': false,
+          'errorCode': 'INVALID_PATCH_SCHEMA',
+          'error':
+              'operations[$index].newText must be a string for op=insert_after',
+          'failedOperationIndex': index,
+        });
+      }
+      return content.replaceRange(start + target.length, start + target.length,
+          newText);
+
+    case 'delete':
+      return content.replaceRange(start, start + target.length, '');
+
+    default:
+      throw _DocumentPatchFailure({
+        'success': false,
+        'errorCode': 'INVALID_PATCH_SCHEMA',
+        'error':
+            'operations[$index].op must be one of: replace, insert_before, insert_after, delete',
+        'failedOperationIndex': index,
+      });
   }
+}
 
-  return encodedSections.join('\n');
+bool _isTabularMimeType(String? mimeType) {
+  if (mimeType == null) return false;
+  return mimeType == 'text/csv' ||
+      mimeType == 'application/vagina-2d+json' ||
+      mimeType == 'application/vagina-2d+jsonl';
 }
 
 class DocumentPatchTool extends Tool {
@@ -136,10 +211,18 @@ class DocumentPatchTool extends Tool {
         sourceKey: 'builtin',
         publishedBy: 'aokiapp',
         description:
-            'Apply a unified diff patch to an existing text document. Use standard unified diff format (like git diff or diff -u). '
-            'This is the preferred way to make small changes to existing text documents (text/markdown, text/plain, text/html). '
+            'Edit an existing text document using structured patch operations (NOT unified diff). '
+            'Each operation finds an exact target snippet copied from the current document and then replaces/inserts/deletes it. '
+            'This is intended for small localized edits on text documents (text/markdown, text/plain, text/html). '
             'Do NOT use this for tabular/spreadsheet documents (text/csv, application/vagina-2d+json, application/vagina-2d+jsonl). '
-            'For spreadsheet edits, use spreadsheet_add_rows, spreadsheet_update_rows, or spreadsheet_delete_rows instead.',
+            'For spreadsheet edits, use spreadsheet_add_rows, spreadsheet_update_rows, or spreadsheet_delete_rows instead.\n\n'
+            'Patch format example:\n'
+            '{\n'
+            '  "operations": [\n'
+            '    {"op": "replace", "target": "old text", "newText": "new text"},\n'
+            '    {"op": "insert_after", "target": "Heading\\n", "newText": "\\nNew paragraph\\n"}\n'
+            '  ]\n'
+            '}',
         parametersSchema: {
           'type': 'object',
           'properties': {
@@ -148,9 +231,48 @@ class DocumentPatchTool extends Tool {
               'description': 'ID of the tab containing the document to patch',
             },
             'patch': {
-              'type': 'string',
+              'type': 'object',
               'description':
-                  'Unified diff format patch to apply. Lines starting with "-" are removed, lines starting with "+" are added. Context lines (no prefix) help locate the change.',
+                  'Structured patch object. Contains an ordered list of operations to apply.',
+              'properties': {
+                'operations': {
+                  'type': 'array',
+                  'description': 'Patch operations to apply in order',
+                  'items': {
+                    'type': 'object',
+                    'properties': {
+                      'op': {
+                        'type': 'string',
+                        'enum': [
+                          'replace',
+                          'insert_before',
+                          'insert_after',
+                          'delete',
+                        ],
+                        'description': 'Operation type',
+                      },
+                      'target': {
+                        'type': 'string',
+                        'description':
+                            'Exact text snippet copied from the current document. Can be multiline.',
+                      },
+                      'occurrence': {
+                        'type': 'integer',
+                        'minimum': 1,
+                        'description':
+                            'Which occurrence of target to edit (1-based). Defaults to 1 if omitted.',
+                      },
+                      'newText': {
+                        'type': 'string',
+                        'description':
+                            'New text for replace/insert operations. Omit or empty for delete.',
+                      },
+                    },
+                    'required': ['op', 'target'],
+                  },
+                },
+              },
+              'required': ['operations'],
             },
           },
           'required': ['tabId', 'patch'],
@@ -160,84 +282,103 @@ class DocumentPatchTool extends Tool {
   @override
   Future<String> execute(Map<String, dynamic> args) async {
     final tabId = args['tabId'] as String;
-    final patchText = args['patch'] as String;
+    final rawPatch = args['patch'];
 
     final tab = await context.notepadApi.getTab(tabId);
     if (tab == null) {
-      return jsonEncode({
+      throw _DocumentPatchFailure({
         'success': false,
+        'errorCode': 'TAB_NOT_FOUND',
         'error': 'Tab not found: $tabId',
       });
     }
 
-    final originalContent = tab['content'] as String;
-
-    // Convert plain diff format to URL-encoded format expected by the library
-    final encodedPatch = _encodePatchText(patchText);
-
-    // Parse the patch
-    List<Patch> patches;
-    try {
-      patches = patchFromText(encodedPatch);
-    } catch (e) {
-      return jsonEncode({
+    final mimeType = tab['mimeType'] as String?;
+    if (_isTabularMimeType(mimeType)) {
+      throw _DocumentPatchFailure({
         'success': false,
-        'error': 'Invalid patch format: $e. Please use unified diff format.',
-      });
-    }
-
-    if (patches.isEmpty) {
-      return jsonEncode({
-        'success': false,
-        'error': 'No valid patches found in the provided diff.',
-      });
-    }
-
-    // Apply the patch
-    final result = patchApply(patches, originalContent);
-    final patchedContent = result[0] as String;
-    final patchResults = result[1] as List<bool>;
-
-    // Check if all patches were applied successfully
-    final successCount = patchResults.where((r) => r).length;
-    final failCount = patchResults.where((r) => !r).length;
-
-    if (failCount > 0 && successCount == 0) {
-      return jsonEncode({
-        'success': false,
+        'errorCode': 'UNSUPPORTED_MIME_TYPE',
         'error':
-            'Failed to apply any patches. The document content may have changed since the diff was created.',
-        'failedPatches': failCount,
+            'Tab "$tabId" is a tabular type (mimeType: $mimeType). document_patch only supports text documents.',
       });
     }
 
-    // Update the document
+    final originalContent = tab['content'] as String?;
+    if (originalContent == null) {
+      throw _DocumentPatchFailure({
+        'success': false,
+        'errorCode': 'INVALID_DOCUMENT',
+        'error': 'Tab "$tabId" has no string content.',
+      });
+    }
+
+    final patchObj = _coercePatchToObject(rawPatch);
+    final operationsRaw = patchObj['operations'];
+    if (operationsRaw is! List) {
+      throw _DocumentPatchFailure({
+        'success': false,
+        'errorCode': 'INVALID_PATCH_SCHEMA',
+        'error': 'patch.operations must be an array',
+      });
+    }
+    if (operationsRaw.isEmpty) {
+      throw _DocumentPatchFailure({
+        'success': false,
+        'errorCode': 'INVALID_PATCH_SCHEMA',
+        'error': 'patch.operations must not be empty',
+      });
+    }
+
+    // Apply operations on a working copy. Persist only if ALL operations succeed.
+    var working = originalContent;
+    final operationResults = <Map<String, dynamic>>[];
+
+    for (var i = 0; i < operationsRaw.length; i++) {
+      final rawOp = operationsRaw[i];
+      if (rawOp is! Map) {
+        throw _DocumentPatchFailure({
+          'success': false,
+          'errorCode': 'INVALID_PATCH_SCHEMA',
+          'error': 'operations[$i] must be an object',
+          'failedOperationIndex': i,
+        });
+      }
+
+      final op = Map<String, dynamic>.from(rawOp);
+
+      try {
+        working = _applyOperation(working, op, i);
+        operationResults.add({
+          'index': i,
+          'op': op['op'],
+          'success': true,
+        });
+      } on _DocumentPatchFailure catch (e) {
+        // Include partial progress for debugging, but treat as tool error.
+        final details = Map<String, dynamic>.from(e.details);
+        details['operationResults'] = operationResults;
+        throw _DocumentPatchFailure(details);
+      }
+    }
+
     final updateSuccess =
-        await context.notepadApi.updateTab(tabId, content: patchedContent);
+        await context.notepadApi.updateTab(tabId, content: working);
 
     if (!updateSuccess) {
-      return jsonEncode({
+      throw _DocumentPatchFailure({
         'success': false,
-        'error': 'Failed to update document after applying patches.',
-      });
-    }
-
-    if (failCount > 0) {
-      return jsonEncode({
-        'success': true,
+        'errorCode': 'UPDATE_FAILED',
+        'error': 'Failed to update document after applying operations.',
         'tabId': tabId,
-        'appliedPatches': successCount,
-        'failedPatches': failCount,
-        'warning':
-            'Some patches could not be applied. $successCount succeeded, $failCount failed.',
       });
     }
 
     return jsonEncode({
       'success': true,
       'tabId': tabId,
-      'appliedPatches': successCount,
-      'message': 'All patches applied successfully',
+      'appliedOperations': operationsRaw.length,
+      'message': 'All operations applied successfully',
+      'operationResults': operationResults,
     });
   }
 }
