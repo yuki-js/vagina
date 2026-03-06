@@ -3,7 +3,9 @@ import 'package:vagina/core/state/log_provider.dart';
 import 'package:vagina/core/data/permission_manager.dart';
 import 'package:vagina/interfaces/call_session_repository.dart';
 import 'package:vagina/interfaces/config_repository.dart';
+import 'package:vagina/interfaces/skill_repository.dart';
 import 'package:vagina/interfaces/speed_dial_repository.dart';
+import 'package:vagina/models/skill.dart';
 import 'package:vagina/interfaces/tool_storage.dart';
 import 'package:vagina/repositories/preferences_repository.dart';
 import 'package:vagina/repositories/repository_factory.dart';
@@ -18,6 +20,17 @@ CallSessionRepository callSessionRepository(Ref ref) {
 @Riverpod(keepAlive: true)
 SpeedDialRepository speedDialRepository(Ref ref) {
   return RepositoryFactory.speedDials;
+}
+
+@Riverpod(keepAlive: true)
+SkillRepository skillRepository(Ref ref) {
+  return RepositoryFactory.skills;
+}
+
+@riverpod
+Future<List<Skill>> skills(Ref ref) async {
+  final repo = ref.watch(skillRepositoryProvider);
+  return repo.getAll();
 }
 
 @Riverpod(keepAlive: true)

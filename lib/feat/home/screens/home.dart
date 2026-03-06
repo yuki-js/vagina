@@ -5,8 +5,10 @@ import 'package:vagina/feat/about/screens/about.dart';
 import 'package:vagina/feat/home/tabs/agents.dart';
 import 'package:vagina/feat/home/tabs/marketplace.dart';
 import 'package:vagina/feat/home/tabs/sessions.dart';
+import 'package:vagina/feat/home/tabs/skills.dart';
 import 'package:vagina/feat/home/tabs/speed_dial.dart';
 import 'package:vagina/feat/settings/screens/settings.dart';
+import 'package:vagina/feat/skills/screens/skill_editor.dart';
 import 'package:vagina/feat/speed_dial/screens/config.dart';
 import 'package:vagina/feat/text_agents/ui/screens/agent_form_screen.dart';
 import 'package:vagina/utils/call_navigation_utils.dart';
@@ -46,6 +48,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       label: 'エージェント',
       canAdd: true,
     ),
+    _TabInfo(
+      icon: Icons.auto_awesome,
+      label: 'スキル',
+      canAdd: true,
+    ),
   ];
 
   static final List<Widget> _pages = [
@@ -53,6 +60,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     const SessionsTab(),
     const MarketplaceTab(),
     const AgentsTab(),
+    const SkillsTab(),
   ];
 
   // Reserve the middle slot in BottomNavigationBar for the FAB.
@@ -96,6 +104,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         // Agents tab
         await _addTextAgent();
         break;
+      case 4:
+        // Skills tab
+        await _addSkill();
+        break;
     }
   }
 
@@ -111,6 +123,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => const AgentFormScreen(),
+      ),
+    );
+  }
+
+  Future<void> _addSkill() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const SkillEditorScreen(),
       ),
     );
   }
@@ -246,6 +266,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           BottomNavigationBarItem(
             icon: Icon(_tabs[3].icon),
             label: _tabs[3].label,
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(_tabs[4].icon),
+            label: _tabs[4].label,
           ),
         ],
       ),
