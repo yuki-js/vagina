@@ -3,8 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:vagina/core/theme/app_theme.dart';
 
-/// Popup menu with copy, share, edit, undo, and redo options for notepad content
-class NotepadMoreMenu extends StatelessWidget {
+/// Popup menu with copy/share/edit actions for open-file content.
+class OpenFilesMoreMenu extends StatelessWidget {
   final String content;
   final bool isEditing;
   final VoidCallback? onEditToggle;
@@ -14,7 +14,7 @@ class NotepadMoreMenu extends StatelessWidget {
   final bool canUndo;
   final bool canRedo;
 
-  const NotepadMoreMenu({
+  const OpenFilesMoreMenu({
     super.key,
     required this.content,
     this.isEditing = false,

@@ -9,8 +9,8 @@ class EditHistoryEntry {
   });
 }
 
-/// Represents a single notepad tab
-class NotepadTab {
+/// Represents a single open-file tab in the call UI.
+class OpenFileTab {
   final String id;
   final String title;
   final String content;
@@ -20,7 +20,7 @@ class NotepadTab {
   final List<EditHistoryEntry> history;
   final int currentHistoryIndex;
 
-  const NotepadTab({
+  const OpenFileTab({
     required this.id,
     required this.title,
     required this.content,
@@ -31,7 +31,7 @@ class NotepadTab {
     this.currentHistoryIndex = 0,
   });
 
-  NotepadTab copyWith({
+  OpenFileTab copyWith({
     String? id,
     String? title,
     String? content,
@@ -41,7 +41,7 @@ class NotepadTab {
     List<EditHistoryEntry>? history,
     int? currentHistoryIndex,
   }) {
-    return NotepadTab(
+    return OpenFileTab(
       id: id ?? this.id,
       title: title ?? this.title,
       content: content ?? this.content,

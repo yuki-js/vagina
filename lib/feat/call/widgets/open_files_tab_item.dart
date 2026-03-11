@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 
-import 'package:vagina/models/notepad_tab.dart';
+import 'package:vagina/models/open_file_tab.dart';
 import 'package:vagina/core/theme/app_theme.dart';
 
-/// Individual notepad tab item.
-class NotepadTabItem extends StatelessWidget {
-  final NotepadTab tab;
+/// Individual open-file tab item.
+class OpenFilesTabItem extends StatelessWidget {
+  final OpenFileTab tab;
   final bool isSelected;
   final VoidCallback onTap;
   final VoidCallback onClose;
 
-  const NotepadTabItem({
+  const OpenFilesTabItem({
     super.key,
     required this.tab,
     required this.isSelected,

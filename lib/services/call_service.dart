@@ -565,6 +565,9 @@ class CallService {
     // Play call end tone
     await _feedback.playCallEndTone();
 
+    // Persist all active/open files before session capture and cleanup.
+    await _persistOpenFilesForEndCall();
+
     // Save session before cleanup
     await _saveSession();
 
@@ -627,6 +630,50 @@ class CallService {
       await sandbox.writeFile(path, active['content'] ?? '');
     }
     await sandbox.closeActiveFile(path);
+  }
+
+  Future<void> _persistOpenFilesForEndCall() async {
+    final sandbox = _sandboxManager;
+    if (sandbox == null) {
+      return;
+    }
+
+    List<Map<String, String>> activeFiles;
+    try {
+      activeFiles = await sandbox.listActiveFiles();
+      onActiveFilesChanged(activeFiles);
+    } catch (e) {
+      _logService.error(_tag, 'Failed to list active files before endCall: $e');
+      return;
+    }
+
+    if (activeFiles.isEmpty) {
+      return;
+    }
+
+    var persistedCount = 0;
+    for (final activeFile in activeFiles) {
+      final path = activeFile['path'];
+      if (path == null || path.isEmpty) {
+        continue;
+      }
+
+      final content = activeFile['content'] ?? '';
+      try {
+        await sandbox.writeFile(path, content);
+        persistedCount++;
+      } catch (e) {
+        _logService.error(
+          _tag,
+          'Failed to persist active file during endCall: $path, error: $e',
+        );
+      }
+    }
+
+    _logService.info(
+      _tag,
+      'Persisted $persistedCount/${activeFiles.length} active file(s) during endCall',
+    );
   }
 
   Future<void> refreshToolsForActiveFiles() async {
@@ -772,6 +819,15 @@ class CallService {
                 'timestamp': msg.timestamp.toIso8601String(),
               }))
           .toList();
+      final sessionHistoryTabs = _openFiles
+          .map(
+            (file) => SessionNotepadTab(
+              title: file.title,
+              content: file.content,
+              mimeType: file.mimeType,
+            ),
+          )
+          .toList();
 
       final session = CallSession(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -779,7 +835,7 @@ class CallService {
         endTime: DateTime.now(),
         duration: _callDuration,
         chatMessages: chatMessagesJson,
-        notepadTabs: null,
+        notepadTabs: sessionHistoryTabs.isEmpty ? null : sessionHistoryTabs,
         speedDialId: _currentSpeedDialId,
         endContext: _endContext,
       );

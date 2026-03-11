@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 
-import 'package:vagina/feat/call/widgets/notepad_tab_item.dart';
-import 'package:vagina/models/notepad_tab.dart';
+import 'package:vagina/feat/call/widgets/open_files_tab_item.dart';
+import 'package:vagina/models/open_file_tab.dart';
 
-/// Tab bar showing notepad tabs.
-class NotepadTabBar extends StatelessWidget {
-  final List<NotepadTab> tabs;
+/// Tab bar showing currently open files.
+class OpenFilesTabBar extends StatelessWidget {
+  final List<OpenFileTab> tabs;
   final String? selectedTabId;
   final void Function(String) onTabSelected;
   final void Function(String) onTabClosed;
 
-  const NotepadTabBar({
+  const OpenFilesTabBar({
     super.key,
     required this.tabs,
     required this.selectedTabId,
@@ -32,7 +32,7 @@ class NotepadTabBar extends StatelessWidget {
 
           return Padding(
             padding: const EdgeInsets.only(right: 4),
-            child: NotepadTabItem(
+            child: OpenFilesTabItem(
               tab: tab,
               isSelected: isSelected,
               onTap: () => onTabSelected(tab.id),

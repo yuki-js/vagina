@@ -11,13 +11,13 @@ import 'control_button.dart';
 /// Galaxy-style control panel with button grid and call button
 class ControlPanel extends ConsumerWidget {
   final VoidCallback onChatPressed;
-  final VoidCallback onNotepadPressed;
+  final VoidCallback onOpenFilesPressed;
   final bool hideNavigationButtons;
 
   const ControlPanel({
     super.key,
     required this.onChatPressed,
-    required this.onNotepadPressed,
+    required this.onOpenFilesPressed,
     this.hideNavigationButtons = false,
   });
 
@@ -53,8 +53,8 @@ class ControlPanel extends ConsumerWidget {
                 Expanded(
                   child: ControlButton(
                     icon: Icons.article_outlined,
-                    label: 'ノートパッド',
-                    onTap: onNotepadPressed,
+                    label: 'ファイル',
+                    onTap: onOpenFilesPressed,
                   ),
                 ),
                 // Settings button removed - only accessible from home screen

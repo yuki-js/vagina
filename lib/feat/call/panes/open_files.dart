@@ -2,37 +2,37 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:vagina/feat/call/state/notepad_controller.dart';
+import 'package:vagina/feat/call/state/open_files_controller.dart';
 import 'package:vagina/feat/call/state/call_service_providers.dart';
 import 'package:vagina/core/theme/app_theme.dart';
-import 'package:vagina/feat/call/widgets/notepad_header.dart';
-import 'package:vagina/feat/call/widgets/notepad_tab_bar.dart';
-import 'package:vagina/models/notepad_tab.dart';
-import 'package:vagina/feat/call/widgets/notepad_content_renderer.dart';
-import 'package:vagina/feat/call/widgets/notepad_empty_state.dart';
+import 'package:vagina/feat/call/widgets/open_files_header.dart';
+import 'package:vagina/feat/call/widgets/open_files_tab_bar.dart';
+import 'package:vagina/models/open_file_tab.dart';
+import 'package:vagina/feat/call/widgets/open_files_content_renderer.dart';
+import 'package:vagina/feat/call/widgets/open_files_empty_state.dart';
 
-/// Artifact page widget - displays artifact tabs and their content
-class NotepadPane extends ConsumerStatefulWidget {
+/// Open-files pane widget - displays active file tabs and their content.
+class OpenFilesPane extends ConsumerStatefulWidget {
   final VoidCallback onBackPressed;
   final bool hideBackButton;
 
-  const NotepadPane({
+  const OpenFilesPane({
     super.key,
     required this.onBackPressed,
     this.hideBackButton = false,
   });
 
   @override
-  ConsumerState<NotepadPane> createState() => _NotepadPaneState();
+  ConsumerState<OpenFilesPane> createState() => _OpenFilesPaneState();
 }
 
-class _NotepadPaneState extends ConsumerState<NotepadPane> {
+class _OpenFilesPaneState extends ConsumerState<OpenFilesPane> {
   bool _isEditing = false;
   String _editedContent = '';
   String? _selectedTabId;
   String? _currentTabId;
 
-  void _toggleEdit(NotepadTab? selectedTab) {
+  void _toggleEdit(OpenFileTab? selectedTab) {
     if (_isEditing &&
         selectedTab != null &&
         _editedContent != selectedTab.content) {
@@ -57,10 +57,10 @@ class _NotepadPaneState extends ConsumerState<NotepadPane> {
 
   @override
   Widget build(BuildContext context) {
-    final notepadStateAsync = ref.watch(notepadStateProvider);
+    final openFilesStateAsync = ref.watch(openFilesStateProvider);
     final callService = ref.read(callServiceProvider);
 
-    return notepadStateAsync.when(
+    return openFilesStateAsync.when(
       data: (state) {
         final tabs = state.tabs;
         if (_selectedTabId == null ||
@@ -90,7 +90,7 @@ class _NotepadPaneState extends ConsumerState<NotepadPane> {
         return Column(
           children: [
             // Header with menu
-            NotepadHeader(
+            OpenFilesHeader(
               onBackPressed: widget.onBackPressed,
               selectedTab: selectedTab,
               isEditing: _isEditing,
@@ -101,7 +101,7 @@ class _NotepadPaneState extends ConsumerState<NotepadPane> {
 
             // Tab bar (if tabs exist)
             if (tabs.isNotEmpty)
-              NotepadTabBar(
+              OpenFilesTabBar(
                 tabs: tabs,
                 selectedTabId: selectedId,
                 onTabSelected: (tabId) {
@@ -117,10 +117,10 @@ class _NotepadPaneState extends ConsumerState<NotepadPane> {
             // Content area
             Expanded(
               child: tabs.isEmpty
-                  ? const NotepadEmptyState()
+                  ? const OpenFilesEmptyState()
                   : selectedTab == null
-                      ? const NotepadEmptyState()
-                      : NotepadContentRenderer(
+                      ? const OpenFilesEmptyState()
+                      : OpenFilesContentRenderer(
                           key: ValueKey('${selectedTab.id}_$_isEditing'),
                           tab: selectedTab,
                           isEditing: _isEditing,
@@ -132,7 +132,7 @@ class _NotepadPaneState extends ConsumerState<NotepadPane> {
       },
       loading: () => Column(
         children: [
-          NotepadHeader(
+          OpenFilesHeader(
             onBackPressed: widget.onBackPressed,
             selectedTab: null,
             isEditing: false,
@@ -149,7 +149,7 @@ class _NotepadPaneState extends ConsumerState<NotepadPane> {
       ),
       error: (_, __) => Column(
         children: [
-          NotepadHeader(
+          OpenFilesHeader(
             onBackPressed: widget.onBackPressed,
             selectedTab: null,
             isEditing: false,
@@ -160,7 +160,7 @@ class _NotepadPaneState extends ConsumerState<NotepadPane> {
           const Expanded(
             child: Center(
               child: Text(
-                'ノートパッドの読み込みに失敗しました',
+                'ファイルペインの読み込みに失敗しました',
                 style: TextStyle(color: Colors.red),
               ),
             ),

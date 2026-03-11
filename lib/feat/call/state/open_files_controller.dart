@@ -1,19 +1,17 @@
 import 'dart:async';
 
-import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vagina/feat/call/state/call_service_providers.dart';
-import 'package:vagina/models/notepad_tab.dart';
+import 'package:vagina/models/open_file_tab.dart';
 import 'package:vagina/models/open_file_state.dart';
 
-part 'notepad_controller.g.dart';
-
-class NotepadState {
+class OpenFilesState {
   static const _unset = Object();
 
-  final List<NotepadTab> tabs;
+  final List<OpenFileTab> tabs;
   final String? selectedTabId;
 
-  const NotepadState({
+  const OpenFilesState({
     required this.tabs,
     required this.selectedTabId,
   });
@@ -22,11 +20,11 @@ class NotepadState {
   ///
   /// `selectedTabId` uses a sentinel so callers can omit it without
   /// accidentally clearing the selection.
-  NotepadState copyWith({
-    List<NotepadTab>? tabs,
+  OpenFilesState copyWith({
+    List<OpenFileTab>? tabs,
     Object? selectedTabId = _unset,
   }) {
-    return NotepadState(
+    return OpenFilesState(
       tabs: tabs ?? this.tabs,
       selectedTabId: identical(selectedTabId, _unset)
           ? this.selectedTabId
@@ -34,7 +32,7 @@ class NotepadState {
     );
   }
 
-  NotepadTab? get selectedTab {
+  OpenFileTab? get selectedTab {
     final id = selectedTabId;
     if (id == null) return null;
     for (final t in tabs) {
@@ -44,16 +42,16 @@ class NotepadState {
   }
 }
 
-@riverpod
-Stream<NotepadState> notepadState(Ref ref) {
+final openFilesStateProvider =
+    StreamProvider.autoDispose<OpenFilesState>((ref) {
   final callService = ref.watch(callServiceProvider);
 
-  final controller = StreamController<NotepadState>.broadcast();
-  List<NotepadTab> convert(List<OpenFileState> files) {
+  final controller = StreamController<OpenFilesState>.broadcast();
+  List<OpenFileTab> convert(List<OpenFileState> files) {
     final now = DateTime.now();
     return files
         .map(
-          (file) => NotepadTab(
+          (file) => OpenFileTab(
             id: file.path,
             title: file.title,
             content: file.content,
@@ -66,7 +64,7 @@ Stream<NotepadState> notepadState(Ref ref) {
   }
 
   final initialTabs = convert(callService.openFiles);
-  var current = NotepadState(
+  var current = OpenFilesState(
     tabs: initialTabs,
     selectedTabId: initialTabs.isNotEmpty ? initialTabs.first.id : null,
   );
@@ -97,4 +95,4 @@ Stream<NotepadState> notepadState(Ref ref) {
   });
 
   return controller.stream;
-}
+});

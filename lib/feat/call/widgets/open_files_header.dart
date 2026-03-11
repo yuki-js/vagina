@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:vagina/feat/call/widgets/notepad_action_bar.dart';
-import 'package:vagina/models/notepad_tab.dart';
+import 'package:vagina/feat/call/widgets/open_files_action_bar.dart';
+import 'package:vagina/models/open_file_tab.dart';
 import 'package:vagina/core/theme/app_theme.dart';
 
-/// Artifact header with navigation to call and more menu.
-class NotepadHeader extends StatelessWidget {
+/// Open-files header with navigation to call and action menu.
+class OpenFilesHeader extends StatelessWidget {
   final VoidCallback onBackPressed;
-  final NotepadTab? selectedTab;
+  final OpenFileTab? selectedTab;
   final bool isEditing;
   final VoidCallback onEditToggle;
   final String editedContent;
   final bool hideBackButton;
 
-  const NotepadHeader({
+  const OpenFilesHeader({
     super.key,
     required this.onBackPressed,
     required this.selectedTab,
@@ -47,7 +47,7 @@ class NotepadHeader extends StatelessWidget {
           const Expanded(
             child: Center(
               child: Text(
-                'ノートパッド',
+                'ファイル',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
@@ -57,7 +57,7 @@ class NotepadHeader extends StatelessWidget {
             ),
           ),
           if (selectedTab != null)
-            NotepadMoreMenu(
+            OpenFilesMoreMenu(
               content: isEditing ? editedContent : selectedTab!.content,
               isEditing: isEditing,
               onEditToggle: onEditToggle,

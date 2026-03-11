@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vagina/feat/call/panes/call.dart';
 import 'package:vagina/feat/call/panes/chat.dart';
-import 'package:vagina/feat/call/panes/notepad.dart';
+import 'package:vagina/feat/call/panes/open_files.dart';
 import 'package:vagina/feat/call/state/call_service_providers.dart';
 import 'package:vagina/feat/call/state/call_stream_providers.dart';
 import 'package:vagina/models/speed_dial.dart';
 import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/services/call_service.dart';
 
-/// Call screen with PageView for swipe navigation between chat, call, and notepad
-/// Layout: Chat (left) ← Call (center) → Notepad (right)
+/// Call screen with PageView for swipe navigation between chat, call, and open files.
+/// Layout: Chat (left) ← Call (center) → Open files (right)
 /// Dark theme for focused calling experience
 class CallScreen extends ConsumerStatefulWidget {
   final SpeedDial speedDial;
@@ -26,10 +26,10 @@ class CallScreen extends ConsumerStatefulWidget {
 
 class _CallScreenState extends ConsumerState<CallScreen> {
   /// Page indices for navigation
-  /// Chat on left, Call in center, Notepad on right
+  /// Chat on left, Call in center, Open files on right.
   static const int _chatPageIndex = 0;
   static const int _callPageIndex = 1;
-  static const int _notepadPageIndex = 2;
+  static const int _openFilesPageIndex = 2;
 
   late final PageController _pageController;
   int _currentPageIndex = _callPageIndex;
@@ -76,9 +76,9 @@ class _CallScreenState extends ConsumerState<CallScreen> {
     );
   }
 
-  void _goToNotepad() {
+  void _goToOpenFiles() {
     _pageController.animateToPage(
-      _notepadPageIndex,
+      _openFilesPageIndex,
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
     );
@@ -97,7 +97,7 @@ class _CallScreenState extends ConsumerState<CallScreen> {
 
   void _handleBackButton() {
     if (_currentPageIndex == _chatPageIndex ||
-        _currentPageIndex == _notepadPageIndex) {
+        _currentPageIndex == _openFilesPageIndex) {
       _goToCall();
     } else {
       // On call page, allow navigation back to home
@@ -108,7 +108,7 @@ class _CallScreenState extends ConsumerState<CallScreen> {
   bool get _canPop {
     // Can't pop if on side pages (must go to call page first)
     if (_currentPageIndex == _chatPageIndex ||
-        _currentPageIndex == _notepadPageIndex) {
+        _currentPageIndex == _openFilesPageIndex) {
       return false;
     }
     // Can pop from call page
@@ -146,7 +146,7 @@ class _CallScreenState extends ConsumerState<CallScreen> {
         onBackButton: _handleBackButton,
         onGoToChat: _goToChat,
         onGoToCall: _goToCall,
-        onGoToNotepad: _goToNotepad,
+        onGoToOpenFiles: _goToOpenFiles,
         buildPageViewLayout: _buildPageViewLayout,
         buildThreeColumnLayout: _buildThreeColumnLayout,
       ),
@@ -164,11 +164,11 @@ class _CallScreenState extends ConsumerState<CallScreen> {
         // Call in center
         CallPane(
           onChatPressed: _goToChat,
-          onNotepadPressed: _goToNotepad,
+          onOpenFilesPressed: _goToOpenFiles,
           speedDial: widget.speedDial,
         ),
-        // Notepad on right (swipe left to go to call)
-        NotepadPane(
+        // Open files on right (swipe left to go to call)
+        OpenFilesPane(
           onBackPressed: _goToCall,
         ),
       ],
@@ -208,17 +208,17 @@ class _CallScreenState extends ConsumerState<CallScreen> {
             ),
             child: CallPane(
               onChatPressed: () {}, // No navigation needed in 3-column layout
-              onNotepadPressed:
+              onOpenFilesPressed:
                   () {}, // No navigation needed in 3-column layout
               hideNavigationButtons:
-                  true, // Hide chat/notepad buttons in 3-column layout
+                  true, // Hide chat/open-file buttons in 3-column layout
               speedDial: widget.speedDial,
             ),
           ),
         ),
         Expanded(
           flex: 40,
-          child: NotepadPane(
+          child: OpenFilesPane(
             onBackPressed: () {}, // No back action needed in 3-column layout
             hideBackButton: true, // Hide back button in 3-column layout
           ),
@@ -238,7 +238,7 @@ class _CallSessionContent extends ConsumerStatefulWidget {
   final VoidCallback onBackButton;
   final VoidCallback onGoToChat;
   final VoidCallback onGoToCall;
-  final VoidCallback onGoToNotepad;
+  final VoidCallback onGoToOpenFiles;
   final Widget Function() buildPageViewLayout;
   final Widget Function() buildThreeColumnLayout;
 
@@ -250,7 +250,7 @@ class _CallSessionContent extends ConsumerStatefulWidget {
     required this.onBackButton,
     required this.onGoToChat,
     required this.onGoToCall,
-    required this.onGoToNotepad,
+    required this.onGoToOpenFiles,
     required this.buildPageViewLayout,
     required this.buildThreeColumnLayout,
   });

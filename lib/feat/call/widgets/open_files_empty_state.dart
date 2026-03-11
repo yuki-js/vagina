@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:vagina/core/theme/app_theme.dart';
 
-/// Empty state widget for artifacts when there are no tabs
-class NotepadEmptyState extends StatelessWidget {
-  const NotepadEmptyState({super.key});
+/// Empty state widget for open files.
+class OpenFilesEmptyState extends StatelessWidget {
+  const OpenFilesEmptyState({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -18,7 +18,7 @@ class NotepadEmptyState extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'ノートパッドがありません',
+            '開いているファイルがありません',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
@@ -27,7 +27,7 @@ class NotepadEmptyState extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'AIとの対話でドキュメントを作成すると\nここに表示されます',
+            'AIで `fs_open` したファイルが\nここに表示されます',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 14,

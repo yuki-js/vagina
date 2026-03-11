@@ -9,14 +9,14 @@ import 'package:vagina/models/speed_dial.dart';
 /// 通話ページウィジェット - 通話UIとコントロールを表示
 class CallPane extends ConsumerWidget {
   final VoidCallback onChatPressed;
-  final VoidCallback onNotepadPressed;
+  final VoidCallback onOpenFilesPressed;
   final bool hideNavigationButtons;
   final SpeedDial speedDial;
 
   const CallPane({
     super.key,
     required this.onChatPressed,
-    required this.onNotepadPressed,
+    required this.onOpenFilesPressed,
     this.hideNavigationButtons = false,
     required this.speedDial,
   });
@@ -49,7 +49,7 @@ class CallPane extends ConsumerWidget {
         // Galaxy風コントロールパネル（下部）
         ControlPanel(
           onChatPressed: onChatPressed,
-          onNotepadPressed: onNotepadPressed,
+          onOpenFilesPressed: onOpenFilesPressed,
           hideNavigationButtons: hideNavigationButtons,
         ),
       ],
