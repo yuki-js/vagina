@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:vagina/services/tools_runtime/tool.dart';
 import 'package:vagina/services/tools_runtime/tool_definition.dart';
+import 'package:vagina/tools/builtin/shared/file_type_support.dart';
 
 /// Coerce a content argument to a String.
 ///
@@ -24,106 +25,51 @@ class DocumentOverwriteTool extends Tool {
         iconKey: 'edit_document',
         sourceKey: 'builtin',
         publishedBy: 'aokiapp',
-        description:
-            'Create a new document or overwrite an existing one. If tabId is not provided, creates a new tab. If tabId is provided, replaces the content of that tab. Use this for creating and fully replacing documents. '
-            'Supports tabular MIME types: "text/csv", "application/vagina-2d+json" (JSON array of uniform objects), '
-            '"application/vagina-2d+jsonl" (JSON Lines of uniform objects). For tabular types, content is validated on save. '
-            'For incremental spreadsheet edits (add/update/delete rows), prefer the spreadsheet_* tools instead.',
+        description: 'Overwrite the working content of an active file by path.',
+        activation: ToolActivation.forExtensions(kTextDocumentExtensions),
         parametersSchema: {
           'type': 'object',
           'properties': {
-            'tabId': {
+            'path': {
               'type': 'string',
-              'description':
-                  'Optional: ID of an existing tab to overwrite. If not provided, creates a new tab.',
+              'description': 'Absolute path of the active file to overwrite.',
             },
             'content': {
               'type': 'string',
               'description': 'The content of the document',
             },
-            'mime': {
-              'type': 'string',
-              'description':
-                  'MIME type of the content (e.g., "text/markdown", "text/plain", "text/html", '
-                      '"text/csv", "application/vagina-2d+json", "application/vagina-2d+jsonl"). '
-                      'Defaults to "text/markdown".',
-            },
-            'title': {
-              'type': 'string',
-              'description':
-                  'Optional title for the document. If not provided, will be auto-generated from content.',
-            },
           },
-          'required': ['content'],
+          'required': ['path', 'content'],
         },
       );
 
   @override
   Future<String> execute(Map<String, dynamic> args) async {
-    final tabId = args['tabId'] as String?;
+    final path = args['path'] as String;
     final content = _coerceContentToString(args['content']);
-    final mime = (args['mime'] as String?) ?? 'text/markdown';
-    final title = args['title'] as String?;
 
     try {
-      if (tabId != null) {
-        // 既存タブを更新
-        // まず既存タブの情報を取得してMIMEタイプをチェック
-        final existingTab = await context.notepadApi.getTab(tabId);
-
-        if (existingTab == null) {
-          return jsonEncode({
-            'success': false,
-            'error':
-                'Tab not found: $tabId. Please create a new document without specifying tabId.',
-          });
-        }
-
-        // MIMEタイプの変更を検証
-        final existingMime = existingTab['mimeType'] as String?;
-        if (existingMime != null && existingMime != mime) {
-          return jsonEncode({
-            'success': false,
-            'error':
-                'MIME type mismatch: Cannot change document type from "$existingMime" to "$mime". '
-                    'To change the document type, please create a new document with a different tabId, '
-                    'or use the same MIME type "$existingMime" for updates.',
-          });
-        }
-
-        final result = await context.notepadApi.updateTab(
-          tabId,
-          content: content,
-          title: title,
-          mimeType: mime,
-        );
-
-        if (!result) {
-          return jsonEncode({
-            'success': false,
-            'error': 'Failed to update tab: $tabId',
-          });
-        }
-
+      if (!isPathSupportedByActivation(path, definition.activation)) {
         return jsonEncode({
-          'success': true,
-          'tabId': tabId,
-          'message': 'Document updated successfully',
-        });
-      } else {
-        // 新規タブを作成
-        final newTabId = await context.notepadApi.createTab(
-          content: content,
-          mimeType: mime,
-          title: title,
-        );
-
-        return jsonEncode({
-          'success': true,
-          'tabId': newTabId,
-          'message': 'Document created successfully',
+          'success': false,
+          'error': 'Unsupported file type for document_overwrite: $path',
         });
       }
+
+      final activeFile = await context.filesystemApi.getActiveFile(path);
+      if (activeFile == null) {
+        return jsonEncode({
+          'success': false,
+          'error': 'Active file not found: $path',
+        });
+      }
+
+      await context.filesystemApi.updateActiveFile(path, content);
+      return jsonEncode({
+        'success': true,
+        'path': path,
+        'message': 'Document overwritten successfully',
+      });
     } catch (e) {
       return jsonEncode({
         'success': false,

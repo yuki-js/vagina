@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:vagina/feat/call/state/call_service_providers.dart';
 import 'package:vagina/models/notepad_tab.dart';
+import 'package:vagina/models/open_file_state.dart';
 
 part 'notepad_controller.g.dart';
 
@@ -46,12 +47,28 @@ class NotepadState {
 @riverpod
 Stream<NotepadState> notepadState(Ref ref) {
   final callService = ref.watch(callServiceProvider);
-  final service = callService.notepadService;
 
   final controller = StreamController<NotepadState>.broadcast();
+  List<NotepadTab> convert(List<OpenFileState> files) {
+    final now = DateTime.now();
+    return files
+        .map(
+          (file) => NotepadTab(
+            id: file.path,
+            title: file.title,
+            content: file.content,
+            mimeType: file.mimeType,
+            createdAt: now,
+            updatedAt: now,
+          ),
+        )
+        .toList();
+  }
+
+  final initialTabs = convert(callService.openFiles);
   var current = NotepadState(
-    tabs: service.tabs,
-    selectedTabId: service.selectedTabId,
+    tabs: initialTabs,
+    selectedTabId: initialTabs.isNotEmpty ? initialTabs.first.id : null,
   );
 
   void emit() {
@@ -62,19 +79,20 @@ Stream<NotepadState> notepadState(Ref ref) {
 
   emit();
 
-  final tabsSub = service.tabsStream.listen((tabs) {
-    current = current.copyWith(tabs: tabs);
-    emit();
-  });
+  final tabsSub = callService.openFilesStream.listen((openFiles) {
+    final tabs = convert(openFiles);
+    final selected = current.selectedTabId;
+    final nextSelected = selected != null && tabs.any((t) => t.id == selected)
+        ? selected
+        : (tabs.isNotEmpty ? tabs.first.id : null);
 
-  final selectedSub = service.selectedTabStream.listen((selectedId) {
-    current = current.copyWith(selectedTabId: selectedId);
+    current = current.copyWith(tabs: tabs);
+    current = current.copyWith(selectedTabId: nextSelected);
     emit();
   });
 
   ref.onDispose(() async {
     await tabsSub.cancel();
-    await selectedSub.cancel();
     await controller.close();
   });
 

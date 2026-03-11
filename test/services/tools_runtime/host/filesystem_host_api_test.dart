@@ -77,6 +77,44 @@ void main() {
       expect(closed, isNull);
     });
 
+    test('emits active file changes callback', () async {
+      final store = InMemoryStore();
+      await store.initialize();
+      final repo = JsonVirtualFilesystemRepository(store);
+      final service = VirtualFilesystemService(repo);
+      await service.initialize();
+
+      final snapshots = <List<Map<String, String>>>[];
+      final notifyingHostApi = FilesystemHostApi(
+        service,
+        onActiveFilesChanged: (activeFiles) {
+          snapshots.add(activeFiles);
+        },
+      );
+
+      await notifyingHostApi.handleCall(
+        'openFile',
+        {'path': '/docs/a.txt', 'content': 'hello'},
+      );
+      await notifyingHostApi.handleCall(
+        'updateActiveFile',
+        {'path': '/docs/a.txt', 'content': 'updated'},
+      );
+      await notifyingHostApi.handleCall(
+        'closeFile',
+        {'path': '/docs/a.txt'},
+      );
+
+      expect(snapshots, hasLength(3));
+      expect(snapshots[0], [
+        {'path': '/docs/a.txt', 'content': 'hello'},
+      ]);
+      expect(snapshots[1], [
+        {'path': '/docs/a.txt', 'content': 'updated'},
+      ]);
+      expect(snapshots[2], isEmpty);
+    });
+
     test('unknown method throws', () async {
       expect(
         () => hostApi.handleCall('unknown', {}),

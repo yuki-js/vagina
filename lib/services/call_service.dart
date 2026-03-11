@@ -10,7 +10,9 @@ import 'package:vagina/interfaces/config_repository.dart';
 import 'package:vagina/interfaces/speed_dial_repository.dart';
 import 'package:vagina/models/call_session.dart';
 import 'package:vagina/models/chat_message.dart';
+import 'package:vagina/models/open_file_state.dart';
 import 'package:vagina/models/speed_dial.dart';
+import 'package:vagina/models/virtual_file.dart';
 import 'package:vagina/services/tools_runtime/tool.dart';
 import 'package:vagina/services/tools_runtime/tool_sandbox_manager.dart';
 import 'package:vagina/services/virtual_filesystem_service.dart';
@@ -20,7 +22,6 @@ import 'audio/call_audio_service.dart';
 import 'call_feedback_service.dart';
 import 'chat/chat_message_manager.dart';
 import 'log_service.dart';
-import 'notepad_service.dart';
 import 'realtime_api_client.dart';
 
 /// Enum representing the current state of the call
@@ -45,10 +46,6 @@ class CallService {
   final LogService _logService;
   final CallFeedbackService _feedback;
   final ChatMessageManager _chatManager = ChatMessageManager();
-
-  /// NotepadService instance (initialized in constructor, scoped to CallService)
-  /// This is owned by CallService, NOT by a provider
-  final NotepadService _notepadService;
 
   /// Session-scoped ToolSandboxManager (spawned on call start, disposed on call end)
   ToolSandboxManager? _sandboxManager;
@@ -80,6 +77,8 @@ class CallService {
       StreamController<String>.broadcast();
   final StreamController<String> _sessionSavedController =
       StreamController<String>.broadcast();
+  final StreamController<List<OpenFileState>> _openFilesController =
+      StreamController<List<OpenFileState>>.broadcast();
 
   CallState _currentState = CallState.idle;
   int _callDuration = 0;
@@ -88,6 +87,12 @@ class CallService {
   String _currentSpeedDialId = SpeedDial.defaultId;
   String? _endContext; // Store end context from tool call
   bool _isCleanedUp = false; // Track cleanup state to prevent double cleanup
+  Map<String, bool> _toolConfig = const {};
+  final Map<String, Tool> _allToolsByKey = <String, Tool>{};
+  Set<String> _enabledToolKeys = <String>{};
+  List<OpenFileState> _openFiles = const [];
+  bool _isRefreshingToolset = false;
+  bool _toolsetRefreshQueued = false;
 
   final Set<String> _activeToolCallIds = <String>{};
   final Set<String> _executingToolCallIds = <String>{};
@@ -109,15 +114,10 @@ class CallService {
         _filesystemService = filesystemService,
         _logService = logService ?? LogService(),
         _feedback =
-            feedbackService ?? CallFeedbackService(logService: logService),
-        _notepadService =
-            NotepadService(logService: logService ?? LogService());
+            feedbackService ?? CallFeedbackService(logService: logService);
 
   /// Current call state
   CallState get currentState => _currentState;
-
-  /// Call-scoped Notepad service (accessible during active call)
-  NotepadService get notepadService => _notepadService;
 
   /// Stream of call state changes
   Stream<CallState> get stateStream => _stateController.stream;
@@ -137,8 +137,15 @@ class CallService {
   /// Stream of chat messages
   Stream<List<ChatMessage>> get chatStream => _chatManager.chatStream;
 
+  /// Stream of active/open file state for the current call.
+  Stream<List<OpenFileState>> get openFilesStream =>
+      _openFilesController.stream;
+
   /// Get current chat messages
   List<ChatMessage> get chatMessages => _chatManager.chatMessages;
+
+  /// Current active/open files for the call.
+  List<OpenFileState> get openFiles => List<OpenFileState>.from(_openFiles);
 
   /// Current call duration in seconds
   int get callDuration => _callDuration;
@@ -195,6 +202,7 @@ class CallService {
 
     _logService.info(_tag, 'Starting call');
     _endContext = null; // Clear previous end context for new call
+    _isCleanedUp = false;
 
     try {
       _setState(CallState.connecting);
@@ -275,11 +283,11 @@ class CallService {
   /// This method:
   /// 1. Creates and starts the tool sandbox
   /// 2. Retrieves tool configuration from the current SpeedDial
-  /// 3. Applies the configuration to the sandbox (enable/disable tools)
-  /// 4. Registers only enabled tools with the Realtime API
+  /// 3. Computes active tool set from active files + config
+  /// 4. Registers enabled tools with the Realtime API
   ///
-  /// This is called once during call initialization. Tool configuration
-  /// is immutable for the duration of the call.
+  /// This is called once during call initialization. During the call,
+  /// active file changes can trigger dynamic tool recomputation.
   Future<void> _initializeToolsForCall() async {
     _logService.debug(_tag, 'Initializing tools for call session');
 
@@ -298,26 +306,22 @@ class CallService {
     _logService.debug(
         _tag, 'Loaded tool config for SpeedDial: $_currentSpeedDialId');
 
-    // 3. Apply configuration to sandbox and collect enabled tools
+    // 3. Cache all tool definitions for dynamic enable/disable.
     final sandbox = _sandboxManager!;
     final allTools = await sandbox.getToolsFromWorker();
-    final enabledTools = <Tool>[];
-
+    _allToolsByKey.clear();
     for (final tool in allTools) {
-      final enabled = toolConfig[tool.definition.toolKey] ?? true;
-      await sandbox.setToolEnabled(tool.definition.toolKey, enabled);
-      if (enabled) {
-        enabledTools.add(tool);
-      }
+      _allToolsByKey[tool.definition.toolKey] = tool;
     }
+    _toolConfig = Map<String, bool>.from(toolConfig);
+    _enabledToolKeys = Set<String>.from(_allToolsByKey.keys);
+    onActiveFilesChanged(const <Map<String, String>>[]);
+
+    // 4. Apply initial dynamic tool set and register to Realtime API.
+    await refreshToolsForActiveFiles();
 
     _logService.info(_tag,
-        'Tool initialization complete: ${enabledTools.length}/${allTools.length} tools enabled');
-
-    // 4. Register enabled tools with Realtime API
-    _apiClient.setTools(enabledTools);
-    _apiClient.updateSessionConfig();
-    _logService.debug(_tag, 'Registered tools with Realtime API');
+        'Tool initialization complete: ${_enabledToolKeys.length}/${allTools.length} tools enabled');
   }
 
   void _setupApiSubscriptions() {
@@ -579,6 +583,136 @@ class CallService {
     }
   }
 
+  /// Callback from FilesystemHostApi when active files are updated.
+  ///
+  /// Returns true when the active path set changed (open/close/move/delete).
+  bool onActiveFilesChanged(List<Map<String, String>> activeFiles) {
+    final previousPaths = _openFiles.map((file) => file.path).toSet();
+    final next = activeFiles
+        .map((entry) => OpenFileState(
+              path: entry['path'] ?? '',
+              content: entry['content'] ?? '',
+            ))
+        .where((file) => file.path.isNotEmpty)
+        .toList();
+    final nextPaths = next.map((file) => file.path).toSet();
+
+    _openFiles = next;
+    if (!_openFilesController.isClosed) {
+      _openFilesController.add(List<OpenFileState>.from(_openFiles));
+    }
+    return !_sameStringSet(previousPaths, nextPaths);
+  }
+
+  Future<void> updateOpenFileContent(String path, String content) async {
+    final sandbox = _sandboxManager;
+    if (sandbox == null) {
+      throw StateError('Tool sandbox not available');
+    }
+    await sandbox.updateActiveFile(path, content);
+  }
+
+  Future<void> closeOpenFile(String path, {bool persist = true}) async {
+    final sandbox = _sandboxManager;
+    if (sandbox == null) {
+      throw StateError('Tool sandbox not available');
+    }
+
+    final active = await sandbox.getActiveFile(path);
+    if (active == null) {
+      return;
+    }
+
+    if (persist) {
+      await sandbox.writeFile(path, active['content'] ?? '');
+    }
+    await sandbox.closeActiveFile(path);
+  }
+
+  Future<void> refreshToolsForActiveFiles() async {
+    if (_isRefreshingToolset) {
+      _toolsetRefreshQueued = true;
+      return;
+    }
+
+    final sandbox = _sandboxManager;
+    if (sandbox == null || _allToolsByKey.isEmpty) {
+      return;
+    }
+
+    _isRefreshingToolset = true;
+    try {
+      do {
+        _toolsetRefreshQueued = false;
+
+        final activeFiles = await sandbox.listActiveFiles();
+        onActiveFilesChanged(activeFiles);
+
+        final activePaths = activeFiles
+            .map((entry) => entry['path'])
+            .whereType<String>()
+            .toList();
+        final desiredKeys = _resolveDesiredToolKeys(activePaths);
+
+        final toDisable = _enabledToolKeys.difference(desiredKeys).toList()
+          ..sort();
+        final toEnable = desiredKeys.difference(_enabledToolKeys).toList()
+          ..sort();
+
+        for (final toolKey in toDisable) {
+          await sandbox.setToolEnabled(toolKey, false);
+        }
+        for (final toolKey in toEnable) {
+          await sandbox.setToolEnabled(toolKey, true);
+        }
+
+        final toolsetChanged = toDisable.isNotEmpty || toEnable.isNotEmpty;
+        _enabledToolKeys = desiredKeys;
+
+        if (toolsetChanged) {
+          final enabledTools = _allToolsByKey.values
+              .where(
+                  (tool) => _enabledToolKeys.contains(tool.definition.toolKey))
+              .toList();
+          _apiClient.setTools(enabledTools);
+          _apiClient.updateSessionConfig();
+        }
+      } while (_toolsetRefreshQueued);
+    } finally {
+      _isRefreshingToolset = false;
+    }
+  }
+
+  bool _sameStringSet(Set<String> left, Set<String> right) {
+    if (left.length != right.length) return false;
+    for (final value in left) {
+      if (!right.contains(value)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  Set<String> _resolveDesiredToolKeys(List<String> activePaths) {
+    final activeExtensions = activePaths
+        .map((path) => VirtualFile(path: path, content: '').extension)
+        .where((extension) => extension.isNotEmpty)
+        .map((extension) => extension.toLowerCase())
+        .toSet();
+
+    final desired = <String>{};
+    for (final tool in _allToolsByKey.values) {
+      final definition = tool.definition;
+      final enabledByActivation =
+          definition.activation.isEnabledForExtensions(activeExtensions);
+      final enabledByConfig = _toolConfig[definition.toolKey] ?? true;
+      if (enabledByActivation && enabledByConfig) {
+        desired.add(definition.toolKey);
+      }
+    }
+    return desired;
+  }
+
   /// Get the last end context from the most recent session
   ///
   /// Returns the endContext from the last saved session within the last 24 hours,
@@ -639,28 +773,13 @@ class CallService {
               }))
           .toList();
 
-      // ノートパッドの内容を収集
-      final notepadTabs = _notepadService.tabs;
-      List<SessionNotepadTab>? notepadTabsData;
-
-      if (notepadTabs.isNotEmpty) {
-        // タブを構造化データとして保存
-        notepadTabsData = notepadTabs.map((tab) {
-          return SessionNotepadTab(
-            title: tab.title,
-            content: tab.content,
-            mimeType: tab.mimeType,
-          );
-        }).toList();
-      }
-
       final session = CallSession(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         startTime: _callStartTime!,
         endTime: DateTime.now(),
         duration: _callDuration,
         chatMessages: chatMessagesJson,
-        notepadTabs: notepadTabsData,
+        notepadTabs: null,
         speedDialId: _currentSpeedDialId,
         endContext: _endContext,
       );
@@ -743,10 +862,15 @@ class CallService {
     // Dispose sandbox
     await _sandboxManager?.dispose();
     _sandboxManager = null;
-
-    // Dispose call-scoped NotepadService
-    _notepadService.dispose();
-    _logService.debug(_tag, 'Notepad service disposed');
+    _toolConfig = const {};
+    _allToolsByKey.clear();
+    _enabledToolKeys = <String>{};
+    _isRefreshingToolset = false;
+    _toolsetRefreshQueued = false;
+    _openFiles = const [];
+    if (!_openFilesController.isClosed) {
+      _openFilesController.add(const []);
+    }
 
     _callDuration = 0;
     _durationController.add(0);
@@ -865,6 +989,7 @@ class CallService {
     await _durationController.close();
     await _errorController.close();
     await _sessionSavedController.close();
+    await _openFilesController.close();
     await _chatManager.dispose();
   }
 }

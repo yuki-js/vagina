@@ -4,14 +4,13 @@ import 'builtin/calculation/calculator_tool.dart';
 import 'builtin/document/document_overwrite_tool.dart';
 import 'builtin/document/document_patch_tool.dart';
 import 'builtin/document/document_read_tool.dart';
+import 'builtin/filesystem/fs_active_files_tool.dart';
+import 'builtin/filesystem/fs_close_tool.dart';
+import 'builtin/filesystem/fs_delete_tool.dart';
+import 'builtin/filesystem/fs_list_tool.dart';
+import 'builtin/filesystem/fs_move_tool.dart';
+import 'builtin/filesystem/fs_open_tool.dart';
 import 'builtin/system/get_current_time_tool.dart';
-import 'builtin/memory/memory_delete_tool.dart';
-import 'builtin/memory/memory_recall_tool.dart';
-import 'builtin/memory/memory_save_tool.dart';
-import 'builtin/notepad/notepad_close_tab_tool.dart';
-import 'builtin/notepad/notepad_get_content_tool.dart';
-import 'builtin/notepad/notepad_get_metadata_tool.dart';
-import 'builtin/notepad/notepad_list_tabs_tool.dart';
 import 'builtin/call/end_call_tool.dart';
 import 'builtin/spreadsheet/spreadsheet_add_rows_tool.dart';
 import 'builtin/spreadsheet/spreadsheet_delete_rows_tool.dart';
@@ -47,14 +46,13 @@ class RootToolbox extends Toolbox {
       DocumentOverwriteTool(),
       DocumentPatchTool(),
       DocumentReadTool(),
+      FsListTool(),
+      FsOpenTool(),
+      FsCloseTool(),
+      FsDeleteTool(),
+      FsMoveTool(),
+      FsActiveFilesTool(),
       GetCurrentTimeTool(),
-      MemoryDeleteTool(),
-      MemoryRecallTool(),
-      MemorySaveTool(),
-      NotepadCloseTabTool(),
-      NotepadGetContentTool(),
-      NotepadGetMetadataTool(),
-      NotepadListTabsTool(),
       EndCallTool(),
       SpreadsheetAddRowsTool(),
       SpreadsheetDeleteRowsTool(),

@@ -14,7 +14,8 @@ class VirtualFile {
   ///
   /// Supports double extensions for tabular files such as `.v2d.csv`.
   String get extension {
-    final v2dIndex = path.lastIndexOf('.v2d.');
+    final lowercasePath = path.toLowerCase();
+    final v2dIndex = lowercasePath.lastIndexOf('.v2d.');
     if (v2dIndex != -1) {
       return path.substring(v2dIndex);
     }

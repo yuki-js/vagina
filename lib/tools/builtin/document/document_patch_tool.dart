@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:vagina/services/tools_runtime/tool.dart';
 import 'package:vagina/services/tools_runtime/tool_definition.dart';
+import 'package:vagina/tools/builtin/shared/file_type_support.dart';
 
 class _DocumentPatchFailure implements Exception {
   final Map<String, dynamic> details;
@@ -174,8 +175,8 @@ String _applyOperation(
           'failedOperationIndex': index,
         });
       }
-      return content.replaceRange(start + target.length, start + target.length,
-          newText);
+      return content.replaceRange(
+          start + target.length, start + target.length, newText);
 
     case 'delete':
       return content.replaceRange(start, start + target.length, '');
@@ -189,13 +190,6 @@ String _applyOperation(
         'failedOperationIndex': index,
       });
   }
-}
-
-bool _isTabularMimeType(String? mimeType) {
-  if (mimeType == null) return false;
-  return mimeType == 'text/csv' ||
-      mimeType == 'application/vagina-2d+json' ||
-      mimeType == 'application/vagina-2d+jsonl';
 }
 
 class DocumentPatchTool extends Tool {
@@ -223,12 +217,13 @@ class DocumentPatchTool extends Tool {
             '    {"op": "insert_after", "target": "Heading\\n", "newText": "\\nNew paragraph\\n"}\n'
             '  ]\n'
             '}',
+        activation: ToolActivation.forExtensions(kTextDocumentExtensions),
         parametersSchema: {
           'type': 'object',
           'properties': {
-            'tabId': {
+            'path': {
               'type': 'string',
-              'description': 'ID of the tab containing the document to patch',
+              'description': 'Absolute path of the active document to patch',
             },
             'patch': {
               'type': 'object',
@@ -275,40 +270,39 @@ class DocumentPatchTool extends Tool {
               'required': ['operations'],
             },
           },
-          'required': ['tabId', 'patch'],
+          'required': ['path', 'patch'],
         },
       );
 
   @override
   Future<String> execute(Map<String, dynamic> args) async {
-    final tabId = args['tabId'] as String;
+    final path = args['path'] as String;
     final rawPatch = args['patch'];
 
-    final tab = await context.notepadApi.getTab(tabId);
-    if (tab == null) {
-      throw _DocumentPatchFailure({
-        'success': false,
-        'errorCode': 'TAB_NOT_FOUND',
-        'error': 'Tab not found: $tabId',
-      });
-    }
-
-    final mimeType = tab['mimeType'] as String?;
-    if (_isTabularMimeType(mimeType)) {
+    if (!isPathSupportedByActivation(path, definition.activation)) {
       throw _DocumentPatchFailure({
         'success': false,
         'errorCode': 'UNSUPPORTED_MIME_TYPE',
         'error':
-            'Tab "$tabId" is a tabular type (mimeType: $mimeType). document_patch only supports text documents.',
+            'File "$path" is not a text document. document_patch supports only .txt, .md, and .html.',
       });
     }
 
-    final originalContent = tab['content'] as String?;
+    final activeFile = await context.filesystemApi.getActiveFile(path);
+    if (activeFile == null) {
+      throw _DocumentPatchFailure({
+        'success': false,
+        'errorCode': 'FILE_NOT_OPEN',
+        'error': 'Active file not found: $path',
+      });
+    }
+
+    final originalContent = activeFile['content'] as String?;
     if (originalContent == null) {
       throw _DocumentPatchFailure({
         'success': false,
         'errorCode': 'INVALID_DOCUMENT',
-        'error': 'Tab "$tabId" has no string content.',
+        'error': 'File "$path" has no string content.',
       });
     }
 
@@ -361,21 +355,11 @@ class DocumentPatchTool extends Tool {
       }
     }
 
-    final updateSuccess =
-        await context.notepadApi.updateTab(tabId, content: working);
-
-    if (!updateSuccess) {
-      throw _DocumentPatchFailure({
-        'success': false,
-        'errorCode': 'UPDATE_FAILED',
-        'error': 'Failed to update document after applying operations.',
-        'tabId': tabId,
-      });
-    }
+    await context.filesystemApi.updateActiveFile(path, working);
 
     return jsonEncode({
       'success': true,
-      'tabId': tabId,
+      'path': path,
       'appliedOperations': operationsRaw.length,
       'message': 'All operations applied successfully',
       'operationResults': operationResults,

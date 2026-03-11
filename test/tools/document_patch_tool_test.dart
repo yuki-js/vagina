@@ -1,143 +1,26 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vagina/services/tools_runtime/apis/call_api.dart';
-import 'package:vagina/services/tools_runtime/apis/notepad_api.dart';
-import 'package:vagina/services/tools_runtime/apis/text_agent_api.dart';
-import 'package:vagina/services/tools_runtime/apis/tool_storage_api.dart';
-import 'package:vagina/services/tools_runtime/tool_context.dart';
 import 'package:vagina/tools/builtin/document/document_patch_tool.dart';
 
-class _FakeNotepadApi implements NotepadApi {
-  final Map<String, Map<String, dynamic>> _tabs = {};
-
-  void seedTab({
-    required String id,
-    required String content,
-    String mimeType = 'text/markdown',
-    String title = 't',
-  }) {
-    _tabs[id] = {
-      'id': id,
-      'title': title,
-      'content': content,
-      'mimeType': mimeType,
-      'createdAt': DateTime(2020, 1, 1).toIso8601String(),
-      'updatedAt': DateTime(2020, 1, 1).toIso8601String(),
-      'contentLength': content.length,
-    };
-  }
-
-  @override
-  Future<List<Map<String, dynamic>>> listTabs() async {
-    return _tabs.values.map((t) => Map<String, dynamic>.from(t)).toList();
-  }
-
-  @override
-  Future<Map<String, dynamic>?> getTab(String id) async {
-    final tab = _tabs[id];
-    if (tab == null) return null;
-    return Map<String, dynamic>.from(tab);
-  }
-
-  @override
-  Future<String> createTab({
-    required String content,
-    required String mimeType,
-    String? title,
-  }) async {
-    final id = 'tab_${_tabs.length + 1}';
-    seedTab(id: id, content: content, mimeType: mimeType, title: title ?? 't');
-    return id;
-  }
-
-  @override
-  Future<bool> updateTab(
-    String id, {
-    String? content,
-    String? title,
-    String? mimeType,
-  }) async {
-    final tab = _tabs[id];
-    if (tab == null) return false;
-
-    if (content != null) {
-      tab['content'] = content;
-      tab['contentLength'] = content.length;
-    }
-    if (title != null) {
-      tab['title'] = title;
-    }
-    if (mimeType != null) {
-      tab['mimeType'] = mimeType;
-    }
-
-    tab['updatedAt'] = DateTime(2020, 1, 2).toIso8601String();
-    return true;
-  }
-
-  @override
-  Future<bool> closeTab(String id) async {
-    return _tabs.remove(id) != null;
-  }
-}
-
-class _FakeCallApi implements CallApi {
-  @override
-  Future<bool> endCall({String? endContext}) async => true;
-}
-
-class _FakeTextAgentApi implements TextAgentApi {
-  @override
-  Future<List<Map<String, dynamic>>> listAgents() async => [];
-
-  @override
-  Future<String> sendQuery(String agentId, String prompt) async => '';
-}
-
-class _FakeToolStorageApi implements ToolStorageApi {
-  final Map<String, dynamic> _store = {};
-
-  @override
-  Future<bool> save(String key, dynamic value) async {
-    _store[key] = value;
-    return true;
-  }
-
-  @override
-  Future<dynamic> get(String key) async => _store[key];
-
-  @override
-  Future<Map<String, dynamic>> list() async => Map<String, dynamic>.from(_store);
-
-  @override
-  Future<bool> delete(String key) async => _store.remove(key) != null;
-
-  @override
-  Future<void> deleteAll() async => _store.clear();
-}
-
-ToolContext _makeContext(_FakeNotepadApi notepad) {
-  return ToolContext(
-    toolKey: DocumentPatchTool.toolKeyName,
-    notepadApi: notepad,
-    callApi: _FakeCallApi(),
-    textAgentApi: _FakeTextAgentApi(),
-    toolStorageApi: _FakeToolStorageApi(),
-  );
-}
+import 'tool_test_fakes.dart';
 
 void main() {
   group('DocumentPatchTool (structured patch)', () {
-    test('replace succeeds and updates tab', () async {
-      final notepad = _FakeNotepadApi();
-      notepad.seedTab(id: 't1', content: 'Hello world\n');
+    test('replace succeeds and updates file', () async {
+      final filesystem = ToolTestFilesystemApi()
+        ..seedActiveFile('/docs/t1.md', 'Hello world\n');
 
       final tool = DocumentPatchTool();
-      await tool.init(_makeContext(notepad));
+      await tool.init(
+        makeToolContext(
+          toolKey: DocumentPatchTool.toolKeyName,
+          filesystemApi: filesystem,
+        ),
+      );
 
       final resultJson = await tool.execute({
-        'tabId': 't1',
+        'path': '/docs/t1.md',
         'patch': {
           'operations': [
             {
@@ -152,20 +35,23 @@ void main() {
       final result = jsonDecode(resultJson) as Map<String, dynamic>;
       expect(result['success'], true);
       expect(result['appliedOperations'], 1);
-
-      final updatedTab = await notepad.getTab('t1');
-      expect(updatedTab!['content'], 'Hello there\n');
+      expect(filesystem.activeFiles['/docs/t1.md'], 'Hello there\n');
     });
 
     test('insert_after succeeds', () async {
-      final notepad = _FakeNotepadApi();
-      notepad.seedTab(id: 't1', content: 'A\nB\n');
+      final filesystem = ToolTestFilesystemApi()
+        ..seedActiveFile('/docs/t1.md', 'A\nB\n');
 
       final tool = DocumentPatchTool();
-      await tool.init(_makeContext(notepad));
+      await tool.init(
+        makeToolContext(
+          toolKey: DocumentPatchTool.toolKeyName,
+          filesystemApi: filesystem,
+        ),
+      );
 
       await tool.execute({
-        'tabId': 't1',
+        'path': '/docs/t1.md',
         'patch': {
           'operations': [
             {
@@ -177,19 +63,23 @@ void main() {
         },
       });
 
-      final updatedTab = await notepad.getTab('t1');
-      expect(updatedTab!['content'], 'A\nX\nB\n');
+      expect(filesystem.activeFiles['/docs/t1.md'], 'A\nX\nB\n');
     });
 
     test('delete succeeds', () async {
-      final notepad = _FakeNotepadApi();
-      notepad.seedTab(id: 't1', content: 'A\nB\nC\n');
+      final filesystem = ToolTestFilesystemApi()
+        ..seedActiveFile('/docs/t1.md', 'A\nB\nC\n');
 
       final tool = DocumentPatchTool();
-      await tool.init(_makeContext(notepad));
+      await tool.init(
+        makeToolContext(
+          toolKey: DocumentPatchTool.toolKeyName,
+          filesystemApi: filesystem,
+        ),
+      );
 
       await tool.execute({
-        'tabId': 't1',
+        'path': '/docs/t1.md',
         'patch': {
           'operations': [
             {
@@ -200,20 +90,24 @@ void main() {
         },
       });
 
-      final updatedTab = await notepad.getTab('t1');
-      expect(updatedTab!['content'], 'A\nC\n');
+      expect(filesystem.activeFiles['/docs/t1.md'], 'A\nC\n');
     });
 
-    test('TARGET_NOT_FOUND throws and does not update tab', () async {
-      final notepad = _FakeNotepadApi();
-      notepad.seedTab(id: 't1', content: 'Hello\n');
+    test('TARGET_NOT_FOUND throws and does not update file', () async {
+      final filesystem = ToolTestFilesystemApi()
+        ..seedActiveFile('/docs/t1.md', 'Hello\n');
 
       final tool = DocumentPatchTool();
-      await tool.init(_makeContext(notepad));
+      await tool.init(
+        makeToolContext(
+          toolKey: DocumentPatchTool.toolKeyName,
+          filesystemApi: filesystem,
+        ),
+      );
 
       await expectLater(
         () => tool.execute({
-          'tabId': 't1',
+          'path': '/docs/t1.md',
           'patch': {
             'operations': [
               {
@@ -235,20 +129,24 @@ void main() {
         ),
       );
 
-      final updatedTab = await notepad.getTab('t1');
-      expect(updatedTab!['content'], 'Hello\n');
+      expect(filesystem.activeFiles['/docs/t1.md'], 'Hello\n');
     });
 
-    test('partial failure throws and does not update tab', () async {
-      final notepad = _FakeNotepadApi();
-      notepad.seedTab(id: 't1', content: 'A\nB\n');
+    test('partial failure throws and does not update file', () async {
+      final filesystem = ToolTestFilesystemApi()
+        ..seedActiveFile('/docs/t1.md', 'A\nB\n');
 
       final tool = DocumentPatchTool();
-      await tool.init(_makeContext(notepad));
+      await tool.init(
+        makeToolContext(
+          toolKey: DocumentPatchTool.toolKeyName,
+          filesystemApi: filesystem,
+        ),
+      );
 
       await expectLater(
         () => tool.execute({
-          'tabId': 't1',
+          'path': '/docs/t1.md',
           'patch': {
             'operations': [
               {
@@ -271,25 +169,24 @@ void main() {
         ),
       );
 
-      final updatedTab = await notepad.getTab('t1');
-      // Should remain unchanged because we do not persist partial results.
-      expect(updatedTab!['content'], 'A\nB\n');
+      expect(filesystem.activeFiles['/docs/t1.md'], 'A\nB\n');
     });
 
-    test('tabular mimeType throws', () async {
-      final notepad = _FakeNotepadApi();
-      notepad.seedTab(
-        id: 't1',
-        content: 'a,b\n1,2\n',
-        mimeType: 'text/csv',
-      );
+    test('tabular file path throws', () async {
+      final filesystem = ToolTestFilesystemApi()
+        ..seedActiveFile('/data/table.v2d.csv', 'a,b\n1,2\n');
 
       final tool = DocumentPatchTool();
-      await tool.init(_makeContext(notepad));
+      await tool.init(
+        makeToolContext(
+          toolKey: DocumentPatchTool.toolKeyName,
+          filesystemApi: filesystem,
+        ),
+      );
 
       await expectLater(
         () => tool.execute({
-          'tabId': 't1',
+          'path': '/data/table.v2d.csv',
           'patch': {
             'operations': [
               {
@@ -313,15 +210,20 @@ void main() {
     });
 
     test('unified diff string patch throws UNSUPPORTED_PATCH_FORMAT', () async {
-      final notepad = _FakeNotepadApi();
-      notepad.seedTab(id: 't1', content: 'Hello\n');
+      final filesystem = ToolTestFilesystemApi()
+        ..seedActiveFile('/docs/t1.md', 'Hello\n');
 
       final tool = DocumentPatchTool();
-      await tool.init(_makeContext(notepad));
+      await tool.init(
+        makeToolContext(
+          toolKey: DocumentPatchTool.toolKeyName,
+          filesystemApi: filesystem,
+        ),
+      );
 
       await expectLater(
         () => tool.execute({
-          'tabId': 't1',
+          'path': '/docs/t1.md',
           'patch': '@@ -1 +1 @@\n-Hello\n+Hi\n',
         }),
         throwsA(

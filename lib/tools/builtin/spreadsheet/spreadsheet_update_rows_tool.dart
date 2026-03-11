@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:vagina/models/tabular_data.dart';
 import 'package:vagina/services/tools_runtime/tool.dart';
 import 'package:vagina/services/tools_runtime/tool_definition.dart';
+import 'package:vagina/tools/builtin/shared/file_type_support.dart';
 
 class SpreadsheetUpdateRowsTool extends Tool {
   static const String toolKeyName = 'spreadsheet_update_rows';
@@ -17,16 +18,17 @@ class SpreadsheetUpdateRowsTool extends Tool {
         sourceKey: 'builtin',
         publishedBy: 'aokiapp',
         description:
-            'Update rows in an existing spreadsheet tab using VLOOKUP-style search. The tab must have a tabular MIME type '
+            'Update rows in an active spreadsheet file using VLOOKUP-style search. The file must be a tabular type '
             '(text/csv, application/vagina-2d+json, or application/vagina-2d+jsonl). '
             'Each update specifies a "where" condition (column and value to match) and a "set" object with values to update. '
             'By default updates only the first matching row; set "updateAll": true to update all matches.',
+        activation: ToolActivation.forExtensions(kTabularDocumentExtensions),
         parametersSchema: {
           'type': 'object',
           'properties': {
-            'tabId': {
+            'path': {
               'type': 'string',
-              'description': 'ID of the spreadsheet tab to update',
+              'description': 'Path of the active spreadsheet file to update',
             },
             'updates': {
               'type': 'array',
@@ -66,38 +68,40 @@ class SpreadsheetUpdateRowsTool extends Tool {
               },
             },
           },
-          'required': ['tabId', 'updates'],
+          'required': ['path', 'updates'],
         },
       );
 
   @override
   Future<String> execute(Map<String, dynamic> args) async {
-    final tabId = args['tabId'] as String;
+    final path = args['path'] as String;
     final updatesRaw = args['updates'] as List<dynamic>;
 
-    final tab = await context.notepadApi.getTab(tabId);
-    if (tab == null) {
+    if (!isPathSupportedByActivation(path, definition.activation)) {
       return jsonEncode({
         'success': false,
-        'error': 'Tab not found: $tabId',
+        'error': 'File "$path" is not a tabular type. '
+            'Expected extension: .v2d.csv, .v2d.json, or .v2d.jsonl',
       });
     }
 
-    final mimeType = tab['mimeType'] as String;
-    switch (mimeType) {
-      case 'text/csv':
-      case 'application/vagina-2d+json':
-      case 'application/vagina-2d+jsonl':
-        break;
-      default:
-        return jsonEncode({
-          'success': false,
-          'error': 'Tab "$tabId" is not a tabular type (mimeType: $mimeType). '
-              'Expected one of: text/csv, application/vagina-2d+json, application/vagina-2d+jsonl',
-        });
+    final activeFile = await context.filesystemApi.getActiveFile(path);
+    if (activeFile == null) {
+      return jsonEncode({
+        'success': false,
+        'error': 'Active file not found: $path',
+      });
     }
 
-    final content = tab['content'] as String;
+    final mimeType = tabularMimeTypeFromPath(path);
+    if (mimeType == null) {
+      return jsonEncode({
+        'success': false,
+        'error': 'No tabular MIME mapping found for path: $path',
+      });
+    }
+
+    final content = activeFile['content'] as String? ?? '';
 
     try {
       final data = TabularData.parse(content, mimeType);
@@ -108,21 +112,11 @@ class SpreadsheetUpdateRowsTool extends Tool {
       final updated = data.updateRows(updates);
       final serialized = updated.serialize(mimeType);
 
-      final success = await context.notepadApi.updateTab(
-        tabId,
-        content: serialized,
-      );
-
-      if (!success) {
-        return jsonEncode({
-          'success': false,
-          'error': 'Failed to update tab after row updates.',
-        });
-      }
+      await context.filesystemApi.updateActiveFile(path, serialized);
 
       return jsonEncode({
         'success': true,
-        'tabId': tabId,
+        'path': path,
         'updatedOperations': updates.length,
         'message':
             '${updates.length} update operation(s) completed successfully',

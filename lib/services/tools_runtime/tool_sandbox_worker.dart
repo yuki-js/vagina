@@ -536,6 +536,8 @@ class _WorkerController {
         _toolMap.remove(toolKey);
       }
 
+      _updateTextAgentToolSupport();
+
       _sendResponse(
         requestId,
         status: 'success',

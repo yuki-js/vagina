@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:vagina/services/tools_runtime/tool.dart';
 import 'package:vagina/services/tools_runtime/tool_definition.dart';
+import 'package:vagina/tools/builtin/shared/file_type_support.dart';
 
 class DocumentReadTool extends Tool {
   static const String toolKeyName = 'document_read';
@@ -15,38 +16,43 @@ class DocumentReadTool extends Tool {
         iconKey: 'visibility',
         sourceKey: 'builtin',
         publishedBy: 'aokiapp',
-        description:
-            'Read the content of a document from an artifact tab. This returns the current content which may include modifications made by the user.',
+        description: 'Read the content of an active filesystem file by path.',
+        activation: ToolActivation.forExtensions(kReadableDocumentExtensions),
         parametersSchema: {
           'type': 'object',
           'properties': {
-            'tabId': {
+            'path': {
               'type': 'string',
-              'description': 'ID of the tab containing the document to read',
+              'description': 'Absolute path of the active file to read',
             },
           },
-          'required': ['tabId'],
+          'required': ['path'],
         },
       );
 
   @override
   Future<String> execute(Map<String, dynamic> args) async {
-    final tabId = args['tabId'] as String;
+    final path = args['path'] as String;
 
-    final tab = await context.notepadApi.getTab(tabId);
-    if (tab == null) {
+    if (!isPathSupportedByActivation(path, definition.activation)) {
       return jsonEncode({
         'success': false,
-        'error': 'Tab not found: $tabId',
+        'error': 'Unsupported file type for document_read: $path',
+      });
+    }
+
+    final file = await context.filesystemApi.getActiveFile(path);
+    if (file == null) {
+      return jsonEncode({
+        'success': false,
+        'error': 'Active file not found: $path',
       });
     }
 
     return jsonEncode({
       'success': true,
-      'tabId': tabId,
-      'content': tab['content'],
-      'mime': tab['mimeType'],
-      'title': tab['title'],
+      'path': path,
+      'content': file['content'],
     });
   }
 }

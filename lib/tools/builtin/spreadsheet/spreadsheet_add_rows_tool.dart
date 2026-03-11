@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:vagina/models/tabular_data.dart';
 import 'package:vagina/services/tools_runtime/tool.dart';
 import 'package:vagina/services/tools_runtime/tool_definition.dart';
+import 'package:vagina/tools/builtin/shared/file_type_support.dart';
 
 class SpreadsheetAddRowsTool extends Tool {
   static const String toolKeyName = 'spreadsheet_add_rows';
@@ -17,15 +18,16 @@ class SpreadsheetAddRowsTool extends Tool {
         sourceKey: 'builtin',
         publishedBy: 'aokiapp',
         description:
-            'Add rows to an existing spreadsheet tab. The tab must have a tabular MIME type '
+            'Add rows to an active spreadsheet file. The file must be a tabular type '
             '(text/csv, application/vagina-2d+json, or application/vagina-2d+jsonl). '
             'Each row must have exactly the same keys as the existing columns.',
+        activation: ToolActivation.forExtensions(kTabularDocumentExtensions),
         parametersSchema: {
           'type': 'object',
           'properties': {
-            'tabId': {
+            'path': {
               'type': 'string',
-              'description': 'ID of the spreadsheet tab to add rows to',
+              'description': 'Path of the active spreadsheet file',
             },
             'rows': {
               'type': 'array',
@@ -36,38 +38,40 @@ class SpreadsheetAddRowsTool extends Tool {
               },
             },
           },
-          'required': ['tabId', 'rows'],
+          'required': ['path', 'rows'],
         },
       );
 
   @override
   Future<String> execute(Map<String, dynamic> args) async {
-    final tabId = args['tabId'] as String;
+    final path = args['path'] as String;
     final rowsRaw = args['rows'] as List<dynamic>;
 
-    final tab = await context.notepadApi.getTab(tabId);
-    if (tab == null) {
+    if (!isPathSupportedByActivation(path, definition.activation)) {
       return jsonEncode({
         'success': false,
-        'error': 'Tab not found: $tabId',
+        'error': 'File "$path" is not a tabular type. '
+            'Expected extension: .v2d.csv, .v2d.json, or .v2d.jsonl',
       });
     }
 
-    final mimeType = tab['mimeType'] as String;
-    switch (mimeType) {
-      case 'text/csv':
-      case 'application/vagina-2d+json':
-      case 'application/vagina-2d+jsonl':
-        break;
-      default:
-        return jsonEncode({
-          'success': false,
-          'error': 'Tab "$tabId" is not a tabular type (mimeType: $mimeType). '
-              'Expected one of: text/csv, application/vagina-2d+json, application/vagina-2d+jsonl',
-        });
+    final activeFile = await context.filesystemApi.getActiveFile(path);
+    if (activeFile == null) {
+      return jsonEncode({
+        'success': false,
+        'error': 'Active file not found: $path',
+      });
     }
 
-    final content = tab['content'] as String;
+    final mimeType = tabularMimeTypeFromPath(path);
+    if (mimeType == null) {
+      return jsonEncode({
+        'success': false,
+        'error': 'No tabular MIME mapping found for path: $path',
+      });
+    }
+
+    final content = activeFile['content'] as String? ?? '';
 
     try {
       final data = TabularData.parse(content, mimeType);
@@ -78,21 +82,11 @@ class SpreadsheetAddRowsTool extends Tool {
       final updated = data.addRows(newRows);
       final serialized = updated.serialize(mimeType);
 
-      final success = await context.notepadApi.updateTab(
-        tabId,
-        content: serialized,
-      );
-
-      if (!success) {
-        return jsonEncode({
-          'success': false,
-          'error': 'Failed to update tab after adding rows.',
-        });
-      }
+      await context.filesystemApi.updateActiveFile(path, serialized);
 
       return jsonEncode({
         'success': true,
-        'tabId': tabId,
+        'path': path,
         'addedRows': newRows.length,
         'totalRows': updated.rows.length,
         'message': '${newRows.length} row(s) added successfully',

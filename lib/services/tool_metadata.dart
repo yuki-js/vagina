@@ -13,9 +13,8 @@ library;
 enum ToolCategory {
   system(displayName: 'システム', iconKey: 'settings'),
   calculation(displayName: '計算', iconKey: 'calculate'),
-  memory(displayName: 'メモリ', iconKey: 'memory'),
+  filesystem(displayName: 'ファイル', iconKey: 'folder'),
   document(displayName: 'ドキュメント', iconKey: 'description'),
-  notepad(displayName: 'ノート', iconKey: 'note'),
   mcp(displayName: 'MCP', iconKey: 'cloud'),
   custom(displayName: 'カスタム', iconKey: 'extension');
 

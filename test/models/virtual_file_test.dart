@@ -16,6 +16,14 @@ void main() {
       expect(file.extension, '.v2d.csv');
     });
 
+    test('extension detects double extension for uppercase v2d files', () {
+      const file = VirtualFile(
+        path: '/data/sales.V2D.JSON',
+        content: '[{"name":"Alice"}]',
+      );
+      expect(file.extension, '.V2D.JSON');
+    });
+
     test('extension returns empty string when no extension exists', () {
       const file = VirtualFile(path: '/documents/README', content: 'hello');
       expect(file.extension, '');

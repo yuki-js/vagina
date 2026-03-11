@@ -19,6 +19,7 @@ class CalculatorTool extends Tool {
         publishedBy: 'aokiapp',
         description:
             'Perform basic arithmetic calculations. Use this for mathematical operations.',
+        activation: ToolActivation.always(),
         parametersSchema: {
           'type': 'object',
           'properties': {

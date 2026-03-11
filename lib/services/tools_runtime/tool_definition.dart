@@ -2,6 +2,55 @@
 ///
 /// This type is Flutter-free and designed to be used by both UI and runtime
 /// layers.
+class ToolActivation {
+  final bool alwaysAvailable;
+  final List<String> extensions;
+
+  const ToolActivation.always()
+      : alwaysAvailable = true,
+        extensions = const [];
+
+  const ToolActivation.forExtensions(List<String> extensions)
+      : alwaysAvailable = false,
+        extensions = extensions;
+
+  bool isEnabledForExtensions(Set<String> activeExtensions) {
+    if (alwaysAvailable) {
+      return true;
+    }
+
+    final normalizedActiveExtensions =
+        activeExtensions.map((extension) => extension.toLowerCase()).toSet();
+
+    for (final extension in extensions) {
+      if (normalizedActiveExtensions.contains(extension.toLowerCase())) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'alwaysAvailable': alwaysAvailable,
+      'extensions': extensions,
+    };
+  }
+
+  static ToolActivation fromJson(Map<String, dynamic> json) {
+    final always = json['alwaysAvailable'] as bool? ?? false;
+    if (always) {
+      return const ToolActivation.always();
+    }
+
+    final extensionsValue = json['extensions'] as List?;
+    final extensions = extensionsValue == null
+        ? const <String>[]
+        : List<String>.from(extensionsValue);
+    return ToolActivation.forExtensions(extensions);
+  }
+}
+
 class ToolDefinition {
   /// Stable identifier used by the runtime and sent to the Realtime API.
   final String toolKey;
@@ -36,6 +85,9 @@ class ToolDefinition {
   /// Kept as a raw map for compatibility with existing code.
   final Map<String, dynamic> parametersSchema;
 
+  /// Rule that defines when this tool should be active.
+  final ToolActivation activation;
+
   const ToolDefinition({
     required this.toolKey,
     required this.displayName,
@@ -47,6 +99,7 @@ class ToolDefinition {
     this.mcpServerUrl,
     required this.description,
     required this.parametersSchema,
+    this.activation = const ToolActivation.always(),
   });
 
   Map<String, dynamic> toJson() {
@@ -61,6 +114,7 @@ class ToolDefinition {
       'mcpServerUrl': mcpServerUrl,
       'description': description,
       'parametersSchema': parametersSchema,
+      'activation': activation.toJson(),
     };
   }
 
@@ -77,7 +131,18 @@ class ToolDefinition {
       description: json['description'] as String,
       parametersSchema:
           Map<String, dynamic>.from(json['parametersSchema'] as Map),
+      activation: _parseActivation(json['activation']),
     );
+  }
+
+  static ToolActivation _parseActivation(dynamic rawActivation) {
+    if (rawActivation is Map<String, dynamic>) {
+      return ToolActivation.fromJson(rawActivation);
+    }
+    if (rawActivation is Map) {
+      return ToolActivation.fromJson(Map<String, dynamic>.from(rawActivation));
+    }
+    return const ToolActivation.always();
   }
 
   /// Realtime API compatible tool definition (function tool).

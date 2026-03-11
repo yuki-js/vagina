@@ -59,6 +59,12 @@ class ToolSandboxManager {
     _filesystemHostApi = FilesystemHostApi(
       _filesystemService,
       logService: _logService,
+      onActiveFilesChanged: (activeFiles) {
+        final pathSetChanged = _callService.onActiveFilesChanged(activeFiles);
+        if (pathSetChanged) {
+          unawaited(_callService.refreshToolsForActiveFiles());
+        }
+      },
     );
     _callHostApi = CallHostApi(_callService);
   }
@@ -295,6 +301,26 @@ class ToolSandboxManager {
       final code = response['code'];
       throw Exception('setToolEnabled error: $error (code=$code)');
     }
+  }
+
+  Future<List<Map<String, String>>> listActiveFiles() async {
+    return _filesystemHostApi.listActiveFiles();
+  }
+
+  Future<Map<String, String>?> getActiveFile(String path) async {
+    return _filesystemHostApi.getActiveFile(path);
+  }
+
+  Future<void> updateActiveFile(String path, String content) async {
+    await _filesystemHostApi.updateActiveFile(path, content);
+  }
+
+  Future<void> closeActiveFile(String path) async {
+    await _filesystemHostApi.closeFile(path);
+  }
+
+  Future<void> writeFile(String path, String content) async {
+    await _filesystemHostApi.write(path, content);
   }
 
   /// Start listening for messages from the worker

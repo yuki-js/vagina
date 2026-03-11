@@ -10,13 +10,49 @@ class FilesystemHostApi {
 
   final VirtualFilesystemService _filesystemService;
   final LogService _logService;
+  final void Function(List<Map<String, String>> activeFiles)?
+      _onActiveFilesChanged;
 
   final Map<String, String> _activeFiles = <String, String>{};
 
   FilesystemHostApi(
     this._filesystemService, {
     LogService? logService,
-  }) : _logService = logService ?? LogService();
+    void Function(List<Map<String, String>> activeFiles)? onActiveFilesChanged,
+  })  : _logService = logService ?? LogService(),
+        _onActiveFilesChanged = onActiveFilesChanged;
+
+  Future<List<Map<String, String>>> listActiveFiles() async {
+    return _currentActiveFiles();
+  }
+
+  Future<Map<String, String>?> getActiveFile(String path) async {
+    final content = _activeFiles[path];
+    if (content == null) return null;
+    return {
+      'path': path,
+      'content': content,
+    };
+  }
+
+  Future<void> updateActiveFile(String path, String content) async {
+    if (!_activeFiles.containsKey(path)) {
+      throw Exception('Active file not found: $path');
+    }
+    _activeFiles[path] = content;
+    _emitActiveFilesChanged();
+  }
+
+  Future<void> closeFile(String path) async {
+    _activeFiles.remove(path);
+    _emitActiveFilesChanged();
+  }
+
+  Future<void> write(String path, String content) async {
+    await _filesystemService.write(
+      VirtualFile(path: path, content: content),
+    );
+  }
 
   Future<dynamic> handleCall(
     String method,
@@ -66,9 +102,7 @@ class FilesystemHostApi {
     final path = _requireString(args, 'path');
     final content = _requireString(args, 'content');
 
-    await _filesystemService.write(
-      VirtualFile(path: path, content: content),
-    );
+    await write(path, content);
     return null;
   }
 
@@ -76,6 +110,7 @@ class FilesystemHostApi {
     final path = _requireString(args, 'path');
     await _filesystemService.delete(path);
     _activeFiles.remove(path);
+    _emitActiveFilesChanged();
     return null;
   }
 
@@ -88,6 +123,7 @@ class FilesystemHostApi {
     if (activeContent != null) {
       _activeFiles[toPath] = activeContent;
     }
+    _emitActiveFilesChanged();
     return null;
   }
 
@@ -101,6 +137,7 @@ class FilesystemHostApi {
     final path = _requireString(args, 'path');
     final content = _requireString(args, 'content');
     _activeFiles[path] = content;
+    _emitActiveFilesChanged();
     return null;
   }
 
@@ -120,20 +157,21 @@ class FilesystemHostApi {
     final path = _requireString(args, 'path');
     final content = _requireString(args, 'content');
 
-    if (!_activeFiles.containsKey(path)) {
-      throw Exception('Active file not found: $path');
-    }
-    _activeFiles[path] = content;
+    await updateActiveFile(path, content);
     return null;
   }
 
   Future<dynamic> _handleCloseFile(Map<String, dynamic> args) async {
     final path = _requireString(args, 'path');
-    _activeFiles.remove(path);
+    await closeFile(path);
     return null;
   }
 
   Future<dynamic> _handleListActiveFiles() async {
+    return _currentActiveFiles();
+  }
+
+  List<Map<String, String>> _currentActiveFiles() {
     final entries = _activeFiles.entries
         .map((entry) => {'path': entry.key, 'content': entry.value})
         .toList();
@@ -143,6 +181,10 @@ class FilesystemHostApi {
       return pathA.compareTo(pathB);
     });
     return entries;
+  }
+
+  void _emitActiveFilesChanged() {
+    _onActiveFilesChanged?.call(_currentActiveFiles());
   }
 
   String _requireString(Map<String, dynamic> args, String key) {

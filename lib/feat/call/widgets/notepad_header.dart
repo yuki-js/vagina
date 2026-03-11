@@ -1,7 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import 'package:vagina/feat/call/state/call_service_providers.dart';
 import 'package:vagina/feat/call/widgets/notepad_action_bar.dart';
 import 'package:vagina/models/notepad_tab.dart';
 import 'package:vagina/core/theme/app_theme.dart';
@@ -60,27 +57,15 @@ class NotepadHeader extends StatelessWidget {
             ),
           ),
           if (selectedTab != null)
-            Consumer(
-              builder: (context, ref, child) {
-                return NotepadMoreMenu(
-                  content: isEditing ? editedContent : selectedTab!.content,
-                  isEditing: isEditing,
-                  onEditToggle: onEditToggle,
-                  showEditButton: selectedTab!.mimeType != 'text/html',
-                  canUndo: selectedTab!.canUndo,
-                  canRedo: selectedTab!.canRedo,
-                  onUndo: () {
-                    final service =
-                        ref.read(callServiceProvider).notepadService;
-                    service.undo(selectedTab!.id);
-                  },
-                  onRedo: () {
-                    final service =
-                        ref.read(callServiceProvider).notepadService;
-                    service.redo(selectedTab!.id);
-                  },
-                );
-              },
+            NotepadMoreMenu(
+              content: isEditing ? editedContent : selectedTab!.content,
+              isEditing: isEditing,
+              onEditToggle: onEditToggle,
+              showEditButton: selectedTab!.mimeType != 'text/html',
+              canUndo: false,
+              canRedo: false,
+              onUndo: () {},
+              onRedo: () {},
             )
           else
             const SizedBox(width: 48), // Balance for the back button

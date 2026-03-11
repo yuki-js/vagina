@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vagina/feat/call/state/notepad_controller.dart';
@@ -27,6 +29,7 @@ class NotepadPane extends ConsumerStatefulWidget {
 class _NotepadPaneState extends ConsumerState<NotepadPane> {
   bool _isEditing = false;
   String _editedContent = '';
+  String? _selectedTabId;
   String? _currentTabId;
 
   void _toggleEdit(NotepadTab? selectedTab) {
@@ -34,10 +37,11 @@ class _NotepadPaneState extends ConsumerState<NotepadPane> {
         selectedTab != null &&
         _editedContent != selectedTab.content) {
       // Save changes when exiting edit mode
-      ref
-          .read(callServiceProvider)
-          .notepadService
-          .updateTab(selectedTab.id, content: _editedContent);
+      unawaited(
+        ref
+            .read(callServiceProvider)
+            .updateOpenFileContent(selectedTab.id, _editedContent),
+      );
     }
     setState(() {
       _isEditing = !_isEditing;
@@ -54,13 +58,19 @@ class _NotepadPaneState extends ConsumerState<NotepadPane> {
   @override
   Widget build(BuildContext context) {
     final notepadStateAsync = ref.watch(notepadStateProvider);
-    final notepadService = ref.read(callServiceProvider).notepadService;
+    final callService = ref.read(callServiceProvider);
 
     return notepadStateAsync.when(
       data: (state) {
         final tabs = state.tabs;
-        final selectedId = state.selectedTabId;
-        final selectedTab = state.selectedTab;
+        if (_selectedTabId == null ||
+            !tabs.any((tab) => tab.id == _selectedTabId)) {
+          _selectedTabId = tabs.isNotEmpty ? tabs.first.id : null;
+        }
+        final selectedId = _selectedTabId;
+        final selectedTab = tabs.where((tab) => tab.id == selectedId).isNotEmpty
+            ? tabs.firstWhere((tab) => tab.id == selectedId)
+            : null;
 
         // Reset editing state when tab changes (based on tab ID change)
         if (_currentTabId != selectedId && _isEditing) {
@@ -95,10 +105,12 @@ class _NotepadPaneState extends ConsumerState<NotepadPane> {
                 tabs: tabs,
                 selectedTabId: selectedId,
                 onTabSelected: (tabId) {
-                  notepadService.selectTab(tabId);
+                  setState(() {
+                    _selectedTabId = tabId;
+                  });
                 },
                 onTabClosed: (tabId) {
-                  notepadService.closeTab(tabId);
+                  unawaited(callService.closeOpenFile(tabId));
                 },
               ),
 
