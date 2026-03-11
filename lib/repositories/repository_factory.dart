@@ -5,12 +5,14 @@ import 'package:vagina/interfaces/config_repository.dart';
 import 'package:vagina/interfaces/key_value_store.dart';
 import 'package:vagina/interfaces/speed_dial_repository.dart';
 import 'package:vagina/interfaces/tool_storage.dart';
+import 'package:vagina/interfaces/virtual_filesystem_repository.dart';
 import 'package:vagina/services/log_service.dart';
 
 import 'json_call_session_repository.dart';
 import 'json_config_repository.dart';
 import 'json_speed_dial_repository.dart';
 import 'json_tool_storage.dart';
+import 'json_virtual_filesystem_repository.dart';
 import 'preferences_repository.dart';
 
 /// Factory for creating repository instances
@@ -22,6 +24,7 @@ class RepositoryFactory {
   static CallSessionRepository? _callSessionRepo;
   static SpeedDialRepository? _speedDialRepo;
   static ToolStorage? _toolStorage;
+  static VirtualFilesystemRepository? _filesystemRepo;
   static ConfigRepository? _configRepo;
   static PreferencesRepository? _preferencesRepo;
   static LogService? _logService;
@@ -75,6 +78,13 @@ class RepositoryFactory {
     return _toolStorage ??= JsonToolStorage(_store!, logService: _logService);
   }
 
+  /// Get the Virtual Filesystem repository
+  static VirtualFilesystemRepository get filesystem {
+    _ensureInitialized();
+    return _filesystemRepo ??=
+        JsonVirtualFilesystemRepository(_store!, logService: _logService);
+  }
+
   /// Get the Config repository
   static ConfigRepository get config {
     _ensureInitialized();
@@ -102,6 +112,7 @@ class RepositoryFactory {
     _callSessionRepo = null;
     _speedDialRepo = null;
     _toolStorage = null;
+    _filesystemRepo = null;
     _configRepo = null;
     _preferencesRepo = null;
     _logService = null;
