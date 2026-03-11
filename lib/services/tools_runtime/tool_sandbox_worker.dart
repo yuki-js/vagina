@@ -4,10 +4,9 @@ import 'package:flutter/foundation.dart';
 import 'package:vagina/services/tools_runtime/sandbox_protocol.dart';
 import 'package:vagina/services/tools_runtime/tool.dart';
 import 'package:vagina/services/tools_runtime/tool_context.dart';
-import 'package:vagina/services/tools_runtime/apis/notepad_api.dart';
 import 'package:vagina/services/tools_runtime/apis/call_api.dart';
+import 'package:vagina/services/tools_runtime/apis/filesystem_api.dart';
 import 'package:vagina/services/tools_runtime/apis/text_agent_api.dart';
-import 'package:vagina/services/tools_runtime/apis/tool_storage_api.dart';
 import 'package:vagina/tools/tools.dart';
 
 // Platform-specific imports (conditional)
@@ -73,10 +72,9 @@ class _WorkerController {
   // _initializeToolRegistry(). We don't keep a separate session context here.
 
   // Late API clients (created during handshake)
-  late NotepadApiClient _notepadApiClient;
+  late FilesystemApiClient _filesystemApiClient;
   late CallApiClient _callApiClient;
   late TextAgentApiClient _textAgentApiClient;
-  late ToolStorageApiClient _toolStorageApiClient;
 
   _WorkerController({
     required this.hostSendPort,
@@ -193,10 +191,9 @@ class _WorkerController {
       // Create a per-tool context with the tool's key for storage isolation
       final toolContext = ToolContext(
         toolKey: tool.definition.toolKey,
-        notepadApi: _notepadApiClient,
+        filesystemApi: _filesystemApiClient,
         callApi: _callApiClient,
         textAgentApi: _textAgentApiClient,
-        toolStorageApi: _toolStorageApiClient,
       );
 
       tool.init(toolContext); // boot up tool with its own context
@@ -214,12 +211,12 @@ class _WorkerController {
   void _createApiClients(Map<String, dynamic>? toolsData) {
     _log('Creating API clients');
 
-    // Create NotepadApiClient with hostCall callback
-    _notepadApiClient = NotepadApiClient(
+    // Create FilesystemApiClient with hostCall callback
+    _filesystemApiClient = FilesystemApiClient(
       hostCall: (method, args) async =>
-          await _makeHostCall('notepad', method, args),
+          await _makeHostCall('filesystem', method, args),
     );
-    _log('Created NotepadApiClient');
+    _log('Created FilesystemApiClient');
 
     // Create CallApiClient with hostCall callback
     _callApiClient = CallApiClient(
@@ -254,13 +251,6 @@ class _WorkerController {
         }
       }
     }
-
-    // Create ToolStorageApiClient with hostCall callback
-    _toolStorageApiClient = ToolStorageApiClient(
-      hostCall: (method, args) async =>
-          await _makeHostCall('toolStorage', method, args),
-    );
-    _log('Created ToolStorageApiClient');
 
     // Future: Other API clients can initialize themselves here
     // if (toolsData?['database'] != null) {
@@ -535,10 +525,9 @@ class _WorkerController {
         // Ensure context is initialized.
         final toolContext = ToolContext(
           toolKey: tool.definition.toolKey,
-          notepadApi: _notepadApiClient,
+          filesystemApi: _filesystemApiClient,
           callApi: _callApiClient,
           textAgentApi: _textAgentApiClient,
-          toolStorageApi: _toolStorageApiClient,
         );
         await tool.init(toolContext);
 

@@ -1,15 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:vagina/services/notepad_service.dart';
-import 'package:vagina/interfaces/tool_storage.dart';
 import 'package:vagina/interfaces/config_repository.dart';
 import 'package:vagina/services/call_service.dart';
 import 'package:vagina/services/log_service.dart';
+import 'package:vagina/services/virtual_filesystem_service.dart';
 import 'package:vagina/services/tools_runtime/sandbox_platform_web.dart';
 import 'package:vagina/services/tools_runtime/sandbox_protocol.dart';
-import 'package:vagina/services/tools_runtime/host/notepad_host_api.dart';
 import 'package:vagina/services/tools_runtime/host/call_host_api.dart';
-import 'package:vagina/services/tools_runtime/host/tool_storage_host_api.dart';
+import 'package:vagina/services/tools_runtime/host/filesystem_host_api.dart';
 import 'package:vagina/services/tools_runtime/tool.dart';
 import 'package:vagina/tools/tools.dart';
 
@@ -29,20 +27,13 @@ class ToolSandboxManager {
   static const String _tag = 'ToolSandboxManager';
   static const Duration _defaultTimeout = Duration(seconds: 30);
 
-  final NotepadService _notepadService;
-  final ToolStorage _toolStorage;
+  final VirtualFilesystemService _filesystemService;
   final ConfigRepository _configRepository;
   final CallService _callService;
   final LogService _logService;
 
-  late NotepadHostApi _notepadHostApi;
+  late FilesystemHostApi _filesystemHostApi;
   late CallHostApi _callHostApi;
-
-  // Tool storage API with context callback for dynamic tool key resolution
-  late ToolStorageHostApi _toolStorageHostApi;
-
-  // Track currently executing tool for hostCall routing
-  String? _currentExecutingToolKey;
 
   // Worker management (platform-agnostic)
   platform.PlatformIsolate? _worker;
@@ -52,50 +43,24 @@ class ToolSandboxManager {
   // Message routing
   final Map<String, Completer<Map<String, dynamic>>> _pendingRequests = {};
 
-  // Latest tool registry from worker (SSoT for tool metadata on host side)
-  List<Tool> _latestTools = const [];
-
   // Lifecycle state
   bool _isStarted = false;
   bool _isDisposed = false;
 
   ToolSandboxManager({
-    required NotepadService notepadService,
-    required ToolStorage toolStorage,
+    required VirtualFilesystemService filesystemService,
     required CallService callService,
     required ConfigRepository configRepository,
     LogService? logService,
-  })  : _notepadService = notepadService,
-        _toolStorage = toolStorage,
+  })  : _filesystemService = filesystemService,
         _configRepository = configRepository,
         _callService = callService,
         _logService = logService ?? LogService() {
-    _notepadHostApi = NotepadHostApi(_notepadService);
-    _callHostApi = CallHostApi(_callService);
-
-    // Tool storage API with context callback to get current tool key
-    // The callback will throw if called outside of tool execution context
-    _toolStorageHostApi = ToolStorageHostApi(
-      _toolStorage,
-      () {
-        if (_currentExecutingToolKey == null) {
-          throw StateError(
-            'toolStorage API called outside of tool execution context. '
-            'This is a programming error - toolStorage should only be called from within a tool.',
-          );
-        }
-        return _currentExecutingToolKey!;
-      },
-      resolveStorageNamespace: (toolKey) {
-        // SSoT: resolve from the latest tool list, avoiding a separate cache.
-        for (final tool in _latestTools) {
-          if (tool.definition.toolKey == toolKey) {
-            return tool.definition.publishedBy;
-          }
-        }
-        return toolKey;
-      },
+    _filesystemHostApi = FilesystemHostApi(
+      _filesystemService,
+      logService: _logService,
     );
+    _callHostApi = CallHostApi(_callService);
   }
 
   /// Whether the sandbox manager is currently running
@@ -125,6 +90,8 @@ class ToolSandboxManager {
     }
 
     try {
+      await _filesystemService.initialize();
+
       // Spawn worker and get ports
       final (worker, receivePort, workerSendPort) =
           await platform.spawnPlatformWorker(
@@ -222,31 +189,24 @@ class ToolSandboxManager {
       throw StateError('ToolSandboxManager has been disposed');
     }
 
-    // Track current executing tool for hostCall routing.
-    _currentExecutingToolKey = toolKey;
+    final messageId = generateMessageId();
+    final response = await _request(
+      executeToolMessage(toolKey, args, id: messageId),
+      timeoutTag: 'execute:$toolKey',
+    );
 
-    try {
-      final messageId = generateMessageId();
-      final response = await _request(
-        executeToolMessage(toolKey, args, id: messageId),
-        timeoutTag: 'execute:$toolKey',
-      );
-
-      if (response['status'] != 'success') {
-        final error = response['error'] as String?;
-        throw Exception('Tool execution error: $error');
-      }
-
-      final data = response['data'] as Map<String, dynamic>?;
-      if (data == null) {
-        throw Exception('No data in response');
-      }
-
-      final result = data['result'];
-      return result is String ? result : jsonEncode(result);
-    } finally {
-      _currentExecutingToolKey = null;
+    if (response['status'] != 'success') {
+      final error = response['error'] as String?;
+      throw Exception('Tool execution error: $error');
     }
+
+    final data = response['data'] as Map<String, dynamic>?;
+    if (data == null) {
+      throw Exception('No data in response');
+    }
+
+    final result = data['result'];
+    return result is String ? result : jsonEncode(result);
   }
 
   Future<Map<String, dynamic>> _request(
@@ -316,7 +276,6 @@ class ToolSandboxManager {
     );
 
     final toolsList = _parseToolsFromResponse(response);
-    _setToolRegistry(toolsList);
     return toolsList;
   }
 
@@ -450,8 +409,7 @@ class ToolSandboxManager {
 
   /// Handle a hostCall request from the worker
   ///
-  /// Routes to appropriate host adapter (NotepadHostApi, MemoryHostApi, ToolStorageHostApi, etc.)
-  /// and sends response back to worker via the replyTo port
+  /// Routes to appropriate host adapter and sends response to worker.
   void _handleHostCall(String requestId, Map<String, dynamic> message) async {
     try {
       // Extract replyTo port from message
@@ -481,15 +439,11 @@ class ToolSandboxManager {
       dynamic result;
 
       switch (api) {
-        case 'notepad':
-          result = await _notepadHostApi.handleCall(method, args);
+        case 'filesystem':
+          result = await _filesystemHostApi.handleCall(method, args);
           break;
         case 'call':
           result = await _callHostApi.handleCall(method, args);
-          break;
-        case 'toolStorage':
-          // Tool storage API uses the injected callback to get current tool key
-          result = await _toolStorageHostApi.handleCall(method, args);
           break;
         default:
           _sendHostCallError(requestId, 'Unknown API: $api', replyTo);
@@ -535,10 +489,6 @@ class ToolSandboxManager {
     } catch (e) {
       _logService.error(_tag, 'Error sending hostCall error: $e');
     }
-  }
-
-  void _setToolRegistry(List<Tool> tools) {
-    _latestTools = tools;
   }
 
   /// Handle worker termination

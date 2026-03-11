@@ -8,12 +8,12 @@ import 'package:vagina/core/config/app_config.dart';
 import 'package:vagina/interfaces/call_session_repository.dart';
 import 'package:vagina/interfaces/config_repository.dart';
 import 'package:vagina/interfaces/speed_dial_repository.dart';
-import 'package:vagina/interfaces/tool_storage.dart';
 import 'package:vagina/models/call_session.dart';
 import 'package:vagina/models/chat_message.dart';
 import 'package:vagina/models/speed_dial.dart';
 import 'package:vagina/services/tools_runtime/tool.dart';
 import 'package:vagina/services/tools_runtime/tool_sandbox_manager.dart';
+import 'package:vagina/services/virtual_filesystem_service.dart';
 import 'package:vagina/utils/audio_utils.dart';
 
 import 'audio/call_audio_service.dart';
@@ -41,7 +41,7 @@ class CallService {
   final ConfigRepository _config;
   final SpeedDialRepository _speedDialRepo;
   final CallSessionRepository _sessionRepository;
-  final ToolStorage _toolStorage;
+  final VirtualFilesystemService _filesystemService;
   final LogService _logService;
   final CallFeedbackService _feedback;
   final ChatMessageManager _chatManager = ChatMessageManager();
@@ -98,7 +98,7 @@ class CallService {
     required ConfigRepository config,
     required SpeedDialRepository speedDialRepo,
     required CallSessionRepository sessionRepository,
-    required ToolStorage toolStorage,
+    required VirtualFilesystemService filesystemService,
     LogService? logService,
     CallFeedbackService? feedbackService,
   })  : _audioService = audioService,
@@ -106,7 +106,7 @@ class CallService {
         _config = config,
         _speedDialRepo = speedDialRepo,
         _sessionRepository = sessionRepository,
-        _toolStorage = toolStorage,
+        _filesystemService = filesystemService,
         _logService = logService ?? LogService(),
         _feedback =
             feedbackService ?? CallFeedbackService(logService: logService),
@@ -285,8 +285,7 @@ class CallService {
 
     // 1. Create and start the tool sandbox
     _sandboxManager = ToolSandboxManager(
-      notepadService: _notepadService,
-      toolStorage: _toolStorage,
+      filesystemService: _filesystemService,
       configRepository: _config,
       callService: this,
     );

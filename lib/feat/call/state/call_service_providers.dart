@@ -6,6 +6,8 @@ import 'package:vagina/services/call_feedback_service.dart';
 import 'package:vagina/services/call_service.dart';
 import 'package:vagina/services/realtime_api_client.dart';
 import 'package:vagina/services/tool_service.dart';
+import 'package:vagina/services/virtual_filesystem_service.dart';
+import 'package:vagina/repositories/repository_factory.dart';
 
 part 'call_service_providers.g.dart';
 
@@ -59,7 +61,7 @@ CallService callService(Ref ref) {
     config: ref.watch(configRepositoryProvider),
     speedDialRepo: ref.watch(speedDialRepositoryProvider),
     sessionRepository: ref.watch(callSessionRepositoryProvider),
-    toolStorage: ref.watch(toolStorageProvider),
+    filesystemService: VirtualFilesystemService(RepositoryFactory.filesystem),
     logService: logService,
     feedbackService: ref.watch(callFeedbackServiceProvider),
   );
