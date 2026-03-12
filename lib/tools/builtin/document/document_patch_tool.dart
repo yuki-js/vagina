@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:vagina/models/tabular_data.dart';
 import 'package:vagina/services/tools_runtime/tool.dart';
 import 'package:vagina/services/tools_runtime/tool_definition.dart';
 import 'package:vagina/tools/builtin/shared/file_type_support.dart';
@@ -207,9 +208,10 @@ class DocumentPatchTool extends Tool {
         description:
             'Edit an existing text document using structured patch operations (NOT unified diff). '
             'Each operation finds an exact target snippet copied from the current document and then replaces/inserts/deletes it. '
-            'This is intended for small localized edits on text documents (text/markdown, text/plain, text/html). '
-            'Do NOT use this for tabular/spreadsheet documents (text/csv, application/vagina-2d+json, application/vagina-2d+jsonl). '
-            'For spreadsheet edits, use spreadsheet_add_rows, spreadsheet_update_rows, or spreadsheet_delete_rows instead.\n\n'
+            'This is intended for small localized edits on text documents and path-addressed tabular files. '
+            'For tabular/spreadsheet documents (text/csv, application/vagina-2d+json, application/vagina-2d+jsonl), '
+            'the patched result must remain a valid tabular serialization. '
+            'For row-level operations, prefer spreadsheet_add_rows, spreadsheet_update_rows, or spreadsheet_delete_rows.\n\n'
             'Patch format example:\n'
             '{\n'
             '  "operations": [\n'
@@ -283,8 +285,7 @@ class DocumentPatchTool extends Tool {
       throw _DocumentPatchFailure({
         'success': false,
         'errorCode': 'UNSUPPORTED_MIME_TYPE',
-        'error':
-            'File "$path" is not a text document. document_patch supports only .txt, .md, and .html.',
+        'error': 'Unsupported file type for document_patch: $path',
       });
     }
 
@@ -352,6 +353,20 @@ class DocumentPatchTool extends Tool {
         final details = Map<String, dynamic>.from(e.details);
         details['operationResults'] = operationResults;
         throw _DocumentPatchFailure(details);
+      }
+    }
+
+    final mimeType = tabularMimeTypeFromPath(path);
+    if (mimeType != null) {
+      try {
+        TabularData.validate(working, mimeType);
+      } on TabularDataException catch (e) {
+        throw _DocumentPatchFailure({
+          'success': false,
+          'errorCode': 'INVALID_TABULAR_CONTENT',
+          'error': e.message,
+          'operationResults': operationResults,
+        });
       }
     }
 

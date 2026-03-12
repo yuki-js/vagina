@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:vagina/models/tabular_data.dart';
 import 'package:vagina/services/tools_runtime/tool.dart';
 import 'package:vagina/services/tools_runtime/tool_definition.dart';
 import 'package:vagina/tools/builtin/shared/file_type_support.dart';
@@ -62,6 +63,19 @@ class DocumentOverwriteTool extends Tool {
           'success': false,
           'error': 'Active file not found: $path',
         });
+      }
+
+      final mimeType = tabularMimeTypeFromPath(path);
+      if (mimeType != null) {
+        try {
+          TabularData.validate(content, mimeType);
+        } on TabularDataException catch (e) {
+          return jsonEncode({
+            'success': false,
+            'errorCode': 'INVALID_TABULAR_CONTENT',
+            'error': e.message,
+          });
+        }
       }
 
       await context.filesystemApi.updateActiveFile(path, content);

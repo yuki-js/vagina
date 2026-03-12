@@ -116,9 +116,9 @@ void main() {
       expect(result['error'], contains('Active file not found'));
     });
 
-    test('document_overwrite rejects non-text extension', () async {
+    test('document_overwrite rejects unsupported extension', () async {
       final fs = ToolTestFilesystemApi()
-        ..seedActiveFile('/data/table.v2d.json', '[{\"id\":1}]');
+        ..seedActiveFile('/docs/file.pdf', 'binary-ish');
       final tool = DocumentOverwriteTool();
       await tool.init(
         makeToolContext(
@@ -128,11 +128,32 @@ void main() {
       );
 
       final result = jsonDecode(await tool.execute({
-        'path': '/data/table.v2d.json',
+        'path': '/docs/file.pdf',
         'content': 'x',
       })) as Map<String, dynamic>;
       expect(result['success'], false);
       expect(result['error'], contains('Unsupported file type'));
+    });
+
+    test('document_overwrite rejects invalid .v2d.jsonl content', () async {
+      final fs = ToolTestFilesystemApi()
+        ..seedActiveFile('/data/table.v2d.jsonl', '{"a":1}\n{"a":2}');
+      final tool = DocumentOverwriteTool();
+      await tool.init(
+        makeToolContext(
+          toolKey: DocumentOverwriteTool.toolKeyName,
+          filesystemApi: fs,
+        ),
+      );
+
+      final result = jsonDecode(await tool.execute({
+        'path': '/data/table.v2d.jsonl',
+        'content': '{"a":1}\nnot-json',
+      })) as Map<String, dynamic>;
+      expect(result['success'], false);
+      expect(result['errorCode'], 'INVALID_TABULAR_CONTENT');
+      expect(result['error'], contains('Invalid JSON on line 2'));
+      expect(fs.activeFiles['/data/table.v2d.jsonl'], '{"a":1}\n{"a":2}');
     });
   });
 }

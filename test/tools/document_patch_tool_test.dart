@@ -172,7 +172,36 @@ void main() {
       expect(filesystem.activeFiles['/docs/t1.md'], 'A\nB\n');
     });
 
-    test('tabular file path throws', () async {
+    test('tabular file patch succeeds when result stays valid', () async {
+      final filesystem = ToolTestFilesystemApi()
+        ..seedActiveFile('/data/table.v2d.csv', 'a,b\n1,2\n');
+
+      final tool = DocumentPatchTool();
+      await tool.init(
+        makeToolContext(
+          toolKey: DocumentPatchTool.toolKeyName,
+          filesystemApi: filesystem,
+        ),
+      );
+
+      final result = jsonDecode(await tool.execute({
+        'path': '/data/table.v2d.csv',
+        'patch': {
+          'operations': [
+            {
+              'op': 'replace',
+              'target': '1,2',
+              'newText': '3,4',
+            }
+          ],
+        },
+      })) as Map<String, dynamic>;
+      expect(result['success'], true);
+      expect(filesystem.activeFiles['/data/table.v2d.csv'], 'a,b\n3,4\n');
+    });
+
+    test('tabular file patch throws INVALID_TABULAR_CONTENT on broken result',
+        () async {
       final filesystem = ToolTestFilesystemApi()
         ..seedActiveFile('/data/table.v2d.csv', 'a,b\n1,2\n');
 
@@ -192,7 +221,7 @@ void main() {
               {
                 'op': 'replace',
                 'target': '1,2',
-                'newText': '3,4',
+                'newText': 'oops',
               }
             ],
           },
@@ -201,12 +230,13 @@ void main() {
           predicate(
             (e) =>
                 e is Exception &&
-                e.toString().contains('UNSUPPORTED_MIME_TYPE') &&
+                e.toString().contains('INVALID_TABULAR_CONTENT') &&
                 e.toString().contains('success') &&
                 e.toString().contains('false'),
           ),
         ),
       );
+      expect(filesystem.activeFiles['/data/table.v2d.csv'], 'a,b\n1,2\n');
     });
 
     test('unified diff string patch throws UNSUPPORTED_PATCH_FORMAT', () async {

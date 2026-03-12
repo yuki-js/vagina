@@ -99,6 +99,8 @@ void main() {
       expect(
         (result['available_tools'] as List).cast<String>().toSet(),
         {
+          'document_overwrite',
+          'document_patch',
           'document_read',
           'spreadsheet_add_rows',
           'spreadsheet_update_rows',
