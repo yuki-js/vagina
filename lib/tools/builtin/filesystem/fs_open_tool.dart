@@ -47,7 +47,10 @@ class FsOpenTool extends Tool {
         publishedBy: 'aokiapp',
         description:
             'Open a persisted filesystem file into active runtime state by path. '
-            'On success, returns available_tools for that path (path-bound applicability, not session-global tools).',
+            'On success, returns available_tools for that path.'
+            'Supported file extenstion: .md, .csv, .txt, .json, .v2d.jsonl, .v2d.json, .v2d.csv '
+            '.v2d.* files are special files that can only be displayed/edited as spreadsheet, not the plain text.'
+            'Non .v2d files will be treated as plain text files, and user and assistant can read/write as plain text.',
         parametersSchema: {
           'type': 'object',
           'properties': {

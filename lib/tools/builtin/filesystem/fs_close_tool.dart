@@ -10,13 +10,13 @@ class FsCloseTool extends Tool {
   ToolDefinition get definition => const ToolDefinition(
         toolKey: toolKeyName,
         displayName: 'ファイルを閉じる',
-        displayDescription: '作業中ファイルを保存して閉じます',
+        displayDescription: '作業中ファイルのタブを消します',
         categoryKey: 'filesystem',
         iconKey: 'close',
         sourceKey: 'builtin',
         publishedBy: 'aokiapp',
         description:
-            'Persist active file content to filesystem and close the active file.',
+            'Closes the file handle, and also closes the active file tab. User will not able to edit the file until it is reopened. Do not call this if you want to keep the file open.',
         parametersSchema: {
           'type': 'object',
           'properties': {
@@ -49,7 +49,7 @@ class FsCloseTool extends Tool {
       return jsonEncode({
         'success': true,
         'path': path,
-        'message': 'File saved and closed successfully.',
+        'message': 'File closed successfully.',
       });
     } catch (e) {
       return jsonEncode({
