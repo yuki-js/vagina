@@ -32,15 +32,32 @@ class _OpenFilesPaneState extends ConsumerState<OpenFilesPane> {
   String? _selectedTabId;
   String? _currentTabId;
 
+  void _runFireAndForget(
+    Future<void> operation, {
+    required String errorMessage,
+  }) {
+    unawaited(
+      operation.catchError((Object _, StackTrace __) {
+        if (!mounted) {
+          return;
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errorMessage)),
+        );
+      }),
+    );
+  }
+
   void _toggleEdit(OpenFileTab? selectedTab) {
     if (_isEditing &&
         selectedTab != null &&
         _editedContent != selectedTab.content) {
       // Save changes when exiting edit mode
-      unawaited(
+      _runFireAndForget(
         ref
             .read(callServiceProvider)
             .updateOpenFileContent(selectedTab.id, _editedContent),
+        errorMessage: 'ファイルの保存に失敗しました',
       );
     }
     setState(() {
@@ -110,7 +127,10 @@ class _OpenFilesPaneState extends ConsumerState<OpenFilesPane> {
                   });
                 },
                 onTabClosed: (tabId) {
-                  unawaited(callService.closeOpenFile(tabId));
+                  _runFireAndForget(
+                    callService.closeOpenFile(tabId),
+                    errorMessage: 'ファイルを閉じられませんでした',
+                  );
                 },
               ),
 

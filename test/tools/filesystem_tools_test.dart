@@ -44,6 +44,27 @@ void main() {
       expect(result['success'], false);
     });
 
+    test('fs_open creates missing file when createIfMissing is true', () async {
+      final fs = ToolTestFilesystemApi();
+      final tool = FsOpenTool();
+      await tool.init(
+        makeToolContext(
+          toolKey: FsOpenTool.toolKeyName,
+          filesystemApi: fs,
+        ),
+      );
+
+      final result = jsonDecode(
+        await tool.execute({
+          'path': '/docs/new.md',
+          'createIfMissing': true,
+        }),
+      ) as Map<String, dynamic>;
+      expect(result['success'], true);
+      expect(fs.files['/docs/new.md'], '');
+      expect(fs.activeFiles['/docs/new.md'], '');
+    });
+
     test('fs_close persists active content and closes file', () async {
       final fs = ToolTestFilesystemApi()
         ..seedActiveFile('/docs/a.md', 'edited');

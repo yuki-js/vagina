@@ -24,6 +24,11 @@ class FsOpenTool extends Tool {
               'type': 'string',
               'description': 'Absolute filesystem path to open.',
             },
+            'createIfMissing': {
+              'type': 'boolean',
+              'description':
+                  'If true, create an empty file when the path does not exist.',
+            },
           },
           'required': ['path'],
         },
@@ -32,9 +37,17 @@ class FsOpenTool extends Tool {
   @override
   Future<String> execute(Map<String, dynamic> args) async {
     final path = args['path'] as String;
+    final createIfMissing = (args['createIfMissing'] as bool?) ?? false;
 
     try {
-      final file = await context.filesystemApi.read(path);
+      var file = await context.filesystemApi.read(path);
+      if (file == null && createIfMissing) {
+        await context.filesystemApi.write(path, '');
+        file = {
+          'path': path,
+          'content': '',
+        };
+      }
       if (file == null) {
         return jsonEncode({
           'success': false,
