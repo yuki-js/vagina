@@ -12,7 +12,7 @@
 ///
 /// 1. **Handshake**: Host initiates with [handshakeMessage]
 /// 2. **Tool Operations**: Host sends [executeToolMessage], worker responds with result
-/// 3. **Dynamic Changes**: Host notifies worker of tool changes via [toolsChangedMessage]
+/// 3. **Dynamic Changes**: Host notifies worker of visible tool changes
 /// 4. **Host Calls**: Worker requests host services via [hostCallMessage]
 library;
 
@@ -87,10 +87,10 @@ abstract final class MessageType {
   /// ```
   static const String hostCall = 'hostCall';
 
-  /// Enable/disable a tool.
+  /// Update visible tools for text-agent tool calling.
   ///
-  /// Payload: `{toolKey: String, enabled: bool}`
-  static const String setToolEnabled = 'setToolEnabled';
+  /// Payload: `{toolKeys: List<String>}`
+  static const String setTextAgentVisibleTools = 'setTextAgentVisibleTools';
 
   /// Worker-to-Host log message (one-way notification).
   ///
@@ -149,7 +149,7 @@ abstract final class MessageEnvelope {
     MessageType.execute,
     MessageType.listSessionDefinitions,
     MessageType.hostCall,
-    MessageType.setToolEnabled,
+    MessageType.setTextAgentVisibleTools,
     MessageType.log,
   };
 
@@ -245,25 +245,22 @@ Map<String, dynamic> executeToolMessage(
   return message;
 }
 
-/// Enable/disable tool message builder.
+/// Update text-agent visible tools message builder.
 ///
 /// Parameters:
-/// - `toolKey`: Tool identifier
-/// - `enabled`: Whether the tool should be enabled
+/// - `toolKeys`: Visible tool keys for text-agent tool calling
 /// - `id`: Optional request ID (auto-generated if omitted)
 /// - `replyTo`: Optional ReplyToPort for acknowledgment
-Map<String, dynamic> setToolEnabledMessage(
-  String toolKey,
-  bool enabled, {
+Map<String, dynamic> setTextAgentVisibleToolsMessage(
+  List<String> toolKeys, {
   String? id,
   ReplyToPort? replyTo,
 }) {
   final message = {
-    'type': MessageType.setToolEnabled,
+    'type': MessageType.setTextAgentVisibleTools,
     'id': id ?? generateMessageId(),
     'payload': {
-      'toolKey': toolKey,
-      'enabled': enabled,
+      'toolKeys': toolKeys,
     },
   };
   if (replyTo != null) {

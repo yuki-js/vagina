@@ -25,7 +25,7 @@ _WorkerController? _currentController;
 /// 2. Initializes the tool registry
 /// 3. Handles tool execution requests
 /// 4. Manages hostCall requests for side effects
-/// 5. Emits toolsChanged events
+/// 5. Updates visible tools for text-agent tool calling
 void toolSandboxWorker(platform.PlatformSendPort hostSendPort) {
   try {
     _log('Worker starting');
@@ -65,6 +65,8 @@ class _WorkerController {
 
   // Tool registry
   final Map<String, Tool> _toolMap = {};
+  final Set<String> _textAgentVisibleToolKeys = <String>{};
+  bool _hasTextAgentVisibleToolKeys = false;
 
   // Per-session ToolContext (created during initialization)
   //
@@ -132,8 +134,8 @@ class _WorkerController {
           await _handleListSessionDefinitions(id, message);
           break;
 
-        case MessageType.setToolEnabled:
-          await _handleSetToolEnabled(id, message);
+        case MessageType.setTextAgentVisibleTools:
+          await _handleSetTextAgentVisibleTools(id, message);
           break;
 
         default:
@@ -476,10 +478,10 @@ class _WorkerController {
     }
   }
 
-  /// Handle setToolEnabled message.
+  /// Handle setTextAgentVisibleTools message.
   ///
-  /// Enables/disables a tool by key and emits a toolsChanged event.
-  Future<void> _handleSetToolEnabled(
+  /// Updates visible tools used for text-agent tool calling.
+  Future<void> _handleSetTextAgentVisibleTools(
     String requestId,
     Map<String, dynamic> message,
   ) async {
@@ -494,47 +496,20 @@ class _WorkerController {
         return;
       }
 
-      final toolKey = payload['toolKey'] as String?;
-      final enabled = payload['enabled'] as bool?;
-      if (toolKey == null || enabled == null) {
+      final toolKeysRaw = payload['toolKeys'] as List?;
+      if (toolKeysRaw == null) {
         _sendResponse(
           requestId,
           status: 'error',
-          error: 'Missing toolKey or enabled',
+          error: 'Missing toolKeys',
         );
         return;
       }
 
-      if (enabled) {
-        // Re-register tool instance from builtins.
-        final tool = toolbox.tools
-            .where((t) => t.definition.toolKey == toolKey)
-            .cast<Tool?>()
-            .firstWhere((t) => t != null, orElse: () => null);
-
-        if (tool == null) {
-          _sendResponse(
-            requestId,
-            status: 'error',
-            error: 'Tool not found: $toolKey',
-            code: 'TOOL_NOT_FOUND',
-          );
-          return;
-        }
-
-        // Ensure context is initialized.
-        final toolContext = ToolContext(
-          toolKey: tool.definition.toolKey,
-          filesystemApi: _filesystemApiClient,
-          callApi: _callApiClient,
-          textAgentApi: _textAgentApiClient,
-        );
-        await tool.init(toolContext);
-
-        _toolMap[toolKey] = tool;
-      } else {
-        _toolMap.remove(toolKey);
-      }
+      _textAgentVisibleToolKeys
+        ..clear()
+        ..addAll(toolKeysRaw.whereType<String>());
+      _hasTextAgentVisibleToolKeys = true;
 
       _updateTextAgentToolSupport();
 
@@ -544,12 +519,12 @@ class _WorkerController {
         data: {},
       );
     } catch (e, stackTrace) {
-      _log('ERROR in setToolEnabled: $e');
+      _log('ERROR in setTextAgentVisibleTools: $e');
       _log('Stack trace: $stackTrace');
       _sendResponse(
         requestId,
         status: 'error',
-        error: 'Error setToolEnabled: $e',
+        error: 'Error setTextAgentVisibleTools: $e',
       );
     }
   }
@@ -577,8 +552,14 @@ class _WorkerController {
   void _updateTextAgentToolSupport() {
     _log('Updating TextAgentApiClient with tool definitions');
 
+    final visibleToolKeys = _hasTextAgentVisibleToolKeys
+        ? _textAgentVisibleToolKeys
+        : _toolMap.keys.toSet();
+
     // Build Chat Completions API compatible tool list
-    final availableTools = _toolMap.values.map((tool) {
+    final availableTools = _toolMap.values
+        .where((tool) => visibleToolKeys.contains(tool.definition.toolKey))
+        .map((tool) {
       return {
         'type': 'function',
         'function': {

@@ -89,7 +89,10 @@ class CallService {
   bool _isCleanedUp = false; // Track cleanup state to prevent double cleanup
   Map<String, bool> _toolConfig = const {};
   final Map<String, Tool> _allToolsByKey = <String, Tool>{};
-  Set<String> _enabledToolKeys = <String>{};
+  Set<String> _voiceVisibleToolKeys = <String>{};
+  Set<String> _textVisibleToolKeys = <String>{};
+  bool _hasSyncedVoiceTools = false;
+  bool _hasSyncedTextTools = false;
   List<OpenFileState> _openFiles = const [];
   bool _isRefreshingToolset = false;
   bool _toolsetRefreshQueued = false;
@@ -283,8 +286,8 @@ class CallService {
   /// This method:
   /// 1. Creates and starts the tool sandbox
   /// 2. Retrieves tool configuration from the current SpeedDial
-  /// 3. Computes active tool set from active files + config
-  /// 4. Registers enabled tools with the Realtime API
+  /// 3. Computes visible tool sets for voice/text from active files + config
+  /// 4. Registers visible tools to each runtime consumer
   ///
   /// This is called once during call initialization. During the call,
   /// active file changes can trigger dynamic tool recomputation.
@@ -306,7 +309,7 @@ class CallService {
     _logService.debug(
         _tag, 'Loaded tool config for SpeedDial: $_currentSpeedDialId');
 
-    // 3. Cache all tool definitions for dynamic enable/disable.
+    // 3. Cache all tool definitions for dynamic visible-tool computation.
     final sandbox = _sandboxManager!;
     final allTools = await sandbox.getToolsFromWorker();
     _allToolsByKey.clear();
@@ -314,14 +317,17 @@ class CallService {
       _allToolsByKey[tool.definition.toolKey] = tool;
     }
     _toolConfig = Map<String, bool>.from(toolConfig);
-    _enabledToolKeys = Set<String>.from(_allToolsByKey.keys);
+    _voiceVisibleToolKeys = <String>{};
+    _textVisibleToolKeys = <String>{};
+    _hasSyncedVoiceTools = false;
+    _hasSyncedTextTools = false;
     onActiveFilesChanged(const <Map<String, String>>[]);
 
-    // 4. Apply initial dynamic tool set and register to Realtime API.
+    // 4. Apply initial visible tool sets and register them.
     await refreshToolsForActiveFiles();
 
     _logService.info(_tag,
-        'Tool initialization complete: ${_enabledToolKeys.length}/${allTools.length} tools enabled');
+        'Tool initialization complete: voice=${_voiceVisibleToolKeys.length}/${allTools.length}, text=${_textVisibleToolKeys.length}/${allTools.length}');
   }
 
   void _setupApiSubscriptions() {
@@ -699,30 +705,30 @@ class CallService {
             .map((entry) => entry['path'])
             .whereType<String>()
             .toList();
-        final desiredKeys = _resolveDesiredToolKeys(activePaths);
+        final desiredVoiceToolKeys = _resolveVoiceToolKeys(activePaths);
+        final desiredTextToolKeys = _resolveTextToolKeys(activePaths);
 
-        final toDisable = _enabledToolKeys.difference(desiredKeys).toList()
-          ..sort();
-        final toEnable = desiredKeys.difference(_enabledToolKeys).toList()
-          ..sort();
+        final voiceToolsetChanged =
+            !_sameStringSet(_voiceVisibleToolKeys, desiredVoiceToolKeys);
+        final textToolsetChanged =
+            !_sameStringSet(_textVisibleToolKeys, desiredTextToolKeys);
 
-        for (final toolKey in toDisable) {
-          await sandbox.setToolEnabled(toolKey, false);
-        }
-        for (final toolKey in toEnable) {
-          await sandbox.setToolEnabled(toolKey, true);
-        }
-
-        final toolsetChanged = toDisable.isNotEmpty || toEnable.isNotEmpty;
-        _enabledToolKeys = desiredKeys;
-
-        if (toolsetChanged) {
-          final enabledTools = _allToolsByKey.values
-              .where(
-                  (tool) => _enabledToolKeys.contains(tool.definition.toolKey))
+        if (voiceToolsetChanged || !_hasSyncedVoiceTools) {
+          _voiceVisibleToolKeys = desiredVoiceToolKeys;
+          final voiceTools = _allToolsByKey.values
+              .where((tool) =>
+                  _voiceVisibleToolKeys.contains(tool.definition.toolKey))
               .toList();
-          _apiClient.setTools(enabledTools);
+          _apiClient.setTools(voiceTools);
           _apiClient.updateSessionConfig();
+          _hasSyncedVoiceTools = true;
+        }
+
+        if (textToolsetChanged || !_hasSyncedTextTools) {
+          _textVisibleToolKeys = desiredTextToolKeys;
+          final sortedTextToolKeys = _textVisibleToolKeys.toList()..sort();
+          await sandbox.setTextAgentVisibleToolKeys(sortedTextToolKeys);
+          _hasSyncedTextTools = true;
         }
       } while (_toolsetRefreshQueued);
     } finally {
@@ -740,7 +746,7 @@ class CallService {
     return true;
   }
 
-  Set<String> _resolveDesiredToolKeys(List<String> activePaths) {
+  Set<String> _resolveVoiceToolKeys(List<String> activePaths) {
     final activeExtensions = activePaths
         .map((path) => VirtualFile(path: path, content: '').extension)
         .where((extension) => extension.isNotEmpty)
@@ -754,6 +760,25 @@ class CallService {
           definition.activation.isEnabledForExtensions(activeExtensions);
       final enabledByConfig = _toolConfig[definition.toolKey] ?? true;
       if (enabledByActivation && enabledByConfig) {
+        desired.add(definition.toolKey);
+      }
+    }
+    return desired;
+  }
+
+  Set<String> _resolveTextToolKeys(List<String> activePaths) {
+    final activeExtensions = activePaths
+        .map((path) => VirtualFile(path: path, content: '').extension)
+        .where((extension) => extension.isNotEmpty)
+        .map((extension) => extension.toLowerCase())
+        .toSet();
+
+    final desired = <String>{};
+    for (final tool in _allToolsByKey.values) {
+      final definition = tool.definition;
+      final enabledByActivation =
+          definition.activation.isEnabledForExtensions(activeExtensions);
+      if (enabledByActivation) {
         desired.add(definition.toolKey);
       }
     }
@@ -920,7 +945,10 @@ class CallService {
     _sandboxManager = null;
     _toolConfig = const {};
     _allToolsByKey.clear();
-    _enabledToolKeys = <String>{};
+    _voiceVisibleToolKeys = <String>{};
+    _textVisibleToolKeys = <String>{};
+    _hasSyncedVoiceTools = false;
+    _hasSyncedTextTools = false;
     _isRefreshingToolset = false;
     _toolsetRefreshQueued = false;
     _openFiles = const [];

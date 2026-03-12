@@ -285,21 +285,18 @@ class ToolSandboxManager {
     return toolsList;
   }
 
-  /// Update a tool's enabled state in the sandbox worker.
-  ///
-  /// This method is intended for initialization only (during call start).
-  /// It updates the worker-side tool registry to match the configuration.
-  Future<void> setToolEnabled(String toolKey, bool enabled) async {
+  /// Update text-agent visible tool keys in the sandbox worker.
+  Future<void> setTextAgentVisibleToolKeys(List<String> toolKeys) async {
     final messageId = generateMessageId();
     final response = await _request(
-      setToolEnabledMessage(toolKey, enabled, id: messageId),
-      timeoutTag: 'setToolEnabled',
+      setTextAgentVisibleToolsMessage(toolKeys, id: messageId),
+      timeoutTag: 'setTextAgentVisibleTools',
     );
 
     if (response['status'] != 'success') {
       final error = response['error'] as String?;
       final code = response['code'];
-      throw Exception('setToolEnabled error: $error (code=$code)');
+      throw Exception('setTextAgentVisibleTools error: $error (code=$code)');
     }
   }
 
