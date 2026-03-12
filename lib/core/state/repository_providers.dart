@@ -4,7 +4,6 @@ import 'package:vagina/core/data/permission_manager.dart';
 import 'package:vagina/interfaces/call_session_repository.dart';
 import 'package:vagina/interfaces/config_repository.dart';
 import 'package:vagina/interfaces/speed_dial_repository.dart';
-import 'package:vagina/interfaces/tool_storage.dart';
 import 'package:vagina/repositories/preferences_repository.dart';
 import 'package:vagina/repositories/repository_factory.dart';
 
@@ -28,11 +27,6 @@ ConfigRepository configRepository(Ref ref) {
 @Riverpod(keepAlive: true)
 PreferencesRepository preferencesRepository(Ref ref) {
   return RepositoryFactory.preferences;
-}
-
-@Riverpod(keepAlive: true)
-ToolStorage toolStorage(Ref ref) {
-  return RepositoryFactory.toolStorage;
 }
 
 @Riverpod(keepAlive: true)

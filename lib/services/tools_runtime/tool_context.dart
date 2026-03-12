@@ -42,22 +42,4 @@ class ToolContext {
     required this.callApi,
     required this.textAgentApi,
   });
-
-  @Deprecated(
-    'notepadApi was removed in Stream B. Migrate tools to filesystemApi.',
-  )
-  dynamic get notepadApi {
-    throw UnsupportedError(
-      'notepadApi was removed. Migrate this tool to filesystemApi.',
-    );
-  }
-
-  @Deprecated(
-    'toolStorageApi was removed in Stream B. Migrate tools to filesystemApi.',
-  )
-  dynamic get toolStorageApi {
-    throw UnsupportedError(
-      'toolStorageApi was removed. Migrate this tool to filesystemApi.',
-    );
-  }
 }
