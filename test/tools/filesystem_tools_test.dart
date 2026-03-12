@@ -25,6 +25,14 @@ void main() {
       final result = jsonDecode(await tool.execute({'path': '/docs/a.md'}))
           as Map<String, dynamic>;
       expect(result['success'], true);
+      expect(
+        (result['available_tools'] as List).cast<String>().toSet(),
+        {
+          'document_read',
+          'document_overwrite',
+          'document_patch',
+        },
+      );
       expect(fs.activeFiles['/docs/a.md'], 'hello');
     });
 
@@ -61,8 +69,42 @@ void main() {
         }),
       ) as Map<String, dynamic>;
       expect(result['success'], true);
+      expect(
+        (result['available_tools'] as List).cast<String>().toSet(),
+        {
+          'document_read',
+          'document_overwrite',
+          'document_patch',
+        },
+      );
       expect(fs.files['/docs/new.md'], '');
       expect(fs.activeFiles['/docs/new.md'], '');
+    });
+
+    test('fs_open on .v2d.jsonl returns path-bound available tools', () async {
+      final fs = ToolTestFilesystemApi()
+        ..seedFile('/data/sales.v2d.jsonl', '{"columns":[],"rows":[]}');
+      final tool = FsOpenTool();
+      await tool.init(
+        makeToolContext(
+          toolKey: FsOpenTool.toolKeyName,
+          filesystemApi: fs,
+        ),
+      );
+
+      final result = jsonDecode(
+        await tool.execute({'path': '/data/sales.v2d.jsonl'}),
+      ) as Map<String, dynamic>;
+      expect(result['success'], true);
+      expect(
+        (result['available_tools'] as List).cast<String>().toSet(),
+        {
+          'document_read',
+          'spreadsheet_add_rows',
+          'spreadsheet_update_rows',
+          'spreadsheet_delete_rows',
+        },
+      );
     });
 
     test('fs_close persists active content and closes file', () async {

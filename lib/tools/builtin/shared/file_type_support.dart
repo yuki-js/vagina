@@ -5,6 +5,9 @@ const List<String> kTextDocumentExtensions = <String>[
   '.txt',
   '.md',
   '.html',
+  '.v2d.csv', // can also r/w as text
+  '.v2d.json', // can also r/w as text
+  '.v2d.jsonl', // can also do
 ];
 
 const List<String> kTabularDocumentExtensions = <String>[

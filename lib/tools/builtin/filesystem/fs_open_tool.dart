@@ -2,6 +2,36 @@ import 'dart:convert';
 
 import 'package:vagina/services/tools_runtime/tool.dart';
 import 'package:vagina/services/tools_runtime/tool_definition.dart';
+import 'package:vagina/tools/builtin/document/document_overwrite_tool.dart';
+import 'package:vagina/tools/builtin/document/document_patch_tool.dart';
+import 'package:vagina/tools/builtin/document/document_read_tool.dart';
+import 'package:vagina/tools/builtin/shared/file_type_support.dart';
+import 'package:vagina/tools/builtin/spreadsheet/spreadsheet_add_rows_tool.dart';
+import 'package:vagina/tools/builtin/spreadsheet/spreadsheet_delete_rows_tool.dart';
+import 'package:vagina/tools/builtin/spreadsheet/spreadsheet_update_rows_tool.dart';
+
+final List<ToolDefinition> _pathBoundDefinitions = <ToolDefinition>[
+  DocumentReadTool().definition,
+  DocumentOverwriteTool().definition,
+  DocumentPatchTool().definition,
+  SpreadsheetAddRowsTool().definition,
+  SpreadsheetUpdateRowsTool().definition,
+  SpreadsheetDeleteRowsTool().definition,
+];
+
+List<String> _availableToolsForPath(String path) {
+  final activeExtensions = <String>{normalizedExtensionFromPath(path)};
+  final keys = _pathBoundDefinitions
+      .where(
+        (definition) =>
+            definition.activation.isEnabledForExtensions(activeExtensions),
+      )
+      .map((definition) => definition.toolKey)
+      .toSet()
+      .toList()
+    ..sort();
+  return keys;
+}
 
 class FsOpenTool extends Tool {
   static const String toolKeyName = 'fs_open';
@@ -16,7 +46,8 @@ class FsOpenTool extends Tool {
         sourceKey: 'builtin',
         publishedBy: 'aokiapp',
         description:
-            'Open a persisted filesystem file into active runtime state by path.',
+            'Open a persisted filesystem file into active runtime state by path. '
+            'On success, returns available_tools for that path (path-bound applicability, not session-global tools).',
         parametersSchema: {
           'type': 'object',
           'properties': {
@@ -57,10 +88,12 @@ class FsOpenTool extends Tool {
 
       final content = file['content'] as String? ?? '';
       await context.filesystemApi.openFile(path, content);
+      final availableTools = _availableToolsForPath(path);
 
       return jsonEncode({
         'success': true,
         'path': path,
+        'available_tools': availableTools,
         'message': 'File opened successfully.',
       });
     } catch (e) {
