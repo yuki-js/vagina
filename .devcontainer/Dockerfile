@@ -26,7 +26,7 @@ RUN wget -qO /tmp/dart-sdk.zip https://storage.googleapis.com/dart-archive/chann
 # Install fvm and Flutter 3.27.1
 ENV PUB_CACHE=/opt/pub-cache
 ENV PATH="/opt/dart-sdk/bin:$PUB_CACHE/bin:$PATH"
-RUN dart pub global activate fvm 3.3.2
+RUN dart pub global activate fvm
 
 # Download Flutter 3.27.1 via fvm
 ENV FVM_HOME=/opt/fvm_home
