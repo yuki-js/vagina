@@ -5,6 +5,7 @@ import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/models/call_session.dart';
 import 'package:vagina/models/tabular_data.dart';
 import 'package:vagina/feat/call/widgets/spreadsheet/editable_spreadsheet_table.dart';
+import 'package:vagina/utils/file_icon_utils.dart';
 
 /// Read-only notepad viewer for session detail screen
 class HistoricalNotepadView extends StatelessWidget {
@@ -118,17 +119,16 @@ class HistoricalNotepadView extends StatelessWidget {
                     ),
                   ),
                 ),
-                // MIME type badge
+                // File type badge
                 Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color:
-                        _getMimeTypeColor(tab.mimeType).withValues(alpha: 0.1),
+                    color: colorForPath(tab.title).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(4),
                     border: Border.all(
-                      color: _getMimeTypeColor(tab.mimeType)
-                          .withValues(alpha: 0.3),
+                      color:
+                          colorForPath(tab.title).withValues(alpha: 0.3),
                       width: 1,
                     ),
                   ),
@@ -136,17 +136,17 @@ class HistoricalNotepadView extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        _getMimeTypeIcon(tab.mimeType),
+                        iconForPath(tab.title),
                         size: 12,
-                        color: _getMimeTypeColor(tab.mimeType),
+                        color: colorForPath(tab.title),
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        _getMimeTypeLabel(tab.mimeType),
+                        _getFileTypeLabel(tab.title),
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
-                          color: _getMimeTypeColor(tab.mimeType),
+                          color: colorForPath(tab.title),
                         ),
                       ),
                     ],
@@ -330,54 +330,22 @@ class HistoricalNotepadView extends StatelessWidget {
     );
   }
 
-  IconData _getMimeTypeIcon(String mimeType) {
-    switch (mimeType) {
-      case 'text/csv':
-      case 'application/vagina-2d+json':
-      case 'application/vagina-2d+jsonl':
-        return Icons.table_chart;
-      case 'text/markdown':
-        return Icons.article;
-      case 'text/html':
-        return Icons.code;
-      case 'text/plain':
-      default:
-        return Icons.description;
+  String _getFileTypeLabel(String filename) {
+    final lower = filename.toLowerCase();
+    
+    if (lower.endsWith('.v2d.csv')) return 'CSV表';
+    if (lower.endsWith('.v2d.json')) return 'JSON表';
+    if (lower.endsWith('.v2d.jsonl')) return 'JSONL表';
+    if (lower.endsWith('.md') || lower.endsWith('.markdown')) {
+      return 'Markdown';
     }
-  }
-
-  String _getMimeTypeLabel(String mimeType) {
-    switch (mimeType) {
-      case 'text/csv':
-        return 'CSV表';
-      case 'application/vagina-2d+json':
-        return 'JSON表';
-      case 'application/vagina-2d+jsonl':
-        return 'JSONL表';
-      case 'text/markdown':
-        return 'Markdown';
-      case 'text/html':
-        return 'HTML';
-      case 'text/plain':
-      default:
-        return 'Plain Text';
-    }
-  }
-
-  Color _getMimeTypeColor(String mimeType) {
-    switch (mimeType) {
-      case 'text/csv':
-      case 'application/vagina-2d+json':
-      case 'application/vagina-2d+jsonl':
-        return Colors.green;
-      case 'text/markdown':
-        return AppTheme.primaryColor;
-      case 'text/html':
-        return Colors.orange;
-      case 'text/plain':
-      default:
-        return AppTheme.lightTextSecondary;
-    }
+    if (lower.endsWith('.html') || lower.endsWith('.htm')) return 'HTML';
+    if (lower.endsWith('.txt') || lower.endsWith('.text')) return 'Text';
+    if (lower.endsWith('.csv')) return 'CSV';
+    if (lower.endsWith('.json')) return 'JSON';
+    if (lower.endsWith('.jsonl')) return 'JSONL';
+    
+    return 'File';
   }
 
   void _copyTabContent(BuildContext context, SessionNotepadTab tab) {

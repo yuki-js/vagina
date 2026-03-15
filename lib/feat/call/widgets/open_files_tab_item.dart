@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:vagina/models/open_file_tab.dart';
 import 'package:vagina/core/theme/app_theme.dart';
+import 'package:vagina/utils/file_icon_utils.dart';
 
 /// Individual open-file tab item.
 class OpenFilesTabItem extends StatelessWidget {
@@ -37,7 +38,7 @@ class OpenFilesTabItem extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              _getMimeTypeIcon(tab.mimeType),
+              iconForPath(tab.id),
               size: 16,
               color:
                   isSelected ? AppTheme.primaryColor : AppTheme.textSecondary,
@@ -70,21 +71,5 @@ class OpenFilesTabItem extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  IconData _getMimeTypeIcon(String mimeType) {
-    switch (mimeType) {
-      case 'text/csv':
-      case 'application/vagina-2d+json':
-      case 'application/vagina-2d+jsonl':
-        return Icons.table_chart;
-      case 'text/markdown':
-        return Icons.article;
-      case 'text/html':
-        return Icons.code;
-      case 'text/plain':
-      default:
-        return Icons.description;
-    }
   }
 }

@@ -30,6 +30,7 @@ class OpenFileState {
   }
 
   String get mimeType {
+    // todo:これいらないよね。拡張子パースでいいじゃん。
     switch (extension) {
       case '.v2d.csv':
         return 'text/csv';

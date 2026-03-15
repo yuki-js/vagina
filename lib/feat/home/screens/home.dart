@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/feat/about/screens/about.dart';
 import 'package:vagina/feat/home/tabs/agents.dart';
-import 'package:vagina/feat/home/tabs/marketplace.dart';
+import 'package:vagina/feat/home/tabs/more.dart';
 import 'package:vagina/feat/home/tabs/sessions.dart';
 import 'package:vagina/feat/home/tabs/speed_dial.dart';
 import 'package:vagina/feat/settings/screens/settings.dart';
@@ -37,22 +37,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       canAdd: false,
     ),
     _TabInfo(
-      icon: Icons.storefront,
-      label: 'マケプレ',
-      canAdd: false,
-    ),
-    _TabInfo(
-      icon: Icons.person,
+      icon: Icons.contacts,
       label: 'エージェント',
       canAdd: true,
+    ),
+    _TabInfo(
+      icon: Icons.apps,
+      label: 'もっと',
+      canAdd: false,
     ),
   ];
 
   static final List<Widget> _pages = [
     const SpeedDialTab(),
     const SessionsTab(),
-    const MarketplaceTab(),
     const AgentsTab(),
+    const MoreTab(),
   ];
 
   // Reserve the middle slot in BottomNavigationBar for the FAB.
@@ -92,7 +92,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         // Speed dial tab
         await _addSpeedDial();
         break;
-      case 3:
+      case 2:
         // Agents tab
         await _addTextAgent();
         break;
