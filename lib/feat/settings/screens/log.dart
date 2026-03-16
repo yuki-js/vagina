@@ -135,7 +135,7 @@ class _LogScreenState extends State<LogScreen> {
         ],
       ),
       body: Container(
-        decoration: AppTheme.lightBackgroundGradient,
+        color: AppTheme.lightBackgroundStart,
         child: Column(
           children: [
             // Filter input

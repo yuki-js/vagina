@@ -6,14 +6,14 @@ import 'spreadsheet/editable_spreadsheet_table.dart';
 /// Spreadsheet content renderer with unified read-only and editable modes.
 class SpreadsheetContent extends StatefulWidget {
   final String content;
-  final String mimeType;
+  final String extension;
   final bool isEditing;
   final void Function(String)? onContentChanged;
 
   const SpreadsheetContent({
     super.key,
     required this.content,
-    required this.mimeType,
+    required this.extension,
     this.isEditing = false,
     this.onContentChanged,
   });
@@ -27,7 +27,7 @@ class _SpreadsheetContentState extends State<SpreadsheetContent> {
   Widget build(BuildContext context) {
     TabularData data;
     try {
-      data = TabularData.parse(widget.content, widget.mimeType);
+      data = TabularData.parse(widget.content, widget.extension);
     } catch (e) {
       // Parse error: show error banner with raw content
       return _buildParseError(e);
@@ -40,12 +40,12 @@ class _SpreadsheetContentState extends State<SpreadsheetContent> {
     // Use unified EditableSpreadsheetTable for both read-only and editable modes
     return EditableSpreadsheetTable(
       data: data,
-      mimeType: widget.mimeType,
+      extension: widget.extension,
       readOnly: !widget.isEditing,
       onDataChanged: (newData) {
         if (widget.isEditing) {
           try {
-            final serialized = newData.serialize(widget.mimeType);
+            final serialized = newData.serialize(widget.extension);
             widget.onContentChanged?.call(serialized);
           } catch (e) {
             debugPrint('Error serializing data: $e');

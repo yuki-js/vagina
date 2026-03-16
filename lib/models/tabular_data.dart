@@ -22,41 +22,53 @@ class TabularData {
 
   const TabularData({required this.columns, required this.rows});
 
-  /// Parse [content] as the given [mimeType] and return a [TabularData].
+  /// Parse [content] as the given file [extension] and return a [TabularData].
+  ///
+  /// [extension] must be one of:
+  /// - `.v2d.csv`
+  /// - `.v2d.json`
+  /// - `.v2d.jsonl`
   ///
   /// Throws [TabularDataException] on any validation error.
-  static TabularData parse(String content, String mimeType) {
-    switch (mimeType) {
-      case 'text/csv':
+  static TabularData parse(String content, String extension) {
+    final lower = extension.toLowerCase();
+    switch (lower) {
+      case '.v2d.csv':
         return _parseCsv(content);
-      case 'application/vagina-2d+json':
+      case '.v2d.json':
         return _parseJson2d(content);
-      case 'application/vagina-2d+jsonl':
+      case '.v2d.jsonl':
         return _parseJsonl2d(content);
       default:
-        throw TabularDataException('Unsupported MIME type: $mimeType');
+        throw TabularDataException('Unsupported extension: $extension');
     }
   }
 
-  /// Validate [content] for the given [mimeType].
+  /// Validate [content] for the given file [extension].
   ///
   /// Throws [TabularDataException] on any validation error.
   /// Returns normally if valid.
-  static void validate(String content, String mimeType) {
-    parse(content, mimeType);
+  static void validate(String content, String extension) {
+    parse(content, extension);
   }
 
-  /// Serialize this [TabularData] back to a string in the given [mimeType].
-  String serialize(String mimeType) {
-    switch (mimeType) {
-      case 'text/csv':
+  /// Serialize this [TabularData] back to a string in the given file [extension].
+  ///
+  /// [extension] must be one of:
+  /// - `.v2d.csv`
+  /// - `.v2d.json`
+  /// - `.v2d.jsonl`
+  String serialize(String extension) {
+    final lower = extension.toLowerCase();
+    switch (lower) {
+      case '.v2d.csv':
         return _serializeCsv();
-      case 'application/vagina-2d+json':
+      case '.v2d.json':
         return _serializeJson2d();
-      case 'application/vagina-2d+jsonl':
+      case '.v2d.jsonl':
         return _serializeJsonl2d();
       default:
-        throw TabularDataException('Unsupported MIME type: $mimeType');
+        throw TabularDataException('Unsupported extension: $extension');
     }
   }
 

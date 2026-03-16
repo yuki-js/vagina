@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:vagina/models/open_file_tab.dart';
+import 'package:vagina/models/virtual_file.dart';
 import 'open_files_markdown_content.dart';
 import 'open_files_plain_text_content.dart';
 import 'open_files_html_content.dart';
 import 'open_files_spreadsheet_content.dart';
 
-/// Routes open-file content to the appropriate renderer based on MIME type.
+/// Routes open-file content to the appropriate renderer based on file extension.
 class OpenFilesContentRenderer extends StatelessWidget {
   final OpenFileTab tab;
   final bool isEditing;
@@ -20,25 +21,26 @@ class OpenFilesContentRenderer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    switch (tab.mimeType) {
-      case 'text/csv':
-      case 'application/vagina-2d+json':
-      case 'application/vagina-2d+jsonl':
+    final extension = VirtualFile(path: tab.title, content: '').extension;
+
+    switch (extension) {
+      case '.v2d.csv':
+      case '.v2d.json':
+      case '.v2d.jsonl':
         return SpreadsheetContent(
           content: tab.content,
-          mimeType: tab.mimeType,
+          extension: extension,
           isEditing: isEditing,
           onContentChanged: onContentChanged,
         );
-      case 'text/markdown':
+      case '.md':
         return MarkdownContent(
           content: tab.content,
           isEditing: isEditing,
           onContentChanged: onContentChanged,
         );
-      case 'text/html':
+      case '.html':
         return HtmlContent(content: tab.content);
-      case 'text/plain':
       default:
         return PlainTextContent(
           content: tab.content,

@@ -63,24 +63,18 @@ class SpreadsheetAddRowsTool extends Tool {
       });
     }
 
-    final mimeType = tabularMimeTypeFromPath(path);
-    if (mimeType == null) {
-      return jsonEncode({
-        'success': false,
-        'error': 'No tabular MIME mapping found for path: $path',
-      });
-    }
+    final extension = normalizedExtensionFromPath(path);
 
     final content = activeFile['content'] as String? ?? '';
 
     try {
-      final data = TabularData.parse(content, mimeType);
+      final data = TabularData.parse(content, extension);
 
       final newRows =
           rowsRaw.map((r) => Map<String, dynamic>.from(r as Map)).toList();
 
       final updated = data.addRows(newRows);
-      final serialized = updated.serialize(mimeType);
+      final serialized = updated.serialize(extension);
 
       await context.filesystemApi.updateActiveFile(path, serialized);
 

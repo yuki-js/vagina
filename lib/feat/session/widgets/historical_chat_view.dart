@@ -17,7 +17,7 @@ class HistoricalChatView extends StatelessWidget {
   Widget build(BuildContext context) {
     if (chatMessages.isEmpty) {
       return Container(
-        decoration: AppTheme.lightBackgroundGradient,
+        color: AppTheme.lightBackgroundStart,
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -64,7 +64,7 @@ class HistoricalChatView extends StatelessWidget {
         .toList();
 
     return Container(
-      decoration: AppTheme.lightBackgroundGradient,
+      color: AppTheme.lightBackgroundStart,
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: messages.length,

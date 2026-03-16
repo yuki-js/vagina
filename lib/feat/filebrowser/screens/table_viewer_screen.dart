@@ -3,35 +3,39 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/models/virtual_file.dart';
+import 'package:vagina/models/tabular_data.dart';
 import 'package:vagina/repositories/repository_factory.dart';
 import 'package:vagina/services/virtual_filesystem_service.dart';
 import 'package:vagina/utils/file_icon_utils.dart';
-import 'package:vagina/feat/filebrowser/widgets/file_content_renderer.dart';
+import 'package:vagina/feat/call/widgets/spreadsheet/editable_spreadsheet_table.dart';
 import 'package:vagina/tools/builtin/shared/file_type_support.dart';
 
-/// File viewer screen - view and edit files with type-specific rendering.
-///
-/// Reuses the content renderers from the call screen's notepad.
-class FileViewerScreen extends StatefulWidget {
+/// Table viewer screen - view and edit tabular data files.
+class TableViewerScreen extends StatefulWidget {
   final String filePath;
 
-  const FileViewerScreen({
+  const TableViewerScreen({
     super.key,
     required this.filePath,
   });
 
   @override
-  State<FileViewerScreen> createState() => _FileViewerScreenState();
+  State<TableViewerScreen> createState() => _TableViewerScreenState();
 }
 
-class _FileViewerScreenState extends State<FileViewerScreen> {
+class _TableViewerScreenState extends State<TableViewerScreen> {
+  static const _saveDebounceDuration = Duration(milliseconds: 500);
+
   late final VirtualFilesystemService _fsService;
   VirtualFile? _file;
+  TabularData? _tableData;
   bool _isLoading = false;
   bool _isEditing = false;
   bool _isSaving = false;
   String? _error;
-  String _editedContent = '';
+
+  Timer? _saveDebounce;
+  TabularData? _pendingSave;
 
   String get _fileName => widget.filePath.split('/').last;
   String get _extension => normalizedExtensionFromPath(widget.filePath);
@@ -42,10 +46,6 @@ class _FileViewerScreenState extends State<FileViewerScreen> {
     _fsService = VirtualFilesystemService(RepositoryFactory.filesystem);
     _loadFile();
   }
-
-  // ---------------------------------------------------------------------------
-  // Load
-  // ---------------------------------------------------------------------------
 
   Future<void> _loadFile() async {
     setState(() {
@@ -65,9 +65,21 @@ class _FileViewerScreenState extends State<FileViewerScreen> {
         return;
       }
 
+      // Parse tabular data
+      TabularData? tableData;
+      try {
+        tableData = TabularData.parse(file.content, _extension);
+      } catch (e) {
+        setState(() {
+          _error = 'テーブルデータの解析に失敗しました: $e';
+          _isLoading = false;
+        });
+        return;
+      }
+
       setState(() {
         _file = file;
-        _editedContent = file.content;
+        _tableData = tableData;
         _isLoading = false;
       });
     } catch (e) {
@@ -79,38 +91,46 @@ class _FileViewerScreenState extends State<FileViewerScreen> {
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // Edit / Save
-  // ---------------------------------------------------------------------------
-
   void _toggleEdit() {
-    if (_isEditing && _file != null && _editedContent != _file!.content) {
-      // Save changes when exiting edit mode
-      unawaited(_saveFile());
-    }
     setState(() {
       _isEditing = !_isEditing;
-      if (_isEditing && _file != null) {
-        _editedContent = _file!.content;
-      }
     });
+
+    // When leaving edit mode, flush any pending debounced save.
+    if (!_isEditing) {
+      _flushPendingSave();
+    }
   }
 
-  Future<void> _saveFile() async {
-    if (_file == null) return;
+  void _scheduleSave(TabularData newData) {
+    _pendingSave = newData;
+
+    _saveDebounce?.cancel();
+    _saveDebounce = Timer(_saveDebounceDuration, _flushPendingSave);
+  }
+
+  Future<void> _flushPendingSave() async {
+    _saveDebounce?.cancel();
+    _saveDebounce = null;
+
+    final newData = _pendingSave;
+    _pendingSave = null;
+    if (newData == null || _file == null) return;
 
     setState(() => _isSaving = true);
 
     try {
+      final serialized = newData.serialize(_extension);
       final updatedFile = VirtualFile(
         path: widget.filePath,
-        content: _editedContent,
+        content: serialized,
       );
       await _fsService.write(updatedFile);
 
       if (!mounted) return;
       setState(() {
         _file = updatedFile;
+        _tableData = newData;
         _isSaving = false;
       });
 
@@ -129,30 +149,6 @@ class _FileViewerScreenState extends State<FileViewerScreen> {
       );
     }
   }
-
-  void _onContentChanged(String newContent) {
-    _editedContent = newContent;
-  }
-
-  // ---------------------------------------------------------------------------
-  // MIME type inference
-  // ---------------------------------------------------------------------------
-
-  String _inferMimeType() {
-    final lower = _extension.toLowerCase();
-
-    if (lower == '.v2d.csv') return 'text/csv';
-    if (lower == '.v2d.json') return 'application/vagina-2d+json';
-    if (lower == '.v2d.jsonl') return 'application/vagina-2d+jsonl';
-    if (lower == '.md' || lower == '.markdown') return 'text/markdown';
-    if (lower == '.html' || lower == '.htm') return 'text/html';
-
-    return 'text/plain';
-  }
-
-  // ---------------------------------------------------------------------------
-  // Build
-  // ---------------------------------------------------------------------------
 
   @override
   Widget build(BuildContext context) {
@@ -177,7 +173,7 @@ class _FileViewerScreenState extends State<FileViewerScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
-          if (_file != null && !_isSaving)
+          if (_tableData != null && !_isSaving)
             IconButton(
               icon: Icon(_isEditing ? Icons.check : Icons.edit),
               onPressed: _toggleEdit,
@@ -197,7 +193,10 @@ class _FileViewerScreenState extends State<FileViewerScreen> {
             ),
         ],
       ),
-      body: _buildBody(),
+      body: Container(
+        color: AppTheme.lightBackgroundStart,
+        child: _buildBody(),
+      ),
     );
   }
 
@@ -227,7 +226,7 @@ class _FileViewerScreenState extends State<FileViewerScreen> {
               Text(
                 _error!,
                 textAlign: TextAlign.center,
-                style: TextStyle(color: AppTheme.lightTextSecondary),
+                style: const TextStyle(color: AppTheme.lightTextSecondary),
               ),
             ],
           ),
@@ -235,17 +234,35 @@ class _FileViewerScreenState extends State<FileViewerScreen> {
       );
     }
 
-    if (_file == null) {
-      return const Center(child: Text('ファイルが見つかりません'));
+    if (_tableData == null) {
+      return const Center(child: Text('テーブルデータがありません'));
     }
 
-    // Use light-theme content renderer
-    return FileContentRenderer(
-      key: ValueKey('$_isEditing-${widget.filePath}'),
-      content: _isEditing ? _editedContent : _file!.content,
-      mimeType: _inferMimeType(),
-      isEditing: _isEditing,
-      onContentChanged: _onContentChanged,
+    if (_tableData!.columns.isEmpty) {
+      return const Center(
+        child: Text(
+          'Empty table',
+          style: TextStyle(fontSize: 14, color: AppTheme.lightTextSecondary),
+        ),
+      );
+    }
+
+    return EditableSpreadsheetTable(
+      data: _tableData!,
+      extension: _extension,
+      readOnly: !_isEditing,
+      useLightTheme: true,
+      onDataChanged: (newData) {
+        if (_isEditing) {
+          _scheduleSave(newData);
+        }
+      },
     );
+  }
+
+  @override
+  void dispose() {
+    _saveDebounce?.cancel();
+    super.dispose();
   }
 }

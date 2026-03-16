@@ -38,7 +38,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
               elevation: 0,
             ),
             body: Container(
-              decoration: AppTheme.lightBackgroundGradient,
+              color: AppTheme.lightBackgroundStart,
               child: const Center(
                 child: CupertinoActivityIndicator(
                   color: AppTheme.primaryColor,
@@ -56,7 +56,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
               elevation: 0,
             ),
             body: Container(
-              decoration: AppTheme.lightBackgroundGradient,
+              color: AppTheme.lightBackgroundStart,
               child: const Center(
                 child: Text('セッションが見つかりません'),
               ),
@@ -83,7 +83,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
         elevation: 0,
       ),
       body: Container(
-        decoration: AppTheme.lightBackgroundGradient,
+        color: AppTheme.lightBackgroundStart,
         child: Column(
           children: [
             // セグメントコントロール

@@ -352,14 +352,5 @@ class AppTheme {
     );
   }
 
-  /// Light background gradient decoration
-  static BoxDecoration get lightBackgroundGradient {
-    return const BoxDecoration(
-      gradient: LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [lightBackgroundStart, lightBackgroundEnd],
-      ),
-    );
-  }
+  // Removed light background gradient decoration (use solid colors instead).
 }

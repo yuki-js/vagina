@@ -20,53 +20,50 @@ class SettingsScreen extends StatelessWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
-      body: Container(
-        decoration: AppTheme.lightBackgroundGradient,
-        child: CustomScrollView(
-          slivers: [
-            SliverPadding(
-              padding: const EdgeInsets.all(16),
-              sliver: SliverList(
-                delegate: SliverChildListDelegate([
-                  // Azure OpenAI Configuration Section
-                  const SectionHeader(title: 'Azure OpenAI 設定'),
-                  const SizedBox(height: 12),
-                  const AzureConfigSection(),
+      body: CustomScrollView(
+        slivers: [
+          SliverPadding(
+            padding: const EdgeInsets.all(16),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                // Azure OpenAI Configuration Section
+                const SectionHeader(title: 'Azure OpenAI 設定'),
+                const SizedBox(height: 12),
+                const AzureConfigSection(),
+                const SizedBox(height: 24),
+
+                // Voice Settings Section
+                const SectionHeader(title: '音声設定'),
+                const SizedBox(height: 12),
+                const VoiceSettingsSection(),
+
+                // Android Audio Settings Section (Android only)
+                if (PlatformCompat.isAndroid) ...[
                   const SizedBox(height: 24),
-
-                  // Voice Settings Section
-                  const SectionHeader(title: '音声設定'),
+                  const SectionHeader(title: 'Android 音声設定'),
                   const SizedBox(height: 12),
-                  const VoiceSettingsSection(),
+                  const AndroidAudioSection(),
+                ],
 
-                  // Android Audio Settings Section (Android only)
-                  if (PlatformCompat.isAndroid) ...[
-                    const SizedBox(height: 24),
-                    const SectionHeader(title: 'Android 音声設定'),
-                    const SizedBox(height: 12),
-                    const AndroidAudioSection(),
-                  ],
+                // PiP Settings removed - PiP button is now in call screen control panel
+                // Window settings removed - always-on-top is now in title bar
+                const SizedBox(height: 24),
 
-                  // PiP Settings removed - PiP button is now in call screen control panel
-                  // Window settings removed - always-on-top is now in title bar
-                  const SizedBox(height: 24),
+                // Developer Section
+                const SectionHeader(title: '開発者向け'),
+                const SizedBox(height: 12),
+                const DeveloperSection(),
+                const SizedBox(height: 24),
 
-                  // Developer Section
-                  const SectionHeader(title: '開発者向け'),
-                  const SizedBox(height: 12),
-                  const DeveloperSection(),
-                  const SizedBox(height: 24),
-
-                  // Setup Section
-                  const SectionHeader(title: 'セットアップ'),
-                  const SizedBox(height: 12),
-                  const SetupSection(),
-                  const SizedBox(height: 32),
-                ]),
-              ),
+                // Setup Section
+                const SectionHeader(title: 'セットアップ'),
+                const SizedBox(height: 12),
+                const SetupSection(),
+                const SizedBox(height: 32),
+              ]),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

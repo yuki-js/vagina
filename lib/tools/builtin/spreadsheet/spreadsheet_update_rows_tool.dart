@@ -93,24 +93,18 @@ class SpreadsheetUpdateRowsTool extends Tool {
       });
     }
 
-    final mimeType = tabularMimeTypeFromPath(path);
-    if (mimeType == null) {
-      return jsonEncode({
-        'success': false,
-        'error': 'No tabular MIME mapping found for path: $path',
-      });
-    }
+    final extension = normalizedExtensionFromPath(path);
 
     final content = activeFile['content'] as String? ?? '';
 
     try {
-      final data = TabularData.parse(content, mimeType);
+      final data = TabularData.parse(content, extension);
 
       final updates =
           updatesRaw.map((u) => Map<String, dynamic>.from(u as Map)).toList();
 
       final updated = data.updateRows(updates);
-      final serialized = updated.serialize(mimeType);
+      final serialized = updated.serialize(extension);
 
       await context.filesystemApi.updateActiveFile(path, serialized);
 

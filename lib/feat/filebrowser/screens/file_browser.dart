@@ -5,7 +5,10 @@ import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/repositories/repository_factory.dart';
 import 'package:vagina/services/virtual_filesystem_service.dart';
 import 'package:vagina/utils/file_icon_utils.dart';
-import 'package:vagina/feat/filebrowser/screens/file_viewer.dart';
+import 'package:vagina/feat/filebrowser/screens/text_viewer_screen.dart';
+import 'package:vagina/feat/filebrowser/screens/table_viewer_screen.dart';
+import 'package:vagina/feat/filebrowser/screens/file_info_viewer_screen.dart';
+import 'package:vagina/tools/builtin/shared/file_type_support.dart';
 
 /// File browser screen - browse virtual filesystem with hierarchical navigation.
 ///
@@ -28,6 +31,10 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
   List<String> _entries = [];
   bool _isLoading = false;
   String? _error;
+
+  // Selection mode state
+  bool _isSelectionMode = false;
+  final Set<String> _selectedEntries = {};
 
   String get _path => widget.initialPath;
 
@@ -72,6 +79,56 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
   }
 
   // ---------------------------------------------------------------------------
+  // Selection mode
+  // ---------------------------------------------------------------------------
+
+  void _enterSelectionMode(String entry) {
+    setState(() {
+      _isSelectionMode = true;
+      _selectedEntries.add(entry);
+    });
+  }
+
+  void _exitSelectionMode() {
+    setState(() {
+      _isSelectionMode = false;
+      _selectedEntries.clear();
+    });
+  }
+
+  void _toggleSelection(String entry) {
+    setState(() {
+      if (_selectedEntries.contains(entry)) {
+        _selectedEntries.remove(entry);
+        // Exit selection mode if no items are selected
+        if (_selectedEntries.isEmpty) {
+          _isSelectionMode = false;
+        }
+      } else {
+        _selectedEntries.add(entry);
+      }
+    });
+  }
+
+  void _selectAll() {
+    setState(() {
+      _selectedEntries.addAll(_entries);
+    });
+  }
+
+  void _invertSelection() {
+    setState(() {
+      final toSelect = _entries
+          .where((entry) => !_selectedEntries.contains(entry))
+          .toSet();
+      final toDeselect =
+          _selectedEntries.where((entry) => _entries.contains(entry)).toSet();
+      _selectedEntries.removeAll(toDeselect);
+      _selectedEntries.addAll(toSelect);
+    });
+  }
+
+  // ---------------------------------------------------------------------------
   // Navigation
   // ---------------------------------------------------------------------------
 
@@ -92,95 +149,125 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
   }
 
   void _openFile(String fileName) {
+    // Open with default viewer directly
+    final filePath = _absolutePath(fileName);
+    final extension = normalizedExtensionFromPath(filePath);
+    final defaultViewer = _getDefaultViewer(extension);
+    _navigateToViewer(defaultViewer, filePath);
+  }
+
+  String _getDefaultViewer(String extension) {
+    final lower = extension.toLowerCase();
+    final isTableFile = lower == '.v2d.csv' ||
+        lower == '.v2d.json' ||
+        lower == '.v2d.jsonl';
+
+    return isTableFile ? 'table' : 'text';
+  }
+
+  void _navigateToViewer(String viewerType, String filePath) {
+    Widget screen;
+    switch (viewerType) {
+      case 'text':
+        screen = TextViewerScreen(filePath: filePath);
+        break;
+      case 'table':
+        screen = TableViewerScreen(filePath: filePath);
+        break;
+      case 'info':
+        screen = FileInfoViewerScreen(filePath: filePath);
+        break;
+      default:
+        return;
+    }
+
     Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => FileViewerScreen(filePath: _absolutePath(fileName)),
-      ),
+      MaterialPageRoute(builder: (context) => screen),
     );
   }
 
   // ---------------------------------------------------------------------------
-  // Action menu
+  // Selection mode actions
   // ---------------------------------------------------------------------------
 
-  Future<void> _showActionMenu(String entry) async {
+  Future<void> _showRenameDialog() async {
+    if (_selectedEntries.isEmpty) return;
+    final entry = _selectedEntries.first;
     final isDirectory = entry.endsWith('/');
-    final displayName =
+    final oldName =
         isDirectory ? entry.substring(0, entry.length - 1) : entry;
 
-    await showModalBottomSheet<void>(
+    final controller = TextEditingController(text: oldName);
+
+    final newName = await showDialog<String>(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (context) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Handle bar
-              Padding(
-                padding: const EdgeInsets.only(top: 12, bottom: 8),
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              // Title
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    Icon(
-                      isDirectory ? Icons.folder : iconForPath(entry),
-                      color: isDirectory ? Colors.amber : colorForPath(entry),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        displayName,
-                        style: Theme.of(context).textTheme.titleMedium,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Divider(height: 1, color: Colors.blueGrey),
-              // Actions
-              ListTile(
-                leading: const Icon(Icons.delete, color: AppTheme.errorColor),
-                title: const Text(
-                  '削除',
-                  style: TextStyle(color: AppTheme.errorColor),
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-                  _showDeleteConfirmation(entry);
-                },
-              ),
-              const SizedBox(height: 8),
-            ],
+      builder: (context) => AlertDialog(
+        title: const Text('名前変更'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(
+            labelText: '新しい名前',
+            border: OutlineInputBorder(),
           ),
-        );
-      },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('キャンセル'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, controller.text),
+            child: const Text('変更'),
+          ),
+        ],
+      ),
     );
+
+    if (newName != null && newName.isNotEmpty && newName != oldName) {
+      await _renameEntry(entry, newName);
+    }
   }
 
-  Future<void> _showDeleteConfirmation(String entryName) async {
-    final isDirectory = entryName.endsWith('/');
-    final displayName =
-        isDirectory ? entryName.substring(0, entryName.length - 1) : entryName;
+  void _showFileInfo() {
+    if (_selectedEntries.isEmpty) return;
+    final entry = _selectedEntries.first;
+    final filePath = _absolutePath(entry);
+
+    _navigateToViewer('info', filePath);
+  }
+
+  Future<void> _renameEntry(String oldEntry, String newName) async {
+    try {
+      final isDirectory = oldEntry.endsWith('/');
+      final oldPath = _absolutePath(oldEntry);
+      final newPath =
+          '$_path/$newName${isDirectory ? '/' : ''}';
+
+      await _fsService.move(oldPath, newPath);
+
+      if (!mounted) return;
+      _exitSelectionMode();
+      unawaited(_loadDirectory());
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$oldEntry から $newName に変更しました')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('名前変更に失敗しました: $e')),
+      );
+    }
+  }
+
+  Future<void> _showDeleteSelectionConfirmation() async {
+    if (_selectedEntries.isEmpty) return;
 
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('削除確認'),
-        content: Text('$displayName を削除しますか？'),
+        content: Text('${_selectedEntries.length}件のアイテムを削除しますか？'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -198,35 +285,35 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
     );
 
     if (confirmed == true && mounted) {
-      await _deleteEntry(entryName);
+      await _deleteSelectedEntries();
     }
   }
 
-  Future<void> _deleteEntry(String entryName) async {
-    final filePath = _absolutePath(entryName);
-    final isDirectory = entryName.endsWith('/');
-
+  Future<void> _deleteSelectedEntries() async {
     try {
-      if (isDirectory) {
-        // Delete all files within the directory recursively.
-        final children = await _fsService.list(filePath, recursive: true);
-        for (final child in children) {
-          if (!child.endsWith('/')) {
-            await _fsService.delete('$filePath/$child');
+      for (final entry in _selectedEntries) {
+        final filePath = _absolutePath(entry);
+        final isDirectory = entry.endsWith('/');
+
+        if (isDirectory) {
+          final children = await _fsService.list(filePath, recursive: true);
+          for (final child in children) {
+            if (!child.endsWith('/')) {
+              await _fsService.delete('$filePath/$child');
+            }
           }
+        } else {
+          await _fsService.delete(filePath);
         }
-      } else {
-        await _fsService.delete(filePath);
       }
 
       if (!mounted) return;
+      final deletedCount = _selectedEntries.length;
+      _exitSelectionMode();
       unawaited(_loadDirectory());
 
-      final displayName = isDirectory
-          ? entryName.substring(0, entryName.length - 1)
-          : entryName;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('削除しました: $displayName')),
+        SnackBar(content: Text('$deletedCount 件のアイテムを削除しました')),
       );
     } catch (e) {
       if (!mounted) return;
@@ -246,12 +333,87 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(dirName),
+        title: _isSelectionMode
+            ? Text('${_selectedEntries.length}件選択中')
+            : Text(dirName),
         backgroundColor: Colors.transparent,
         elevation: 0,
+        leading: _isSelectionMode
+            ? IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: _exitSelectionMode,
+              )
+            : null,
+        actions: _isSelectionMode
+            ? [
+                PopupMenuButton<String>(
+                  onSelected: (value) {
+                    if (value == 'select_all') {
+                      _selectAll();
+                    } else if (value == 'invert_selection') {
+                      _invertSelection();
+                    } else if (value == 'rename') {
+                      _showRenameDialog();
+                    } else if (value == 'info') {
+                      _showFileInfo();
+                    } else if (value == 'delete') {
+                      _showDeleteSelectionConfirmation();
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    if (_selectedEntries.length == 1)
+                      const PopupMenuItem(
+                        value: 'rename',
+                        child: ListTile(
+                          leading: Icon(Icons.edit),
+                          title: Text('名前変更'),
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                      ),
+                    if (_selectedEntries.length == 1)
+                      const PopupMenuItem(
+                        value: 'info',
+                        child: ListTile(
+                          leading: Icon(Icons.info_outline),
+                          title: Text('詳細'),
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                      ),
+                    const PopupMenuItem(
+                      value: 'select_all',
+                      child: ListTile(
+                        leading: Icon(Icons.select_all),
+                        title: Text('すべて選択'),
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'invert_selection',
+                      child: ListTile(
+                        leading: Icon(Icons.flip_to_back),
+                        title: Text('選択を反転'),
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ),
+                    const PopupMenuDivider(),
+                    const PopupMenuItem(
+                      value: 'delete',
+                      child: ListTile(
+                        leading: Icon(Icons.delete, color: AppTheme.errorColor),
+                        title: Text(
+                          '削除',
+                          style: TextStyle(color: AppTheme.errorColor),
+                        ),
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ),
+                  ],
+                ),
+              ]
+            : [],
       ),
       body: Container(
-        decoration: AppTheme.lightBackgroundGradient,
+        color: AppTheme.lightBackgroundStart,
         child: _buildBody(),
       ),
     );
@@ -317,6 +479,7 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
     final isDirectory = entry.endsWith('/');
     final displayName =
         isDirectory ? entry.substring(0, entry.length - 1) : entry;
+    final isSelected = _selectedEntries.contains(entry);
 
     return Container(
       decoration: BoxDecoration(
@@ -326,15 +489,22 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
             width: 0.5,
           ),
         ),
-        color: Colors.white,
+        color: isSelected && _isSelectionMode
+            ? AppTheme.primaryColor.withValues(alpha: 0.1)
+            : Colors.white,
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
         hoverColor: AppTheme.primaryColor.withValues(alpha: 0.05),
         splashColor: AppTheme.primaryColor.withValues(alpha: 0.1),
-        leading: isDirectory
-            ? const Icon(Icons.folder, color: Colors.amber)
-            : Icon(iconForPath(entry), color: colorForPath(entry)),
+        leading: _isSelectionMode
+            ? Checkbox(
+                value: isSelected,
+                onChanged: (_) => _toggleSelection(entry),
+              )
+            : (isDirectory
+                ? const Icon(Icons.folder, color: Colors.amber)
+                : Icon(iconForPath(entry), color: colorForPath(entry))),
         title: Text(
           displayName,
           style: const TextStyle(
@@ -349,10 +519,14 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
                 color: AppTheme.lightTextSecondary,
               )
             : null,
-        onTap: isDirectory
-            ? () => _openDirectory(entry)
-            : () => _openFile(entry),
-        onLongPress: () => _showActionMenu(entry),
+        onTap: _isSelectionMode
+            ? () => _toggleSelection(entry)
+            : (isDirectory
+                ? () => _openDirectory(entry)
+                : () => _openFile(entry)),
+        onLongPress: _isSelectionMode
+            ? null
+            : () => _enterSelectionMode(entry),
       ),
     );
   }

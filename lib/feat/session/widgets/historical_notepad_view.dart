@@ -24,7 +24,7 @@ class HistoricalNotepadView extends StatelessWidget {
     }
 
     return Container(
-      decoration: AppTheme.lightBackgroundGradient,
+      color: AppTheme.lightBackgroundStart,
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -50,7 +50,7 @@ class HistoricalNotepadView extends StatelessWidget {
 
   Widget _buildTabsView(BuildContext context) {
     return Container(
-      decoration: AppTheme.lightBackgroundGradient,
+      color: AppTheme.lightBackgroundStart,
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: notepadTabs!.length,
@@ -127,8 +127,7 @@ class HistoricalNotepadView extends StatelessWidget {
                     color: colorForPath(tab.title).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(4),
                     border: Border.all(
-                      color:
-                          colorForPath(tab.title).withValues(alpha: 0.3),
+                      color: colorForPath(tab.title).withValues(alpha: 0.3),
                       width: 1,
                     ),
                   ),
@@ -170,25 +169,33 @@ class HistoricalNotepadView extends StatelessWidget {
   }
 
   Widget _buildContent(SessionNotepadTab tab) {
-    // Render based on MIME type
-    switch (tab.mimeType) {
-      case 'text/csv':
-      case 'application/vagina-2d+json':
-      case 'application/vagina-2d+jsonl':
-        return _buildSpreadsheetContent(tab);
-      case 'text/html':
-        return _buildHtmlContent(tab);
-      case 'text/markdown':
-        return _buildMarkdownContent(tab);
-      case 'text/plain':
-      default:
-        return _buildPlainTextContent(tab);
+    final lowerTitle = tab.title.toLowerCase();
+
+    if (lowerTitle.endsWith('.v2d.csv') ||
+        lowerTitle.endsWith('.v2d.json') ||
+        lowerTitle.endsWith('.v2d.jsonl')) {
+      return _buildSpreadsheetContent(tab);
     }
+
+    if (lowerTitle.endsWith('.html') || lowerTitle.endsWith('.htm')) {
+      return _buildHtmlContent(tab);
+    }
+
+    if (lowerTitle.endsWith('.md') || lowerTitle.endsWith('.markdown')) {
+      return _buildMarkdownContent(tab);
+    }
+
+    return _buildPlainTextContent(tab);
   }
 
   Widget _buildSpreadsheetContent(SessionNotepadTab tab) {
     try {
-      final data = TabularData.parse(tab.content, tab.mimeType);
+      final lowerTitle = tab.title.toLowerCase();
+      final extension = lowerTitle.contains('.v2d.')
+          ? lowerTitle.substring(lowerTitle.lastIndexOf('.v2d.'))
+          : '';
+
+      final data = TabularData.parse(tab.content, extension);
 
       if (data.columns.isEmpty) {
         return _buildEmptyContent();
@@ -198,10 +205,9 @@ class HistoricalNotepadView extends StatelessWidget {
         padding: const EdgeInsets.all(20),
         child: EditableSpreadsheetTable(
           data: data,
-          mimeType: tab.mimeType,
+          extension: extension,
           readOnly: true,
           useLightTheme: true,
-          shrinkWrap: true,
           onDataChanged: (_) {}, // No-op for read-only
         ),
       );
@@ -332,7 +338,7 @@ class HistoricalNotepadView extends StatelessWidget {
 
   String _getFileTypeLabel(String filename) {
     final lower = filename.toLowerCase();
-    
+
     if (lower.endsWith('.v2d.csv')) return 'CSV表';
     if (lower.endsWith('.v2d.json')) return 'JSON表';
     if (lower.endsWith('.v2d.jsonl')) return 'JSONL表';
@@ -344,7 +350,7 @@ class HistoricalNotepadView extends StatelessWidget {
     if (lower.endsWith('.csv')) return 'CSV';
     if (lower.endsWith('.json')) return 'JSON';
     if (lower.endsWith('.jsonl')) return 'JSONL';
-    
+
     return 'File';
   }
 

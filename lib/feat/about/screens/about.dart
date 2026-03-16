@@ -46,7 +46,7 @@ class _AboutScreenState extends State<AboutScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: AppTheme.lightBackgroundGradient,
+        color: AppTheme.lightBackgroundStart,
         child: SafeArea(
           child: CustomScrollView(
             slivers: [

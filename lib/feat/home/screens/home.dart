@@ -130,7 +130,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         children: [
           // App bar
           Container(
-            decoration: AppTheme.lightBackgroundGradient,
+            color: AppTheme.lightBackgroundStart,
             child: SafeArea(
               bottom: false,
               child: Column(
@@ -186,7 +186,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           // Tab content (swipeable)
           Expanded(
             child: Container(
-              decoration: AppTheme.lightBackgroundGradient,
+              color: AppTheme.lightBackgroundStart,
               child: SafeArea(
                 top: false,
                 child: PageView(

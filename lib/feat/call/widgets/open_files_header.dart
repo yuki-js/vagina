@@ -61,7 +61,7 @@ class OpenFilesHeader extends StatelessWidget {
               content: isEditing ? editedContent : selectedTab!.content,
               isEditing: isEditing,
               onEditToggle: onEditToggle,
-              showEditButton: selectedTab!.mimeType != 'text/html',
+              showEditButton: !selectedTab!.title.toLowerCase().endsWith('.html'),
               canUndo: false,
               canRedo: false,
               onUndo: () {},

@@ -11,7 +11,7 @@ import 'editable_cell.dart';
 /// [shrinkWrap]がtrueの場合、内容に応じた高さになります（外側のスクロールと統合）。
 class EditableSpreadsheetTable extends StatefulWidget {
   final TabularData data;
-  final String mimeType;
+  final String extension;
   final void Function(TabularData) onDataChanged;
   final bool readOnly;
   final bool useLightTheme;
@@ -20,7 +20,7 @@ class EditableSpreadsheetTable extends StatefulWidget {
   const EditableSpreadsheetTable({
     super.key,
     required this.data,
-    required this.mimeType,
+    required this.extension,
     required this.onDataChanged,
     this.readOnly = false,
     this.useLightTheme = false,

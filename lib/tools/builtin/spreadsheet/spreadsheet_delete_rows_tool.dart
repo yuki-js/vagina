@@ -62,22 +62,16 @@ class SpreadsheetDeleteRowsTool extends Tool {
       });
     }
 
-    final mimeType = tabularMimeTypeFromPath(path);
-    if (mimeType == null) {
-      return jsonEncode({
-        'success': false,
-        'error': 'No tabular MIME mapping found for path: $path',
-      });
-    }
+    final extension = normalizedExtensionFromPath(path);
 
     final content = activeFile['content'] as String? ?? '';
 
     try {
-      final data = TabularData.parse(content, mimeType);
+      final data = TabularData.parse(content, extension);
 
       final indices = indicesRaw.map((i) => (i as num).toInt()).toList();
       final updated = data.deleteRows(indices);
-      final serialized = updated.serialize(mimeType);
+      final serialized = updated.serialize(extension);
 
       await context.filesystemApi.updateActiveFile(path, serialized);
 

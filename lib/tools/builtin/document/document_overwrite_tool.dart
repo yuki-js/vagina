@@ -65,10 +65,9 @@ class DocumentOverwriteTool extends Tool {
         });
       }
 
-      final mimeType = tabularMimeTypeFromPath(path);
-      if (mimeType != null) {
+      if (isTabularPath(path)) {
         try {
-          TabularData.validate(content, mimeType);
+          TabularData.validate(content, normalizedExtensionFromPath(path));
         } on TabularDataException catch (e) {
           return jsonEncode({
             'success': false,

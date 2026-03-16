@@ -356,10 +356,9 @@ class DocumentPatchTool extends Tool {
       }
     }
 
-    final mimeType = tabularMimeTypeFromPath(path);
-    if (mimeType != null) {
+    if (isTabularPath(path)) {
       try {
-        TabularData.validate(working, mimeType);
+        TabularData.validate(working, normalizedExtensionFromPath(path));
       } on TabularDataException catch (e) {
         throw _DocumentPatchFailure({
           'success': false,

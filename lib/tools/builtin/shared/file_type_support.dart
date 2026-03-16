@@ -7,7 +7,7 @@ const List<String> kTextDocumentExtensions = <String>[
   '.html',
   '.v2d.csv', // can also r/w as text
   '.v2d.json', // can also r/w as text
-  '.v2d.jsonl', // can also do
+  '.v2d.jsonl',
 ];
 
 const List<String> kTabularDocumentExtensions = <String>[
@@ -25,12 +25,6 @@ const List<String> kReadableDocumentExtensions = <String>[
   '.v2d.jsonl',
 ];
 
-const Map<String, String> _kTabularMimeTypeByExtension = <String, String>{
-  '.v2d.csv': 'text/csv',
-  '.v2d.json': 'application/vagina-2d+json',
-  '.v2d.jsonl': 'application/vagina-2d+jsonl',
-};
-
 String normalizedExtensionFromPath(String path) {
   return VirtualFile(path: path, content: '').extension.toLowerCase();
 }
@@ -44,10 +38,10 @@ bool isPathSupportedByActivation(
   });
 }
 
-String? tabularMimeTypeFromPath(String path) {
-  return _kTabularMimeTypeByExtension[normalizedExtensionFromPath(path)];
+bool isTabularExtension(String extension) {
+  return kTabularDocumentExtensions.contains(extension.toLowerCase());
 }
 
 bool isTabularPath(String path) {
-  return tabularMimeTypeFromPath(path) != null;
+  return isTabularExtension(normalizedExtensionFromPath(path));
 }
