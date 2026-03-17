@@ -64,14 +64,15 @@ class _FeaturePlaceholder extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
           ),
           child: InkWell(
-            onTap: onTap ?? () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('$label - Coming Soon'),
-                  duration: const Duration(seconds: 1),
-                ),
-              );
-            },
+            onTap: onTap ??
+                () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('$label - Coming Soon'),
+                      duration: const Duration(seconds: 1),
+                    ),
+                  );
+                },
             borderRadius: BorderRadius.circular(12),
             child: Container(
               width: 80,

@@ -7,12 +7,12 @@ import 'package:vagina/tools/builtin/shared/file_type_support.dart';
 /// Distinguishes between custom VAGINA 2D formats (.v2d.*) and standard text formats.
 IconData iconForExtension(String extension) {
   final lower = extension.toLowerCase();
-  
+
   // Custom VAGINA 2D tabular formats only
   if (lower == '.v2d.csv' || lower == '.v2d.json' || lower == '.v2d.jsonl') {
     return Icons.table_chart;
   }
-  
+
   // Standard readable document formats (all treated as text)
   switch (lower) {
     case '.md':
@@ -42,12 +42,12 @@ IconData iconForPath(String path) {
 /// Returns a color that represents the file type visually.
 Color colorForExtension(String extension) {
   final lower = extension.toLowerCase();
-  
+
   // Custom VAGINA 2D tabular formats
   if (lower == '.v2d.csv' || lower == '.v2d.json' || lower == '.v2d.jsonl') {
     return Colors.green;
   }
-  
+
   // Standard readable document formats
   switch (lower) {
     case '.md':
