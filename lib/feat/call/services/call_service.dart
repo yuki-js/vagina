@@ -1,5 +1,8 @@
 import 'package:vagina/feat/call/models/text_agent_info.dart';
 import 'package:vagina/feat/call/models/voice_agent_info.dart';
+import 'package:vagina/feat/call/services/notepad_service.dart';
+import 'package:vagina/feat/call/services/realtime_service.dart';
+import 'package:vagina/feat/call/services/tool_runner.dart';
 
 /// One-way lifecycle state for a single call session.
 enum CallState {
@@ -14,6 +17,10 @@ enum CallState {
 class CallService {
   final VoiceAgentInfo voiceAgent;
   final List<TextAgentInfo> textAgents;
+
+  final RealtimeService _realtimeService = RealtimeService();
+  final ToolRunner _toolRunner = ToolRunner();
+  final NotepadService _notepadService = NotepadService();
 
   CallState _state = CallState.uninitialized;
 
@@ -38,7 +45,13 @@ class CallService {
     _state = CallState.active;
   }
 
-  Future<void> _initialize() async {}
+  Future<void> _initialize() async {
+    await Future.wait<void>([
+      _realtimeService.start(),
+      _toolRunner.start(),
+      _notepadService.start(),
+    ]);
+  }
 
   Future<void> _startCall() async {}
 
@@ -54,5 +67,11 @@ class CallService {
     _state = CallState.disposed;
   }
 
-  Future<void> _dispose() async {}
+  Future<void> _dispose() async {
+    await Future.wait<void>([
+      _realtimeService.dispose(),
+      _toolRunner.dispose(),
+      _notepadService.dispose(),
+    ]);
+  }
 }
