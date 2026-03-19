@@ -18,7 +18,8 @@ class CallService {
   final VoiceAgentInfo voiceAgent;
   final List<TextAgentInfo> textAgents;
 
-  final RealtimeService _realtimeService = RealtimeService();
+  late final RealtimeService _realtimeService =
+      RealtimeService(voiceAgent: voiceAgent);
   final ToolRunner _toolRunner = ToolRunner();
   final NotepadService _notepadService = NotepadService();
 
