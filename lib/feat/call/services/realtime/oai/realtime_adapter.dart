@@ -133,9 +133,6 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
           contentIndex: event.contentIndex,
           isDone: true,
         );
-        if (event.contentIndex != null) {
-          item.markContentPartDone(event.contentIndex!);
-        }
         _emitThreadUpdate();
       }),
       _client.responseOutputTextDeltaEvents.listen((event) {
@@ -145,7 +142,11 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
           return;
         }
         final item = _ensureAssistantMessageItem(itemId);
-        item.appendTextDelta(delta, contentIndex: event.contentIndex);
+        final textPart = _findOrCreateTextPart(
+          item,
+          contentIndex: event.contentIndex,
+        );
+        textPart.appendDelta(delta);
         _emitThreadUpdate();
       }),
       _client.responseOutputTextDoneEvents.listen((event) {
@@ -155,9 +156,15 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
         }
         final item = _ensureAssistantMessageItem(itemId);
         if (event.text != null) {
-          item.setTextDone(event.text!, contentIndex: event.contentIndex);
+          final textPart = _findOrCreateTextPart(
+            item,
+            contentIndex: event.contentIndex,
+          );
+          textPart
+            ..replaceText(event.text!)
+            ..markDone();
         } else if (event.contentIndex != null) {
-          item.markContentPartDone(event.contentIndex!);
+          item.findContentPart(event.contentIndex!)?.markDone();
         }
         _emitThreadUpdate();
       }),
@@ -168,7 +175,11 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
           return;
         }
         final item = _ensureAssistantMessageItem(itemId);
-        item.appendAudioDelta(delta, contentIndex: event.contentIndex);
+        final audioPart = _findOrCreateAudioPart(
+          item,
+          contentIndex: event.contentIndex,
+        );
+        audioPart.appendAudioDelta(delta);
         _emitThreadUpdate();
       }),
       _client.responseOutputAudioDoneEvents.listen((event) {
@@ -177,7 +188,10 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
           return;
         }
         final item = _ensureAssistantMessageItem(itemId);
-        item.markAudioDone(contentIndex: event.contentIndex);
+        _findContentPartOfType<RealtimeThreadAudioPart>(
+          item,
+          contentIndex: event.contentIndex,
+        )?.markDone();
         _emitThreadUpdate();
       }),
       _client.responseOutputAudioTranscriptDeltaEvents.listen((event) {
@@ -187,7 +201,11 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
           return;
         }
         final item = _ensureAssistantMessageItem(itemId);
-        item.appendAudioTranscriptDelta(delta, contentIndex: event.contentIndex);
+        final audioPart = _findOrCreateAudioPart(
+          item,
+          contentIndex: event.contentIndex,
+        );
+        audioPart.appendTranscriptDelta(delta);
         _emitThreadUpdate();
       }),
       _client.responseOutputAudioTranscriptDoneEvents.listen((event) {
@@ -197,10 +215,13 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
           return;
         }
         final item = _ensureAssistantMessageItem(itemId);
-        item.setAudioTranscriptDone(
-          transcript,
+        final audioPart = _findOrCreateAudioPart(
+          item,
           contentIndex: event.contentIndex,
         );
+        audioPart
+          ..replaceTranscript(transcript)
+          ..markDone();
         _emitThreadUpdate();
       }),
       _client.responseFunctionCallArgumentsDeltaEvents.listen((event) {
@@ -210,7 +231,7 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
           return;
         }
         final item = _ensureFunctionCallItem(itemId, callId: event.callId);
-        item.appendFunctionArgumentsDelta(delta);
+        item.arguments = (item.arguments ?? '') + delta;
         _emitThreadUpdate();
       }),
       _client.responseFunctionCallArgumentsDoneEvents.listen((event) {
@@ -223,11 +244,9 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
           callId: event.callId,
           name: event.name,
         );
-        item.setFunctionArgumentsDone(
-          callId: event.callId,
-          name: event.name,
-          arguments: event.arguments,
-        );
+        item.callId = event.callId ?? item.callId;
+        item.name = event.name ?? item.name;
+        item.arguments = event.arguments ?? item.arguments;
         _emitThreadUpdate();
       }),
     ]);
@@ -504,6 +523,57 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
     return item;
   }
 
+  T? _findContentPartOfType<T extends RealtimeThreadContentPart>(
+    RealtimeThreadItem item, {
+    int? contentIndex,
+  }) {
+    if (contentIndex != null) {
+      final part = item.findContentPart(contentIndex);
+      return part is T ? part : null;
+    }
+
+    for (final part in item.content.reversed) {
+      if (part is T) {
+        return part;
+      }
+    }
+    return null;
+  }
+
+  RealtimeThreadTextPart _findOrCreateTextPart(
+    RealtimeThreadItem item, {
+    int? contentIndex,
+  }) {
+    final existing = _findContentPartOfType<RealtimeThreadTextPart>(
+      item,
+      contentIndex: contentIndex,
+    );
+    if (existing != null) {
+      return existing;
+    }
+
+    final created = RealtimeThreadTextPart();
+    item.putContentPart(created, contentIndex: contentIndex);
+    return created;
+  }
+
+  RealtimeThreadAudioPart _findOrCreateAudioPart(
+    RealtimeThreadItem item, {
+    int? contentIndex,
+  }) {
+    final existing = _findContentPartOfType<RealtimeThreadAudioPart>(
+      item,
+      contentIndex: contentIndex,
+    );
+    if (existing != null) {
+      return existing;
+    }
+
+    final created = RealtimeThreadAudioPart();
+    item.putContentPart(created, contentIndex: contentIndex);
+    return created;
+  }
+
   void _mergeContentPart(
     RealtimeThreadItem item,
     OaiRealtimeContentPart part, {
@@ -514,36 +584,38 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
       case 'text':
       case 'input_text':
       case 'output_text':
-        final textPart = item.ensureTextPart(contentIndex: contentIndex);
+        final textPart = _findOrCreateTextPart(item, contentIndex: contentIndex);
         if (part.text != null && part.text!.isNotEmpty) {
-          textPart.replaceWith(part.text!);
+          textPart.replaceText(part.text!);
         }
-        textPart.isDone = isDone;
+        if (isDone) {
+          textPart.markDone();
+        }
         return;
       case 'audio':
       case 'input_audio':
       case 'output_audio':
-        final audioPart = item.ensureAudioPart(contentIndex: contentIndex);
+        final audioPart = _findOrCreateAudioPart(
+          item,
+          contentIndex: contentIndex,
+        );
         if (part.audio != null && part.audio!.isNotEmpty) {
-          if (audioPart.audioChunks.isEmpty) {
-            audioPart.audioChunks.add(part.audio!);
-          } else {
-            audioPart.audioChunks
-              ..clear()
-              ..add(part.audio!);
-          }
+          audioPart.replaceAudio(part.audio!);
         }
         if (part.transcript != null && part.transcript!.isNotEmpty) {
           audioPart.replaceTranscript(part.transcript!);
         }
         if (isDone) {
-          audioPart.isDone = true;
+          audioPart.markDone();
         }
         return;
       case 'input_image':
-        item.addImagePart(
-          part.imageUrl ?? '',
-          detail: part.detail ?? 'auto',
+        item.putContentPart(
+          RealtimeThreadImagePart(
+            imageUrl: part.imageUrl ?? '',
+            detail: part.detail ?? 'auto',
+          ),
+          contentIndex: contentIndex,
         );
         return;
     }

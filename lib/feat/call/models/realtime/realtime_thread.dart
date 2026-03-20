@@ -44,6 +44,10 @@ abstract class RealtimeThreadContentPart {
     required this.type,
     this.isDone = false,
   });
+
+  void markDone() {
+    isDone = true;
+  }
 }
 
 final class RealtimeThreadTextPart extends RealtimeThreadContentPart {
@@ -58,7 +62,7 @@ final class RealtimeThreadTextPart extends RealtimeThreadContentPart {
     text += delta;
   }
 
-  void replaceWith(String value) {
+  void replaceText(String value) {
     text = value;
   }
 }
@@ -76,6 +80,12 @@ final class RealtimeThreadAudioPart extends RealtimeThreadContentPart {
 
   void appendAudioDelta(String base64Delta) {
     audioChunks.add(base64Delta);
+  }
+
+  void replaceAudio(String base64Audio) {
+    audioChunks
+      ..clear()
+      ..add(base64Audio);
   }
 
   void appendTranscriptDelta(String delta) {
@@ -155,104 +165,47 @@ final class RealtimeThreadItem {
 
   bool get isDone => status == RealtimeThreadItemStatus.completed;
 
-  RealtimeThreadTextPart ensureTextPart({int? contentIndex}) {
+  RealtimeThreadContentPart? findContentPart(int contentIndex) {
     final index = _normalizeContentIndex(contentIndex);
-    if (index != null && index < content.length) {
-      final part = content[index];
-      if (part is RealtimeThreadTextPart) {
-        return part;
-      }
-    }
-
-    final part = RealtimeThreadTextPart();
     if (index == null || index >= content.length) {
-      content.add(part);
-    } else {
-      content.insert(index, part);
+      return null;
+    }
+    return content[index];
+  }
+
+  RealtimeThreadContentPart getContentPart(int contentIndex) {
+    final part = findContentPart(contentIndex);
+    if (part == null) {
+      throw RangeError.index(
+        contentIndex,
+        content,
+        'contentIndex',
+        'Content part index is out of range.',
+      );
     }
     return part;
   }
 
-  RealtimeThreadAudioPart ensureAudioPart({int? contentIndex}) {
-    final index = _normalizeContentIndex(contentIndex);
-    if (index != null && index < content.length) {
-      final part = content[index];
-      if (part is RealtimeThreadAudioPart) {
-        return part;
-      }
-    }
-
-    final part = RealtimeThreadAudioPart();
-    if (index == null || index >= content.length) {
-      content.add(part);
-    } else {
-      content.insert(index, part);
-    }
-    return part;
-  }
-
-  void appendTextDelta(String delta, {int? contentIndex}) {
-    ensureTextPart(contentIndex: contentIndex).appendDelta(delta);
-  }
-
-  void setTextDone(String text, {int? contentIndex}) {
-    final part = ensureTextPart(contentIndex: contentIndex);
-    part.replaceWith(text);
-    part.isDone = true;
-  }
-
-  void appendAudioDelta(String base64Delta, {int? contentIndex}) {
-    ensureAudioPart(contentIndex: contentIndex).appendAudioDelta(base64Delta);
-  }
-
-  void markAudioDone({int? contentIndex}) {
-    ensureAudioPart(contentIndex: contentIndex).isDone = true;
-  }
-
-  void appendAudioTranscriptDelta(String delta, {int? contentIndex}) {
-    ensureAudioPart(contentIndex: contentIndex).appendTranscriptDelta(delta);
-  }
-
-  void setAudioTranscriptDone(String transcript, {int? contentIndex}) {
-    final part = ensureAudioPart(contentIndex: contentIndex);
-    part.replaceTranscript(transcript);
-    part.isDone = true;
-  }
-
-  void appendFunctionArgumentsDelta(String delta) {
-    arguments = (arguments ?? '') + delta;
-  }
-
-  void setFunctionArgumentsDone({
-    String? callId,
-    String? name,
-    String? arguments,
+  void putContentPart(
+    RealtimeThreadContentPart part, {
+    int? contentIndex,
   }) {
-    this.callId = callId ?? this.callId;
-    this.name = name ?? this.name;
-    this.arguments = arguments ?? this.arguments;
-  }
-
-  void addImagePart(String imageUrl, {String detail = 'auto'}) {
-    content.add(
-      RealtimeThreadImagePart(
-        imageUrl: imageUrl,
-        detail: detail,
-      ),
-    );
-  }
-
-  void markContentPartDone(int contentIndex) {
-    if (contentIndex < 0 || contentIndex >= content.length) {
+    final index = _normalizeContentIndex(contentIndex);
+    if (index == null || index >= content.length) {
+      content.add(part);
       return;
     }
-    content[contentIndex].isDone = true;
+    content[index] = part;
+  }
+
+  void addContentPart(RealtimeThreadContentPart part) {
+    content.add(part);
   }
 
   void markDone() {
     status = RealtimeThreadItemStatus.completed;
     for (final part in content) {
-      part.isDone = true;
+      part.markDone();
     }
   }
 
