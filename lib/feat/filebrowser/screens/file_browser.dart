@@ -118,9 +118,8 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
 
   void _invertSelection() {
     setState(() {
-      final toSelect = _entries
-          .where((entry) => !_selectedEntries.contains(entry))
-          .toSet();
+      final toSelect =
+          _entries.where((entry) => !_selectedEntries.contains(entry)).toSet();
       final toDeselect =
           _selectedEntries.where((entry) => _entries.contains(entry)).toSet();
       _selectedEntries.removeAll(toDeselect);
@@ -158,9 +157,8 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
 
   String _getDefaultViewer(String extension) {
     final lower = extension.toLowerCase();
-    final isTableFile = lower == '.v2d.csv' ||
-        lower == '.v2d.json' ||
-        lower == '.v2d.jsonl';
+    final isTableFile =
+        lower == '.v2d.csv' || lower == '.v2d.json' || lower == '.v2d.jsonl';
 
     return isTableFile ? 'table' : 'text';
   }
@@ -194,8 +192,7 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
     if (_selectedEntries.isEmpty) return;
     final entry = _selectedEntries.first;
     final isDirectory = entry.endsWith('/');
-    final oldName =
-        isDirectory ? entry.substring(0, entry.length - 1) : entry;
+    final oldName = isDirectory ? entry.substring(0, entry.length - 1) : entry;
 
     final controller = TextEditingController(text: oldName);
 
@@ -240,8 +237,7 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
     try {
       final isDirectory = oldEntry.endsWith('/');
       final oldPath = _absolutePath(oldEntry);
-      final newPath =
-          '$_path/$newName${isDirectory ? '/' : ''}';
+      final newPath = '$_path/$newName${isDirectory ? '/' : ''}';
 
       await _fsService.move(oldPath, newPath);
 
@@ -524,9 +520,7 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
             : (isDirectory
                 ? () => _openDirectory(entry)
                 : () => _openFile(entry)),
-        onLongPress: _isSelectionMode
-            ? null
-            : () => _enterSelectionMode(entry),
+        onLongPress: _isSelectionMode ? null : () => _enterSelectionMode(entry),
       ),
     );
   }

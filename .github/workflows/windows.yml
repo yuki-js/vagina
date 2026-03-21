@@ -114,7 +114,7 @@ jobs:
 
       - name: Package debug build
         run: |
-          Compress-Archive -Path build\windows\x64\runner\Debug\* -DestinationPath build\windows\vagina-debug-windows.zip
+          Compress-Archive -Path build\windows\x64\runner\Debug\* -DestinationPath build\windows\vagina-debug-windows.zip -Force
         shell: powershell
 
       - name: Upload Debug Build
@@ -130,6 +130,9 @@ jobs:
     needs: [preprocess]
     permissions:
       contents: read
+    env:
+      WINDOWS_CERT_PFX: ${{ secrets.WINDOWS_CERT_PFX }}
+      WINDOWS_CERT_PASSWORD: ${{ secrets.WINDOWS_CERT_PASSWORD }}
     steps:
       - uses: actions/checkout@v6
 
@@ -181,7 +184,7 @@ jobs:
 
       - name: Package release build
         run: |
-          Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath build\windows\vagina-release-windows.zip
+          Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath build\windows\vagina-release-windows.zip -Force
         shell: powershell
 
       - name: Upload Release Build
@@ -193,12 +196,14 @@ jobs:
 
       # Code signing (optional - requires secrets)
       - name: Decode certificate
+        if: ${{ env.WINDOWS_CERT_PFX != '' && env.WINDOWS_CERT_PASSWORD != '' }}
         run: |
-          $certBytes = [Convert]::FromBase64String("${{ secrets.WINDOWS_CERT_PFX }}")
+          $certBytes = [Convert]::FromBase64String("$env:WINDOWS_CERT_PFX")
           [IO.File]::WriteAllBytes("$env:TEMP\cert.pfx", $certBytes)
         shell: powershell
 
       - name: Sign executable
+        if: ${{ env.WINDOWS_CERT_PFX != '' && env.WINDOWS_CERT_PASSWORD != '' }}
         run: |
           # Find signtool.exe (Windows SDK)
           $signtool = Get-ChildItem -Path "C:\Program Files (x86)\Windows Kits" -Recurse -Filter "signtool.exe" | Select-Object -First 1 -ExpandProperty FullName
@@ -210,7 +215,7 @@ jobs:
 
           # Sign the executable
           $exePath = "build\windows\x64\runner\Release\vagina.exe"
-          & $signtool sign /f "$env:TEMP\cert.pfx" /p "${{ secrets.WINDOWS_CERT_PASSWORD }}" /t http://timestamp.digicert.com /fd SHA256 /v $exePath
+          & $signtool sign /f "$env:TEMP\cert.pfx" /p "$env:WINDOWS_CERT_PASSWORD" /t http://timestamp.digicert.com /fd SHA256 /v $exePath
 
           if ($LASTEXITCODE -ne 0) {
             Write-Error "Signing failed with exit code $LASTEXITCODE"
@@ -221,19 +226,21 @@ jobs:
         shell: powershell
 
       - name: Cleanup certificate
-        if: always()
+        if: ${{ always() && env.WINDOWS_CERT_PFX != '' && env.WINDOWS_CERT_PASSWORD != '' }}
         run: |
           Remove-Item "$env:TEMP\cert.pfx" -ErrorAction SilentlyContinue
         shell: powershell
 
-      - name: Package release build
+      - name: Package signed release build
+        if: ${{ env.WINDOWS_CERT_PFX != '' && env.WINDOWS_CERT_PASSWORD != '' }}
         run: |
-          Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath build\windows\vagina-release-windows-signed.zip
+          Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath build\windows\vagina-release-windows-signed.zip -Force
         shell: powershell
 
-      - name: Upload Release Build
+      - name: Upload Signed Release Build
+        if: ${{ env.WINDOWS_CERT_PFX != '' && env.WINDOWS_CERT_PASSWORD != '' }}
         uses: actions/upload-artifact@v7
         with:
-          name: windows-release-build
+          name: windows-release-build-signed
           path: build\windows\vagina-release-windows-signed.zip
           retention-days: 30

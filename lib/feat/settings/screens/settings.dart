@@ -5,7 +5,6 @@ import 'package:vagina/feat/settings/widgets/developer_section.dart';
 import 'package:vagina/feat/settings/widgets/setup_section.dart';
 import 'package:vagina/feat/settings/widgets/settings_card.dart';
 import 'package:vagina/feat/settings/widgets/voice_settings_section.dart';
-import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/utils/platform_compat.dart';
 
 /// 設定画面 - API設定など

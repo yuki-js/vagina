@@ -31,7 +31,7 @@ void main() {
       expect(result['success'], true);
       final parsed = TabularData.parse(
         fs.activeFiles['/data/sheet.v2d.json']!,
-        'application/vagina-2d+json',
+        '.v2d.json',
       );
       expect(parsed.rows.length, 2);
       expect(parsed.rows[1]['name'], 'B');
@@ -103,7 +103,7 @@ void main() {
 
       final parsed = TabularData.parse(
         fs.activeFiles['/data/sheet.v2d.json']!,
-        'application/vagina-2d+json',
+        '.v2d.json',
       );
       expect(parsed.rows.single['name'], 'Z');
     });
@@ -176,7 +176,7 @@ void main() {
 
       final parsed = TabularData.parse(
         fs.activeFiles['/data/sheet.v2d.json']!,
-        'application/vagina-2d+json',
+        '.v2d.json',
       );
       expect(parsed.rows.length, 1);
       expect(parsed.rows.single['id'], 2);
