@@ -1,5 +1,34 @@
 import 'package:flutter/material.dart';
 
+class AdaptiveTriColumnController {
+  Future<void> Function(int index)? _goToPage;
+
+  Future<void> goToLeft() => goToPage(0);
+
+  Future<void> goToCenter() => goToPage(1);
+
+  Future<void> goToRight() => goToPage(2);
+
+  Future<void> goToPage(int index) async {
+    final goToPage = _goToPage;
+    if (goToPage == null) {
+      return;
+    }
+
+    await goToPage(index);
+  }
+
+  void _attach(Future<void> Function(int index) goToPage) {
+    _goToPage = goToPage;
+  }
+
+  void _detach(Future<void> Function(int index) goToPage) {
+    if (_goToPage == goToPage) {
+      _goToPage = null;
+    }
+  }
+}
+
 /// Responsive tri-column layout that preserves each column subtree while
 /// switching between wide [`Row`](lib/core/widgets/adaptive_tri_column_layout.dart:105)
 /// and narrow [`PageView`](lib/core/widgets/adaptive_tri_column_layout.dart:124)
@@ -20,6 +49,7 @@ class AdaptiveTriColumnLayout extends StatefulWidget {
   final double wideLayoutBreakpoint;
   final Duration animationDuration;
   final Curve animationCurve;
+  final AdaptiveTriColumnController? controller;
 
   const AdaptiveTriColumnLayout({
     super.key,
@@ -27,6 +57,7 @@ class AdaptiveTriColumnLayout extends StatefulWidget {
     required this.center,
     required this.right,
     required this.onExitRequested,
+    this.controller,
     this.initialPage = 1,
     this.leftFlex = 40,
     this.centerFlex = 30,
@@ -62,10 +93,21 @@ class _AdaptiveTriColumnLayoutState extends State<AdaptiveTriColumnLayout> {
     );
     _rightColumnHostKey =
         GlobalKey<_TriColumnPageHostState>(debugLabel: 'adaptive_tri_column_right');
+    widget.controller?._attach(_goToPage);
+  }
+
+  @override
+  void didUpdateWidget(covariant AdaptiveTriColumnLayout oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller?._detach(_goToPage);
+      widget.controller?._attach(_goToPage);
+    }
   }
 
   @override
   void dispose() {
+    widget.controller?._detach(_goToPage);
     _pageController.dispose();
     super.dispose();
   }
