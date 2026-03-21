@@ -1,4 +1,4 @@
-import 'package:vagina/feat/call/services/notepad_service.dart';
+import 'package:vagina/feat/callv2/services/notepad_service.dart';
 import 'package:vagina/models/virtual_file.dart';
 import 'package:vagina/services/tools_runtime/apis/filesystem_api.dart';
 
@@ -29,7 +29,7 @@ final class CallFilesystemApi implements FilesystemApi {
   Future<void> write(String path, String content) async {
     // Check if file is active
     final isActive = _notepadService.getActive(path) != null;
-    
+
     if (isActive) {
       // Update active file and persist immediately (tool-driven)
       await _notepadService.update(path, content, persist: true);
@@ -46,7 +46,7 @@ final class CallFilesystemApi implements FilesystemApi {
     if (isActive) {
       await _notepadService.close(path);
     }
-    
+
     // Delete from VFS
     await _notepadService.delete(path);
   }
@@ -59,7 +59,7 @@ final class CallFilesystemApi implements FilesystemApi {
       await _notepadService.close(fromPath);
       await _notepadService.open(toPath, content);
     }
-    
+
     // Move in VFS
     await _notepadService.move(fromPath, toPath);
   }
@@ -100,7 +100,8 @@ final class CallFilesystemApi implements FilesystemApi {
   Future<List<Map<String, dynamic>>> listActiveFiles() async {
     return _notepadService
         .listActive()
-        .map((file) => <String, dynamic>{'path': file.path, 'content': file.content})
+        .map((file) =>
+            <String, dynamic>{'path': file.path, 'content': file.content})
         .toList();
   }
 }

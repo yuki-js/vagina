@@ -1,8 +1,8 @@
 import 'dart:typed_data';
 
-import 'package:vagina/feat/call/models/realtime/realtime_adapter_models.dart';
-import 'package:vagina/feat/call/models/realtime/realtime_thread.dart';
-import 'package:vagina/feat/call/models/voice_agent_api_config.dart';
+import 'package:vagina/feat/callv2/models/realtime/realtime_adapter_models.dart';
+import 'package:vagina/feat/callv2/models/realtime/realtime_thread.dart';
+import 'package:vagina/feat/callv2/models/voice_agent_api_config.dart';
 import 'package:vagina/services/tools_runtime/tool_definition.dart';
 
 /// Provider-agnostic realtime voice adapter.

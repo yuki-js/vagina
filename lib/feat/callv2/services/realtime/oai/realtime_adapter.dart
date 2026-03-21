@@ -4,9 +4,9 @@ import 'dart:typed_data';
 
 import '../realtime_adapter.dart';
 
-import 'package:vagina/feat/call/models/realtime/realtime_adapter_models.dart';
-import 'package:vagina/feat/call/models/realtime/realtime_thread.dart';
-import 'package:vagina/feat/call/models/voice_agent_api_config.dart';
+import 'package:vagina/feat/callv2/models/realtime/realtime_adapter_models.dart';
+import 'package:vagina/feat/callv2/models/realtime/realtime_thread.dart';
+import 'package:vagina/feat/callv2/models/voice_agent_api_config.dart';
 import 'package:vagina/services/tools_runtime/tool_definition.dart';
 import 'realtime_binding.dart';
 import 'realtime_connect_config.dart';
@@ -291,7 +291,8 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
   Stream<RealtimeAdapterError> get errors => _errorController.stream;
 
   @override
-  Stream<Uint8List> get assistantAudioStream => _assistantAudioController.stream;
+  Stream<Uint8List> get assistantAudioStream =>
+      _assistantAudioController.stream;
 
   @override
   Stream<void> get assistantAudioCompleted =>
@@ -614,7 +615,8 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
       case 'text':
       case 'input_text':
       case 'output_text':
-        final textPart = _findOrCreateTextPart(item, contentIndex: contentIndex);
+        final textPart =
+            _findOrCreateTextPart(item, contentIndex: contentIndex);
         if (part.text != null && part.text!.isNotEmpty) {
           textPart.replaceText(part.text!);
         }

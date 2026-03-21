@@ -1,10 +1,10 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vagina/feat/call/models/voice_agent_api_config.dart';
-import 'package:vagina/feat/call/models/voice_agent_info.dart';
-import 'package:vagina/feat/call/services/call_service.dart';
-import 'package:vagina/feat/call/services/tool_runner.dart';
+import 'package:vagina/feat/callv2/models/voice_agent_api_config.dart';
+import 'package:vagina/feat/callv2/models/voice_agent_info.dart';
+import 'package:vagina/feat/callv2/services/call_service.dart';
+import 'package:vagina/feat/callv2/services/tool_runner.dart';
 import 'package:vagina/interfaces/virtual_filesystem_repository.dart';
 import 'package:vagina/models/virtual_file.dart';
 

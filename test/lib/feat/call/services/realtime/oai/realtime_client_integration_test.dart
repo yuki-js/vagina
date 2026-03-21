@@ -1,10 +1,10 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vagina/feat/call/services/realtime/oai/realtime_binding.dart';
-import 'package:vagina/feat/call/services/realtime/oai/realtime_connect_config.dart';
-import 'package:vagina/feat/call/services/realtime/oai/realtime_connection_state.dart';
-import 'package:vagina/feat/call/services/realtime/oai/realtime_event.dart';
+import 'package:vagina/feat/callv2/services/realtime/oai/realtime_binding.dart';
+import 'package:vagina/feat/callv2/services/realtime/oai/realtime_connect_config.dart';
+import 'package:vagina/feat/callv2/services/realtime/oai/realtime_connection_state.dart';
+import 'package:vagina/feat/callv2/services/realtime/oai/realtime_event.dart';
 
 /// Integration tests for OaiRealtimeClient.
 ///

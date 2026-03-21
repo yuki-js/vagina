@@ -9,7 +9,7 @@ import 'package:logger/logger.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:taudio/taudio.dart';
 import 'package:vagina/core/config/app_config.dart';
-import 'package:vagina/feat/call/services/playback_service.dart';
+import 'package:vagina/feat/callv2/services/playback_service.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -31,7 +31,8 @@ void main() {
       FlutterSoundPlayerPlatform.instance = originalPlatform;
     });
 
-    test('bindInputStream keeps playback in priming state below start threshold',
+    test(
+        'bindInputStream keeps playback in priming state below start threshold',
         () async {
       final controller = StreamController<Uint8List>.broadcast();
       final emittedMetrics = <PlaybackMetrics>[];

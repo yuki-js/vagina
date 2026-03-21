@@ -1,4 +1,4 @@
-import 'package:vagina/feat/call/models/text_agent_api_config.dart';
+import 'package:vagina/feat/callv2/models/text_agent_api_config.dart';
 
 /// Self-contained configuration for a text agent available during a call.
 class TextAgentInfo {

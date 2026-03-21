@@ -12,9 +12,9 @@ import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:record/record.dart';
 import 'package:record_platform_interface/record_platform_interface.dart';
 import 'package:taudio/taudio.dart';
-import 'package:vagina/feat/call/models/voice_agent_api_config.dart';
-import 'package:vagina/feat/call/models/voice_agent_info.dart';
-import 'package:vagina/feat/call/services/call_service.dart';
+import 'package:vagina/feat/callv2/models/voice_agent_api_config.dart';
+import 'package:vagina/feat/callv2/models/voice_agent_info.dart';
+import 'package:vagina/feat/callv2/services/call_service.dart';
 import 'package:vagina/interfaces/virtual_filesystem_repository.dart';
 import 'package:vagina/models/virtual_file.dart';
 
@@ -84,8 +84,8 @@ void main() {
 
       final appendCommand =
           await harness.waitForCommand('input_audio_buffer.append');
-      final appendedAudio =
-          base64Decode(appendCommand['audio']! as String).toList(growable: false);
+      final appendedAudio = base64Decode(appendCommand['audio']! as String)
+          .toList(growable: false);
       expect(appendedAudio, orderedEquals(const <int>[1, 2, 3, 4]));
 
       final assistantBytes = Uint8List.fromList(const <int>[5, 6, 7, 8]);

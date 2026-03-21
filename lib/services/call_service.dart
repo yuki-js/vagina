@@ -10,7 +10,7 @@ import 'package:vagina/interfaces/config_repository.dart';
 import 'package:vagina/interfaces/speed_dial_repository.dart';
 import 'package:vagina/models/call_session.dart';
 import 'package:vagina/models/chat_message.dart';
-import 'package:vagina/models/active_file.dart';
+import 'package:vagina/feat/callv2/models/active_file.dart';
 import 'package:vagina/models/speed_dial.dart';
 import 'package:vagina/models/virtual_file.dart';
 import 'package:vagina/services/tools_runtime/tool.dart';
@@ -141,8 +141,7 @@ class CallService {
   Stream<List<ChatMessage>> get chatStream => _chatManager.chatStream;
 
   /// Stream of active/open file state for the current call.
-  Stream<List<ActiveFile>> get openFilesStream =>
-      _openFilesController.stream;
+  Stream<List<ActiveFile>> get openFilesStream => _openFilesController.stream;
 
   /// Get current chat messages
   List<ChatMessage> get chatMessages => _chatManager.chatMessages;

@@ -1,18 +1,18 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:vagina/feat/call/models/realtime/realtime_thread.dart';
-import 'package:vagina/feat/call/models/text_agent_info.dart';
-import 'package:vagina/feat/call/models/voice_agent_info.dart';
-import 'package:vagina/feat/call/services/call_control_api.dart';
-import 'package:vagina/feat/call/services/call_filesystem_api.dart';
-import 'package:vagina/feat/call/services/notepad_service.dart';
-import 'package:vagina/feat/call/services/playback_service.dart';
-import 'package:vagina/feat/call/services/realtime_service.dart';
-import 'package:vagina/feat/call/services/recorder_service.dart';
-import 'package:vagina/feat/call/services/tool_runner.dart';
+import 'package:vagina/feat/callv2/models/realtime/realtime_thread.dart';
+import 'package:vagina/feat/callv2/models/text_agent_info.dart';
+import 'package:vagina/feat/callv2/models/voice_agent_info.dart';
+import 'package:vagina/feat/callv2/services/call_control_api.dart';
+import 'package:vagina/feat/callv2/services/call_filesystem_api.dart';
+import 'package:vagina/feat/callv2/services/notepad_service.dart';
+import 'package:vagina/feat/callv2/services/playback_service.dart';
+import 'package:vagina/feat/callv2/services/realtime_service.dart';
+import 'package:vagina/feat/callv2/services/recorder_service.dart';
+import 'package:vagina/feat/callv2/services/tool_runner.dart';
 import 'package:vagina/interfaces/virtual_filesystem_repository.dart';
-import 'package:vagina/models/active_file.dart';
+import 'package:vagina/feat/callv2/models/active_file.dart';
 import 'package:vagina/services/virtual_filesystem_service.dart';
 
 /// One-way lifecycle state for a single call session.
@@ -72,8 +72,7 @@ class CallService {
   /// Stream of active files for UI.
   ///
   /// Re-exposes NotepadService.activeFiles for UI compatibility.
-  Stream<List<ActiveFile>> get activeFilesStream =>
-      _notepadService.activeFiles;
+  Stream<List<ActiveFile>> get activeFilesStream => _notepadService.activeFiles;
 
   Future<void> startCall() async {
     if (_state != CallState.uninitialized) {

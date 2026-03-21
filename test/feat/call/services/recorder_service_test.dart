@@ -6,7 +6,7 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:record/record.dart';
-import 'package:vagina/feat/call/services/recorder_service.dart';
+import 'package:vagina/feat/callv2/services/recorder_service.dart';
 import 'package:vagina/utils/audio_utils.dart';
 
 void main() {
@@ -53,7 +53,8 @@ void main() {
       expect(fakePlatform.hasPermissionCalls, 1);
     });
 
-    test('setMute emits silent PCM and zero amplitude while recorder stays live',
+    test(
+        'setMute emits silent PCM and zero amplitude while recorder stays live',
         () async {
       fakePlatform.currentAmplitude = Amplitude(current: -8.0, max: 0.0);
 

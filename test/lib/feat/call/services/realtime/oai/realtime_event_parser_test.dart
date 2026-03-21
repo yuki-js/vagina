@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vagina/feat/call/services/realtime/oai/realtime_event.dart';
-import 'package:vagina/feat/call/services/realtime/oai/realtime_event_parser.dart';
+import 'package:vagina/feat/callv2/services/realtime/oai/realtime_event.dart';
+import 'package:vagina/feat/callv2/services/realtime/oai/realtime_event_parser.dart';
 
 import 'fixture_loader.dart';
 
@@ -90,7 +90,8 @@ void main() {
       });
 
       test('parses response.output_item.added event', () {
-        final events = loader.receivedEventsOfType('response.output_item.added');
+        final events =
+            loader.receivedEventsOfType('response.output_item.added');
         expect(events, hasLength(1));
 
         final parsed = parser.parse(events.first);
@@ -103,7 +104,8 @@ void main() {
       });
 
       test('parses response.content_part.added event', () {
-        final events = loader.receivedEventsOfType('response.content_part.added');
+        final events =
+            loader.receivedEventsOfType('response.content_part.added');
         expect(events, hasLength(1));
 
         final parsed = parser.parse(events.first);
@@ -143,7 +145,8 @@ void main() {
       });
 
       test('parses response.content_part.done event', () {
-        final events = loader.receivedEventsOfType('response.content_part.done');
+        final events =
+            loader.receivedEventsOfType('response.content_part.done');
         expect(events, hasLength(1));
 
         final parsed = parser.parse(events.first);
@@ -199,16 +202,19 @@ void main() {
       });
 
       test('parses response.audio_transcript.delta events', () {
-        final events = loader.receivedEventsOfType('response.audio_transcript.delta');
+        final events =
+            loader.receivedEventsOfType('response.audio_transcript.delta');
         expect(events, isNotEmpty);
 
         for (final payload in events) {
           final parsed = parser.parse(payload);
-          expect(parsed, isA<OaiRealtimeResponseOutputAudioTranscriptDeltaEvent>());
+          expect(parsed,
+              isA<OaiRealtimeResponseOutputAudioTranscriptDeltaEvent>());
 
           final audioDelta =
               parsed as OaiRealtimeResponseOutputAudioTranscriptDeltaEvent;
-          expect(audioDelta.type, equals('response.output_audio_transcript.delta'));
+          expect(audioDelta.type,
+              equals('response.output_audio_transcript.delta'));
           expect(audioDelta.delta, isNotNull);
         }
       });
@@ -240,15 +246,18 @@ void main() {
       });
 
       test('parses response.audio_transcript.done event', () {
-        final events = loader.receivedEventsOfType('response.audio_transcript.done');
+        final events =
+            loader.receivedEventsOfType('response.audio_transcript.done');
         expect(events, hasLength(1));
 
         final parsed = parser.parse(events.first);
-        expect(parsed, isA<OaiRealtimeResponseOutputAudioTranscriptDoneEvent>());
+        expect(
+            parsed, isA<OaiRealtimeResponseOutputAudioTranscriptDoneEvent>());
 
         final transcriptDone =
             parsed as OaiRealtimeResponseOutputAudioTranscriptDoneEvent;
-        expect(transcriptDone.type, equals('response.output_audio_transcript.done'));
+        expect(transcriptDone.type,
+            equals('response.output_audio_transcript.done'));
         expect(transcriptDone.transcript, isNotNull);
         expect(transcriptDone.transcript, isNotEmpty);
       });

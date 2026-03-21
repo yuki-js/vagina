@@ -1,4 +1,4 @@
-import 'package:vagina/feat/call/models/voice_agent_api_config.dart';
+import 'package:vagina/feat/callv2/models/voice_agent_api_config.dart';
 
 /// Self-contained configuration for the voice agent used in a call session.
 class VoiceAgentInfo {

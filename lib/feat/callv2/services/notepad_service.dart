@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:vagina/models/active_file.dart';
+import 'package:vagina/feat/callv2/models/active_file.dart';
 import 'package:vagina/models/call_session.dart';
 import 'package:vagina/models/virtual_file.dart';
 import 'package:vagina/services/virtual_filesystem_service.dart';

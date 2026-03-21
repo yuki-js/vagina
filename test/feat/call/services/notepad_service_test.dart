@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vagina/feat/call/services/notepad_service.dart';
-import 'package:vagina/models/active_file.dart';
+import 'package:vagina/feat/callv2/services/notepad_service.dart';
+import 'package:vagina/feat/callv2/models/active_file.dart';
 import 'package:vagina/models/virtual_file.dart';
 import 'package:vagina/services/virtual_filesystem_service.dart';
 
@@ -141,7 +141,8 @@ void main() {
       await notepadService.start();
       await notepadService.dispose();
 
-      expect(() => notepadService.open('/test.md', 'content'), throwsStateError);
+      expect(
+          () => notepadService.open('/test.md', 'content'), throwsStateError);
     });
   });
 }

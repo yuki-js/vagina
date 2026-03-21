@@ -2,8 +2,8 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vagina/feat/call/services/realtime/oai/realtime_command.dart';
-import 'package:vagina/feat/call/services/realtime/oai/realtime_command_encoder.dart';
+import 'package:vagina/feat/callv2/services/realtime/oai/realtime_command.dart';
+import 'package:vagina/feat/callv2/services/realtime/oai/realtime_command_encoder.dart';
 
 import 'fixture_loader.dart';
 
@@ -38,7 +38,8 @@ void main() {
 
         expect(encoded['type'], equals('session.update'));
         expect(encoded['session'], isA<Map<String, dynamic>>());
-        expect(encoded['session']['modalities'], equals(fixtureSession['modalities']));
+        expect(encoded['session']['modalities'],
+            equals(fixtureSession['modalities']));
         expect(
           encoded['session']['instructions'],
           equals(fixtureSession['instructions']),
@@ -116,7 +117,8 @@ void main() {
 
       test('encodes OaiInputAudioBufferAppendCommand with base64', () {
         final audioBytes = Uint8List.fromList([1, 2, 3, 4, 5]);
-        final command = OaiInputAudioBufferAppendCommand(audioBytes: audioBytes);
+        final command =
+            OaiInputAudioBufferAppendCommand(audioBytes: audioBytes);
 
         final encoded = encoder.encode(command);
 
@@ -150,7 +152,8 @@ void main() {
         expect(encoded['type'], equals('output_audio_buffer.clear'));
       });
 
-      test('encodes OaiConversationItemCreateCommand without previousItemId', () {
+      test('encodes OaiConversationItemCreateCommand without previousItemId',
+          () {
         final command = OaiConversationItemCreateCommand(
           item: {
             'type': 'message',
@@ -253,7 +256,9 @@ void main() {
 
     group('immutability', () {
       test('session data is immutable in OaiSessionUpdateCommand', () {
-        final originalSession = {'modalities': ['text']};
+        final originalSession = {
+          'modalities': ['text']
+        };
         final command = OaiSessionUpdateCommand(session: originalSession);
 
         // Modify original

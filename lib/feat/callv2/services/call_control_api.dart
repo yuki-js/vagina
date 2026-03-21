@@ -1,4 +1,4 @@
-import 'package:vagina/feat/call/services/call_service.dart';
+import 'package:vagina/feat/callv2/services/call_service.dart';
 import 'package:vagina/services/tools_runtime/apis/call_api.dart';
 
 /// Session-scoped [CallApi] implementation for tool execution.
