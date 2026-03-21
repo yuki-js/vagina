@@ -61,7 +61,7 @@ final class RealtimeService {
   }
 
   // ---------------------------------------------------------------------------
-  // Audio input
+  // Audio input / output
   // ---------------------------------------------------------------------------
 
   /// Start forwarding a PCM audio stream to the model.
@@ -73,6 +73,12 @@ final class RealtimeService {
   Future<void> unbindAudioInput() {
     return _adapter.unbindAudioInput();
   }
+
+  /// Provider-decoded assistant PCM output stream.
+  Stream<Uint8List> get assistantAudioStream => _adapter.assistantAudioStream;
+
+  /// Completion signal for the current assistant audio response.
+  Stream<void> get assistantAudioCompleted => _adapter.assistantAudioCompleted;
 
   // ---------------------------------------------------------------------------
   // Tool configuration

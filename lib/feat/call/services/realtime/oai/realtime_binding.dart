@@ -1,8 +1,6 @@
 import 'dart:async';
 import 'dart:typed_data';
 
-import 'package:vagina/services/log_service.dart';
-
 import 'realtime_command.dart';
 import 'realtime_command_encoder.dart';
 import 'realtime_connect_config.dart';
@@ -25,8 +23,6 @@ import 'websocket_realtime_transport.dart';
 /// - accumulation or projection
 /// - provider-agnostic mapping
 final class OaiRealtimeClient {
-  static const _tag = 'OaiRealtimeClient';
-
   final OaiRealtimeTransport _transport;
   final OaiRealtimeEventParser _parser;
   final OaiRealtimeCommandEncoder _encoder;
@@ -46,7 +42,6 @@ final class OaiRealtimeClient {
     OaiRealtimeTransport? transport,
     OaiRealtimeEventParser? parser,
     OaiRealtimeCommandEncoder? encoder,
-    LogService? logService,
   })  : _transport = transport ?? WebSocketOaiRealtimeTransport(),
         _parser = parser ?? const OaiRealtimeEventParser(),
         _encoder = encoder ?? const OaiRealtimeCommandEncoder() {

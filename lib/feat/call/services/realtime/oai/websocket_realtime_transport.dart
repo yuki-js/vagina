@@ -35,11 +35,10 @@ final class WebSocketOaiRealtimeTransport implements OaiRealtimeTransport {
 
   WebSocketOaiRealtimeTransport({
     OaiRealtimeSocketConnector? connector,
-    LogService? logService,
     Duration initialReconnectDelay = const Duration(milliseconds: 400),
     int maxInitialReconnectAttempts = 2,
   })  : _connector = connector ?? connectOaiWebSocketChannel,
-        _log = logService ?? LogService(),
+        _log = LogService(),
         _initialReconnectDelay = initialReconnectDelay,
         _maxInitialReconnectAttempts = maxInitialReconnectAttempts;
 

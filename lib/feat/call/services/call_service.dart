@@ -3,18 +3,16 @@ import 'dart:convert';
 
 import 'package:vagina/feat/call/models/realtime/realtime_thread.dart';
 import 'package:vagina/feat/call/models/text_agent_info.dart';
-import 'package:vagina/feat/call/models/voice_agent_api_config.dart';
 import 'package:vagina/feat/call/models/voice_agent_info.dart';
 import 'package:vagina/feat/call/services/call_control_api.dart';
 import 'package:vagina/feat/call/services/call_filesystem_api.dart';
 import 'package:vagina/feat/call/services/notepad_service.dart';
-import 'package:vagina/feat/call/services/realtime/oai/realtime_adapter.dart';
-import 'package:vagina/feat/call/services/realtime/realtime_adapter.dart';
+import 'package:vagina/feat/call/services/playback_service.dart';
 import 'package:vagina/feat/call/services/realtime_service.dart';
+import 'package:vagina/feat/call/services/recorder_service.dart';
 import 'package:vagina/feat/call/services/tool_runner.dart';
 import 'package:vagina/interfaces/virtual_filesystem_repository.dart';
 import 'package:vagina/models/virtual_file.dart';
-import 'package:vagina/services/tools_runtime/apis/call_api.dart';
 import 'package:vagina/services/tools_runtime/apis/text_agent_api.dart';
 import 'package:vagina/services/virtual_filesystem_service.dart';
 
@@ -35,6 +33,8 @@ class CallService {
 
   late final VirtualFilesystemService _filesystemService;
   late final RealtimeService _realtimeService;
+  late final RecorderService _recorderService;
+  late final PlaybackService _playbackService;
   late final ToolRunner _toolRunner;
   late final NotepadService _notepadService;
   late final CallFilesystemApi _filesystemApi;
@@ -48,6 +48,7 @@ class CallService {
   Set<String> _currentActiveExtensions = <String>{};
 
   StreamSubscription<RealtimeThread>? _threadSubscription;
+  StreamSubscription<void>? _assistantAudioCompletedSubscription;
 
   final StreamController<List<Map<String, String>>> _openFilesController =
       StreamController<List<Map<String, String>>>.broadcast();
@@ -61,6 +62,10 @@ class CallService {
   }) : _filesystemRepository = filesystemRepository;
 
   CallState get state => _state;
+
+  RecorderService get recorderService => _recorderService;
+
+  PlaybackService get playbackService => _playbackService;
 
   Stream<List<Map<String, String>>> get openFilesStream =>
       _openFilesController.stream;
@@ -84,6 +89,8 @@ class CallService {
     _filesystemService = VirtualFilesystemService(_filesystemRepository);
 
     _realtimeService = RealtimeService(voiceAgent: voiceAgent);
+    _recorderService = RecorderService();
+    _playbackService = PlaybackService();
 
     _filesystemApi = CallFilesystemApi(
       filesystemService: _filesystemService,
@@ -104,6 +111,8 @@ class CallService {
 
     await Future.wait<void>([
       _realtimeService.start(),
+      _recorderService.start(),
+      _playbackService.start(),
       _toolRunner.start(
         enabledToolKeys: Set<String>.from(voiceAgent.enabledTools),
       ),
@@ -121,10 +130,17 @@ class CallService {
     }).toList();
 
     await _realtimeService.registerTools(initialDefinitions);
+    await _recorderService.startRecordingSession();
+    await _realtimeService.bindAudioInput(_recorderService.audioStream);
+    await _playbackService.bindInputStream(_realtimeService.assistantAudioStream);
 
     // 2. Subscribe to thread updates and watch for completed function calls.
     _threadSubscription =
         _realtimeService.threadUpdates.listen(_onThreadUpdate);
+    _assistantAudioCompletedSubscription =
+        _realtimeService.assistantAudioCompleted.listen((_) {
+      unawaited(_playbackService.markResponseComplete());
+    });
   }
 
   /// Called on every thread mutation. Scans for completed function-call items
@@ -240,11 +256,18 @@ class CallService {
   Future<void> _dispose() async {
     await _threadSubscription?.cancel();
     _threadSubscription = null;
+    await _assistantAudioCompletedSubscription?.cancel();
+    _assistantAudioCompletedSubscription = null;
     _dispatchedToolCallIds.clear();
+    await _realtimeService.unbindAudioInput();
+    await _playbackService.unbindInputStream();
+    await _recorderService.stopRecordingSession();
     await _openFilesController.close();
 
     await Future.wait<void>([
       _realtimeService.dispose(),
+      _recorderService.dispose(),
+      _playbackService.dispose(),
       _toolRunner.dispose(),
       _notepadService.dispose(),
     ]);

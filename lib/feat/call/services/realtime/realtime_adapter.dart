@@ -60,7 +60,7 @@ abstract interface class RealtimeAdapter {
   Future<void> dispose();
 
   // ---------------------------------------------------------------------------
-  // Audio input
+  // Audio input / output
   // ---------------------------------------------------------------------------
 
   /// Start forwarding PCM audio from [audioStream] to the model.
@@ -72,6 +72,18 @@ abstract interface class RealtimeAdapter {
 
   /// Stop forwarding audio. Safe to call if nothing is bound.
   Future<void> unbindAudioInput();
+
+  /// Provider-decoded assistant PCM output stream.
+  ///
+  /// Consumers can pipe this directly into playback services without decoding
+  /// provider-native payloads themselves.
+  Stream<Uint8List> get assistantAudioStream;
+
+  /// Fires when the current assistant audio response has no more PCM chunks.
+  ///
+  /// This is separate from [assistantAudioStream] so playback can distinguish
+  /// chunk delivery from response-boundary completion.
+  Stream<void> get assistantAudioCompleted;
 
   // ---------------------------------------------------------------------------
   // Tool configuration

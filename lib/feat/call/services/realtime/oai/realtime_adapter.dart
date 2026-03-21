@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:typed_data';
 
 import '../realtime_adapter.dart';
@@ -25,6 +26,10 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
       StreamController<RealtimeAdapterConnectionState>.broadcast();
   final StreamController<RealtimeAdapterError> _errorController =
       StreamController<RealtimeAdapterError>.broadcast();
+  final StreamController<Uint8List> _assistantAudioController =
+      StreamController<Uint8List>.broadcast();
+  final StreamController<void> _assistantAudioCompletedController =
+      StreamController<void>.broadcast();
   final List<StreamSubscription<dynamic>> _subscriptions =
       <StreamSubscription<dynamic>>[];
 
@@ -180,6 +185,19 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
           contentIndex: event.contentIndex,
         );
         audioPart.appendAudioDelta(delta);
+        try {
+          if (!_assistantAudioController.isClosed) {
+            _assistantAudioController.add(base64Decode(delta));
+          }
+        } catch (error) {
+          _errorController.add(
+            RealtimeAdapterError(
+              code: 'audio_output_decode_error',
+              message: 'Failed to decode assistant audio delta.',
+              cause: error,
+            ),
+          );
+        }
         _emitThreadUpdate();
       }),
       _client.responseOutputAudioDoneEvents.listen((event) {
@@ -192,6 +210,9 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
           item,
           contentIndex: event.contentIndex,
         )?.markDone();
+        if (!_assistantAudioCompletedController.isClosed) {
+          _assistantAudioCompletedController.add(null);
+        }
         _emitThreadUpdate();
       }),
       _client.responseOutputAudioTranscriptDeltaEvents.listen((event) {
@@ -270,6 +291,13 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
   Stream<RealtimeAdapterError> get errors => _errorController.stream;
 
   @override
+  Stream<Uint8List> get assistantAudioStream => _assistantAudioController.stream;
+
+  @override
+  Stream<void> get assistantAudioCompleted =>
+      _assistantAudioCompletedController.stream;
+
+  @override
   bool get isConnected => _client.isConnected;
 
   // ---------------------------------------------------------------------------
@@ -318,6 +346,8 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
     await _threadController.close();
     await _connectionController.close();
     await _errorController.close();
+    await _assistantAudioController.close();
+    await _assistantAudioCompletedController.close();
   }
 
   // ---------------------------------------------------------------------------
@@ -657,38 +687,25 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
   OaiRealtimeConnectConfig _toOaiConnectConfig(
     SelfhostedVoiceAgentApiConfig config,
   ) {
-    final provider = config.provider.toLowerCase();
-
-    if (provider == 'openai' || provider == 'open_ai' || provider == 'open-ai') {
-      final baseUri = config.baseUrl.isEmpty ? null : Uri.parse(config.baseUrl);
-      return OpenAiRealtimeConnectConfig(
-        apiKey: config.apiKey,
-        model: config.model,
-        baseUri: baseUri,
-        organization: config.params['organization'] as String?,
-        project: config.params['project'] as String?,
-      );
-    }
-
-    if (provider == 'azure' ||
-        provider == 'azureopenai' ||
-        provider == 'azure_openai' ||
-        provider == 'azure-openai') {
-      if (config.baseUrl.isEmpty) {
-        throw ArgumentError('Azure OpenAI requires baseUrl as endpoint.');
-      }
-      return AzureOpenAiRealtimeConnectConfig(
-        apiKey: config.apiKey,
-        endpoint: Uri.parse(config.baseUrl),
-        deployment: (config.params['deployment'] as String?) ?? config.model,
-        apiVersion:
-            (config.params['apiVersion'] as String?) ?? '2025-04-01-preview',
-      );
-    }
-
-    throw UnsupportedError(
-      'OaiRealtimeAdapter does not support provider: ${config.provider}',
-    );
+    return switch (config.providerType) {
+      VoiceAgentProviderType.openai => OpenAiRealtimeConnectConfig(
+          apiKey: config.apiKey,
+          model: config.model,
+          baseUri: config.baseUrl.isEmpty ? null : Uri.parse(config.baseUrl),
+          organization: config.params['organization'] as String?,
+          project: config.params['project'] as String?,
+        ),
+      VoiceAgentProviderType.azureOpenAi => AzureOpenAiRealtimeConnectConfig(
+          apiKey: config.apiKey,
+          endpoint: Uri.parse(config.baseUrl),
+          deployment: (config.params['deployment'] as String?) ?? config.model,
+          apiVersion:
+              (config.params['apiVersion'] as String?) ?? '2025-04-01-preview',
+        ),
+      _ => throw UnsupportedError(
+          'OaiRealtimeAdapter does not support provider: ${config.providerType.name}',
+        ),
+    };
   }
 
   // ---------------------------------------------------------------------------
