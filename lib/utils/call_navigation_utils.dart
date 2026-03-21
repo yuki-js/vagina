@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:vagina/feat/call/screens/call.dart';
+import 'package:vagina/feat/callv2/screens/call.dart';
 import 'package:vagina/models/speed_dial.dart';
 
 /// Utility functions for initiating calls with SpeedDial configuration
