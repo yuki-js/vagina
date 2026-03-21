@@ -1,20 +1,26 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:vagina/feat/call/models/voice_agent_api_config.dart';
+import 'package:vagina/feat/call/models/voice_agent_info.dart';
+import 'package:vagina/feat/call/services/call_service.dart';
 import 'package:vagina/feat/call/services/tool_runner.dart';
-import 'package:vagina/services/tools_runtime/apis/call_api.dart';
-import 'package:vagina/services/tools_runtime/apis/filesystem_api.dart';
-import 'package:vagina/services/tools_runtime/apis/text_agent_api.dart';
+import 'package:vagina/interfaces/virtual_filesystem_repository.dart';
+import 'package:vagina/models/virtual_file.dart';
 
 void main() {
   group('ToolRunner', () {
     late ToolRunner runner;
+    late _FakeVirtualFilesystemRepository filesystemRepository;
+    late _TestCallService callService;
 
     setUp(() {
+      filesystemRepository = _FakeVirtualFilesystemRepository();
+      callService = _TestCallService();
       runner = ToolRunner(
-        filesystemApi: _FakeFilesystemApi(),
-        callApi: _FakeCallApi(),
-        textAgentApi: _FakeTextAgentApi(),
+        filesystemRepository: filesystemRepository,
+        onActiveFilesChanged: (_) {},
+        callService: callService,
       );
     });
 
@@ -75,20 +81,15 @@ void main() {
       );
     });
 
-    test('executes fs_list with fake filesystem', () async {
-      final fakeFs = _FakeFilesystemApi();
-      fakeFs.files['/test.txt'] = 'content';
-      fakeFs.files['/data.csv'] = 'data';
+    test('executes fs_list with fake filesystem repository', () async {
+      filesystemRepository.files['/test.txt'] =
+          const VirtualFile(path: '/test.txt', content: 'content');
+      filesystemRepository.files['/data.csv'] =
+          const VirtualFile(path: '/data.csv', content: 'data');
 
-      final runnerWithFs = ToolRunner(
-        filesystemApi: fakeFs,
-        callApi: _FakeCallApi(),
-        textAgentApi: _FakeTextAgentApi(),
-      );
+      await runner.start(enabledToolKeys: const {'fs_list'});
 
-      await runnerWithFs.start(enabledToolKeys: const {'fs_list'});
-
-      final output = await runnerWithFs.execute(
+      final output = await runner.execute(
         'fs_list',
         jsonEncode({'path': '/'}),
       );
@@ -96,49 +97,40 @@ void main() {
 
       expect(decoded['success'], isTrue);
       expect(decoded['entries'], containsAll(['test.txt', 'data.csv']));
-
-      await runnerWithFs.dispose();
     });
 
-    test('executes end_call through CallApi', () async {
-      final fakeCallApi = _FakeCallApi();
-      final runnerWithCall = ToolRunner(
-        filesystemApi: _FakeFilesystemApi(),
-        callApi: fakeCallApi,
-        textAgentApi: _FakeTextAgentApi(),
-      );
+    test('executes end_call through CallControlApi', () async {
+      await runner.start(enabledToolKeys: const {'end_call'});
 
-      await runnerWithCall.start(enabledToolKeys: const {'end_call'});
-
-      final output = await runnerWithCall.execute(
+      final output = await runner.execute(
         'end_call',
         jsonEncode({'end_context': 'test'}),
       );
       final decoded = jsonDecode(output) as Map<String, dynamic>;
 
+      await pumpEventQueue();
+
       expect(decoded['success'], isTrue);
       expect(decoded['ended'], isTrue);
-      expect(fakeCallApi.endCallCalled, isTrue);
-      expect(fakeCallApi.lastEndContext, equals('test'));
-
-      await runnerWithCall.dispose();
+      expect(callService.endCallCalled, isTrue);
+      expect(callService.lastEndContext, equals('test'));
     });
   });
 }
 
-final class _FakeFilesystemApi implements FilesystemApi {
-  final Map<String, String> files = {};
+final class _FakeVirtualFilesystemRepository
+    implements VirtualFilesystemRepository {
+  final Map<String, VirtualFile> files = <String, VirtualFile>{};
 
   @override
-  Future<Map<String, dynamic>?> read(String path) async {
-    final content = files[path];
-    if (content == null) return null;
-    return {'path': path, 'content': content};
-  }
+  Future<void> initialize() async {}
 
   @override
-  Future<void> write(String path, String content) async {
-    files[path] = content;
+  Future<VirtualFile?> read(String path) async => files[path];
+
+  @override
+  Future<void> write(VirtualFile file) async {
+    files[file.path] = file;
   }
 
   @override
@@ -148,9 +140,9 @@ final class _FakeFilesystemApi implements FilesystemApi {
 
   @override
   Future<void> move(String fromPath, String toPath) async {
-    final content = files.remove(fromPath);
-    if (content != null) {
-      files[toPath] = content;
+    final file = files.remove(fromPath);
+    if (file != null) {
+      files[toPath] = VirtualFile(path: toPath, content: file.content);
     }
   }
 
@@ -161,57 +153,28 @@ final class _FakeFilesystemApi implements FilesystemApi {
         .map((key) => key.substring(1))
         .toList();
   }
-
-  @override
-  Future<void> openFile(String path, String content) async {
-    files[path] = content;
-  }
-
-  @override
-  Future<Map<String, dynamic>?> getActiveFile(String path) async {
-    final content = files[path];
-    if (content == null) return null;
-    return {'path': path, 'content': content};
-  }
-
-  @override
-  Future<void> updateActiveFile(String path, String content) async {
-    files[path] = content;
-  }
-
-  @override
-  Future<void> closeFile(String path) async {
-    files.remove(path);
-  }
-
-  @override
-  Future<List<Map<String, dynamic>>> listActiveFiles() async {
-    return files.entries
-        .map((e) => {'path': e.key, 'content': e.value})
-        .toList();
-  }
 }
 
-final class _FakeCallApi implements CallApi {
+final class _TestCallService extends CallService {
   bool endCallCalled = false;
   String? lastEndContext;
 
+  _TestCallService()
+      : super(
+          voiceAgent: const VoiceAgentInfo(
+            id: 'voice-agent',
+            name: 'Test Agent',
+            description: 'Tool runner test agent',
+            voice: 'alloy',
+            prompt: 'Be brief.',
+            apiConfig: HostedVoiceAgentApiConfig(modelId: 'gpt-realtime-test'),
+          ),
+          filesystemRepository: _FakeVirtualFilesystemRepository(),
+        );
+
   @override
-  Future<bool> endCall({String? endContext}) async {
+  Future<void> endCall({String? endContext}) async {
     endCallCalled = true;
     lastEndContext = endContext;
-    return true;
-  }
-}
-
-final class _FakeTextAgentApi implements TextAgentApi {
-  @override
-  Future<String> sendQuery(String agentId, String prompt) async {
-    return jsonEncode({'error': 'Fake text agent not implemented'});
-  }
-
-  @override
-  Future<List<Map<String, dynamic>>> listAgents() async {
-    return const [];
   }
 }

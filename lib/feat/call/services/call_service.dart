@@ -4,8 +4,6 @@ import 'dart:convert';
 import 'package:vagina/feat/call/models/realtime/realtime_thread.dart';
 import 'package:vagina/feat/call/models/text_agent_info.dart';
 import 'package:vagina/feat/call/models/voice_agent_info.dart';
-import 'package:vagina/feat/call/services/call_control_api.dart';
-import 'package:vagina/feat/call/services/call_filesystem_api.dart';
 import 'package:vagina/feat/call/services/notepad_service.dart';
 import 'package:vagina/feat/call/services/playback_service.dart';
 import 'package:vagina/feat/call/services/realtime_service.dart';
@@ -13,8 +11,6 @@ import 'package:vagina/feat/call/services/recorder_service.dart';
 import 'package:vagina/feat/call/services/tool_runner.dart';
 import 'package:vagina/interfaces/virtual_filesystem_repository.dart';
 import 'package:vagina/models/virtual_file.dart';
-import 'package:vagina/services/tools_runtime/apis/text_agent_api.dart';
-import 'package:vagina/services/virtual_filesystem_service.dart';
 
 /// One-way lifecycle state for a single call session.
 enum CallState {
@@ -31,13 +27,11 @@ class CallService {
   final List<TextAgentInfo> textAgents;
   final VirtualFilesystemRepository _filesystemRepository;
 
-  late final VirtualFilesystemService _filesystemService;
   late final RealtimeService _realtimeService;
   late final RecorderService _recorderService;
   late final PlaybackService _playbackService;
   late final ToolRunner _toolRunner;
   late final NotepadService _notepadService;
-  late final CallFilesystemApi _filesystemApi;
 
   /// Item IDs for function-call items that have already been dispatched
   /// (or are currently being executed). Prevents double-dispatch.
@@ -85,26 +79,14 @@ class CallService {
   }
 
   Future<void> _initialize() async {
-    // Forward-create all internal services
-    _filesystemService = VirtualFilesystemService(_filesystemRepository);
-
     _realtimeService = RealtimeService(voiceAgent: voiceAgent);
     _recorderService = RecorderService();
     _playbackService = PlaybackService();
 
-    _filesystemApi = CallFilesystemApi(
-      filesystemService: _filesystemService,
-      onActiveFilesChanged: _onActiveFilesChanged,
-    );
-
-    final callApi = CallControlApi(callService: this);
-
-    final textAgentApi = _StubTextAgentApi();
-
     _toolRunner = ToolRunner(
-      filesystemApi: _filesystemApi,
-      callApi: callApi,
-      textAgentApi: textAgentApi,
+      filesystemRepository: _filesystemRepository,
+      onActiveFilesChanged: _onActiveFilesChanged,
+      callService: this,
     );
 
     _notepadService = NotepadService();
@@ -274,20 +256,3 @@ class CallService {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Stub API implementation (until text agents are wired)
-// ---------------------------------------------------------------------------
-
-final class _StubTextAgentApi implements TextAgentApi {
-  @override
-  Future<String> sendQuery(String agentId, String prompt) async {
-    return jsonEncode({
-      'error': 'Text agent API is not available in this session.',
-    });
-  }
-
-  @override
-  Future<List<Map<String, dynamic>>> listAgents() async {
-    return const <Map<String, dynamic>>[];
-  }
-}
