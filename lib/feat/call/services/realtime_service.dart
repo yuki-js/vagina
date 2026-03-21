@@ -12,14 +12,11 @@ import 'realtime/realtime_adapter.dart';
 /// Session-scoped realtime backing service for a single call.
 final class RealtimeService {
   final VoiceAgentInfo voiceAgent;
-  final RealtimeAdapter _adapter;
+  late final RealtimeAdapter _adapter;
 
   bool _started = false;
 
-  RealtimeService({
-    required this.voiceAgent,
-    RealtimeAdapter? adapter,
-  }) : _adapter = adapter ?? _createAdapter(voiceAgent.apiConfig);
+  RealtimeService({required this.voiceAgent});
 
   RealtimeThread get thread => _adapter.thread;
 
@@ -40,6 +37,8 @@ final class RealtimeService {
     if (_started) {
       return;
     }
+
+    _adapter = _createAdapter(voiceAgent.apiConfig);
 
     _started = true;
     try {
@@ -121,20 +120,22 @@ final class RealtimeService {
   }
 
   // ---------------------------------------------------------------------------
-  // Factory
+  // Adapter factory
   // ---------------------------------------------------------------------------
 
   static RealtimeAdapter _createAdapter(VoiceAgentApiConfig apiConfig) {
     return switch (apiConfig) {
       SelfhostedVoiceAgentApiConfig(provider: final provider)
-          when _isOpenAiFamily(provider) => OaiRealtimeAdapter(),
+          when _isOpenAiFamily(provider) =>
+        OaiRealtimeAdapter(),
       HostedVoiceAgentApiConfig() => throw UnsupportedError(
           'Hosted voice agents are not wired to RealtimeAdapter yet.',
         ),
       SelfhostedVoiceAgentApiConfig(provider: final provider)
-          when _isGemini(provider) => throw UnsupportedError(
-              'Gemini adapter is not implemented yet.',
-            ),
+          when _isGemini(provider) =>
+        throw UnsupportedError(
+          'Gemini adapter is not implemented yet.',
+        ),
       _ => throw UnsupportedError(
           'Unsupported voice agent api config for realtime service.',
         ),
