@@ -3,6 +3,14 @@ abstract class VoiceAgentApiConfig {
   const VoiceAgentApiConfig();
 }
 
+/// Provider type enum for voice agent APIs.
+enum VoiceAgentProviderType {
+  openai,
+  azureOpenAi,
+  gemini,
+  unknown,
+}
+
 /// Use the application's hosted realtime voice API.
 class HostedVoiceAgentApiConfig extends VoiceAgentApiConfig {
   final String modelId;
@@ -14,14 +22,14 @@ class HostedVoiceAgentApiConfig extends VoiceAgentApiConfig {
 
 /// Use a self-hosted or user-managed realtime voice API endpoint.
 class SelfhostedVoiceAgentApiConfig extends VoiceAgentApiConfig {
-  final String provider;
+  final VoiceAgentProviderType providerType;
   final String baseUrl;
   final String apiKey;
   final String model;
   final Map<String, Object?> params;
 
   const SelfhostedVoiceAgentApiConfig({
-    required this.provider,
+    required this.providerType,
     required this.baseUrl,
     required this.apiKey,
     required this.model,

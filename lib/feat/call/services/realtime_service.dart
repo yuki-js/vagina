@@ -125,14 +125,13 @@ final class RealtimeService {
 
   static RealtimeAdapter _createAdapter(VoiceAgentApiConfig apiConfig) {
     return switch (apiConfig) {
-      SelfhostedVoiceAgentApiConfig(provider: final provider)
-          when _isOpenAiFamily(provider) =>
+      SelfhostedVoiceAgentApiConfig(providerType: VoiceAgentProviderType.openai) ||
+      SelfhostedVoiceAgentApiConfig(providerType: VoiceAgentProviderType.azureOpenAi) =>
         OaiRealtimeAdapter(),
       HostedVoiceAgentApiConfig() => throw UnsupportedError(
           'Hosted voice agents are not wired to RealtimeAdapter yet.',
         ),
-      SelfhostedVoiceAgentApiConfig(provider: final provider)
-          when _isGemini(provider) =>
+      SelfhostedVoiceAgentApiConfig(providerType: VoiceAgentProviderType.gemini) =>
         throw UnsupportedError(
           'Gemini adapter is not implemented yet.',
         ),
@@ -142,19 +141,5 @@ final class RealtimeService {
     };
   }
 
-  static bool _isOpenAiFamily(String provider) {
-    final normalized = provider.toLowerCase();
-    return normalized == 'openai' ||
-        normalized == 'open_ai' ||
-        normalized == 'open-ai' ||
-        normalized == 'azure' ||
-        normalized == 'azureopenai' ||
-        normalized == 'azure_openai' ||
-        normalized == 'azure-openai';
-  }
-
-  static bool _isGemini(String provider) {
-    final normalized = provider.toLowerCase();
-    return normalized == 'gemini' || normalized == 'google';
-  }
+  // _isOpenAiFamily and _isGemini removed; providerType enum is now used.
 }
