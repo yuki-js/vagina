@@ -1,8 +1,196 @@
+import 'dart:async';
+
+import 'package:vagina/models/active_file.dart';
+import 'package:vagina/models/call_session.dart';
+import 'package:vagina/models/virtual_file.dart';
+import 'package:vagina/services/virtual_filesystem_service.dart';
+
 /// Session-scoped notepad backing service for a single call.
+///
+/// Owns the full in-call document domain:
+/// - Active file registry (in-memory map of path → content)
+/// - Stream of active files for external consumers
+/// - Write-through persistence to VFS (immediate for tool mutations)
+/// - Session export to SessionNotepadTab
 class NotepadService {
-  NotepadService();
+  final VirtualFilesystemService _vfs;
+  final Map<String, String> _activeFiles = <String, String>{};
+  final StreamController<List<ActiveFile>> _activeFilesController =
+      StreamController<List<ActiveFile>>.broadcast();
 
-  Future<void> start() async {}
+  bool _disposed = false;
 
-  Future<void> dispose() async {}
+  NotepadService(this._vfs);
+
+  /// Stream of active files for UI and orchestrator.
+  Stream<List<ActiveFile>> get activeFiles => _activeFilesController.stream;
+
+  /// Get current snapshot of active files.
+  List<ActiveFile> listActive() {
+    return _activeFiles.entries
+        .map((entry) => ActiveFile(path: entry.key, content: entry.value))
+        .toList()
+      ..sort((a, b) => a.path.compareTo(b.path));
+  }
+
+  /// Open a file and add it to the active set.
+  ///
+  /// The file is added to the in-memory active set but NOT persisted to VFS.
+  /// Call [update] with persist=true to write to VFS.
+  Future<void> open(String path, String content) async {
+    if (_disposed) {
+      throw StateError('NotepadService has been disposed');
+    }
+
+    _activeFiles[path] = content;
+    _emitChanged();
+  }
+
+  /// Update active file content.
+  ///
+  /// [persist] controls whether to write through to VFS immediately.
+  /// - true: Tool-driven changes (immediate persistence)
+  /// - false: UI-driven changes (defer until explicit save)
+  Future<void> update(String path, String content,
+      {bool persist = false}) async {
+    if (_disposed) {
+      throw StateError('NotepadService has been disposed');
+    }
+
+    if (!_activeFiles.containsKey(path)) {
+      throw Exception('File is not active: $path');
+    }
+
+    _activeFiles[path] = content;
+    _emitChanged();
+
+    if (persist) {
+      await _vfs.write(VirtualFile(path: path, content: content));
+    }
+  }
+
+  /// Close a file and remove it from the active set.
+  ///
+  /// Does not persist to VFS. Call [update] with persist=true before closing
+  /// if you want to save changes.
+  Future<void> close(String path) async {
+    if (_disposed) {
+      throw StateError('NotepadService has been disposed');
+    }
+
+    _activeFiles.remove(path);
+    _emitChanged();
+  }
+
+  /// Read a file from VFS.
+  ///
+  /// This reads from persistent storage, not from the active set.
+  /// Use [getActive] to read from the active set.
+  Future<String?> read(String path) async {
+    if (_disposed) {
+      throw StateError('NotepadService has been disposed');
+    }
+
+    final file = await _vfs.read(path);
+    return file?.content;
+  }
+
+  /// Get active file content by path.
+  ///
+  /// Returns null if the file is not in the active set.
+  String? getActive(String path) {
+    return _activeFiles[path];
+  }
+
+  /// Write a file to VFS.
+  ///
+  /// This writes directly to persistent storage.
+  /// If the file is active, consider using [update] with persist=true instead.
+  Future<void> write(String path, String content) async {
+    if (_disposed) {
+      throw StateError('NotepadService has been disposed');
+    }
+
+    await _vfs.write(VirtualFile(path: path, content: content));
+  }
+
+  /// Delete a file from VFS.
+  ///
+  /// Does not affect the active set. Call [close] separately if needed.
+  Future<void> delete(String path) async {
+    if (_disposed) {
+      throw StateError('NotepadService has been disposed');
+    }
+
+    await _vfs.delete(path);
+  }
+
+  /// Move/rename a file in VFS.
+  ///
+  /// Does not affect the active set. Call [close]/[open] separately if needed.
+  Future<void> move(String fromPath, String toPath) async {
+    if (_disposed) {
+      throw StateError('NotepadService has been disposed');
+    }
+
+    await _vfs.move(fromPath, toPath);
+  }
+
+  /// List files in VFS.
+  Future<List<String>> list(String path, {bool recursive = false}) async {
+    if (_disposed) {
+      throw StateError('NotepadService has been disposed');
+    }
+
+    return _vfs.list(path, recursive: recursive);
+  }
+
+  /// Export active files as SessionNotepadTabs for session persistence.
+  List<SessionNotepadTab> exportSessionTabs() {
+    return listActive().map((file) => file.toSessionTab()).toList();
+  }
+
+  /// Persist all active files to VFS.
+  ///
+  /// This is typically called before ending a call to ensure all
+  /// active file changes are saved.
+  Future<void> persistAll() async {
+    if (_disposed) {
+      throw StateError('NotepadService has been disposed');
+    }
+
+    for (final entry in _activeFiles.entries) {
+      try {
+        await _vfs.write(VirtualFile(path: entry.key, content: entry.value));
+      } catch (e) {
+        // Log error but continue persisting other files
+        // TODO: Add logging when LogService is available
+        rethrow;
+      }
+    }
+  }
+
+  /// Emit active files changed event.
+  void _emitChanged() {
+    if (!_activeFilesController.isClosed) {
+      _activeFilesController.add(listActive());
+    }
+  }
+
+  /// Start the service.
+  Future<void> start() async {
+    // Emit initial empty state
+    _emitChanged();
+  }
+
+  /// Dispose the service and release resources.
+  Future<void> dispose() async {
+    if (_disposed) {
+      return;
+    }
+
+    _disposed = true;
+    await _activeFilesController.close();
+    _activeFiles.clear();
+  }
 }

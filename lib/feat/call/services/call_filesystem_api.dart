@@ -1,111 +1,106 @@
+import 'package:vagina/feat/call/services/notepad_service.dart';
 import 'package:vagina/models/virtual_file.dart';
 import 'package:vagina/services/tools_runtime/apis/filesystem_api.dart';
-import 'package:vagina/services/virtual_filesystem_service.dart';
 
 /// Session-scoped [FilesystemApi] implementation for tool execution.
 ///
-/// Delegates persistence operations to [VirtualFilesystemService] and maintains
-/// in-memory active file state. Fires [onActiveFilesChanged] callback whenever
-/// the active file set changes.
+/// This is a thin compatibility adapter that delegates all operations to
+/// [NotepadService]. It preserves the existing FilesystemApi contract
+/// while allowing NotepadService to own the domain logic.
 final class CallFilesystemApi implements FilesystemApi {
-  final VirtualFilesystemService _filesystemService;
-  final void Function(List<Map<String, String>>) _onActiveFilesChanged;
-  final Map<String, String> _activeFiles = {};
+  final NotepadService _notepadService;
 
   CallFilesystemApi({
-    required VirtualFilesystemService filesystemService,
-    required void Function(List<Map<String, String>>) onActiveFilesChanged,
-  })  : _filesystemService = filesystemService,
-        _onActiveFilesChanged = onActiveFilesChanged;
+    required NotepadService notepadService,
+  }) : _notepadService = notepadService;
 
   // ---------------------------------------------------------------------------
-  // Persistence operations (delegate to VirtualFilesystemService)
+  // Persistence operations (delegate to NotepadService → VFS)
   // ---------------------------------------------------------------------------
 
   @override
   Future<Map<String, dynamic>?> read(String path) async {
-    final file = await _filesystemService.read(path);
-    if (file == null) return null;
-    return {'path': file.path, 'content': file.content};
+    final content = await _notepadService.read(path);
+    if (content == null) return null;
+    return {'path': path, 'content': content};
   }
 
   @override
   Future<void> write(String path, String content) async {
-    await _filesystemService.write(VirtualFile(path: path, content: content));
+    // Check if file is active
+    final isActive = _notepadService.getActive(path) != null;
+    
+    if (isActive) {
+      // Update active file and persist immediately (tool-driven)
+      await _notepadService.update(path, content, persist: true);
+    } else {
+      // Direct VFS write for non-active files
+      await _notepadService.write(path, content);
+    }
   }
 
   @override
   Future<void> delete(String path) async {
-    await _filesystemService.delete(path);
-    _activeFiles.remove(path);
-    _emitChanged();
+    // Close if active
+    final isActive = _notepadService.getActive(path) != null;
+    if (isActive) {
+      await _notepadService.close(path);
+    }
+    
+    // Delete from VFS
+    await _notepadService.delete(path);
   }
 
   @override
   Future<void> move(String fromPath, String toPath) async {
-    await _filesystemService.move(fromPath, toPath);
-    final content = _activeFiles.remove(fromPath);
+    // Handle active file state
+    final content = _notepadService.getActive(fromPath);
     if (content != null) {
-      _activeFiles[toPath] = content;
+      await _notepadService.close(fromPath);
+      await _notepadService.open(toPath, content);
     }
-    _emitChanged();
+    
+    // Move in VFS
+    await _notepadService.move(fromPath, toPath);
   }
 
   @override
   Future<List<String>> list(String path, {bool recursive = false}) async {
-    return _filesystemService.list(path, recursive: recursive);
+    return _notepadService.list(path, recursive: recursive);
   }
 
   // ---------------------------------------------------------------------------
-  // Active file operations (in-memory)
+  // Active file operations (delegate to NotepadService in-memory state)
   // ---------------------------------------------------------------------------
 
   @override
   Future<void> openFile(String path, String content) async {
-    _activeFiles[path] = content;
-    _emitChanged();
+    await _notepadService.open(path, content);
   }
 
   @override
   Future<Map<String, dynamic>?> getActiveFile(String path) async {
-    final content = _activeFiles[path];
+    final content = _notepadService.getActive(path);
     if (content == null) return null;
     return {'path': path, 'content': content};
   }
 
   @override
   Future<void> updateActiveFile(String path, String content) async {
-    if (!_activeFiles.containsKey(path)) {
-      throw Exception('Active file not found: $path');
-    }
-    _activeFiles[path] = content;
-    _emitChanged();
+    // Tool-driven updates persist immediately
+    await _notepadService.update(path, content, persist: true);
   }
 
   @override
   Future<void> closeFile(String path) async {
-    _activeFiles.remove(path);
-    _emitChanged();
+    await _notepadService.close(path);
   }
 
   @override
   Future<List<Map<String, dynamic>>> listActiveFiles() async {
-    return _activeFiles.entries
-        .map((e) => <String, dynamic>{'path': e.key, 'content': e.value})
-        .toList()
-      ..sort((a, b) => (a['path'] as String).compareTo(b['path'] as String));
-  }
-
-  // ---------------------------------------------------------------------------
-  // Internal
-  // ---------------------------------------------------------------------------
-
-  void _emitChanged() {
-    _onActiveFilesChanged(
-      _activeFiles.entries
-          .map((e) => {'path': e.key, 'content': e.value})
-          .toList()
-        ..sort((a, b) => a['path']!.compareTo(b['path']!)),
-    );
+    return _notepadService
+        .listActive()
+        .map((file) => <String, dynamic>{'path': file.path, 'content': file.content})
+        .toList();
   }
 }

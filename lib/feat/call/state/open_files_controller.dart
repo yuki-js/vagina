@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vagina/feat/call/state/call_service_providers.dart';
 import 'package:vagina/models/open_file_tab.dart';
-import 'package:vagina/models/open_file_state.dart';
+import 'package:vagina/models/active_file.dart';
 
 class OpenFilesState {
   static const _unset = Object();
@@ -47,7 +47,7 @@ final openFilesStateProvider =
   final callService = ref.watch(callServiceProvider);
 
   final controller = StreamController<OpenFilesState>.broadcast();
-  List<OpenFileTab> convert(List<OpenFileState> files) {
+  List<OpenFileTab> convert(List<ActiveFile> files) {
     final now = DateTime.now();
     return files
         .map(

@@ -1,27 +1,22 @@
 import 'dart:convert';
 
-import 'package:vagina/feat/call/services/call_control_api.dart';
-import 'package:vagina/feat/call/services/call_filesystem_api.dart';
-import 'package:vagina/feat/call/services/call_service.dart';
-import 'package:vagina/interfaces/virtual_filesystem_repository.dart';
 import 'package:vagina/services/tools_runtime/apis/call_api.dart';
 import 'package:vagina/services/tools_runtime/apis/filesystem_api.dart';
 import 'package:vagina/services/tools_runtime/apis/text_agent_api.dart';
 import 'package:vagina/services/tools_runtime/tool.dart';
 import 'package:vagina/services/tools_runtime/tool_context.dart';
 import 'package:vagina/services/tools_runtime/tool_definition.dart';
-import 'package:vagina/services/virtual_filesystem_service.dart';
 import 'package:vagina/tools/tools.dart';
 
 /// Session-scoped tool runner backing service for a single call.
 ///
-/// Executes tools in-process (no isolate). Safe because builtin tools are
-/// pure-Dart with no blocking I/O.
+/// Pure tool catalog and execution engine. Does not subscribe to streams
+/// or hold active file state. Tool visibility is computed on-demand via
+/// [computeAvailableTools].
 class ToolRunner {
-  late final VirtualFilesystemService _filesystemService;
-  late final FilesystemApi _filesystemApi;
-  late final CallApi _callApi;
-  late final TextAgentApi _textAgentApi;
+  final FilesystemApi _filesystemApi;
+  final CallApi _callApi;
+  final TextAgentApi _textAgentApi;
   final Toolbox _toolbox = RootToolbox();
 
   final Map<String, Tool> _tools = <String, Tool>{};
@@ -29,18 +24,12 @@ class ToolRunner {
   bool _started = false;
 
   ToolRunner({
-    required VirtualFilesystemRepository filesystemRepository,
-    required void Function(List<Map<String, String>>) onActiveFilesChanged,
-    required CallService callService,
-  }) {
-    _filesystemService = VirtualFilesystemService(filesystemRepository);
-    _filesystemApi = CallFilesystemApi(
-      filesystemService: _filesystemService,
-      onActiveFilesChanged: onActiveFilesChanged,
-    );
-    _callApi = CallControlApi(callService: callService);
-    _textAgentApi = const _StubTextAgentApi();
-  }
+    required FilesystemApi filesystemApi,
+    required CallApi callApi,
+    TextAgentApi? textAgentApi,
+  })  : _filesystemApi = filesystemApi,
+        _callApi = callApi,
+        _textAgentApi = textAgentApi ?? const _StubTextAgentApi();
 
   /// Whether [start] has been called.
   bool get isStarted => _started;
@@ -48,6 +37,8 @@ class ToolRunner {
   /// Tool definitions for the currently enabled tools.
   ///
   /// Only meaningful after [start] has been called.
+  /// This returns all tools filtered by speed dial config only.
+  /// For extension-based filtering, use [computeAvailableTools].
   List<ToolDefinition> get enabledDefinitions {
     if (_enabledToolKeys.isEmpty) {
       return _tools.values.map((t) => t.definition).toList(growable: false);
@@ -63,6 +54,38 @@ class ToolRunner {
     return _tools.values.map((t) => t.definition).toList(growable: false);
   }
 
+  /// Compute available tools based on active file extensions.
+  ///
+  /// Filters tools based on:
+  /// 1. Speed dial configuration ([_enabledToolKeys])
+  /// 2. Extension activation rules for each tool
+  ///
+  /// Returns a fresh list of tool definitions on each call.
+  List<ToolDefinition> computeAvailableTools(Set<String> activeExtensions) {
+    if (!_started) {
+      return const [];
+    }
+
+    // Normalize extensions to lowercase for comparison
+    final normalizedExtensions =
+        activeExtensions.map((ext) => ext.toLowerCase()).toSet();
+
+    return _tools.values.where((tool) {
+      final toolKey = tool.definition.toolKey;
+      final activation = tool.definition.activation;
+
+      // Filter by speed dial config (if set)
+      final enabledByConfig =
+          _enabledToolKeys.isEmpty || _enabledToolKeys.contains(toolKey);
+
+      // Filter by extension activation rules
+      final enabledByActivation =
+          activation.isEnabledForExtensions(normalizedExtensions);
+
+      return enabledByConfig && enabledByActivation;
+    }).map((tool) => tool.definition).toList(growable: false);
+  }
+
   /// Instantiate and initialise every tool from the toolbox.
   Future<void> start({
     Set<String> enabledToolKeys = const <String>{},
@@ -72,7 +95,6 @@ class ToolRunner {
     }
 
     _enabledToolKeys = Set<String>.from(enabledToolKeys);
-    await _filesystemService.initialize();
 
     for (final tool in _toolbox.tools) {
       final key = tool.definition.toolKey;

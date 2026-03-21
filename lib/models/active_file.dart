@@ -1,8 +1,15 @@
-class OpenFileState {
+import 'package:vagina/models/call_session.dart';
+
+/// Represents an active file during a call session.
+///
+/// An active file is a document that has been opened by the agent or user
+/// and is being worked on during the current call. The content is kept in
+/// memory and may differ from the persisted version in VFS.
+class ActiveFile {
   final String path;
   final String content;
 
-  const OpenFileState({
+  const ActiveFile({
     required this.path,
     required this.content,
   });
@@ -30,22 +37,40 @@ class OpenFileState {
   }
 
   String get mimeType {
-    // todo:これいらないよね。拡張子パースでいいじゃん。
     switch (extension) {
       case '.v2d.csv':
+      case '.csv':
         return 'text/csv';
       case '.v2d.json':
-        return 'application/vagina-2d+json';
+      case '.json':
+        return 'application/json';
       case '.v2d.jsonl':
-        return 'application/vagina-2d+jsonl';
+      case '.jsonl':
+        return 'application/jsonl';
       case '.md':
+      case '.markdown':
         return 'text/markdown';
       case '.txt':
         return 'text/plain';
       case '.html':
+      case '.htm':
         return 'text/html';
+      case '.xml':
+        return 'application/xml';
+      case '.yaml':
+      case '.yml':
+        return 'application/yaml';
       default:
         return 'text/plain';
     }
+  }
+
+  /// Convert to SessionNotepadTab for session export.
+  SessionNotepadTab toSessionTab() {
+    return SessionNotepadTab(
+      title: title,
+      content: content,
+      mimeType: mimeType,
+    );
   }
 }

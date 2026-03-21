@@ -4,13 +4,16 @@ import 'dart:convert';
 import 'package:vagina/feat/call/models/realtime/realtime_thread.dart';
 import 'package:vagina/feat/call/models/text_agent_info.dart';
 import 'package:vagina/feat/call/models/voice_agent_info.dart';
+import 'package:vagina/feat/call/services/call_control_api.dart';
+import 'package:vagina/feat/call/services/call_filesystem_api.dart';
 import 'package:vagina/feat/call/services/notepad_service.dart';
 import 'package:vagina/feat/call/services/playback_service.dart';
 import 'package:vagina/feat/call/services/realtime_service.dart';
 import 'package:vagina/feat/call/services/recorder_service.dart';
 import 'package:vagina/feat/call/services/tool_runner.dart';
 import 'package:vagina/interfaces/virtual_filesystem_repository.dart';
-import 'package:vagina/models/virtual_file.dart';
+import 'package:vagina/models/active_file.dart';
+import 'package:vagina/services/virtual_filesystem_service.dart';
 
 /// One-way lifecycle state for a single call session.
 enum CallState {
@@ -22,30 +25,33 @@ enum CallState {
 }
 
 /// Session-scoped call service instantiated by the call screen.
+///
+/// Orchestrates all call-related services:
+/// - NotepadService: active file management
+/// - ToolRunner: tool catalog and execution
+/// - RealtimeService: model connection
+/// - RecorderService: microphone input
+/// - PlaybackService: audio output
 class CallService {
   final VoiceAgentInfo voiceAgent;
   final List<TextAgentInfo> textAgents;
   final VirtualFilesystemRepository _filesystemRepository;
 
+  late final VirtualFilesystemService _vfs;
+  late final NotepadService _notepadService;
+  late final CallFilesystemApi _filesystemApi;
   late final RealtimeService _realtimeService;
   late final RecorderService _recorderService;
   late final PlaybackService _playbackService;
   late final ToolRunner _toolRunner;
-  late final NotepadService _notepadService;
 
   /// Item IDs for function-call items that have already been dispatched
   /// (or are currently being executed). Prevents double-dispatch.
   final Set<String> _dispatchedToolCallIds = <String>{};
 
-  /// Active file extensions from currently open files, used for dynamic tool
-  /// visibility computation.
-  Set<String> _currentActiveExtensions = <String>{};
-
   StreamSubscription<RealtimeThread>? _threadSubscription;
   StreamSubscription<void>? _assistantAudioCompletedSubscription;
-
-  final StreamController<List<Map<String, String>>> _openFilesController =
-      StreamController<List<Map<String, String>>>.broadcast();
+  StreamSubscription<List<ActiveFile>>? _activeFilesSubscription;
 
   CallState _state = CallState.uninitialized;
 
@@ -61,8 +67,13 @@ class CallService {
 
   PlaybackService get playbackService => _playbackService;
 
-  Stream<List<Map<String, String>>> get openFilesStream =>
-      _openFilesController.stream;
+  NotepadService get notepadService => _notepadService;
+
+  /// Stream of active files for UI.
+  ///
+  /// Re-exposes NotepadService.activeFiles for UI compatibility.
+  Stream<List<ActiveFile>> get activeFilesStream =>
+      _notepadService.activeFiles;
 
   Future<void> startCall() async {
     if (_state != CallState.uninitialized) {
@@ -79,42 +90,54 @@ class CallService {
   }
 
   Future<void> _initialize() async {
+    // 1. Initialize VFS
+    _vfs = VirtualFilesystemService(_filesystemRepository);
+    await _vfs.initialize();
+
+    // 2. Initialize NotepadService
+    _notepadService = NotepadService(_vfs);
+
+    // 3. Initialize CallFilesystemApi (adapter to NotepadService)
+    _filesystemApi = CallFilesystemApi(notepadService: _notepadService);
+
+    // 4. Initialize RealtimeService, RecorderService, PlaybackService
     _realtimeService = RealtimeService(voiceAgent: voiceAgent);
     _recorderService = RecorderService();
     _playbackService = PlaybackService();
 
+    // 5. Initialize ToolRunner with dependencies
     _toolRunner = ToolRunner(
-      filesystemRepository: _filesystemRepository,
-      onActiveFilesChanged: _onActiveFilesChanged,
-      callService: this,
+      filesystemApi: _filesystemApi,
+      callApi: CallControlApi(callService: this),
     );
 
-    _notepadService = NotepadService();
-
+    // 6. Start all services
     await Future.wait<void>([
       _realtimeService.start(),
       _recorderService.start(),
       _playbackService.start(),
+      _notepadService.start(),
       _toolRunner.start(
         enabledToolKeys: Set<String>.from(voiceAgent.enabledTools),
       ),
-      _notepadService.start(),
     ]);
+
+    // 7. Subscribe to activeFiles stream and update tool registration
+    _activeFilesSubscription =
+        _notepadService.activeFiles.listen(_onActiveFilesChanged);
   }
 
   /// Register tools with the model and start watching for function calls.
   Future<void> _startCall() async {
     // 1. Register only tools whose activation matches the current active
     //    extension set (initially empty, so only always-available tools).
-    _currentActiveExtensions = <String>{};
-    final initialDefinitions = _toolRunner.enabledDefinitions.where((d) {
-      return d.activation.isEnabledForExtensions(_currentActiveExtensions);
-    }).toList();
+    final initialDefinitions = _toolRunner.computeAvailableTools(<String>{});
 
     await _realtimeService.registerTools(initialDefinitions);
     await _recorderService.startRecordingSession();
     await _realtimeService.bindAudioInput(_recorderService.audioStream);
-    await _playbackService.bindInputStream(_realtimeService.assistantAudioStream);
+    await _playbackService
+        .bindInputStream(_realtimeService.assistantAudioStream);
 
     // 2. Subscribe to thread updates and watch for completed function calls.
     _threadSubscription =
@@ -184,43 +207,24 @@ class CallService {
     }
   }
 
-  /// Called by [CallFilesystemApi] whenever the active file set changes.
+  /// Called whenever active files change via NotepadService stream.
   ///
-  /// Emits to UI and recomputes visible tool sets based on active file
-  /// extensions.
-  void _onActiveFilesChanged(List<Map<String, String>> activeFiles) {
-    // Emit to UI
-    if (!_openFilesController.isClosed) {
-      _openFilesController.add(activeFiles);
-    }
-
-    // Recompute tool visibility based on active file extensions
-    final newExtensions = activeFiles
-        .map((f) =>
-            VirtualFile(path: f['path']!, content: '').extension.toLowerCase())
+  /// Recomputes visible tool sets based on active file extensions and
+  /// re-registers tools with the model.
+  void _onActiveFilesChanged(List<ActiveFile> activeFiles) {
+    // Extract extensions from active files
+    final extensions = activeFiles
+        .map((file) => file.extension.toLowerCase())
         .where((ext) => ext.isNotEmpty)
         .toSet();
 
-    if (!_sameStringSet(_currentActiveExtensions, newExtensions)) {
-      _currentActiveExtensions = newExtensions;
-      unawaited(_refreshToolRegistration());
+    // Compute available tools based on extensions
+    final definitions = _toolRunner.computeAvailableTools(extensions);
+
+    // Re-register tools with the model
+    if (_state == CallState.active) {
+      unawaited(_realtimeService.registerTools(definitions));
     }
-  }
-
-  /// Re-register tools with the model based on current active file extensions.
-  Future<void> _refreshToolRegistration() async {
-    if (_state != CallState.active) return;
-
-    final definitions = _toolRunner.enabledDefinitions.where((d) {
-      return d.activation.isEnabledForExtensions(_currentActiveExtensions);
-    }).toList();
-
-    await _realtimeService.registerTools(definitions);
-  }
-
-  bool _sameStringSet(Set<String> a, Set<String> b) {
-    if (a.length != b.length) return false;
-    return a.every(b.contains);
   }
 
   Future<void> endCall({String? endContext}) async {
@@ -229,6 +233,13 @@ class CallService {
     }
 
     _state = CallState.disposing;
+
+    // Persist all active files before cleanup
+    await _notepadService.persistAll();
+
+    // Export session tabs (could be used for session saving)
+    final sessionTabs = _notepadService.exportSessionTabs();
+    // TODO: Save sessionTabs to CallSession when session repository is wired
 
     await _dispose();
 
@@ -240,11 +251,12 @@ class CallService {
     _threadSubscription = null;
     await _assistantAudioCompletedSubscription?.cancel();
     _assistantAudioCompletedSubscription = null;
+    await _activeFilesSubscription?.cancel();
+    _activeFilesSubscription = null;
     _dispatchedToolCallIds.clear();
     await _realtimeService.unbindAudioInput();
     await _playbackService.unbindInputStream();
     await _recorderService.stopRecordingSession();
-    await _openFilesController.close();
 
     await Future.wait<void>([
       _realtimeService.dispose(),
@@ -255,4 +267,3 @@ class CallService {
     ]);
   }
 }
-

@@ -10,7 +10,7 @@ import 'package:vagina/interfaces/config_repository.dart';
 import 'package:vagina/interfaces/speed_dial_repository.dart';
 import 'package:vagina/models/call_session.dart';
 import 'package:vagina/models/chat_message.dart';
-import 'package:vagina/models/open_file_state.dart';
+import 'package:vagina/models/active_file.dart';
 import 'package:vagina/models/speed_dial.dart';
 import 'package:vagina/models/virtual_file.dart';
 import 'package:vagina/services/tools_runtime/tool.dart';
@@ -77,8 +77,8 @@ class CallService {
       StreamController<String>.broadcast();
   final StreamController<String> _sessionSavedController =
       StreamController<String>.broadcast();
-  final StreamController<List<OpenFileState>> _openFilesController =
-      StreamController<List<OpenFileState>>.broadcast();
+  final StreamController<List<ActiveFile>> _openFilesController =
+      StreamController<List<ActiveFile>>.broadcast();
 
   CallState _currentState = CallState.idle;
   int _callDuration = 0;
@@ -93,7 +93,7 @@ class CallService {
   Set<String> _textVisibleToolKeys = <String>{};
   bool _hasSyncedVoiceTools = false;
   bool _hasSyncedTextTools = false;
-  List<OpenFileState> _openFiles = const [];
+  List<ActiveFile> _openFiles = const [];
   bool _isRefreshingToolset = false;
   bool _toolsetRefreshQueued = false;
 
@@ -141,14 +141,14 @@ class CallService {
   Stream<List<ChatMessage>> get chatStream => _chatManager.chatStream;
 
   /// Stream of active/open file state for the current call.
-  Stream<List<OpenFileState>> get openFilesStream =>
+  Stream<List<ActiveFile>> get openFilesStream =>
       _openFilesController.stream;
 
   /// Get current chat messages
   List<ChatMessage> get chatMessages => _chatManager.chatMessages;
 
   /// Current active/open files for the call.
-  List<OpenFileState> get openFiles => List<OpenFileState>.from(_openFiles);
+  List<ActiveFile> get openFiles => List<ActiveFile>.from(_openFiles);
 
   /// Current call duration in seconds
   int get callDuration => _callDuration;
@@ -598,7 +598,7 @@ class CallService {
   bool onActiveFilesChanged(List<Map<String, String>> activeFiles) {
     final previousPaths = _openFiles.map((file) => file.path).toSet();
     final next = activeFiles
-        .map((entry) => OpenFileState(
+        .map((entry) => ActiveFile(
               path: entry['path'] ?? '',
               content: entry['content'] ?? '',
             ))
@@ -608,7 +608,7 @@ class CallService {
 
     _openFiles = next;
     if (!_openFilesController.isClosed) {
-      _openFilesController.add(List<OpenFileState>.from(_openFiles));
+      _openFilesController.add(List<ActiveFile>.from(_openFiles));
     }
     return !_sameStringSet(previousPaths, nextPaths);
   }
