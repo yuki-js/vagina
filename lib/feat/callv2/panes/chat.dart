@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 
@@ -125,6 +126,22 @@ class _ChatPaneState extends State<ChatPane> {
     }
   }
 
+  void _showToolDetailsSheet(RealtimeThreadItem item) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppTheme.surfaceColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => _ToolDetailsSheet(
+        itemId: item.id,
+        initialItems: _items,
+        realtimeService: _realtimeService,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -151,6 +168,7 @@ class _ChatPaneState extends State<ChatPane> {
                         _ChatMessageList(
                           items: _items,
                           scrollController: _scrollController,
+                          onToolTap: _showToolDetailsSheet,
                         ),
                         if (_showScrollToBottom)
                           Positioned(
@@ -250,37 +268,17 @@ class _ChatHeader extends StatelessWidget {
 class _ChatMessageList extends StatelessWidget {
   final List<RealtimeThreadItem> items;
   final ScrollController scrollController;
+  final ValueChanged<RealtimeThreadItem> onToolTap;
 
   const _ChatMessageList({
     required this.items,
     required this.scrollController,
+    required this.onToolTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    // 出力を同じcallIdの最初の未解決tool callへ順番に対応付ける。
-    // callIdの重複があっても、1つのtool outputで複数のtool callを
-    // 完了扱いにしないための one-to-one マッチング。
-    final matchedCallIndices = <int>{};
-    final pendingCallIndicesByCallId = <String, List<int>>{};
-    for (int i = 0; i < items.length; i++) {
-      final item = items[i];
-      if (item.type == RealtimeThreadItemType.functionCall &&
-          item.callId != null) {
-        pendingCallIndicesByCallId
-            .putIfAbsent(item.callId!, () => <int>[])
-            .add(i);
-      }
-
-      if (item.type == RealtimeThreadItemType.functionCallOutput &&
-          item.callId != null &&
-          item.status == RealtimeThreadItemStatus.completed) {
-        final pendingCalls = pendingCallIndicesByCallId[item.callId!];
-        if (pendingCalls != null && pendingCalls.isNotEmpty) {
-          matchedCallIndices.add(pendingCalls.removeAt(0));
-        }
-      }
-    }
+    final matchedToolOutputIndices = _matchCompletedToolOutputIndices(items);
 
     return ListView.builder(
       controller: scrollController,
@@ -293,7 +291,8 @@ class _ChatMessageList extends StatelessWidget {
         if (item.type == RealtimeThreadItemType.functionCall) {
           return _ToolCallBubble(
             item: item,
-            hasCompletedOutput: matchedCallIndices.contains(index),
+            hasCompletedOutput: matchedToolOutputIndices.containsKey(index),
+            onTap: () => onToolTap(item),
           );
         }
 
@@ -313,10 +312,12 @@ class _ChatMessageList extends StatelessWidget {
 class _ToolCallBubble extends StatelessWidget {
   final RealtimeThreadItem item;
   final bool hasCompletedOutput;
+  final VoidCallback onTap;
 
   const _ToolCallBubble({
     required this.item,
     required this.hasCompletedOutput,
+    required this.onTap,
   });
 
   bool get _isActive {
@@ -345,6 +346,7 @@ class _ToolCallBubble extends StatelessWidget {
             icon: Icons.build,
             label: item.name ?? 'tool_call',
             active: _isActive,
+            onTap: onTap,
           ),
         ],
       ),
@@ -469,56 +471,404 @@ class _ToolBadge extends StatelessWidget {
   final IconData icon;
   final String label;
   final bool active;
+  final VoidCallback onTap;
 
   const _ToolBadge({
     required this.icon,
     required this.label,
     required this.active,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final color = AppTheme.secondaryColor;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: color.withValues(alpha: 0.25),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: color.withValues(alpha: 0.25),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 12, color: color),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                color: color,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(width: 4),
+            if (active)
+              SizedBox(
+                width: 10,
+                height: 10,
+                child: CircularProgressIndicator(
+                  strokeWidth: 1.5,
+                  color: color,
+                ),
+              )
+            else
+              Icon(
+                Icons.chevron_right,
+                size: 12,
+                color: color.withValues(alpha: 0.7),
+              ),
+          ],
         ),
       ),
-      child: Row(
+    );
+  }
+}
+
+Map<int, int> _matchCompletedToolOutputIndices(List<RealtimeThreadItem> items) {
+  final matchedToolOutputIndices = <int, int>{};
+  final pendingCallIndicesByCallId = <String, List<int>>{};
+
+  for (int i = 0; i < items.length; i++) {
+    final item = items[i];
+    if (item.type == RealtimeThreadItemType.functionCall &&
+        item.callId != null) {
+      pendingCallIndicesByCallId
+          .putIfAbsent(item.callId!, () => <int>[])
+          .add(i);
+    }
+
+    if (item.type == RealtimeThreadItemType.functionCallOutput &&
+        item.callId != null) {
+      final pendingCalls = pendingCallIndicesByCallId[item.callId!];
+      if (pendingCalls != null && pendingCalls.isNotEmpty) {
+        matchedToolOutputIndices[pendingCalls.removeAt(0)] = i;
+      }
+    }
+  }
+
+  return matchedToolOutputIndices;
+}
+
+_ResolvedToolCallDetails? _resolveToolCallDetails(
+  List<RealtimeThreadItem> items,
+  String itemId,
+) {
+  int? targetIndex;
+  for (int i = 0; i < items.length; i++) {
+    if (items[i].id == itemId) {
+      targetIndex = i;
+      break;
+    }
+  }
+
+  if (targetIndex == null) {
+    return null;
+  }
+
+  final callItem = items[targetIndex];
+  if (callItem.type != RealtimeThreadItemType.functionCall) {
+    return null;
+  }
+
+  final matchedToolOutputIndices = _matchCompletedToolOutputIndices(items);
+  final outputIndex = matchedToolOutputIndices[targetIndex];
+
+  return _ResolvedToolCallDetails(
+    callItem: callItem,
+    outputItem: outputIndex == null ? null : items[outputIndex],
+    hasCompletedOutput: outputIndex != null,
+  );
+}
+
+final class _ResolvedToolCallDetails {
+  final RealtimeThreadItem callItem;
+  final RealtimeThreadItem? outputItem;
+  final bool hasCompletedOutput;
+
+  const _ResolvedToolCallDetails({
+    required this.callItem,
+    required this.outputItem,
+    required this.hasCompletedOutput,
+  });
+
+  String get title => callItem.name ?? 'tool_call';
+
+  String? get arguments => callItem.arguments;
+
+  bool get hasArguments => (arguments ?? '').isNotEmpty;
+
+  String? get result => outputItem?.output ?? callItem.output;
+
+  bool get hasResult => (result ?? '').isNotEmpty;
+
+  bool get isRunning =>
+      !hasCompletedOutput &&
+      callItem.status != RealtimeThreadItemStatus.incomplete;
+
+  bool get isError => _hasErrorPayload(result);
+
+  bool get isCancelled =>
+      !hasCompletedOutput &&
+      callItem.status == RealtimeThreadItemStatus.incomplete &&
+      !isError;
+
+  Color get statusColor {
+    if (isError) {
+      return Colors.red;
+    }
+    if (isCancelled) {
+      return Colors.grey;
+    }
+    if (hasCompletedOutput) {
+      return Colors.green;
+    }
+    return AppTheme.secondaryColor;
+  }
+
+  IconData get statusIcon {
+    if (isError) {
+      return Icons.error;
+    }
+    if (isCancelled) {
+      return Icons.cancel;
+    }
+    if (hasCompletedOutput) {
+      return Icons.check_circle;
+    }
+    return Icons.build;
+  }
+
+  bool get showSpinner => isRunning;
+
+  static bool _hasErrorPayload(String? value) {
+    if (value == null || value.isEmpty) {
+      return false;
+    }
+
+    try {
+      final decoded = jsonDecode(value);
+      return decoded is Map<String, dynamic> && decoded['error'] != null;
+    } catch (_) {
+      return false;
+    }
+  }
+}
+
+class _ToolDetailsSheet extends StatelessWidget {
+  final String itemId;
+  final List<RealtimeThreadItem> initialItems;
+  final RealtimeService? realtimeService;
+
+  const _ToolDetailsSheet({
+    required this.itemId,
+    required this.initialItems,
+    required this.realtimeService,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final service = realtimeService;
+    if (service == null) {
+      return _buildContent(context, initialItems);
+    }
+
+    return StreamBuilder<RealtimeThread>(
+      stream: service.threadUpdates,
+      initialData: service.thread,
+      builder: (context, snapshot) {
+        final items = snapshot.data?.items ?? initialItems;
+        return _buildContent(context, items);
+      },
+    );
+  }
+
+  Widget _buildContent(BuildContext context, List<RealtimeThreadItem> items) {
+    final details = _resolveToolCallDetails(items, itemId);
+    if (details == null) {
+      return _buildErrorState(context, 'Tool call not found');
+    }
+
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.85,
+      ),
+      child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 12, color: color),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              color: color,
-              fontWeight: FontWeight.w500,
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+            child: _ToolDetailsHeader(details: details),
+          ),
+          const SizedBox(height: 16),
+          Flexible(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _ToolDetailsSection(
+                    title: '引数',
+                    child: _ToolDetailsCodeBlock(
+                      text: details.hasArguments ? details.arguments! : '—',
+                      isPlaceholder: !details.hasArguments,
+                    ),
+                  ),
+                  if (details.hasResult) ...[
+                    const SizedBox(height: 12),
+                    _ToolDetailsSection(
+                      title: details.isError ? 'エラー' : '結果',
+                      child: _ToolDetailsCodeBlock(
+                        text: details.result!,
+                        isError: details.isError,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
           ),
-          const SizedBox(width: 4),
-          if (active)
-            SizedBox(
-              width: 10,
-              height: 10,
-              child: CircularProgressIndicator(
-                strokeWidth: 1.5,
-                color: color,
-              ),
-            )
-          else
-            Icon(
-              Icons.chevron_right,
-              size: 12,
-              color: color.withValues(alpha: 0.7),
-            ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState(BuildContext context, String message) {
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.85,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Center(
+          child: Text(
+            message,
+            style: const TextStyle(
+              fontSize: 14,
+              color: AppTheme.textSecondary,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ToolDetailsHeader extends StatelessWidget {
+  final _ResolvedToolCallDetails details;
+
+  const _ToolDetailsHeader({required this.details});
+
+  @override
+  Widget build(BuildContext context) {
+    final statusColor = details.statusColor;
+
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: statusColor.withValues(alpha: 0.2),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(
+            details.statusIcon,
+            color: statusColor,
+            size: 20,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            details.title,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.textPrimary,
+            ),
+          ),
+        ),
+        if (details.showSpinner)
+          const SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: AppTheme.secondaryColor,
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _ToolDetailsSection extends StatelessWidget {
+  final String title;
+  final Widget child;
+
+  const _ToolDetailsSection({
+    required this.title,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '$title:',
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: AppTheme.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 4),
+        child,
+      ],
+    );
+  }
+}
+
+class _ToolDetailsCodeBlock extends StatelessWidget {
+  final String text;
+  final bool isPlaceholder;
+  final bool isError;
+
+  const _ToolDetailsCodeBlock({
+    required this.text,
+    this.isPlaceholder = false,
+    this.isError = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isError
+            ? Colors.red.withValues(alpha: 0.1)
+            : AppTheme.backgroundStart,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: SelectableText(
+        text,
+        style: TextStyle(
+          fontSize: 13,
+          fontFamily: 'monospace',
+          fontStyle: isPlaceholder ? FontStyle.italic : FontStyle.normal,
+          color: isPlaceholder
+              ? AppTheme.textSecondary
+              : (isError ? Colors.red : AppTheme.textPrimary),
+        ),
       ),
     );
   }
