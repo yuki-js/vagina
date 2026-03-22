@@ -100,6 +100,7 @@ class _CallScreenState extends State<CallScreen> {
             left: ChatPane(
               onBackPressed: _layoutController.goToCenter,
               hideBackButton: isWideLayout,
+              callService: _callService,
             ),
             center: CallPane(
               speedDial: widget.speedDial,

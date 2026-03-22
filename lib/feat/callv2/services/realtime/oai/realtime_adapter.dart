@@ -103,6 +103,40 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
           _emitThreadUpdate();
         }
       }),
+      _client.conversationItemInputAudioTranscriptionDeltaEvents.listen((event) {
+        final itemId = event.itemId;
+        final delta = event.delta;
+        if (itemId == null || itemId.isEmpty || delta == null || delta.isEmpty) {
+          return;
+        }
+        final item = _ensureUserMessageItem(itemId);
+        final audioPart = _findOrCreateAudioPart(
+          item,
+          contentIndex: event.contentIndex,
+        );
+        audioPart.appendTranscriptDelta(delta);
+        _emitThreadUpdate();
+      }),
+      _client.conversationItemInputAudioTranscriptionCompletedEvents.listen((event) {
+        final itemId = event.itemId;
+        final transcript = event.transcript;
+        if (itemId == null ||
+            itemId.isEmpty ||
+            transcript == null ||
+            transcript.isEmpty) {
+          return;
+        }
+        final item = _ensureUserMessageItem(itemId);
+        final audioPart = _findOrCreateAudioPart(
+          item,
+          contentIndex: event.contentIndex,
+        );
+        audioPart
+          ..replaceTranscript(transcript)
+          ..markDone();
+        item.status = RealtimeThreadItemStatus.completed;
+        _emitThreadUpdate();
+      }),
       _client.responseOutputItemAddedEvents.listen((event) {
         _upsertConversationItem(event.item);
         _emitThreadUpdate();
@@ -512,6 +546,22 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
     for (final part in conversationItem.content) {
       _mergeContentPart(item, part, isDone: true);
     }
+    _thread.addItem(item);
+    return item;
+  }
+
+  RealtimeThreadItem _ensureUserMessageItem(String itemId) {
+    final existing = _thread.findItem(itemId);
+    if (existing != null) {
+      existing.role ??= RealtimeThreadItemRole.user;
+      return existing;
+    }
+    final item = RealtimeThreadItem(
+      id: itemId,
+      type: RealtimeThreadItemType.message,
+      role: RealtimeThreadItemRole.user,
+      status: RealtimeThreadItemStatus.inProgress,
+    );
     _thread.addItem(item);
     return item;
   }

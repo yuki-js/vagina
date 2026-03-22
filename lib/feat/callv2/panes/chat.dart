@@ -1,92 +1,22 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/feat/callv2/models/realtime/realtime_thread.dart';
+import 'package:vagina/feat/callv2/services/call_service.dart';
 import 'package:vagina/feat/callv2/services/realtime_service.dart';
-
-final RealtimeThread previewChatThread = RealtimeThread(
-  id: 'preview_thread',
-  conversationId: 'preview_conversation',
-  items: [
-    RealtimeThreadItem(
-      id: 'user_1',
-      type: RealtimeThreadItemType.message,
-      role: RealtimeThreadItemRole.user,
-      status: RealtimeThreadItemStatus.completed,
-      content: [
-        RealtimeThreadTextPart(
-          text: '来週の出張準備を確認したい。移動、ホテル、持ち物を整理して。',
-          isDone: true,
-        ),
-      ],
-    ),
-    RealtimeThreadItem(
-      id: 'assistant_1',
-      type: RealtimeThreadItemType.message,
-      role: RealtimeThreadItemRole.assistant,
-      status: RealtimeThreadItemStatus.completed,
-      content: [
-        RealtimeThreadTextPart(
-          text: '了解です。まずは現在時刻を確認して、出発までの動線を組み立てます。',
-          isDone: true,
-        ),
-      ],
-    ),
-    RealtimeThreadItem(
-      id: 'tool_call_1',
-      type: RealtimeThreadItemType.functionCall,
-      role: RealtimeThreadItemRole.assistant,
-      status: RealtimeThreadItemStatus.completed,
-      callId: 'call_current_time',
-      name: 'get_current_time',
-      arguments: '{"timezone":"Asia/Tokyo"}',
-    ),
-    RealtimeThreadItem(
-      id: 'tool_output_1',
-      type: RealtimeThreadItemType.functionCallOutput,
-      status: RealtimeThreadItemStatus.completed,
-      callId: 'call_current_time',
-      output: '{"time":"2026-03-22T10:00:00+09:00"}',
-    ),
-    RealtimeThreadItem(
-      id: 'assistant_2',
-      type: RealtimeThreadItemType.message,
-      role: RealtimeThreadItemRole.assistant,
-      status: RealtimeThreadItemStatus.inProgress,
-      content: [
-        RealtimeThreadAudioPart(
-          audioChunks: ['preview-audio'],
-          transcript: '現在は土曜日の午前10時です。まずフライト時刻とチェックイン条件を確認しましょう。',
-          isDone: false,
-        ),
-        RealtimeThreadTextPart(
-          text: '続いてホテル予約と持ち物チェックリストを整理します。',
-          isDone: false,
-        ),
-      ],
-    ),
-    RealtimeThreadItem(
-      id: 'tool_call_2',
-      type: RealtimeThreadItemType.functionCall,
-      role: RealtimeThreadItemRole.assistant,
-      status: RealtimeThreadItemStatus.completed,
-      callId: 'call_current_time',
-      name: 'get_current_time',
-      arguments: '{"timezone":"Asia/Tokyo"}',
-    ),
-  ],
-);
 
 class ChatPane extends StatefulWidget {
   final VoidCallback onBackPressed;
   final bool hideBackButton;
-  final RealtimeService? realtimeService;
+  final CallService? callService;
 
   const ChatPane({
     super.key,
     required this.onBackPressed,
     this.hideBackButton = false,
-    this.realtimeService,
+    this.callService,
   });
 
   @override
@@ -95,40 +25,51 @@ class ChatPane extends StatefulWidget {
 
 class _ChatPaneState extends State<ChatPane> {
   final TextEditingController _textController = TextEditingController();
+  StreamSubscription<RealtimeThread>? _threadSubscription;
   List<RealtimeThreadItem> _items = const <RealtimeThreadItem>[];
+
+  RealtimeService? get _realtimeService => widget.callService?.realtimeService;
 
   @override
   void initState() {
     super.initState();
+    _bindRealtimeService(_realtimeService);
+  }
 
-    final service = widget.realtimeService;
-    if (service != null) {
-      // Use realtime service thread
-      _items = service.thread.items;
-
-      // Listen to thread updates
-      service.threadUpdates.listen((thread) {
-        if (mounted) {
-          setState(() {
-            _items = thread.items;
-          });
-        }
-      });
-    } else {
-      // Use preview data
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) {
-          return;
-        }
-        setState(() {
-          _items = List<RealtimeThreadItem>.from(previewChatThread.items);
-        });
-      });
+  @override
+  void didUpdateWidget(covariant ChatPane oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.callService == widget.callService) {
+      return;
     }
+    _bindRealtimeService(_realtimeService);
+  }
+
+  void _bindRealtimeService(RealtimeService? service) {
+    _threadSubscription?.cancel();
+    _threadSubscription = null;
+
+    if (service == null) {
+      setState(() {
+        _items = const <RealtimeThreadItem>[];
+      });
+      return;
+    }
+
+    _items = service.thread.items;
+    _threadSubscription = service.threadUpdates.listen((thread) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _items = thread.items;
+      });
+    });
   }
 
   @override
   void dispose() {
+    _threadSubscription?.cancel();
     _textController.dispose();
     super.dispose();
   }
@@ -148,7 +89,7 @@ class _ChatPaneState extends State<ChatPane> {
         ),
         _ChatInputShell(
           controller: _textController,
-          enabled: widget.realtimeService?.isConnected ?? false,
+          enabled: _realtimeService?.isConnected ?? false,
           onSend: _handleSendMessage,
         ),
       ],
@@ -161,7 +102,7 @@ class _ChatPaneState extends State<ChatPane> {
       return;
     }
 
-    final service = widget.realtimeService;
+    final service = _realtimeService;
     if (service == null || !service.isConnected) {
       return;
     }
@@ -412,6 +353,17 @@ class _RealtimeChatBubble extends StatelessWidget {
             ),
           ),
         );
+      } else if (part is RealtimeThreadAudioPart &&
+          (part.transcript?.isNotEmpty ?? false)) {
+        widgets.add(
+          SelectableText(
+            part.transcript!,
+            style: TextStyle(
+              color: _textColor,
+              fontSize: 15,
+            ),
+          ),
+        );
       } else if (part is RealtimeThreadImagePart) {
         widgets.add(
           _AttachmentBadge(
@@ -421,7 +373,6 @@ class _RealtimeChatBubble extends StatelessWidget {
           ),
         );
       }
-      // AudioPartは表示しない（transcript == textpart.text なので冗長）
     }
 
     return widgets;
