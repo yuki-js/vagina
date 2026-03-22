@@ -25,14 +25,18 @@ class ChatPane extends StatefulWidget {
 
 class _ChatPaneState extends State<ChatPane> {
   final TextEditingController _textController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
   StreamSubscription<RealtimeThread>? _threadSubscription;
   List<RealtimeThreadItem> _items = const <RealtimeThreadItem>[];
+  bool _isAtBottom = true;
+  bool _showScrollToBottom = false;
 
   RealtimeService? get _realtimeService => widget.callService?.realtimeService;
 
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScrollChanged);
     _bindRealtimeService(_realtimeService);
   }
 
@@ -70,8 +74,39 @@ class _ChatPaneState extends State<ChatPane> {
   @override
   void dispose() {
     _threadSubscription?.cancel();
+    _scrollController.removeListener(_onScrollChanged);
+    _scrollController.dispose();
     _textController.dispose();
     super.dispose();
+  }
+
+  void _onScrollChanged() {
+    if (!_scrollController.hasClients) {
+      return;
+    }
+
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    final currentScroll = _scrollController.offset;
+    final isAtBottom = currentScroll >= maxScroll - 50;
+    final shouldShowScrollButton = !isAtBottom;
+
+    if (isAtBottom != _isAtBottom ||
+        shouldShowScrollButton != _showScrollToBottom) {
+      setState(() {
+        _isAtBottom = isAtBottom;
+        _showScrollToBottom = shouldShowScrollButton;
+      });
+    }
+  }
+
+  void _scrollToBottom() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
+      );
+    }
   }
 
   @override
@@ -85,7 +120,37 @@ class _ChatPaneState extends State<ChatPane> {
         Expanded(
           child: _items.isEmpty
               ? const _ChatEmptyState()
-              : _ChatMessageList(items: _items),
+              : Builder(
+                  builder: (context) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (_isAtBottom && _scrollController.hasClients) {
+                        _scrollController.jumpTo(
+                          _scrollController.position.maxScrollExtent,
+                        );
+                      }
+                    });
+
+                    return Stack(
+                      children: [
+                        _ChatMessageList(
+                          items: _items,
+                          scrollController: _scrollController,
+                        ),
+                        if (_showScrollToBottom)
+                          Positioned(
+                            bottom: 8,
+                            left: 0,
+                            right: 0,
+                            child: Center(
+                              child: _ScrollToBottomButton(
+                                onPressed: _scrollToBottom,
+                              ),
+                            ),
+                          ),
+                      ],
+                    );
+                  },
+                ),
         ),
         _ChatInputShell(
           controller: _textController,
@@ -168,8 +233,12 @@ class _ChatHeader extends StatelessWidget {
 
 class _ChatMessageList extends StatelessWidget {
   final List<RealtimeThreadItem> items;
+  final ScrollController scrollController;
 
-  const _ChatMessageList({required this.items});
+  const _ChatMessageList({
+    required this.items,
+    required this.scrollController,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -198,6 +267,7 @@ class _ChatMessageList extends StatelessWidget {
     }
 
     return ListView.builder(
+      controller: scrollController,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       itemCount: items.length,
       itemBuilder: (context, index) {
@@ -510,6 +580,51 @@ class _TypingIndicator extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _ScrollToBottomButton extends StatelessWidget {
+  final VoidCallback onPressed;
+
+  const _ScrollToBottomButton({required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onPressed,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: AppTheme.surfaceColor.withValues(alpha: 0.9),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.2),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.keyboard_arrow_down,
+              size: 16,
+              color: AppTheme.textSecondary.withValues(alpha: 0.7),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              '下に戻る',
+              style: TextStyle(
+                fontSize: 12,
+                color: AppTheme.textSecondary.withValues(alpha: 0.7),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
