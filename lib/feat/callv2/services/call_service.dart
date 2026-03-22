@@ -83,6 +83,13 @@ class CallService {
 
   NotepadService get notepadService => _notepadService;
 
+  RealtimeService? get realtimeService {
+    if (state == CallState.uninitialized || state == CallState.disposed) {
+      return null;
+    }
+    return _realtimeService;
+  }
+
   /// Stream of active files for UI.
   ///
   /// Re-exposes NotepadService.activeFiles for UI compatibility.
@@ -159,6 +166,15 @@ class CallService {
         _realtimeService.assistantAudioCompleted.listen((_) {
       unawaited(_playbackService.markResponseComplete());
     });
+  }
+
+  Future<void> sendTextMessage(String text) async {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty || state != CallState.active) {
+      return;
+    }
+
+    await _realtimeService.sendText(trimmed);
   }
 
   /// Called on every thread mutation. Scans for completed function-call items
