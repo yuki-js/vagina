@@ -30,6 +30,8 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
       StreamController<Uint8List>.broadcast();
   final StreamController<void> _assistantAudioCompletedController =
       StreamController<void>.broadcast();
+  final StreamController<bool> _userSpeakingStateController =
+      StreamController<bool>.broadcast();
   final List<StreamSubscription<dynamic>> _subscriptions =
       <StreamSubscription<dynamic>>[];
 
@@ -37,6 +39,7 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
   List<ToolDefinition> _tools = const <ToolDefinition>[];
   int _localIdCounter = 0;
   bool _disposed = false;
+  bool _isUserSpeaking = false;
 
   OaiRealtimeAdapter({OaiRealtimeClient? client, String? threadId})
       : _client = client ?? OaiRealtimeClient(),
@@ -141,6 +144,12 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
           ..markDone();
         item.status = RealtimeThreadItemStatus.completed;
         _emitThreadUpdate();
+      }),
+      _client.inputAudioBufferSpeechStartedEvents.listen((_) {
+        _setUserSpeaking(true);
+      }),
+      _client.inputAudioBufferSpeechStoppedEvents.listen((_) {
+        _setUserSpeaking(false);
       }),
       _client.responseOutputItemAddedEvents.listen((event) {
         _upsertConversationItem(event.item);
@@ -338,6 +347,12 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
       _assistantAudioCompletedController.stream;
 
   @override
+  Stream<bool> get userSpeakingStates => _userSpeakingStateController.stream;
+
+  @override
+  bool get isUserSpeaking => _isUserSpeaking;
+
+  @override
   bool get isConnected => _client.isConnected;
 
   // ---------------------------------------------------------------------------
@@ -368,6 +383,7 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
   @override
   Future<void> disconnect() async {
     _ensureNotDisposed();
+    _setUserSpeaking(false);
     await _cancelAudioInput();
     await _client.disconnect();
   }
@@ -378,6 +394,7 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
       return;
     }
     _disposed = true;
+    _setUserSpeaking(false);
     await _cancelAudioInput();
     for (final subscription in _subscriptions) {
       await subscription.cancel();
@@ -388,6 +405,7 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
     await _errorController.close();
     await _assistantAudioController.close();
     await _assistantAudioCompletedController.close();
+    await _userSpeakingStateController.close();
   }
 
   // ---------------------------------------------------------------------------
@@ -521,6 +539,20 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
     _ensureNotDisposed();
     await _client.cancelResponse();
     await _client.clearOutputAudioBuffer();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Internal — speech state
+  // ---------------------------------------------------------------------------
+
+  void _setUserSpeaking(bool value) {
+    if (_isUserSpeaking == value) {
+      return;
+    }
+    _isUserSpeaking = value;
+    if (!_userSpeakingStateController.isClosed) {
+      _userSpeakingStateController.add(value);
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -776,7 +808,7 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
         'interrupt_response': true,
       },
       'tools': _tools.map((tool) => tool.toRealtimeJson()).toList(),
-      'tool_choice': 'auto',
+      'tool_choice': _tools.isEmpty ? 'none' : 'auto',
     };
   }
 

@@ -12,6 +12,7 @@ import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:record/record.dart';
 import 'package:record_platform_interface/record_platform_interface.dart';
 import 'package:taudio/taudio.dart';
+import 'package:vagina/core/config/app_config.dart';
 import 'package:vagina/feat/callv2/models/voice_agent_api_config.dart';
 import 'package:vagina/feat/callv2/models/voice_agent_info.dart';
 import 'package:vagina/feat/callv2/services/call_service.dart';
@@ -125,6 +126,77 @@ void main() {
       );
       expect(fakePlayerPlatform.startPlayerFromStreamCalls, 1);
       expect(service.state, CallState.active);
+    });
+
+    test('speech start interrupts playback and emits speaking state changes',
+        () async {
+      await service.startCall();
+      await harness.waitForCommand('session.update');
+      final realtimeService = service.realtimeService!;
+      final speakingStates = <bool>[];
+      final speakingStateSubscription =
+          realtimeService.userSpeakingStates.listen(speakingStates.add);
+      final assistantBytes = Uint8List(AppConfig.minAudioBufferSizeBeforeStart)
+        ..fillRange(0, AppConfig.minAudioBufferSizeBeforeStart, 7);
+
+      harness.sendEvent({
+        'type': 'response.output_audio.delta',
+        'event_id': 'evt_audio_delta_speech_interrupt',
+        'response_id': 'resp_speech_interrupt',
+        'item_id': 'assistant_item_speech_interrupt',
+        'output_index': 0,
+        'content_index': 0,
+        'delta': base64Encode(assistantBytes),
+      });
+      harness.sendEvent({
+        'type': 'response.output_audio.done',
+        'event_id': 'evt_audio_done_speech_interrupt',
+        'response_id': 'resp_speech_interrupt',
+        'item_id': 'assistant_item_speech_interrupt',
+        'output_index': 0,
+        'content_index': 0,
+      });
+
+      await _eventually(() {
+        expect(fakePlayerPlatform.startPlayerFromStreamCalls, 1);
+      });
+
+      final stopCallsBeforeSpeechStarted = fakePlayerPlatform.stopPlayerCalls;
+      harness.sendEvent({
+        'type': 'input_audio_buffer.speech_started',
+        'event_id': 'evt_speech_started',
+        'item_id': 'user_item_speech_started',
+        'audio_start_ms': 120,
+      });
+
+      await _eventually(() {
+        expect(
+          fakePlayerPlatform.stopPlayerCalls,
+          stopCallsBeforeSpeechStarted + 1,
+        );
+      });
+
+      final cancelCommand = await harness.waitForCommand('response.cancel');
+      expect(cancelCommand['type'], equals('response.cancel'));
+      final clearCommand =
+          await harness.waitForCommand('output_audio_buffer.clear');
+      expect(clearCommand['type'], equals('output_audio_buffer.clear'));
+      expect(realtimeService.isUserSpeaking, isTrue);
+      expect(speakingStates, contains(true));
+
+      harness.sendEvent({
+        'type': 'input_audio_buffer.speech_stopped',
+        'event_id': 'evt_speech_stopped',
+        'item_id': 'user_item_speech_started',
+        'audio_end_ms': 240,
+      });
+
+      await _eventually(() {
+        expect(realtimeService.isUserSpeaking, isFalse);
+      });
+      expect(speakingStates, containsAllInOrder(const <bool>[true, false]));
+
+      await speakingStateSubscription.cancel();
     });
   });
 }
@@ -317,6 +389,7 @@ final class _FakeFlutterSoundPlayerPlatform extends FlutterSoundPlayerPlatform
   final List<Uint8List> feedChunks = <Uint8List>[];
 
   int startPlayerFromStreamCalls = 0;
+  int stopPlayerCalls = 0;
 
   @override
   Future<bool> initPlugin() async => true;
@@ -358,6 +431,7 @@ final class _FakeFlutterSoundPlayerPlatform extends FlutterSoundPlayerPlatform
 
   @override
   Future<int> stopPlayer(FlutterSoundPlayerCallback callback) async {
+    stopPlayerCalls += 1;
     callback.stopPlayerCompleted(PlayerState.isStopped.index, true);
     return PlayerState.isStopped.index;
   }

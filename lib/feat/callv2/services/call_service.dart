@@ -53,6 +53,7 @@ class CallService {
 
   StreamSubscription<RealtimeThread>? _threadSubscription;
   StreamSubscription<void>? _assistantAudioCompletedSubscription;
+  StreamSubscription<bool>? _userSpeakingStateSubscription;
   StreamSubscription<List<ActiveFile>>? _activeFilesSubscription;
 
   final StreamController<CallState> _stateController =
@@ -178,6 +179,13 @@ class CallService {
         _realtimeService.assistantAudioCompleted.listen((_) {
       unawaited(_playbackService.markResponseComplete());
     });
+    _userSpeakingStateSubscription =
+        _realtimeService.userSpeakingStates.listen((isSpeaking) {
+      if (!isSpeaking) {
+        return;
+      }
+      unawaited(_interruptAssistantOutput());
+    });
   }
 
   Future<void> sendTextMessage(String text) async {
@@ -186,6 +194,7 @@ class CallService {
       return;
     }
 
+    await _interruptAssistantOutput();
     await _realtimeService.sendText(trimmed);
   }
 
@@ -206,6 +215,13 @@ class CallService {
       _dispatchedToolCallIds.add(item.id);
       // Fire and forget — errors are caught inside _executeTool.
       unawaited(_executeTool(item));
+    }
+  }
+
+  Future<void> _interruptAssistantOutput() async {
+    await _playbackService.interrupt();
+    if (_realtimeService.isConnected) {
+      await _realtimeService.interrupt();
     }
   }
 
@@ -329,6 +345,8 @@ class CallService {
     _threadSubscription = null;
     await _assistantAudioCompletedSubscription?.cancel();
     _assistantAudioCompletedSubscription = null;
+    await _userSpeakingStateSubscription?.cancel();
+    _userSpeakingStateSubscription = null;
     await _activeFilesSubscription?.cancel();
     _activeFilesSubscription = null;
     _dispatchedToolCallIds.clear();

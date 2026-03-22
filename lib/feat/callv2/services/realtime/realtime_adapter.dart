@@ -85,6 +85,12 @@ abstract interface class RealtimeAdapter {
   /// chunk delivery from response-boundary completion.
   Stream<void> get assistantAudioCompleted;
 
+  /// Emits the current VAD speaking state whenever it changes.
+  Stream<bool> get userSpeakingStates;
+
+  /// Whether VAD currently considers the user to be speaking.
+  bool get isUserSpeaking;
+
   // ---------------------------------------------------------------------------
   // Tool configuration
   // ---------------------------------------------------------------------------

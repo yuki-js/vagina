@@ -205,13 +205,13 @@ class _ChatPaneState extends State<ChatPane> {
       return;
     }
 
-    final service = _realtimeService;
-    if (service == null || !service.isConnected) {
+    final callService = widget.callService;
+    if (callService.state != CallState.active) {
       return;
     }
 
-    // Send text to realtime service
-    service.sendText(text);
+    // Send text through CallService to ensure interrupt logic is executed
+    callService.sendTextMessage(text);
     _textController.clear();
   }
 }

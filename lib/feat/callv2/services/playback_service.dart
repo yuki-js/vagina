@@ -269,14 +269,19 @@ final class PlaybackService {
       return;
     }
 
-    await _player.startPlayerFromStream(
-      codec: Codec.pcm16,
-      sampleRate: AppConfig.sampleRate,
-      numChannels: AppConfig.channels,
-      bufferSize: 8192,
-      interleaved: true,
-    );
     _playerStreaming = true;
+    try {
+      await _player.startPlayerFromStream(
+        codec: Codec.pcm16,
+        sampleRate: AppConfig.sampleRate,
+        numChannels: AppConfig.channels,
+        bufferSize: 8192,
+        interleaved: true,
+      );
+    } catch (_) {
+      _playerStreaming = false;
+      rethrow;
+    }
   }
 
   Future<void> _stopPlayerIfNeeded() async {

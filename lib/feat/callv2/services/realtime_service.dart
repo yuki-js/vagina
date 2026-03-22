@@ -80,6 +80,12 @@ final class RealtimeService {
   /// Completion signal for the current assistant audio response.
   Stream<void> get assistantAudioCompleted => _adapter.assistantAudioCompleted;
 
+  /// Emits the current VAD speaking state whenever it changes.
+  Stream<bool> get userSpeakingStates => _adapter.userSpeakingStates;
+
+  /// Whether VAD currently considers the user to be speaking.
+  bool get isUserSpeaking => _adapter.isUserSpeaking;
+
   // ---------------------------------------------------------------------------
   // Tool configuration
   // ---------------------------------------------------------------------------
