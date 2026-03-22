@@ -111,6 +111,9 @@ abstract interface class RealtimeAdapter {
   Future<String> sendFunctionOutput({
     required String callId,
     required String output,
+    RealtimeToolOutputDisposition disposition =
+        RealtimeToolOutputDisposition.success,
+    String? errorMessage,
   });
 
   // ---------------------------------------------------------------------------

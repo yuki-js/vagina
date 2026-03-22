@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/material.dart';
 
@@ -12,13 +11,13 @@ import 'package:vagina/feat/callv2/services/realtime_service.dart';
 class ChatPane extends StatefulWidget {
   final VoidCallback onBackPressed;
   final bool hideBackButton;
-  final CallService? callService;
+  final CallService callService;
 
   const ChatPane({
     super.key,
     required this.onBackPressed,
     this.hideBackButton = false,
-    this.callService,
+    required this.callService,
   });
 
   @override
@@ -35,8 +34,9 @@ class _ChatPaneState extends State<ChatPane> {
   bool _isConnected = false;
   bool _isAtBottom = true;
   bool _showScrollToBottom = false;
+  RealtimeService? _boundRealtimeService;
 
-  RealtimeService? get _realtimeService => widget.callService?.realtimeService;
+  RealtimeService? get _realtimeService => widget.callService.realtimeService;
 
   @override
   void initState() {
@@ -48,10 +48,13 @@ class _ChatPaneState extends State<ChatPane> {
   @override
   void didUpdateWidget(covariant ChatPane oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.callService == widget.callService) {
+
+    final realtimeService = _realtimeService;
+    if (identical(_boundRealtimeService, realtimeService)) {
       return;
     }
-    _bindRealtimeService(_realtimeService);
+
+    _bindRealtimeService(realtimeService);
     setState(() {});
   }
 
@@ -60,6 +63,7 @@ class _ChatPaneState extends State<ChatPane> {
     _threadSubscription = null;
     _connectionStateSubscription?.cancel();
     _connectionStateSubscription = null;
+    _boundRealtimeService = service;
 
     _items = service?.thread.items ?? const <RealtimeThreadItem>[];
     _isConnected = service?.isConnected ?? false;
@@ -290,8 +294,11 @@ class _ChatMessageList extends StatelessWidget {
         // ツール呼び出しはバッジで表示
         if (item.type == RealtimeThreadItemType.functionCall) {
           return _ToolCallBubble(
-            item: item,
-            hasCompletedOutput: matchedToolOutputIndices.containsKey(index),
+            details: _ResolvedToolCallDetails.fromThread(
+              items,
+              index,
+              matchedToolOutputIndices,
+            ),
             onTap: () => onToolTap(item),
           );
         }
@@ -310,28 +317,13 @@ class _ChatMessageList extends StatelessWidget {
 
 /// ツール呼び出しバッジ
 class _ToolCallBubble extends StatelessWidget {
-  final RealtimeThreadItem item;
-  final bool hasCompletedOutput;
+  final _ResolvedToolCallDetails details;
   final VoidCallback onTap;
 
   const _ToolCallBubble({
-    required this.item,
-    required this.hasCompletedOutput,
+    required this.details,
     required this.onTap,
   });
-
-  bool get _isActive {
-    // 出力が完了していればツール実行完了
-    if (hasCompletedOutput) {
-      return false;
-    }
-    // incompleteならエラー/キャンセル（非アクティブ）
-    if (item.status == RealtimeThreadItemStatus.incomplete) {
-      return false;
-    }
-    // それ以外は実行中（引数構築中 or ツール実行中）
-    return true;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -343,9 +335,10 @@ class _ToolCallBubble extends StatelessWidget {
           // アバター分のスペース（アシスタントメッセージと行頭を揃える）
           const SizedBox(width: 40), // 16 (radius) * 2 + 8 (spacing)
           _ToolBadge(
-            icon: Icons.build,
-            label: item.name ?? 'tool_call',
-            active: _isActive,
+            icon: details.badgeIcon,
+            label: details.title,
+            color: details.statusColor,
+            active: details.showSpinner,
             onTap: onTap,
           ),
         ],
@@ -470,20 +463,20 @@ class _RealtimeChatBubble extends StatelessWidget {
 class _ToolBadge extends StatelessWidget {
   final IconData icon;
   final String label;
+  final Color color;
   final bool active;
   final VoidCallback onTap;
 
   const _ToolBadge({
     required this.icon,
     required this.label,
+    required this.color,
     required this.active,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final color = AppTheme.secondaryColor;
-
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -578,13 +571,19 @@ _ResolvedToolCallDetails? _resolveToolCallDetails(
   }
 
   final matchedToolOutputIndices = _matchCompletedToolOutputIndices(items);
-  final outputIndex = matchedToolOutputIndices[targetIndex];
-
-  return _ResolvedToolCallDetails(
-    callItem: callItem,
-    outputItem: outputIndex == null ? null : items[outputIndex],
-    hasCompletedOutput: outputIndex != null,
+  return _ResolvedToolCallDetails.fromThread(
+    items,
+    targetIndex,
+    matchedToolOutputIndices,
   );
+}
+
+enum _ResolvedToolStage {
+  generating,
+  executing,
+  completed,
+  error,
+  cancelled,
 }
 
 final class _ResolvedToolCallDetails {
@@ -598,66 +597,120 @@ final class _ResolvedToolCallDetails {
     required this.hasCompletedOutput,
   });
 
+  factory _ResolvedToolCallDetails.fromThread(
+    List<RealtimeThreadItem> items,
+    int targetIndex,
+    Map<int, int>? matchedToolOutputIndices,
+  ) {
+    final callItem = items[targetIndex];
+    if (callItem.type != RealtimeThreadItemType.functionCall) {
+      throw ArgumentError.value(
+        callItem.type,
+        'callItem.type',
+        'Expected a function call item.',
+      );
+    }
+
+    final outputIndex = matchedToolOutputIndices?[targetIndex];
+    return _ResolvedToolCallDetails(
+      callItem: callItem,
+      outputItem: outputIndex == null ? null : items[outputIndex],
+      hasCompletedOutput: outputIndex != null,
+    );
+  }
+
   String get title => callItem.name ?? 'tool_call';
 
   String? get arguments => callItem.arguments;
 
   bool get hasArguments => (arguments ?? '').isNotEmpty;
 
+  String get argumentsDisplayText {
+    if (hasArguments) {
+      return arguments!;
+    }
+    return switch (stage) {
+      _ResolvedToolStage.generating => 'Streaming...',
+      _ResolvedToolStage.executing ||
+      _ResolvedToolStage.completed ||
+      _ResolvedToolStage.error => 'No arguments',
+      _ResolvedToolStage.cancelled => 'Cancelled before arguments were completed',
+    };
+  }
+
+  bool get argumentsPlaceholder => !hasArguments;
+
   String? get result => outputItem?.output ?? callItem.output;
 
   bool get hasResult => (result ?? '').isNotEmpty;
 
-  bool get isRunning =>
-      !hasCompletedOutput &&
-      callItem.status != RealtimeThreadItemStatus.incomplete;
+  String? get errorMessage =>
+      outputItem?.toolErrorMessage ?? callItem.toolErrorMessage;
 
-  bool get isError => _hasErrorPayload(result);
+  String? get resultDisplayText => isError ? (errorMessage ?? result) : result;
 
-  bool get isCancelled =>
-      !hasCompletedOutput &&
-      callItem.status == RealtimeThreadItemStatus.incomplete &&
-      !isError;
-
-  Color get statusColor {
-    if (isError) {
-      return Colors.red;
-    }
-    if (isCancelled) {
-      return Colors.grey;
+  _ResolvedToolStage get stage {
+    if (outputItem?.toolOutputDisposition == RealtimeToolOutputDisposition.error) {
+      return _ResolvedToolStage.error;
     }
     if (hasCompletedOutput) {
-      return Colors.green;
+      return _ResolvedToolStage.completed;
     }
-    return AppTheme.secondaryColor;
+    if (callItem.status == RealtimeThreadItemStatus.incomplete) {
+      return _ResolvedToolStage.cancelled;
+    }
+    if (callItem.status == RealtimeThreadItemStatus.completed) {
+      return _ResolvedToolStage.executing;
+    }
+    return _ResolvedToolStage.generating;
+  }
+
+  bool get isError => stage == _ResolvedToolStage.error;
+
+  bool get isCancelled => stage == _ResolvedToolStage.cancelled;
+
+  bool get showSpinner =>
+      stage == _ResolvedToolStage.generating ||
+      stage == _ResolvedToolStage.executing;
+
+  Color get statusColor {
+    return switch (stage) {
+      _ResolvedToolStage.generating ||
+      _ResolvedToolStage.executing => AppTheme.secondaryColor,
+      _ResolvedToolStage.completed => Colors.green,
+      _ResolvedToolStage.error => Colors.red,
+      _ResolvedToolStage.cancelled => Colors.grey,
+    };
   }
 
   IconData get statusIcon {
-    if (isError) {
-      return Icons.error;
-    }
-    if (isCancelled) {
-      return Icons.cancel;
-    }
-    if (hasCompletedOutput) {
-      return Icons.check_circle;
-    }
-    return Icons.build;
+    return switch (stage) {
+      _ResolvedToolStage.generating => Icons.download,
+      _ResolvedToolStage.executing => Icons.play_arrow,
+      _ResolvedToolStage.completed => Icons.check_circle,
+      _ResolvedToolStage.error => Icons.error,
+      _ResolvedToolStage.cancelled => Icons.cancel,
+    };
   }
 
-  bool get showSpinner => isRunning;
+  IconData get badgeIcon {
+    return switch (stage) {
+      _ResolvedToolStage.generating ||
+      _ResolvedToolStage.executing ||
+      _ResolvedToolStage.completed => Icons.build,
+      _ResolvedToolStage.error => Icons.error_outline,
+      _ResolvedToolStage.cancelled => Icons.cancel_outlined,
+    };
+  }
 
-  static bool _hasErrorPayload(String? value) {
-    if (value == null || value.isEmpty) {
-      return false;
-    }
-
-    try {
-      final decoded = jsonDecode(value);
-      return decoded is Map<String, dynamic> && decoded['error'] != null;
-    } catch (_) {
-      return false;
-    }
+  String get statusText {
+    return switch (stage) {
+      _ResolvedToolStage.generating => 'Generating arguments...',
+      _ResolvedToolStage.executing => 'Executing...',
+      _ResolvedToolStage.completed => 'Completed',
+      _ResolvedToolStage.error => 'Error',
+      _ResolvedToolStage.cancelled => 'Cancelled',
+    };
   }
 }
 
@@ -713,11 +766,13 @@ class _ToolDetailsSheet extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  _ToolDetailsStatusSection(details: details),
+                  const SizedBox(height: 12),
                   _ToolDetailsSection(
                     title: '引数',
                     child: _ToolDetailsCodeBlock(
-                      text: details.hasArguments ? details.arguments! : '—',
-                      isPlaceholder: !details.hasArguments,
+                      text: details.argumentsDisplayText,
+                      isPlaceholder: details.argumentsPlaceholder,
                     ),
                   ),
                   if (details.hasResult) ...[
@@ -725,7 +780,7 @@ class _ToolDetailsSheet extends StatelessWidget {
                     _ToolDetailsSection(
                       title: details.isError ? 'エラー' : '結果',
                       child: _ToolDetailsCodeBlock(
-                        text: details.result!,
+                        text: details.resultDisplayText!,
                         isError: details.isError,
                       ),
                     ),
@@ -804,6 +859,49 @@ class _ToolDetailsHeader extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+class _ToolDetailsStatusSection extends StatelessWidget {
+  final _ResolvedToolCallDetails details;
+
+  const _ToolDetailsStatusSection({required this.details});
+
+  @override
+  Widget build(BuildContext context) {
+    final statusColor = details.statusColor;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: statusColor.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: statusColor.withValues(alpha: 0.3),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            details.statusIcon,
+            size: 16,
+            color: statusColor,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              details.statusText,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: statusColor,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -36,6 +36,11 @@ enum RealtimeThreadItemStatus {
   }
 }
 
+enum RealtimeToolOutputDisposition {
+  success,
+  error,
+}
+
 abstract class RealtimeThreadContentPart {
   final String type;
   bool isDone;
@@ -150,6 +155,8 @@ final class RealtimeThreadItem {
   String? name;
   String? arguments;
   String? output;
+  RealtimeToolOutputDisposition? toolOutputDisposition;
+  String? toolErrorMessage;
 
   RealtimeThreadItem({
     required this.id,
@@ -161,6 +168,8 @@ final class RealtimeThreadItem {
     this.name,
     this.arguments,
     this.output,
+    this.toolOutputDisposition,
+    this.toolErrorMessage,
   }) : content = content ?? <RealtimeThreadContentPart>[];
 
   bool get isDone => status == RealtimeThreadItemStatus.completed;

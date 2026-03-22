@@ -10,7 +10,7 @@ import 'package:vagina/utils/duration_formatter.dart';
 
 class CallPane extends StatefulWidget {
   final SpeedDial speedDial;
-  final CallService? callService;
+  final CallService callService;
   final VoidCallback onChatPressed;
   final VoidCallback onNotepadPressed;
   final bool hideNavigationButtons;
@@ -18,7 +18,7 @@ class CallPane extends StatefulWidget {
   const CallPane({
     super.key,
     required this.speedDial,
-    this.callService,
+    required this.callService,
     required this.onChatPressed,
     required this.onNotepadPressed,
     this.hideNavigationButtons = false,
@@ -33,8 +33,7 @@ class _CallPaneState extends State<CallPane> {
 
   CallService? get _activeCallService {
     final callService = widget.callService;
-    if (callService == null ||
-        callService.state == CallState.uninitialized ||
+    if (callService.state == CallState.uninitialized ||
         callService.state == CallState.disposed) {
       return null;
     }

@@ -32,12 +32,14 @@ class _CallScreenState extends State<CallScreen> {
 
   final AdaptiveTriColumnController _layoutController =
       AdaptiveTriColumnController();
-  CallService? _callService;
-  StreamSubscription<CallState>? _callStateSubscription;
+  late final CallService _callService;
 
   @override
   void initState() {
     super.initState();
+    _callService = CallService(
+      filesystemRepository: RepositoryFactory.filesystem,
+    );
     unawaited(_initializeCallService());
   }
 
@@ -47,39 +49,20 @@ class _CallScreenState extends State<CallScreen> {
       return;
     }
 
-    final callService = CallService(
-      voiceAgent: voiceAgent,
-      filesystemRepository: RepositoryFactory.filesystem,
-    );
-
-    _callStateSubscription = callService.states.listen((_) {
-      if (mounted) {
-        setState(() {});
-      }
-    });
-
-    setState(() {
-      _callService = callService;
-    });
-
-    await callService.startCall();
+    _callService.setVoiceAgent(voiceAgent);
+    await _callService.startCall();
 
     if (!mounted) {
-      await callService.endCall();
+      await _callService.endCall();
       return;
     }
   }
 
   @override
   void dispose() {
-    unawaited(_callStateSubscription?.cancel());
-    _callStateSubscription = null;
-
-    final callService = _callService;
-    if (callService != null &&
-        callService.state != CallState.uninitialized &&
-        callService.state != CallState.disposed) {
-      unawaited(callService.endCall());
+    if (_callService.state != CallState.uninitialized &&
+        _callService.state != CallState.disposed) {
+      unawaited(_callService.endCall());
     }
     super.dispose();
   }

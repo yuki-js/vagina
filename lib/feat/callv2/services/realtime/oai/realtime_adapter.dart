@@ -482,9 +482,19 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
   Future<String> sendFunctionOutput({
     required String callId,
     required String output,
+    RealtimeToolOutputDisposition disposition =
+        RealtimeToolOutputDisposition.success,
+    String? errorMessage,
   }) async {
     _ensureNotDisposed();
     final itemId = _nextLocalId('tool');
+    _stageLocalFunctionOutputItem(
+      itemId,
+      callId: callId,
+      output: output,
+      disposition: disposition,
+      errorMessage: errorMessage,
+    );
     await _client.createConversationItem(
       item: {
         'id': itemId,
@@ -602,6 +612,40 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
     );
     _thread.addItem(item);
     return item;
+  }
+
+  void _stageLocalFunctionOutputItem(
+    String itemId, {
+    required String callId,
+    required String output,
+    required RealtimeToolOutputDisposition disposition,
+    String? errorMessage,
+  }) {
+    final existing = _thread.findItem(itemId);
+    if (existing != null) {
+      existing.role ??= RealtimeThreadItemRole.assistant;
+      existing.status = RealtimeThreadItemStatus.completed;
+      existing.callId = callId;
+      existing.output = output;
+      existing.toolOutputDisposition = disposition;
+      existing.toolErrorMessage = errorMessage;
+      _emitThreadUpdate();
+      return;
+    }
+
+    _thread.addItem(
+      RealtimeThreadItem(
+        id: itemId,
+        type: RealtimeThreadItemType.functionCallOutput,
+        role: RealtimeThreadItemRole.assistant,
+        status: RealtimeThreadItemStatus.completed,
+        callId: callId,
+        output: output,
+        toolOutputDisposition: disposition,
+        toolErrorMessage: errorMessage,
+      ),
+    );
+    _emitThreadUpdate();
   }
 
   T? _findContentPartOfType<T extends RealtimeThreadContentPart>(

@@ -44,7 +44,10 @@ void main() {
       unawaited(_serveHarness(server, harness));
 
       service = CallService(
-        voiceAgent: VoiceAgentInfo(
+        filesystemRepository: _FakeVirtualFilesystemRepository(),
+      );
+      service.setVoiceAgent(
+        VoiceAgentInfo(
           id: 'voice-agent',
           name: 'Test Agent',
           description: 'Audio wiring test agent',
@@ -58,7 +61,6 @@ void main() {
           ),
           enabledTools: const <String>[],
         ),
-        filesystemRepository: _FakeVirtualFilesystemRepository(),
       );
     });
 

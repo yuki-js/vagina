@@ -103,8 +103,16 @@ final class RealtimeService {
   Future<String> sendFunctionOutput({
     required String callId,
     required String output,
+    RealtimeToolOutputDisposition disposition =
+        RealtimeToolOutputDisposition.success,
+    String? errorMessage,
   }) {
-    return _adapter.sendFunctionOutput(callId: callId, output: output);
+    return _adapter.sendFunctionOutput(
+      callId: callId,
+      output: output,
+      disposition: disposition,
+      errorMessage: errorMessage,
+    );
   }
 
   // ---------------------------------------------------------------------------

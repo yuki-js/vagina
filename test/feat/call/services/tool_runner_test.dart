@@ -3,10 +3,12 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vagina/feat/callv2/models/voice_agent_api_config.dart';
 import 'package:vagina/feat/callv2/models/voice_agent_info.dart';
+import 'package:vagina/feat/callv2/services/call_control_api.dart';
 import 'package:vagina/feat/callv2/services/call_service.dart';
 import 'package:vagina/feat/callv2/services/tool_runner.dart';
 import 'package:vagina/interfaces/virtual_filesystem_repository.dart';
 import 'package:vagina/models/virtual_file.dart';
+import 'package:vagina/services/tools_runtime/apis/filesystem_api.dart';
 
 void main() {
   group('ToolRunner', () {
@@ -18,9 +20,8 @@ void main() {
       filesystemRepository = _FakeVirtualFilesystemRepository();
       callService = _TestCallService();
       runner = ToolRunner(
-        filesystemRepository: filesystemRepository,
-        onActiveFilesChanged: (_) {},
-        callService: callService,
+        filesystemApi: _FakeFilesystemApi(filesystemRepository),
+        callApi: CallControlApi(callService: callService),
       );
     });
 
@@ -155,22 +156,105 @@ final class _FakeVirtualFilesystemRepository
   }
 }
 
+final class _FakeFilesystemApi implements FilesystemApi {
+  final VirtualFilesystemRepository _repository;
+  final Map<String, String> _activeFiles = <String, String>{};
+
+  _FakeFilesystemApi(this._repository);
+
+  @override
+  Future<Map<String, dynamic>?> read(String path) async {
+    final file = await _repository.read(path);
+    if (file == null) {
+      return null;
+    }
+    return <String, dynamic>{
+      'path': file.path,
+      'content': file.content,
+    };
+  }
+
+  @override
+  Future<void> write(String path, String content) {
+    return _repository.write(VirtualFile(path: path, content: content));
+  }
+
+  @override
+  Future<void> delete(String path) {
+    _activeFiles.remove(path);
+    return _repository.delete(path);
+  }
+
+  @override
+  Future<void> move(String fromPath, String toPath) async {
+    final activeContent = _activeFiles.remove(fromPath);
+    if (activeContent != null) {
+      _activeFiles[toPath] = activeContent;
+    }
+    await _repository.move(fromPath, toPath);
+  }
+
+  @override
+  Future<List<String>> list(String path, {bool recursive = false}) {
+    return _repository.list(path, recursive: recursive);
+  }
+
+  @override
+  Future<void> openFile(String path, String content) async {
+    _activeFiles[path] = content;
+  }
+
+  @override
+  Future<Map<String, dynamic>?> getActiveFile(String path) async {
+    final content = _activeFiles[path];
+    if (content == null) {
+      return null;
+    }
+    return <String, dynamic>{'path': path, 'content': content};
+  }
+
+  @override
+  Future<void> updateActiveFile(String path, String content) async {
+    _activeFiles[path] = content;
+  }
+
+  @override
+  Future<void> closeFile(String path) async {
+    _activeFiles.remove(path);
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> listActiveFiles() async {
+    return _activeFiles.entries
+        .map(
+          (entry) => <String, dynamic>{
+            'path': entry.key,
+            'content': entry.value,
+          },
+        )
+        .toList(growable: false);
+  }
+}
+
 final class _TestCallService extends CallService {
   bool endCallCalled = false;
   String? lastEndContext;
 
   _TestCallService()
       : super(
-          voiceAgent: const VoiceAgentInfo(
-            id: 'voice-agent',
-            name: 'Test Agent',
-            description: 'Tool runner test agent',
-            voice: 'alloy',
-            prompt: 'Be brief.',
-            apiConfig: HostedVoiceAgentApiConfig(modelId: 'gpt-realtime-test'),
-          ),
           filesystemRepository: _FakeVirtualFilesystemRepository(),
-        );
+        ) {
+    setVoiceAgent(
+      const VoiceAgentInfo(
+        id: 'voice-agent',
+        name: 'Test Agent',
+        description: 'Tool runner test agent',
+        voice: 'alloy',
+        prompt: 'Be brief.',
+        apiConfig: HostedVoiceAgentApiConfig(modelId: 'gpt-realtime-test'),
+      ),
+    );
+  }
 
   @override
   Future<void> endCall({String? endContext}) async {

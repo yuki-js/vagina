@@ -33,7 +33,7 @@ enum CallState {
 /// - RecorderService: microphone input
 /// - PlaybackService: audio output
 class CallService {
-  final VoiceAgentInfo voiceAgent;
+  VoiceAgentInfo? _voiceAgent;
   final List<TextAgentInfo> textAgents;
   final VirtualFilesystemRepository _filesystemRepository;
 
@@ -58,7 +58,6 @@ class CallService {
   CallState _state = CallState.uninitialized;
 
   CallService({
-    required this.voiceAgent,
     this.textAgents = const [],
     required VirtualFilesystemRepository filesystemRepository,
   }) : _filesystemRepository = filesystemRepository;
@@ -95,6 +94,19 @@ class CallService {
   /// Re-exposes NotepadService.activeFiles for UI compatibility.
   Stream<List<ActiveFile>> get activeFilesStream => _notepadService.activeFiles;
 
+  void setVoiceAgent(VoiceAgentInfo voiceAgent) {
+    if (state != CallState.uninitialized) {
+      throw StateError(
+        'setVoiceAgent() can only be called from uninitialized state.',
+      );
+    }
+    if (_voiceAgent != null) {
+      throw StateError('Voice agent has already been set.');
+    }
+
+    _voiceAgent = voiceAgent;
+  }
+
   Future<void> startCall() async {
     if (state != CallState.uninitialized) {
       throw StateError(
@@ -121,7 +133,7 @@ class CallService {
     _filesystemApi = CallFilesystemApi(notepadService: _notepadService);
 
     // 4. Initialize RealtimeService, RecorderService, PlaybackService
-    _realtimeService = RealtimeService(voiceAgent: voiceAgent);
+    _realtimeService = RealtimeService(voiceAgent: _voiceAgent!);
     _recorderService = RecorderService();
     _playbackService = PlaybackService();
 
@@ -138,7 +150,7 @@ class CallService {
       _playbackService.start(),
       _notepadService.start(),
       _toolRunner.start(
-        enabledToolKeys: Set<String>.from(voiceAgent.enabledTools),
+        enabledToolKeys: Set<String>.from(_voiceAgent!.enabledTools),
       ),
     ]);
 
@@ -207,9 +219,12 @@ class CallService {
       return;
     }
     if (name == null || name.isEmpty) {
+      const errorMessage = 'Missing tool name.';
       await _realtimeService.sendFunctionOutput(
         callId: callId,
-        output: jsonEncode({'error': 'Missing tool name.'}),
+        output: jsonEncode({'error': errorMessage}),
+        disposition: RealtimeToolOutputDisposition.error,
+        errorMessage: errorMessage,
       );
       return;
     }
@@ -219,21 +234,45 @@ class CallService {
         name,
         arguments ?? '{}',
       );
+      final outputMetadata = _deriveToolOutputMetadata(result);
       // Only send if we haven't started disposing.
       if (state != CallState.disposing && state != CallState.disposed) {
         await _realtimeService.sendFunctionOutput(
           callId: callId,
           output: result,
+          disposition: outputMetadata.disposition,
+          errorMessage: outputMetadata.errorMessage,
         );
       }
     } catch (e) {
+      final errorMessage = e.toString();
       if (state != CallState.disposing && state != CallState.disposed) {
         await _realtimeService.sendFunctionOutput(
           callId: callId,
-          output: jsonEncode({'error': e.toString()}),
+          output: jsonEncode({'error': errorMessage}),
+          disposition: RealtimeToolOutputDisposition.error,
+          errorMessage: errorMessage,
         );
       }
     }
+  }
+
+  _ToolOutputMetadata _deriveToolOutputMetadata(String output) {
+    try {
+      final decoded = jsonDecode(output);
+      if (decoded is Map<String, dynamic> && decoded['error'] != null) {
+        return _ToolOutputMetadata(
+          disposition: RealtimeToolOutputDisposition.error,
+          errorMessage: decoded['error'].toString(),
+        );
+      }
+    } catch (_) {
+      // Non-JSON output is treated as a successful tool result.
+    }
+
+    return const _ToolOutputMetadata(
+      disposition: RealtimeToolOutputDisposition.success,
+    );
   }
 
   /// Called whenever active files change via NotepadService stream.
@@ -296,4 +335,14 @@ class CallService {
       _notepadService.dispose(),
     ]);
   }
+}
+
+final class _ToolOutputMetadata {
+  final RealtimeToolOutputDisposition disposition;
+  final String? errorMessage;
+
+  const _ToolOutputMetadata({
+    required this.disposition,
+    this.errorMessage,
+  });
 }
