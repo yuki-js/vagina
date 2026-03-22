@@ -81,6 +81,12 @@ void main() {
 
       final firstSessionUpdate = await harness.waitForCommand('session.update');
       expect(firstSessionUpdate['session'], isA<Map<String, dynamic>>());
+      expect(
+        firstSessionUpdate['session']['tools'],
+        isA<List<dynamic>>(),
+      );
+      expect(firstSessionUpdate['session']['tools'], isEmpty);
+      expect(firstSessionUpdate['session']['tool_choice'], equals('none'));
 
       fakeRecordPlatform.emitAudio(const <int>[1, 2, 3, 4]);
 

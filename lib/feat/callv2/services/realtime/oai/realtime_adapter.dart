@@ -103,10 +103,14 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
           _emitThreadUpdate();
         }
       }),
-      _client.conversationItemInputAudioTranscriptionDeltaEvents.listen((event) {
+      _client.conversationItemInputAudioTranscriptionDeltaEvents
+          .listen((event) {
         final itemId = event.itemId;
         final delta = event.delta;
-        if (itemId == null || itemId.isEmpty || delta == null || delta.isEmpty) {
+        if (itemId == null ||
+            itemId.isEmpty ||
+            delta == null ||
+            delta.isEmpty) {
           return;
         }
         final item = _ensureUserMessageItem(itemId);
@@ -117,7 +121,8 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
         audioPart.appendTranscriptDelta(delta);
         _emitThreadUpdate();
       }),
-      _client.conversationItemInputAudioTranscriptionCompletedEvents.listen((event) {
+      _client.conversationItemInputAudioTranscriptionCompletedEvents
+          .listen((event) {
         final itemId = event.itemId;
         final transcript = event.transcript;
         if (itemId == null ||
@@ -770,9 +775,8 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
         'create_response': true,
         'interrupt_response': true,
       },
-      if (_tools.isNotEmpty)
-        'tools': _tools.map((tool) => tool.toRealtimeJson()).toList(),
-      if (_tools.isNotEmpty) 'tool_choice': 'auto',
+      'tools': _tools.map((tool) => tool.toRealtimeJson()).toList(),
+      'tool_choice': 'auto',
     };
   }
 

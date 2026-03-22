@@ -97,7 +97,6 @@ class CallService {
   Stream<List<ActiveFile>> get activeFilesStream => _notepadService.activeFiles;
 
   void setVoiceAgent(VoiceAgentInfo voiceAgent) {
-    print(voiceAgent);
     if (state != CallState.uninitialized) {
       throw StateError(
         'setVoiceAgent() can only be called from uninitialized state.',
@@ -164,9 +163,6 @@ class CallService {
 
   /// Register tools with the model and start watching for function calls.
   Future<void> _startCall() async {
-    // 1. Register only tool definitions that are exposed for this voice agent
-    //    and whose activation matches the current active extension set
-    //    (initially empty, so only always-available tools).
     final initialDefinitions = _computeExposedTools(<String>{});
 
     await _realtimeService.registerTools(initialDefinitions);
