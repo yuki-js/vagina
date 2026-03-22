@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import 'package:vagina/core/theme/app_theme.dart';
+import 'package:vagina/feat/callv2/models/realtime/realtime_adapter_models.dart';
 import 'package:vagina/feat/callv2/models/realtime/realtime_thread.dart';
 import 'package:vagina/feat/callv2/services/call_service.dart';
 import 'package:vagina/feat/callv2/services/realtime_service.dart';
@@ -27,7 +28,10 @@ class _ChatPaneState extends State<ChatPane> {
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   StreamSubscription<RealtimeThread>? _threadSubscription;
+  StreamSubscription<RealtimeAdapterConnectionState>?
+      _connectionStateSubscription;
   List<RealtimeThreadItem> _items = const <RealtimeThreadItem>[];
+  bool _isConnected = false;
   bool _isAtBottom = true;
   bool _showScrollToBottom = false;
 
@@ -47,20 +51,22 @@ class _ChatPaneState extends State<ChatPane> {
       return;
     }
     _bindRealtimeService(_realtimeService);
+    setState(() {});
   }
 
   void _bindRealtimeService(RealtimeService? service) {
     _threadSubscription?.cancel();
     _threadSubscription = null;
+    _connectionStateSubscription?.cancel();
+    _connectionStateSubscription = null;
+
+    _items = service?.thread.items ?? const <RealtimeThreadItem>[];
+    _isConnected = service?.isConnected ?? false;
 
     if (service == null) {
-      setState(() {
-        _items = const <RealtimeThreadItem>[];
-      });
       return;
     }
 
-    _items = service.thread.items;
     _threadSubscription = service.threadUpdates.listen((thread) {
       if (!mounted) {
         return;
@@ -69,11 +75,21 @@ class _ChatPaneState extends State<ChatPane> {
         _items = thread.items;
       });
     });
+
+    _connectionStateSubscription = service.connectionStates.listen((state) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isConnected = state.isConnected;
+      });
+    });
   }
 
   @override
   void dispose() {
     _threadSubscription?.cancel();
+    _connectionStateSubscription?.cancel();
     _scrollController.removeListener(_onScrollChanged);
     _scrollController.dispose();
     _textController.dispose();
@@ -154,7 +170,7 @@ class _ChatPaneState extends State<ChatPane> {
         ),
         _ChatInputShell(
           controller: _textController,
-          enabled: _realtimeService?.isConnected ?? false,
+          enabled: _isConnected,
           onSend: _handleSendMessage,
         ),
       ],
