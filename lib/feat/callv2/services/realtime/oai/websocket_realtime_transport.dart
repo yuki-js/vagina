@@ -19,7 +19,7 @@ final class WebSocketOaiRealtimeTransport implements OaiRealtimeTransport {
   static const _tag = 'OaiRealtimeTransport';
 
   final OaiRealtimeSocketConnector _connector;
-  final LogService _log;
+
   final Duration _initialReconnectDelay;
   final int _maxInitialReconnectAttempts;
 
@@ -30,7 +30,8 @@ final class WebSocketOaiRealtimeTransport implements OaiRealtimeTransport {
 
   WebSocketChannel? _channel;
   StreamSubscription? _subscription;
-  OaiRealtimeConnectionState _lastState = const OaiRealtimeConnectionState.idle();
+  OaiRealtimeConnectionState _lastState =
+      const OaiRealtimeConnectionState.idle();
   bool _disposed = false;
 
   WebSocketOaiRealtimeTransport({
@@ -38,7 +39,6 @@ final class WebSocketOaiRealtimeTransport implements OaiRealtimeTransport {
     Duration initialReconnectDelay = const Duration(milliseconds: 400),
     int maxInitialReconnectAttempts = 2,
   })  : _connector = connector ?? connectOaiWebSocketChannel,
-        _log = LogService(),
         _initialReconnectDelay = initialReconnectDelay,
         _maxInitialReconnectAttempts = maxInitialReconnectAttempts;
 
@@ -73,7 +73,7 @@ final class WebSocketOaiRealtimeTransport implements OaiRealtimeTransport {
 
       try {
         final safeUrl = UrlUtils.redactSensitiveParams(target.uri.toString());
-        _log.info(_tag, 'Connecting to $safeUrl');
+
         _channel = await _connector(target.uri, headers: target.headers);
         _subscription = _channel!.stream.listen(
           _handleFrame,
@@ -85,7 +85,7 @@ final class WebSocketOaiRealtimeTransport implements OaiRealtimeTransport {
         return;
       } catch (error) {
         lastError = error;
-        _log.error(_tag, 'Connection attempt $attempt failed: $error');
+
         await _safeTearDownChannel();
         if (attempt < _maxInitialReconnectAttempts) {
           await Future<void>.delayed(_initialReconnectDelay);
@@ -95,7 +95,8 @@ final class WebSocketOaiRealtimeTransport implements OaiRealtimeTransport {
 
     _emitState(OaiRealtimeConnectionState.failed(
       attempt: _maxInitialReconnectAttempts,
-      message: 'Failed to connect after $_maxInitialReconnectAttempts attempts.',
+      message:
+          'Failed to connect after $_maxInitialReconnectAttempts attempts.',
       error: lastError,
     ));
     throw lastError ?? StateError('Failed to connect realtime transport.');
@@ -110,7 +111,7 @@ final class WebSocketOaiRealtimeTransport implements OaiRealtimeTransport {
     }
 
     final type = payload['type'] as String? ?? 'unknown';
-    _log.websocket('SEND', type, payload);
+
     channel.sink.add(jsonEncode(payload));
   }
 
@@ -150,7 +151,7 @@ final class WebSocketOaiRealtimeTransport implements OaiRealtimeTransport {
       }
       final message = Map<String, dynamic>.from(decoded);
       final type = message['type'] as String? ?? 'unknown';
-      _log.websocket('RECV', type, message);
+
       _inboundController.add(message);
     } catch (error) {
       _handleStreamError(
@@ -164,7 +165,6 @@ final class WebSocketOaiRealtimeTransport implements OaiRealtimeTransport {
   }
 
   void _handleStreamError(Object error, [StackTrace? stackTrace]) {
-    _log.error(_tag, 'Transport stream error: $error');
     _emitState(OaiRealtimeConnectionState.failed(
       attempt: _lastState.attempt,
       message: 'Realtime transport stream failed.',
@@ -173,7 +173,6 @@ final class WebSocketOaiRealtimeTransport implements OaiRealtimeTransport {
   }
 
   void _handleStreamDone() {
-    _log.info(_tag, 'Realtime socket closed');
     if (_disposed) {
       return;
     }
@@ -205,7 +204,8 @@ final class WebSocketOaiRealtimeTransport implements OaiRealtimeTransport {
   _OaiRealtimeTransportTarget _buildOpenAiTarget(
     OpenAiRealtimeConnectConfig config,
   ) {
-    final baseUri = config.baseUri ?? Uri.parse('https://api.openai.com/v1/realtime');
+    final baseUri =
+        config.baseUri ?? Uri.parse('https://api.openai.com/v1/realtime');
     final wsUri = _normalizeWebSocketUri(baseUri).replace(
       queryParameters: {
         ...baseUri.queryParameters,

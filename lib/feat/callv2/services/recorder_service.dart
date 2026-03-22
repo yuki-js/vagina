@@ -24,7 +24,6 @@ enum RecorderServiceState {
 final class RecorderService {
   static const _tag = 'RecorderService';
 
-  final LogService _logService = LogService();
   final StreamController<Uint8List> _audioController =
       StreamController<Uint8List>.broadcast();
   final StreamController<double> _amplitudeController =
@@ -132,7 +131,6 @@ final class RecorderService {
       _rawAudioSubscription = rawStream.listen(
         _onRawAudioChunk,
         onError: (Object error, StackTrace stackTrace) {
-          _logService.error(_tag, 'Recorder audio stream error: $error');
           if (!_audioController.isClosed) {
             _audioController.addError(error, stackTrace);
           }
@@ -149,14 +147,11 @@ final class RecorderService {
           }
           _emitAmplitude(AudioUtils.normalizeAmplitude(amplitude.current));
         },
-        onError: (Object error, StackTrace stackTrace) {
-          _logService.warn(_tag, 'Recorder amplitude stream error: $error');
-        },
+        onError: (Object error, StackTrace stackTrace) {},
       );
 
       _setState(RecorderServiceState.recording);
     } catch (e) {
-      _logService.error(_tag, 'Failed to start recording session: $e');
       _setState(RecorderServiceState.idle);
       rethrow;
     }
@@ -186,7 +181,6 @@ final class RecorderService {
       _emitAmplitude(0.0);
       _setState(RecorderServiceState.idle);
     } catch (e) {
-      _logService.error(_tag, 'Failed to stop recording session: $e');
       _setState(RecorderServiceState.idle);
       rethrow;
     }
@@ -205,9 +199,7 @@ final class RecorderService {
 
     try {
       await _recorder?.stop();
-    } catch (e) {
-      _logService.warn(_tag, 'Error stopping recorder during dispose: $e');
-    }
+    } catch (e) {}
 
     await _recorder?.dispose();
     _recorder = null;

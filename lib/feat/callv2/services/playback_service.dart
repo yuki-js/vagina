@@ -58,7 +58,6 @@ final class PlaybackMetrics {
 final class PlaybackService {
   static const _tag = 'PlaybackService';
 
-  final LogService _logService = LogService();
   final Queue<Uint8List> _bufferQueue = Queue<Uint8List>();
   final StreamController<PlaybackServiceState> _stateController =
       StreamController<PlaybackServiceState>.broadcast();
@@ -112,9 +111,7 @@ final class PlaybackService {
       (chunk) {
         unawaited(_handleInputChunk(chunk));
       },
-      onError: (Object error, StackTrace stackTrace) {
-        _logService.error(_tag, 'Playback input stream error: $error');
-      },
+      onError: (Object error, StackTrace stackTrace) {},
     );
 
     _metrics = _metrics.copyWith(isInputBound: true);
@@ -219,7 +216,8 @@ final class PlaybackService {
   }
 
   Future<void> _drainBufferedAudio(int generation) async {
-    while (generation == _generation && _state != PlaybackServiceState.disposed) {
+    while (
+        generation == _generation && _state != PlaybackServiceState.disposed) {
       if (_bufferQueue.isEmpty) {
         if (_metrics.isResponseComplete) {
           _setState(PlaybackServiceState.idle);
@@ -289,7 +287,6 @@ final class PlaybackService {
     try {
       await _player.stopPlayer();
     } catch (e) {
-      _logService.warn(_tag, 'Error stopping stream player: $e');
     } finally {
       _playerStreaming = false;
     }
