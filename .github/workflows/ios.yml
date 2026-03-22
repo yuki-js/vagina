@@ -93,6 +93,15 @@ jobs:
       - name: Build iOS (debug, no codesign)
         run: flutter build ipa --debug --no-codesign
 
+      - name: Create IPA from archive
+        run: |
+          APP_PATH="build/ios/archive/Runner.xcarchive/Products/Applications/Runner.app"
+          mkdir -p build/ios/ipa/Payload
+          cp -r "$APP_PATH" build/ios/ipa/Payload/
+          cd build/ios/ipa
+          zip -r Runner.ipa Payload
+          rm -rf Payload
+
       - name: Upload Debug IPA
         uses: actions/upload-artifact@v7
         with:
@@ -147,6 +156,15 @@ jobs:
       
       - name: Build iOS (release, no codesign)
         run: flutter build ipa --release --no-codesign
+
+      - name: Create IPA from archive
+        run: |
+          APP_PATH="build/ios/archive/Runner.xcarchive/Products/Applications/Runner.app"
+          mkdir -p build/ios/ipa/Payload
+          cp -r "$APP_PATH" build/ios/ipa/Payload/
+          cd build/ios/ipa
+          zip -r Runner.ipa Payload
+          rm -rf Payload
 
       - name: Upload Release IPA
         uses: actions/upload-artifact@v7
