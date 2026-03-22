@@ -53,6 +53,8 @@ class CallService {
   StreamSubscription<void>? _assistantAudioCompletedSubscription;
   StreamSubscription<List<ActiveFile>>? _activeFilesSubscription;
 
+  final StreamController<CallState> _stateController =
+      StreamController<CallState>.broadcast();
   CallState _state = CallState.uninitialized;
 
   CallService({
@@ -62,6 +64,18 @@ class CallService {
   }) : _filesystemRepository = filesystemRepository;
 
   CallState get state => _state;
+
+  set state(CallState value) {
+    if (_state == value) {
+      return;
+    }
+    _state = value;
+    if (!_stateController.isClosed) {
+      _stateController.add(value);
+    }
+  }
+
+  Stream<CallState> get states => _stateController.stream;
 
   RecorderService get recorderService => _recorderService;
 
@@ -75,17 +89,17 @@ class CallService {
   Stream<List<ActiveFile>> get activeFilesStream => _notepadService.activeFiles;
 
   Future<void> startCall() async {
-    if (_state != CallState.uninitialized) {
+    if (state != CallState.uninitialized) {
       throw StateError(
           'startCall() can only be called from uninitialized state.');
     }
 
     await _initialize();
-    _state = CallState.connecting;
+    state = CallState.connecting;
 
     await _startCall();
 
-    _state = CallState.active;
+    state = CallState.active;
   }
 
   Future<void> _initialize() async {
@@ -190,14 +204,14 @@ class CallService {
         arguments ?? '{}',
       );
       // Only send if we haven't started disposing.
-      if (_state != CallState.disposing && _state != CallState.disposed) {
+      if (state != CallState.disposing && state != CallState.disposed) {
         await _realtimeService.sendFunctionOutput(
           callId: callId,
           output: result,
         );
       }
     } catch (e) {
-      if (_state != CallState.disposing && _state != CallState.disposed) {
+      if (state != CallState.disposing && state != CallState.disposed) {
         await _realtimeService.sendFunctionOutput(
           callId: callId,
           output: jsonEncode({'error': e.toString()}),
@@ -221,28 +235,29 @@ class CallService {
     final definitions = _toolRunner.computeAvailableTools(extensions);
 
     // Re-register tools with the model
-    if (_state == CallState.active) {
+    if (state == CallState.active) {
       unawaited(_realtimeService.registerTools(definitions));
     }
   }
 
   Future<void> endCall({String? endContext}) async {
-    if (_state == CallState.disposing || _state == CallState.disposed) {
+    if (state == CallState.disposing || state == CallState.disposed) {
       return;
     }
 
-    _state = CallState.disposing;
+    state = CallState.disposing;
 
     // Persist all active files before cleanup
     await _notepadService.persistAll();
 
     // Export session tabs (could be used for session saving)
-    final sessionTabs = _notepadService.exportSessionTabs();
-    // TODO: Save sessionTabs to CallSession when session repository is wired
+    _notepadService.exportSessionTabs();
+    // TODO: Save exported session tabs to CallSession when session repository is wired
 
     await _dispose();
 
-    _state = CallState.disposed;
+    state = CallState.disposed;
+    await _stateController.close();
   }
 
   Future<void> _dispose() async {

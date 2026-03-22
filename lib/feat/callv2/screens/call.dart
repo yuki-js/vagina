@@ -1,10 +1,18 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:vagina/core/widgets/adaptive_tri_column_layout.dart';
+import 'package:vagina/feat/callv2/models/voice_agent_api_config.dart';
+import 'package:vagina/feat/callv2/models/voice_agent_info.dart';
 import 'package:vagina/feat/callv2/panes/call.dart';
 import 'package:vagina/feat/callv2/panes/chat.dart';
 import 'package:vagina/feat/callv2/panes/notepad.dart';
+import 'package:vagina/feat/callv2/services/call_service.dart';
 import 'package:vagina/feat/callv2/widgets/call_screen_shell.dart';
 import 'package:vagina/models/speed_dial.dart';
+import 'package:vagina/repositories/repository_factory.dart';
+import 'package:vagina/tools/tools.dart';
+import 'package:vagina/utils/url_utils.dart';
 
 /// Temporary layout scaffold for the call rework.
 class CallScreen extends StatefulWidget {
@@ -24,14 +32,64 @@ class _CallScreenState extends State<CallScreen> {
 
   final AdaptiveTriColumnController _layoutController =
       AdaptiveTriColumnController();
+  CallService? _callService;
+  StreamSubscription<CallState>? _callStateSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_initializeCallService());
+  }
+
+  Future<void> _initializeCallService() async {
+    final voiceAgent = await _buildVoiceAgent(widget.speedDial);
+    if (!mounted) {
+      return;
+    }
+
+    final callService = CallService(
+      voiceAgent: voiceAgent,
+      filesystemRepository: RepositoryFactory.filesystem,
+    );
+
+    _callStateSubscription = callService.states.listen((_) {
+      if (mounted) {
+        setState(() {});
+      }
+    });
+
+    setState(() {
+      _callService = callService;
+    });
+
+    await callService.startCall();
+
+    if (!mounted) {
+      await callService.endCall();
+      return;
+    }
+  }
+
+  @override
+  void dispose() {
+    unawaited(_callStateSubscription?.cancel());
+    _callStateSubscription = null;
+
+    final callService = _callService;
+    if (callService != null &&
+        callService.state != CallState.uninitialized &&
+        callService.state != CallState.disposed) {
+      unawaited(callService.endCall());
+    }
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return CallScreenShell(
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final isWideLayout =
-              constraints.maxWidth >= _wideLayoutBreakpoint;
+          final isWideLayout = constraints.maxWidth >= _wideLayoutBreakpoint;
 
           return AdaptiveTriColumnLayout(
             controller: _layoutController,
@@ -45,6 +103,7 @@ class _CallScreenState extends State<CallScreen> {
             ),
             center: CallPane(
               speedDial: widget.speedDial,
+              callService: _callService,
               onChatPressed: _layoutController.goToLeft,
               onNotepadPressed: _layoutController.goToRight,
               hideNavigationButtons: isWideLayout,
@@ -58,4 +117,37 @@ class _CallScreenState extends State<CallScreen> {
       ),
     );
   }
+}
+
+Future<VoiceAgentInfo> _buildVoiceAgent(SpeedDial speedDial) async {
+  final configRepository = RepositoryFactory.config;
+  final realtimeUrl = await configRepository.getRealtimeUrl();
+  final apiKey = await configRepository.getApiKey();
+  final parsedRealtimeUrl =
+      realtimeUrl == null ? null : UrlUtils.parseAzureRealtimeUrl(realtimeUrl);
+
+  return VoiceAgentInfo(
+    id: speedDial.id,
+    name: speedDial.name,
+    description: 'TODO: Add description to SpeedDial and show it here',
+    iconEmoji: speedDial.iconEmoji,
+    voice: speedDial.voice,
+    prompt: speedDial.systemPrompt,
+    enabledTools: toolbox.tools
+        .map((tool) => tool.definition.toolKey)
+        .where((toolKey) => speedDial.enabledTools[toolKey] ?? true)
+        .toList(growable: false),
+    apiConfig: SelfhostedVoiceAgentApiConfig(
+      providerType: VoiceAgentProviderType.azureOpenAi,
+      baseUrl: parsedRealtimeUrl?['endpoint'] ?? '',
+      apiKey: apiKey ?? '',
+      model: parsedRealtimeUrl?['deployment'] ?? 'gpt-4o-realtime-preview',
+      params: <String, Object?>{
+        if (parsedRealtimeUrl?['deployment'] case final deployment?)
+          'deployment': deployment,
+        if (parsedRealtimeUrl?['apiVersion'] case final apiVersion?)
+          'apiVersion': apiVersion,
+      },
+    ),
+  );
 }

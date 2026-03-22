@@ -62,6 +62,7 @@ void main() {
 
       final mutedAmplitudeFuture = service.amplitudeStream.first;
       final mutedAudioFuture = service.audioStream.first;
+      final muteStateFuture = service.muteState.first;
 
       service.setMute(true);
       fakePlatform.emitAudio(const <int>[9, 8, 7, 6]);
@@ -70,8 +71,10 @@ void main() {
           await mutedAmplitudeFuture.timeout(const Duration(seconds: 1));
       final mutedChunk =
           await mutedAudioFuture.timeout(const Duration(seconds: 1));
+      final mutedState = await muteStateFuture.timeout(const Duration(seconds: 1));
 
       expect(service.isMuted, isTrue);
+      expect(mutedState, isTrue);
       expect(service.state, RecorderServiceState.recording);
       expect(mutedAmplitude, 0.0);
       expect(mutedChunk, orderedEquals(const <int>[0, 0, 0, 0]));

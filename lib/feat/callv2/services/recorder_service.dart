@@ -29,6 +29,8 @@ final class RecorderService {
       StreamController<Uint8List>.broadcast();
   final StreamController<double> _amplitudeController =
       StreamController<double>.broadcast();
+  final StreamController<bool> _muteStateController =
+      StreamController<bool>.broadcast();
   final StreamController<RecorderServiceState> _stateController =
       StreamController<RecorderServiceState>.broadcast();
 
@@ -50,6 +52,8 @@ final class RecorderService {
   Stream<Uint8List> get audioStream => _audioController.stream;
 
   Stream<double> get amplitudeStream => _amplitudeController.stream;
+
+  Stream<bool> get muteState => _muteStateController.stream;
 
   Stream<RecorderServiceState> get states => _stateController.stream;
 
@@ -84,6 +88,9 @@ final class RecorderService {
       return;
     }
     _isMuted = muted;
+    if (!_muteStateController.isClosed) {
+      _muteStateController.add(_isMuted);
+    }
     if (_isMuted) {
       _emitAmplitude(0.0);
     }
@@ -133,9 +140,8 @@ final class RecorderService {
       );
 
       await _amplitudeSubscription?.cancel();
-      _amplitudeSubscription = recorder
-          .onAmplitudeChanged(const Duration(milliseconds: 100))
-          .listen(
+      _amplitudeSubscription =
+          recorder.onAmplitudeChanged(const Duration(milliseconds: 100)).listen(
         (amplitude) {
           if (_isMuted) {
             _emitAmplitude(0.0);
@@ -210,6 +216,7 @@ final class RecorderService {
 
     await _audioController.close();
     await _amplitudeController.close();
+    await _muteStateController.close();
     await _stateController.close();
   }
 
