@@ -95,6 +95,7 @@ class _CallScreenState extends State<CallScreen> {
             right: NotepadPane(
               onBackPressed: _layoutController.goToCenter,
               hideBackButton: isWideLayout,
+              callService: _callService,
             ),
           );
         },

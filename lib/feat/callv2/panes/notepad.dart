@@ -1,15 +1,22 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import 'package:vagina/core/theme/app_theme.dart';
+import 'package:vagina/feat/callv2/models/active_file.dart';
+import 'package:vagina/feat/callv2/services/call_service.dart';
+import 'package:vagina/feat/callv2/widgets/notepad_content_renderer.dart';
 
 class NotepadPane extends StatefulWidget {
   final VoidCallback onBackPressed;
   final bool hideBackButton;
+  final CallService callService;
 
   const NotepadPane({
     super.key,
     required this.onBackPressed,
     this.hideBackButton = false,
+    required this.callService,
   });
 
   @override
@@ -17,77 +24,275 @@ class NotepadPane extends StatefulWidget {
 }
 
 class _NotepadPaneState extends State<NotepadPane> {
-  late final List<_NotepadTabData> _tabs = <_NotepadTabData>[
-    const _NotepadTabData(
-      id: 'draft-note',
-      title: 'draft.md',
-      content: '',
-    ),
-    const _NotepadTabData(
-      id: 'ideas-note',
-      title: 'ideas.txt',
-      content: '',
-    ),
-    const _NotepadTabData(
-      id: 'todo-note',
-      title: 'todo.md',
-      content: '',
-    ),
-  ];
+  final TextEditingController _editorController = TextEditingController();
 
-  late String _selectedTabId = _tabs.first.id;
-  final Set<String> _editingTabIds = <String>{};
+  StreamSubscription<CallState>? _stateSubscription;
+  StreamSubscription<List<ActiveFile>>? _activeFilesSubscription;
+
+  List<_NotepadTabData> _tabs = const <_NotepadTabData>[];
+  String? _selectedTabId;
+  String? _currentTabId;
+  bool _isEditing = false;
+  String _editedContent = '';
+  bool _isLoading = true;
+  String? _errorMessage;
 
   _NotepadTabData? get _selectedTab {
+    final selectedId = _selectedTabId;
+    if (selectedId == null) {
+      return null;
+    }
+
     for (final tab in _tabs) {
-      if (tab.id == _selectedTabId) {
+      if (tab.id == selectedId) {
         return tab;
       }
     }
+    return null;
+  }
 
-    return _tabs.isNotEmpty ? _tabs.first : null;
+  @override
+  void initState() {
+    super.initState();
+    _bindCallService(widget.callService);
+  }
+
+  @override
+  void didUpdateWidget(covariant NotepadPane oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.callService, widget.callService)) {
+      _bindCallService(widget.callService);
+    }
+  }
+
+  @override
+  void dispose() {
+    _stateSubscription?.cancel();
+    _activeFilesSubscription?.cancel();
+    _editorController.dispose();
+    super.dispose();
+  }
+
+  void _bindCallService(CallService service) {
+    _stateSubscription?.cancel();
+    _activeFilesSubscription?.cancel();
+    _activeFilesSubscription = null;
+
+    setState(_resetViewState);
+
+    _stateSubscription = service.states.listen(
+      _onCallStateChanged,
+      onError: (_, __) {
+        if (!mounted) {
+          return;
+        }
+        setState(() {
+          _isLoading = false;
+          _errorMessage = 'ノートパッドの読み込みに失敗しました';
+        });
+      },
+    );
+
+    _onCallStateChanged(service.state);
+  }
+
+  void _onCallStateChanged(CallState state) {
+    if (!mounted) {
+      return;
+    }
+
+    if (state == CallState.uninitialized) {
+      _activeFilesSubscription?.cancel();
+      _activeFilesSubscription = null;
+      setState(_resetViewState);
+      return;
+    }
+
+    if (state == CallState.disposed) {
+      _activeFilesSubscription?.cancel();
+      _activeFilesSubscription = null;
+      setState(() {
+        _isLoading = false;
+        _tabs = const <_NotepadTabData>[];
+        _selectedTabId = null;
+        _errorMessage = null;
+        _resetEditingState();
+      });
+      return;
+    }
+
+    if (_activeFilesSubscription != null) {
+      return;
+    }
+
+    _bindActiveFilesStream();
+  }
+
+  void _bindActiveFilesStream() {
+    final callService = widget.callService;
+
+    try {
+      final initialFiles = callService.notepadService.listActive();
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isLoading = false;
+        _errorMessage = null;
+        _applyActiveFiles(initialFiles);
+      });
+
+      _activeFilesSubscription = callService.activeFilesStream.listen(
+        (files) {
+          if (!mounted) {
+            return;
+          }
+          setState(() {
+            _isLoading = false;
+            _errorMessage = null;
+            _applyActiveFiles(files);
+          });
+        },
+        onError: (_, __) {
+          if (!mounted) {
+            return;
+          }
+          setState(() {
+            _isLoading = false;
+            _errorMessage = 'ノートパッドの読み込みに失敗しました';
+          });
+        },
+      );
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+    }
+  }
+
+  void _applyActiveFiles(List<ActiveFile> files) {
+    final nextTabs = files
+        .map(
+          (file) => _NotepadTabData(
+            id: file.path,
+            title: file.title,
+            content: file.content,
+          ),
+        )
+        .toList(growable: false);
+
+    final previousSelected = _selectedTabId;
+    final hasPreviousSelection = previousSelected != null &&
+        nextTabs.any((tab) => tab.id == previousSelected);
+
+    _tabs = nextTabs;
+    _selectedTabId = hasPreviousSelection
+        ? previousSelected
+        : (nextTabs.isNotEmpty ? nextTabs.first.id : null);
+
+    _handleTabChanged(_selectedTabId);
+  }
+
+  void _handleTabChanged(String? nextTabId) {
+    if (_currentTabId == nextTabId) {
+      return;
+    }
+    if (_isEditing) {
+      _resetEditingState();
+    }
+    _currentTabId = nextTabId;
   }
 
   void _selectTab(String tabId) {
     setState(() {
       _selectedTabId = tabId;
+      _handleTabChanged(tabId);
     });
   }
 
   void _toggleEditing(String tabId) {
+    final selectedTab = _selectedTab;
+    if (selectedTab == null || selectedTab.id != tabId) {
+      return;
+    }
+
+    if (_isEditing && _editedContent != selectedTab.content) {
+      _runFireAndForget(
+        widget.callService.notepadService
+            .update(selectedTab.id, _editedContent),
+        errorMessage: 'ノートの保存に失敗しました',
+      );
+    }
+
     setState(() {
-      if (_editingTabIds.contains(tabId)) {
-        _editingTabIds.remove(tabId);
-      } else {
-        _editingTabIds.add(tabId);
+      _isEditing = !_isEditing;
+      if (_isEditing) {
+        _editedContent = selectedTab.content;
+        _editorController.value = TextEditingValue(
+          text: _editedContent,
+          selection: TextSelection.collapsed(offset: _editedContent.length),
+        );
       }
     });
   }
 
   void _closeTab(String tabId) {
-    if (_tabs.isEmpty) {
-      return;
+    if (_isEditing && _selectedTabId == tabId) {
+      setState(_resetEditingState);
     }
 
-    final closingIndex = _tabs.indexWhere((tab) => tab.id == tabId);
-    if (closingIndex == -1) {
-      return;
+    _runFireAndForget(
+      _persistAndCloseTab(tabId),
+      errorMessage: 'ノートを閉じられませんでした',
+    );
+  }
+
+  void _onEditedContentChanged(String value) {
+    _editedContent = value;
+  }
+
+  Future<void> _persistAndCloseTab(String tabId) async {
+    final service = widget.callService.notepadService;
+    final activeContent = service.getActive(tabId);
+    if (activeContent != null) {
+      await service.write(tabId, activeContent);
     }
+    await service.close(tabId);
+  }
 
-    setState(() {
-      _tabs.removeAt(closingIndex);
-      _editingTabIds.remove(tabId);
+  void _runFireAndForget(
+    Future<void> operation, {
+    required String errorMessage,
+  }) {
+    unawaited(
+      operation.catchError((Object _, StackTrace __) {
+        if (!mounted) {
+          return;
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errorMessage)),
+        );
+      }),
+    );
+  }
 
-      if (_tabs.isEmpty) {
-        _selectedTabId = '';
-        return;
-      }
+  void _resetViewState() {
+    _tabs = const <_NotepadTabData>[];
+    _selectedTabId = null;
+    _currentTabId = null;
+    _isLoading = true;
+    _errorMessage = null;
+    _resetEditingState();
+  }
 
-      if (_selectedTabId == tabId) {
-        final nextIndex = closingIndex.clamp(0, _tabs.length - 1);
-        _selectedTabId = _tabs[nextIndex].id;
-      }
-    });
+  void _resetEditingState() {
+    _isEditing = false;
+    _editedContent = '';
+    _editorController.clear();
   }
 
   @override
@@ -106,17 +311,30 @@ class _NotepadPaneState extends State<NotepadPane> {
           onTabSelected: _selectTab,
         ),
         Expanded(
-          child: selectedTab == null
+          child: _isLoading
               ? const _NotepadEmptyState(
-                  title: '開いているノートパッドがありません',
-                  message: 'ここに開いているノートの内容が表示されます',
+                  title: 'ノートパッドを読み込み中です',
+                  message: 'しばらくお待ちください',
                 )
-              : _NotepadContentShell(
-                  tab: selectedTab,
-                  isEditing: _editingTabIds.contains(selectedTab.id),
-                  onEditToggle: () => _toggleEditing(selectedTab.id),
-                  onClose: () => _closeTab(selectedTab.id),
-                ),
+              : _errorMessage != null
+                  ? _NotepadEmptyState(
+                      title: _errorMessage!,
+                      message: '時間を置いて再度お試しください',
+                    )
+                  : selectedTab == null
+                      ? const _NotepadEmptyState(
+                          title: '開いているノートパッドがありません',
+                          message: 'ここに開いているノートの内容が表示されます',
+                        )
+                      : _NotepadContentShell(
+                          tab: selectedTab,
+                          isEditing: _isEditing,
+                          editingContent: _editedContent,
+                          editorController: _editorController,
+                          onEditedContentChanged: _onEditedContentChanged,
+                          onEditToggle: () => _toggleEditing(selectedTab.id),
+                          onClose: () => _closeTab(selectedTab.id),
+                        ),
         ),
       ],
     );
@@ -252,12 +470,18 @@ class _NotepadTabBar extends StatelessWidget {
 class _NotepadContentShell extends StatelessWidget {
   final _NotepadTabData tab;
   final bool isEditing;
+  final String editingContent;
+  final TextEditingController editorController;
+  final ValueChanged<String> onEditedContentChanged;
   final VoidCallback onEditToggle;
   final VoidCallback onClose;
 
   const _NotepadContentShell({
     required this.tab,
     required this.isEditing,
+    required this.editingContent,
+    required this.editorController,
+    required this.onEditedContentChanged,
     required this.onEditToggle,
     required this.onClose,
   });
@@ -316,21 +540,17 @@ class _NotepadContentShell extends StatelessWidget {
               color: AppTheme.textSecondary.withValues(alpha: 0.12),
             ),
             Expanded(
-              child: tab.content.trim().isEmpty
+              child: !isEditing && tab.content.trim().isEmpty
                   ? _NotepadEmptyState(
                       title: 'このタブはまだ空です',
                       message: 'ここに ${tab.title} の内容が表示されます',
                     )
-                  : SingleChildScrollView(
-                      padding: const EdgeInsets.all(16),
-                      child: Text(
-                        tab.content,
-                        style: const TextStyle(
-                          color: AppTheme.textPrimary,
-                          fontSize: 14,
-                          height: 1.5,
-                        ),
-                      ),
+                  : NotepadContentRenderer(
+                      path: tab.id,
+                      content: isEditing ? editingContent : tab.content,
+                      isEditing: isEditing,
+                      editorController: editorController,
+                      onContentChanged: onEditedContentChanged,
                     ),
             ),
           ],
