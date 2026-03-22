@@ -90,14 +90,20 @@ class _CallScreenState extends State<CallScreen> {
                       onExitRequested: () {
                         Navigator.of(context).pop();
                       },
-                      left: const ChatPane(),
+                      left: ChatPane(
+                        onBackPressed: _layoutController.goToCenter,
+                        hideBackButton: isWideLayout,
+                      ),
                       center: CallPane(
                         speedDial: widget.speedDial,
                         onChatPressed: _layoutController.goToLeft,
                         onNotepadPressed: _layoutController.goToRight,
                         hideNavigationButtons: isWideLayout,
                       ),
-                      right: const NotepadPane(),
+                      right: NotepadPane(
+                        onBackPressed: _layoutController.goToCenter,
+                        hideBackButton: isWideLayout,
+                      ),
                     );
                   },
                 ),
