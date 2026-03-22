@@ -13,6 +13,7 @@ import 'package:vagina/feat/callv2/services/recorder_service.dart';
 import 'package:vagina/feat/callv2/services/tool_runner.dart';
 import 'package:vagina/interfaces/virtual_filesystem_repository.dart';
 import 'package:vagina/feat/callv2/models/active_file.dart';
+import 'package:vagina/services/tools_runtime/tool_definition.dart';
 import 'package:vagina/services/virtual_filesystem_service.dart';
 
 /// One-way lifecycle state for a single call session.
@@ -44,6 +45,7 @@ class CallService {
   late final RecorderService _recorderService;
   late final PlaybackService _playbackService;
   late final ToolRunner _toolRunner;
+  late final Set<String> _exposedToolKeys;
 
   /// Item IDs for function-call items that have already been dispatched
   /// (or are currently being executed). Prevents double-dispatch.
@@ -95,6 +97,7 @@ class CallService {
   Stream<List<ActiveFile>> get activeFilesStream => _notepadService.activeFiles;
 
   void setVoiceAgent(VoiceAgentInfo voiceAgent) {
+    print(voiceAgent);
     if (state != CallState.uninitialized) {
       throw StateError(
         'setVoiceAgent() can only be called from uninitialized state.',
@@ -143,15 +146,15 @@ class CallService {
       callApi: CallControlApi(callService: this),
     );
 
+    _exposedToolKeys = Set<String>.from(_voiceAgent!.enabledTools);
+
     // 6. Start all services
     await Future.wait<void>([
       _realtimeService.start(),
       _recorderService.start(),
       _playbackService.start(),
       _notepadService.start(),
-      _toolRunner.start(
-        enabledToolKeys: Set<String>.from(_voiceAgent!.enabledTools),
-      ),
+      _toolRunner.start(),
     ]);
 
     // 7. Subscribe to activeFiles stream and update tool registration
@@ -161,9 +164,10 @@ class CallService {
 
   /// Register tools with the model and start watching for function calls.
   Future<void> _startCall() async {
-    // 1. Register only tools whose activation matches the current active
-    //    extension set (initially empty, so only always-available tools).
-    final initialDefinitions = _toolRunner.computeAvailableTools(<String>{});
+    // 1. Register only tool definitions that are exposed for this voice agent
+    //    and whose activation matches the current active extension set
+    //    (initially empty, so only always-available tools).
+    final initialDefinitions = _computeExposedTools(<String>{});
 
     await _realtimeService.registerTools(initialDefinitions);
     await _recorderService.startRecordingSession();
@@ -275,6 +279,16 @@ class CallService {
     );
   }
 
+  List<ToolDefinition> _computeExposedTools(Set<String> activeExtensions) {
+    final availableDefinitions = _toolRunner.computeAvailableTools(
+      activeExtensions,
+    );
+
+    return availableDefinitions
+        .where((definition) => _exposedToolKeys.contains(definition.toolKey))
+        .toList(growable: false);
+  }
+
   /// Called whenever active files change via NotepadService stream.
   ///
   /// Recomputes visible tool sets based on active file extensions and
@@ -286,8 +300,7 @@ class CallService {
         .where((ext) => ext.isNotEmpty)
         .toSet();
 
-    // Compute available tools based on extensions
-    final definitions = _toolRunner.computeAvailableTools(extensions);
+    final definitions = _computeExposedTools(extensions);
 
     // Re-register tools with the model
     if (state == CallState.active) {

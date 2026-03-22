@@ -29,22 +29,19 @@ void main() {
       await runner.dispose();
     });
 
-    test('filters enabled tool definitions by configured keys', () async {
-      await runner.start(
-        enabledToolKeys: const <String>{'calculator'},
-      );
+    test('registers all tool definitions on start', () async {
+      await runner.start();
 
-      final keys = runner.enabledDefinitions
+      final keys = runner.allDefinitions
           .map((definition) => definition.toolKey)
           .toList(growable: false);
 
-      expect(keys, unorderedEquals(const <String>['calculator']));
+      expect(keys, contains('calculator'));
+      expect(keys, contains('end_call'));
     });
 
     test('executes calculator tool with JSON arguments', () async {
-      await runner.start(
-        enabledToolKeys: const <String>{'calculator'},
-      );
+      await runner.start();
 
       final output = await runner.execute(
         'calculator',
@@ -58,9 +55,7 @@ void main() {
     });
 
     test('returns an error payload for unknown tools', () async {
-      await runner.start(
-        enabledToolKeys: const <String>{'calculator'},
-      );
+      await runner.start();
 
       final output = await runner.execute('missing_tool', '{}');
       final decoded = jsonDecode(output) as Map<String, dynamic>;
@@ -68,18 +63,21 @@ void main() {
       expect(decoded['error'], equals('Unknown tool: missing_tool'));
     });
 
-    test('returns an error payload for disabled tools', () async {
-      await runner.start(
-        enabledToolKeys: const <String>{'calculator'},
-      );
+    test('executes tools regardless of model exposure policy', () async {
+      await runner.start();
 
-      final output = await runner.execute('end_call', '{}');
+      final output = await runner.execute(
+        'end_call',
+        jsonEncode({'end_context': 'hidden-tool'}),
+      );
       final decoded = jsonDecode(output) as Map<String, dynamic>;
 
-      expect(
-        decoded['error'],
-        equals('Tool is not enabled for this session: end_call'),
-      );
+      await pumpEventQueue();
+
+      expect(decoded['success'], isTrue);
+      expect(decoded['ended'], isTrue);
+      expect(callService.endCallCalled, isTrue);
+      expect(callService.lastEndContext, equals('hidden-tool'));
     });
 
     test('executes fs_list with fake filesystem repository', () async {
@@ -88,7 +86,7 @@ void main() {
       filesystemRepository.files['/data.csv'] =
           const VirtualFile(path: '/data.csv', content: 'data');
 
-      await runner.start(enabledToolKeys: const {'fs_list'});
+      await runner.start();
 
       final output = await runner.execute(
         'fs_list',
@@ -101,7 +99,7 @@ void main() {
     });
 
     test('executes end_call through CallControlApi', () async {
-      await runner.start(enabledToolKeys: const {'end_call'});
+      await runner.start();
 
       final output = await runner.execute(
         'end_call',

@@ -10,8 +10,9 @@ import 'package:vagina/tools/tools.dart';
 
 /// Session-scoped tool runner backing service for a single call.
 ///
-/// Pure tool catalog and execution engine. Does not subscribe to streams
-/// or hold active file state. Tool visibility is computed on-demand via
+/// Pure tool catalog and execution engine. Does not subscribe to streams,
+/// hold active file state, or decide whether a tool may be called.
+/// Tool definition visibility is computed on-demand via
 /// [computeAvailableTools].
 class ToolRunner {
   final FilesystemApi _filesystemApi;
@@ -20,7 +21,6 @@ class ToolRunner {
   final Toolbox _toolbox = RootToolbox();
 
   final Map<String, Tool> _tools = <String, Tool>{};
-  Set<String> _enabledToolKeys = <String>{};
   bool _started = false;
 
   ToolRunner({
@@ -34,31 +34,16 @@ class ToolRunner {
   /// Whether [start] has been called.
   bool get isStarted => _started;
 
-  /// Tool definitions for the currently enabled tools.
-  ///
-  /// Only meaningful after [start] has been called.
-  /// This returns all tools filtered by speed dial config only.
-  /// For extension-based filtering, use [computeAvailableTools].
-  List<ToolDefinition> get enabledDefinitions {
-    if (_enabledToolKeys.isEmpty) {
-      return _tools.values.map((t) => t.definition).toList(growable: false);
-    }
-    return _tools.entries
-        .where((e) => _enabledToolKeys.contains(e.key))
-        .map((e) => e.value.definition)
-        .toList(growable: false);
-  }
-
-  /// All registered tool definitions regardless of enabled state.
+  /// Tool definitions registered for this session.
   List<ToolDefinition> get allDefinitions {
     return _tools.values.map((t) => t.definition).toList(growable: false);
   }
 
-  /// Compute available tools based on active file extensions.
+  /// Compute tool definitions exposed to the model based on active file
+  /// extensions.
   ///
-  /// Filters tools based on:
-  /// 1. Speed dial configuration ([_enabledToolKeys])
-  /// 2. Extension activation rules for each tool
+  /// Filters the session-registered tool definitions by extension activation
+  /// rules for each tool.
   ///
   /// Returns a fresh list of tool definitions on each call.
   List<ToolDefinition> computeAvailableTools(Set<String> activeExtensions) {
@@ -71,30 +56,18 @@ class ToolRunner {
         activeExtensions.map((ext) => ext.toLowerCase()).toSet();
 
     return _tools.values.where((tool) {
-      final toolKey = tool.definition.toolKey;
       final activation = tool.definition.activation;
 
-      // Filter by speed dial config (if set)
-      final enabledByConfig =
-          _enabledToolKeys.isEmpty || _enabledToolKeys.contains(toolKey);
-
       // Filter by extension activation rules
-      final enabledByActivation =
-          activation.isEnabledForExtensions(normalizedExtensions);
-
-      return enabledByConfig && enabledByActivation;
+      return activation.isEnabledForExtensions(normalizedExtensions);
     }).map((tool) => tool.definition).toList(growable: false);
   }
 
   /// Instantiate and initialise every tool from the toolbox.
-  Future<void> start({
-    Set<String> enabledToolKeys = const <String>{},
-  }) async {
+  Future<void> start() async {
     if (_started) {
       return;
     }
-
-    _enabledToolKeys = Set<String>.from(enabledToolKeys);
 
     for (final tool in _toolbox.tools) {
       final key = tool.definition.toolKey;
@@ -126,12 +99,6 @@ class ToolRunner {
         'error': 'Unknown tool: $toolKey',
       });
     }
-    if (_enabledToolKeys.isNotEmpty && !_enabledToolKeys.contains(toolKey)) {
-      return jsonEncode({
-        'error': 'Tool is not enabled for this session: $toolKey',
-      });
-    }
-
     final Map<String, dynamic> args;
     try {
       final decoded = jsonDecode(argumentsJson);
@@ -148,7 +115,6 @@ class ToolRunner {
   /// Release resources.
   Future<void> dispose() async {
     _tools.clear();
-    _enabledToolKeys.clear();
     _started = false;
   }
 }
