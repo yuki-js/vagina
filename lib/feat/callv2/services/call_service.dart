@@ -13,6 +13,7 @@ import 'package:vagina/feat/callv2/services/recorder_service.dart';
 import 'package:vagina/feat/callv2/services/tool_runner.dart';
 import 'package:vagina/interfaces/virtual_filesystem_repository.dart';
 import 'package:vagina/feat/callv2/models/active_file.dart';
+import 'package:vagina/feat/callv2/models/voice_agent_api_config.dart';
 import 'package:vagina/services/tools_runtime/tool_definition.dart';
 import 'package:vagina/services/virtual_filesystem_service.dart';
 
@@ -116,15 +117,32 @@ class CallService {
           'startCall() can only be called from uninitialized state.');
     }
 
-    await _initialize();
+    // 1. サービスインスタンス生成
+    await _instantiateServices();
+
+    // 2. 事前条件検証（fail-fast、この時点ではリソース未確保）
+    await _checkPreconditions();
+
     state = CallState.connecting;
 
-    await _startCall();
-
-    state = CallState.active;
+    // 3. リソース確保と接続（ここからはエラー時に dispose 必要）
+    try {
+      await _igniteCall();
+      state = CallState.active;
+    } catch (e) {
+      // リソース確保後のエラーなので cleanup が必要
+      state = CallState.disposing;
+      try {
+        await _dispose();
+      } catch (_) {
+        // cleanup失敗は無視
+      }
+      rethrow;
+    }
   }
 
-  Future<void> _initialize() async {
+  /// サービスインスタンス生成
+  Future<void> _instantiateServices() async {
     // 1. Initialize VFS
     _vfs = VirtualFilesystemService(_filesystemRepository);
     await _vfs.initialize();
@@ -147,8 +165,31 @@ class CallService {
     );
 
     _exposedToolKeys = Set<String>.from(_voiceAgent!.enabledTools);
+  }
 
-    // 6. Start all services
+  /// 事前条件検証
+  Future<void> _checkPreconditions() async {
+    // Voice agent設定検証
+    if (_voiceAgent == null) {
+      throw StateError('Voice agent not set');
+    }
+
+    final config = _voiceAgent!.apiConfig;
+    if (config is SelfhostedVoiceAgentApiConfig) {
+      if (config.baseUrl.isEmpty || config.apiKey.isEmpty) {
+        throw Exception('Realtime APIの設定が不完全です');
+      }
+    }
+
+    // マイク権限検証
+    final hasPermission = await _recorderService.hasPermission();
+    if (!hasPermission) {
+      throw Exception('マイクの使用を許可してください');
+    }
+  }
+
+  /// リソース確保と接続開始
+  Future<void> _igniteCall() async {
     await Future.wait<void>([
       _realtimeService.start(),
       _recorderService.start(),
@@ -157,13 +198,9 @@ class CallService {
       _toolRunner.start(),
     ]);
 
-    // 7. Subscribe to activeFiles stream and update tool registration
     _activeFilesSubscription =
         _notepadService.activeFiles.listen(_onActiveFilesChanged);
-  }
 
-  /// Register tools with the model and start watching for function calls.
-  Future<void> _startCall() async {
     final initialDefinitions = _computeExposedTools(<String>{});
 
     await _realtimeService.registerTools(initialDefinitions);
@@ -327,17 +364,15 @@ class CallService {
 
     state = CallState.disposing;
 
-    // Persist all active files before cleanup
-    await _notepadService.persistAll();
-
-    // Export session tabs (could be used for session saving)
-    _notepadService.exportSessionTabs();
-    // TODO: Save exported session tabs to CallSession when session repository is wired
-
-    await _dispose();
-
-    state = CallState.disposed;
-    await _stateController.close();
+    // Persist all active files before cleanup - エラーがあっても継続
+    try {
+      await _notepadService.persistAll();
+      _notepadService.exportSessionTabs();
+      // TODO: Save exported session tabs to CallSession when session repository is wired
+      await _dispose();
+    } catch (e) {
+      // 継続
+    }
   }
 
   Future<void> _dispose() async {
@@ -361,6 +396,9 @@ class CallService {
       _toolRunner.dispose(),
       _notepadService.dispose(),
     ]);
+
+    state = CallState.disposed;
+    await _stateController.close();
   }
 }
 

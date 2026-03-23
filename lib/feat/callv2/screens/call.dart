@@ -44,17 +44,45 @@ class _CallScreenState extends State<CallScreen> {
   }
 
   Future<void> _initializeCallService() async {
-    final voiceAgent = await _buildVoiceAgent(widget.speedDial);
-    if (!mounted) {
-      return;
-    }
+    try {
+      final voiceAgent = await _buildVoiceAgent(widget.speedDial);
+      if (!mounted) return;
 
-    _callService.setVoiceAgent(voiceAgent);
-    await _callService.startCall();
+      _callService.setVoiceAgent(voiceAgent);
+      await _callService.startCall();
 
-    if (!mounted) {
-      await _callService.endCall();
-      return;
+      if (!mounted) {
+        await _callService.endCall();
+        return;
+      }
+    } catch (e) {
+      if (!mounted) return;
+
+      // エラーダイアログを表示
+      await showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          icon: Icon(
+            Icons.error_outline,
+            size: 48,
+            color: Theme.of(context).colorScheme.error,
+          ),
+          title: const Text('接続できません'),
+          content: Text(e.toString()),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('閉じる'),
+            ),
+          ],
+        ),
+      );
+
+      // ダイアログを閉じた後、通話画面も閉じる
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
     }
   }
 
