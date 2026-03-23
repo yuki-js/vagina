@@ -59,7 +59,15 @@ class CallService {
 
   final StreamController<CallState> _stateController =
       StreamController<CallState>.broadcast();
+  final StreamController<Duration> _durationController =
+      StreamController<Duration>.broadcast();
+  final StreamController<bool> _speakerMuteController =
+      StreamController<bool>.broadcast();
   CallState _state = CallState.uninitialized;
+  Timer? _callDurationTimer;
+  DateTime? _callStartedAt;
+  Duration _callDuration = Duration.zero;
+  bool _speakerMuted = false;
 
   CallService({
     this.textAgents = const [],
@@ -79,6 +87,14 @@ class CallService {
   }
 
   Stream<CallState> get states => _stateController.stream;
+
+  Stream<Duration> get durationStream => _durationController.stream;
+
+  Duration get currentCallDuration => _callDuration;
+
+  Stream<bool> get speakerMuteStates => _speakerMuteController.stream;
+
+  bool get isSpeakerMuted => _speakerMuted;
 
   RecorderService get recorderService => _recorderService;
 
@@ -128,6 +144,7 @@ class CallService {
     // 3. リソース確保と接続（ここからはエラー時に dispose 必要）
     try {
       await _igniteCall();
+      _startDurationTracking();
       state = CallState.active;
     } catch (e) {
       // リソース確保後のエラーなので cleanup が必要
@@ -223,6 +240,36 @@ class CallService {
       }
       unawaited(_interruptAssistantOutput());
     });
+  }
+
+  Future<void> interruptAssistantOutput() async {
+    if (state != CallState.connecting && state != CallState.active) {
+      return;
+    }
+
+    await _interruptAssistantOutput();
+  }
+
+  Future<void> setSpeakerMuted(bool muted) async {
+    if (state == CallState.uninitialized || state == CallState.disposed) {
+      return;
+    }
+    if (_speakerMuted == muted) {
+      return;
+    }
+
+    _speakerMuted = muted;
+    if (!_speakerMuteController.isClosed) {
+      _speakerMuteController.add(_speakerMuted);
+    }
+    if (_speakerMuted) {
+      await _playbackService.interrupt();
+    }
+    await _playbackService.setVolume(_speakerMuted ? 0.0 : 1.0);
+  }
+
+  Future<void> toggleSpeakerMuted() async {
+    await setSpeakerMuted(!_speakerMuted);
   }
 
   Future<void> sendTextMessage(String text) async {
@@ -357,6 +404,24 @@ class CallService {
     }
   }
 
+  void _startDurationTracking() {
+    _callDurationTimer?.cancel();
+    _callStartedAt = DateTime.now();
+    _callDuration = Duration.zero;
+
+    _callDurationTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      final callStartedAt = _callStartedAt;
+      if (callStartedAt == null) {
+        return;
+      }
+
+      _callDuration = DateTime.now().difference(callStartedAt);
+      if (!_durationController.isClosed) {
+        _durationController.add(_callDuration);
+      }
+    });
+  }
+
   Future<void> endCall({String? endContext}) async {
     if (state == CallState.disposing || state == CallState.disposed) {
       return;
@@ -376,6 +441,8 @@ class CallService {
   }
 
   Future<void> _dispose() async {
+    _callDurationTimer?.cancel();
+    _callDurationTimer = null;
     await _threadSubscription?.cancel();
     _threadSubscription = null;
     await _assistantAudioCompletedSubscription?.cancel();
@@ -398,6 +465,8 @@ class CallService {
     ]);
 
     state = CallState.disposed;
+    await _durationController.close();
+    await _speakerMuteController.close();
     await _stateController.close();
   }
 }

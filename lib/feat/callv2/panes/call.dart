@@ -29,8 +29,6 @@ class CallPane extends StatefulWidget {
 }
 
 class _CallPaneState extends State<CallPane> {
-  bool _speakerMuted = false;
-
   CallService? get _activeCallService {
     final callService = widget.callService;
     if (callService.state == CallState.uninitialized ||
@@ -56,10 +54,13 @@ class _CallPaneState extends State<CallPane> {
     return _activeCallService?.state == CallState.active;
   }
 
-  void _handleSpeakerToggle() {
-    setState(() {
-      _speakerMuted = !_speakerMuted;
-    });
+  Future<void> _handleSpeakerToggle() async {
+    final callService = _activeCallService;
+    if (callService == null) {
+      return;
+    }
+
+    await callService.toggleSpeakerMuted();
   }
 
   void _handleMuteToggle() {
@@ -72,7 +73,18 @@ class _CallPaneState extends State<CallPane> {
     recorderService.setMute(!recorderService.isMuted);
   }
 
-  void _handleInterrupt() {}
+  Future<void> _handleInterrupt() async {
+    final callService = _activeCallService;
+    if (callService == null) {
+      return;
+    }
+
+    await callService.interruptAssistantOutput();
+  }
+
+  Future<void> _handleEndCall() async {
+    await widget.callService.endCall();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -82,214 +94,234 @@ class _CallPaneState extends State<CallPane> {
       builder: (context, muteSnapshot) {
         final isMuted = muteSnapshot.data ?? false;
 
-        return Column(
-          children: [
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if (widget.speedDial.isDefault)
-                    const Icon(
-                      Icons.headset_mic,
-                      size: 80,
-                      color: AppTheme.primaryColor,
-                    )
-                  else if (widget.speedDial.iconEmoji != null)
-                    Text(
-                      widget.speedDial.iconEmoji!,
-                      style: const TextStyle(fontSize: 80),
-                    )
-                  else
-                    const Icon(
-                      Icons.headset_mic,
-                      size: 80,
-                      color: AppTheme.primaryColor,
-                    ),
-                  const SizedBox(height: 16),
-                  Text(
-                    widget.speedDial.isDefault
-                        ? AppConfig.appName
-                        : widget.speedDial.name,
-                    style: const TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.textPrimary,
-                      letterSpacing: 4,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  if (widget.speedDial.isDefault)
-                    Text(
-                      AppConfig.appSubtitle,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: AppTheme.textSecondary,
-                        letterSpacing: 1,
+        return StreamBuilder<bool>(
+          stream: widget.callService.speakerMuteStates,
+          initialData: widget.callService.isSpeakerMuted,
+          builder: (context, speakerSnapshot) {
+            final isSpeakerMuted = speakerSnapshot.data ?? false;
+
+            return StreamBuilder<Duration>(
+              stream: widget.callService.durationStream,
+              initialData: widget.callService.currentCallDuration,
+              builder: (context, durationSnapshot) {
+                final callDuration = durationSnapshot.data ?? Duration.zero;
+
+                return Column(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          if (widget.speedDial.isDefault)
+                            const Icon(
+                              Icons.headset_mic,
+                              size: 80,
+                              color: AppTheme.primaryColor,
+                            )
+                          else if (widget.speedDial.iconEmoji != null)
+                            Text(
+                              widget.speedDial.iconEmoji!,
+                              style: const TextStyle(fontSize: 80),
+                            )
+                          else
+                            const Icon(
+                              Icons.headset_mic,
+                              size: 80,
+                              color: AppTheme.primaryColor,
+                            ),
+                          const SizedBox(height: 16),
+                          Text(
+                            widget.speedDial.isDefault
+                                ? AppConfig.appName
+                                : widget.speedDial.name,
+                            style: const TextStyle(
+                              fontSize: 32,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.textPrimary,
+                              letterSpacing: 4,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          if (widget.speedDial.isDefault)
+                            Text(
+                              AppConfig.appSubtitle,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: AppTheme.textSecondary,
+                                letterSpacing: 1,
+                              ),
+                            ),
+                          const SizedBox(height: 32),
+                          Text(
+                            DurationFormatter.formatMinutesSeconds(
+                              callDuration.inSeconds,
+                            ),
+                            style: const TextStyle(
+                              fontSize: 48,
+                              fontWeight: FontWeight.w300,
+                              color: AppTheme.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          StreamBuilder<double>(
+                            stream: _amplitudeStream,
+                            initialData: 0.0,
+                            builder: (context, snapshot) {
+                              return _AudioLevelVisualizer(
+                                level: snapshot.data ?? 0.0,
+                                isMuted: isMuted,
+                                isConnected: _isConnected,
+                                height: 60,
+                              );
+                            },
+                          ),
+                        ],
                       ),
                     ),
-                  const SizedBox(height: 32),
-                  Text(
-                    DurationFormatter.formatMinutesSeconds(0),
-                    style: const TextStyle(
-                      fontSize: 48,
-                      fontWeight: FontWeight.w300,
-                      color: AppTheme.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  StreamBuilder<double>(
-                    stream: _amplitudeStream,
-                    initialData: 0.0,
-                    builder: (context, snapshot) {
-                      return _AudioLevelVisualizer(
-                        level: snapshot.data ?? 0.0,
-                        isMuted: isMuted,
-                        isConnected: _isConnected,
-                        height: 60,
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-            Container(
-              margin: const EdgeInsets.all(16),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(24),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 32, sigmaY: 32),
-                  child: Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: AppTheme.surfaceColor.withValues(alpha: 0.6),
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (!widget.hideNavigationButtons)
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              Expanded(
-                                child: _ControlButton(
-                                  icon: Icons.chat_bubble_outline,
-                                  label: 'チャット',
-                                  onTap: widget.onChatPressed,
+                    Container(
+                      margin: const EdgeInsets.all(16),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(24),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 32, sigmaY: 32),
+                          child: Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: AppTheme.surfaceColor.withValues(alpha: 0.6),
+                              borderRadius: BorderRadius.circular(24),
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (!widget.hideNavigationButtons)
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceEvenly,
+                                    children: [
+                                      Expanded(
+                                        child: _ControlButton(
+                                          icon: Icons.chat_bubble_outline,
+                                          label: 'チャット',
+                                          onTap: widget.onChatPressed,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: _ControlButton(
+                                          icon: Icons.note_alt_outlined,
+                                          label: 'ノートパッド',
+                                          onTap: widget.onNotepadPressed,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                if (!widget.hideNavigationButtons)
+                                  const SizedBox(height: 16),
+                                if (widget.hideNavigationButtons) ...[
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceEvenly,
+                                    children: [
+                                      Expanded(
+                                        child: _ControlButton(
+                                          icon: isSpeakerMuted
+                                              ? Icons.volume_off
+                                              : Icons.volume_up,
+                                          label: 'スピーカー',
+                                          onTap: _handleSpeakerToggle,
+                                          isActive: isSpeakerMuted,
+                                          activeColor: AppTheme.warningColor,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: _ControlButton(
+                                          icon: isMuted ? Icons.mic_off : Icons.mic,
+                                          label: '消音',
+                                          onTap: _handleMuteToggle,
+                                          isActive: isMuted,
+                                          activeColor: AppTheme.errorColor,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceEvenly,
+                                    children: [
+                                      Expanded(
+                                        child: _ControlButton(
+                                          icon: Icons.front_hand,
+                                          label: '割込み',
+                                          onTap: _handleInterrupt,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ] else
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceEvenly,
+                                    children: [
+                                      Expanded(
+                                        child: _ControlButton(
+                                          icon: isSpeakerMuted
+                                              ? Icons.volume_off
+                                              : Icons.volume_up,
+                                          label: 'スピーカー',
+                                          onTap: _handleSpeakerToggle,
+                                          isActive: isSpeakerMuted,
+                                          activeColor: AppTheme.warningColor,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: _ControlButton(
+                                          icon: isMuted ? Icons.mic_off : Icons.mic,
+                                          label: '消音',
+                                          onTap: _handleMuteToggle,
+                                          isActive: isMuted,
+                                          activeColor: AppTheme.errorColor,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: _ControlButton(
+                                          icon: Icons.front_hand,
+                                          label: '割込み',
+                                          onTap: _handleInterrupt,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                const SizedBox(height: 24),
+                                SizedBox(
+                                  height: 72,
+                                  width: 72,
+                                  child: FloatingActionButton(
+                                    heroTag: 'call_fab',
+                                    onPressed: _handleEndCall,
+                                    backgroundColor: AppTheme.errorColor,
+                                    shape: const CircleBorder(),
+                                    child: const Icon(
+                                      Icons.call_end,
+                                      color: Colors.white,
+                                      size: 40,
+                                    ),
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: _ControlButton(
-                                  icon: Icons.note_alt_outlined,
-                                  label: 'ノートパッド',
-                                  onTap: widget.onNotepadPressed,
-                                ),
-                              ),
-                            ],
-                          ),
-                        if (!widget.hideNavigationButtons)
-                          const SizedBox(height: 16),
-                        if (widget.hideNavigationButtons) ...[
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              Expanded(
-                                child: _ControlButton(
-                                  icon: _speakerMuted
-                                      ? Icons.volume_off
-                                      : Icons.volume_up,
-                                  label: 'スピーカー',
-                                  onTap: _handleSpeakerToggle,
-                                  isActive: _speakerMuted,
-                                  activeColor: AppTheme.warningColor,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: _ControlButton(
-                                  icon: isMuted ? Icons.mic_off : Icons.mic,
-                                  label: '消音',
-                                  onTap: _handleMuteToggle,
-                                  isActive: isMuted,
-                                  activeColor: AppTheme.errorColor,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              Expanded(
-                                child: _ControlButton(
-                                  icon: Icons.front_hand,
-                                  label: '割込み',
-                                  onTap: _handleInterrupt,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ] else
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              Expanded(
-                                child: _ControlButton(
-                                  icon: _speakerMuted
-                                      ? Icons.volume_off
-                                      : Icons.volume_up,
-                                  label: 'スピーカー',
-                                  onTap: _handleSpeakerToggle,
-                                  isActive: _speakerMuted,
-                                  activeColor: AppTheme.warningColor,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: _ControlButton(
-                                  icon: isMuted ? Icons.mic_off : Icons.mic,
-                                  label: '消音',
-                                  onTap: _handleMuteToggle,
-                                  isActive: isMuted,
-                                  activeColor: AppTheme.errorColor,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: _ControlButton(
-                                  icon: Icons.front_hand,
-                                  label: '割込み',
-                                  onTap: _handleInterrupt,
-                                ),
-                              ),
-                            ],
-                          ),
-                        const SizedBox(height: 24),
-                        SizedBox(
-                          height: 72,
-                          width: 72,
-                          child: FloatingActionButton(
-                            heroTag: 'call_fab',
-                            onPressed: () {
-                              Navigator.of(context).maybePop();
-                            },
-                            backgroundColor: AppTheme.errorColor,
-                            shape: const CircleBorder(),
-                            child: const Icon(
-                              Icons.call_end,
-                              color: Colors.white,
-                              size: 40,
+                              ],
                             ),
                           ),
                         ),
-                      ],
+                      ),
                     ),
-                  ),
-                ),
-              ),
-            ),
-          ],
+                  ],
+                );
+              },
+            );
+          },
         );
       },
     );
