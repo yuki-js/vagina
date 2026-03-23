@@ -33,6 +33,7 @@ class _CallScreenState extends State<CallScreen> {
   final AdaptiveTriColumnController _layoutController =
       AdaptiveTriColumnController();
   late final CallService _callService;
+  StreamSubscription<CallState>? _callStateSubscription;
 
   @override
   void initState() {
@@ -40,6 +41,21 @@ class _CallScreenState extends State<CallScreen> {
     _callService = CallService(
       filesystemRepository: RepositoryFactory.filesystem,
     );
+
+    // CallStateの変化を監視してpaneを再構築
+    _callStateSubscription = _callService.states.listen((state) {
+      if (!mounted) return;
+
+      // disposed状態になったら画面を閉じる
+      if (state == CallState.disposed) {
+        Navigator.of(context).pop();
+        return;
+      }
+
+      // 状態変化時にpaneを再構築
+      setState(() {});
+    });
+
     unawaited(_initializeCallService());
   }
 
@@ -88,6 +104,7 @@ class _CallScreenState extends State<CallScreen> {
 
   @override
   void dispose() {
+    _callStateSubscription?.cancel();
     if (_callService.state != CallState.uninitialized &&
         _callService.state != CallState.disposed) {
       unawaited(_callService.endCall());
