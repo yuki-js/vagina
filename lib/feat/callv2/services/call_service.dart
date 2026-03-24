@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:vagina/feat/callv2/models/realtime/realtime_thread.dart';
+import 'package:vagina/feat/callv2/models/text_agent_info.dart';
 import 'package:vagina/feat/callv2/models/voice_agent_info.dart';
 import 'package:vagina/feat/callv2/services/call_control_api.dart';
 import 'package:vagina/feat/callv2/services/call_filesystem_api.dart';
@@ -37,6 +38,7 @@ enum CallState {
 /// - PlaybackService: audio output
 class CallService {
   VoiceAgentInfo? _voiceAgent;
+  List<TextAgentInfo>? _textAgents;
   final VirtualFilesystemRepository _filesystemRepository;
 
   late final VirtualFilesystemService _vfs;
@@ -127,6 +129,19 @@ class CallService {
     _voiceAgent = voiceAgent;
   }
 
+  void setTextAgents(Iterable<TextAgentInfo> textAgents) {
+    if (state != CallState.uninitialized) {
+      throw StateError(
+        'setTextAgents() can only be called from uninitialized state.',
+      );
+    }
+    if (_textAgents != null) {
+      throw StateError('Text agents have already been set.');
+    }
+
+    _textAgents = textAgents.toList(growable: false);
+  }
+
   Future<void> startCall() async {
     if (state != CallState.uninitialized) {
       throw StateError(
@@ -168,7 +183,9 @@ class CallService {
     _realtimeService = RealtimeService(voiceAgent: _voiceAgent!);
     _recorderService = RecorderService();
     _playbackService = PlaybackService();
-    _textAgentService = TextAgentService();
+    _textAgentService = TextAgentService(
+      agents: _textAgents!,
+    );
 
     _toolRunner = ToolRunner(
       filesystemApi: CallFilesystemApi(notepadService: _notepadService),
