@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:vagina/feat/callv2/models/realtime/realtime_thread.dart';
-import 'package:vagina/feat/callv2/models/text_agent_info.dart';
 import 'package:vagina/feat/callv2/models/voice_agent_info.dart';
 import 'package:vagina/feat/callv2/services/call_control_api.dart';
 import 'package:vagina/feat/callv2/services/call_filesystem_api.dart';
@@ -11,6 +10,7 @@ import 'package:vagina/feat/callv2/services/playback_service.dart';
 import 'package:vagina/feat/callv2/services/realtime_service.dart';
 import 'package:vagina/feat/callv2/services/recorder_service.dart';
 import 'package:vagina/feat/callv2/services/text_agent_api.dart';
+import 'package:vagina/feat/callv2/services/text_agent_service.dart';
 import 'package:vagina/feat/callv2/services/tool_runner.dart';
 import 'package:vagina/interfaces/virtual_filesystem_repository.dart';
 import 'package:vagina/feat/callv2/models/active_file.dart';
@@ -37,7 +37,6 @@ enum CallState {
 /// - PlaybackService: audio output
 class CallService {
   VoiceAgentInfo? _voiceAgent;
-  final List<TextAgentInfo> textAgents;
   final VirtualFilesystemRepository _filesystemRepository;
 
   late final VirtualFilesystemService _vfs;
@@ -46,6 +45,7 @@ class CallService {
   late final RecorderService _recorderService;
   late final PlaybackService _playbackService;
   late final ToolRunner _toolRunner;
+  late final TextAgentService _textAgentService;
   late final Set<String> _exposedToolKeys;
 
   /// Item IDs for function-call items that have already been dispatched
@@ -70,7 +70,6 @@ class CallService {
   bool _speakerMuted = false;
 
   CallService({
-    this.textAgents = const [],
     required VirtualFilesystemRepository filesystemRepository,
   }) : _filesystemRepository = filesystemRepository;
 
@@ -92,7 +91,8 @@ class CallService {
 
   Duration get currentCallDuration => _callDuration;
 
-  Stream<bool> get speakerMuteStates => _speakerMuteController.stream;
+  Stream<bool> get speakerMuteStates =>
+      _speakerMuteController.stream; // todo: playbackServiceに移譲する
 
   bool get isSpeakerMuted => _speakerMuted;
 
@@ -168,11 +168,12 @@ class CallService {
     _realtimeService = RealtimeService(voiceAgent: _voiceAgent!);
     _recorderService = RecorderService();
     _playbackService = PlaybackService();
+    _textAgentService = TextAgentService();
 
     _toolRunner = ToolRunner(
       filesystemApi: CallFilesystemApi(notepadService: _notepadService),
       callApi: CallControlApi(callService: this),
-      textAgentApi: CallTextAgentApi(textAgents: textAgents),
+      textAgentApi: CallTextAgentApi(textAgentService: _textAgentService),
     );
 
     _exposedToolKeys = Set<String>.from(_voiceAgent!.enabledTools);
@@ -206,6 +207,7 @@ class CallService {
       _recorderService.start(),
       _playbackService.start(),
       _notepadService.start(),
+      _textAgentService.start(),
       _toolRunner.start(),
     ]);
 
@@ -455,6 +457,7 @@ class CallService {
       _recorderService.dispose(),
       _playbackService.dispose(),
       _toolRunner.dispose(),
+      _textAgentService.dispose(),
       _notepadService.dispose(),
     ]);
 
