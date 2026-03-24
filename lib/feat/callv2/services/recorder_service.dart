@@ -158,8 +158,6 @@ final class RecorderService {
   }
 
   Future<void> stopRecordingSession() async {
-    _ensureNotDisposed();
-
     if (_state == RecorderServiceState.idle ||
         _state == RecorderServiceState.uninitialized) {
       return;

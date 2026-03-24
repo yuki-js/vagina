@@ -4,7 +4,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:vagina/feat/callv2/models/text_agent_api_config.dart';
 import 'package:vagina/feat/callv2/models/text_agent_thread.dart';
-import 'package:vagina/feat/callv2/services/text_agent_transport.dart';
+import 'package:vagina/feat/callv2/services/transport/text_agent_transport.dart';
 import 'package:vagina/services/tools_runtime/tool_definition.dart';
 
 /// Azure OpenAI Chat Completions transport implementation.
@@ -85,7 +85,7 @@ class AzureTextAgentTransport implements TextAgentTransport {
 
   Uri _buildChatCompletionsUrl() {
     final baseUrl = _config.baseUrl.replaceAll(RegExp(r'/$'), '');
-    
+
     // Check if baseUrl already contains the full Chat Completions path
     if (baseUrl.toLowerCase().contains('/chat/completions')) {
       return Uri.parse(baseUrl);
@@ -140,7 +140,8 @@ class AzureTextAgentTransport implements TextAgentTransport {
 
     // Add text content if present
     if (item.content.isNotEmpty) {
-      final textPart = item.findLatestContentPartOfType<TextAgentThreadTextPart>();
+      final textPart =
+          item.findLatestContentPartOfType<TextAgentThreadTextPart>();
       final content = textPart?.text ?? '';
       message['content'] = content;
     }

@@ -432,7 +432,6 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
 
   @override
   Future<void> unbindAudioInput() async {
-    _ensureNotDisposed();
     await _cancelAudioInput();
   }
 

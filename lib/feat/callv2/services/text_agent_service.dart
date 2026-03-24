@@ -5,8 +5,9 @@ import 'dart:convert';
 import 'package:vagina/feat/callv2/models/text_agent_api_config.dart';
 import 'package:vagina/feat/callv2/models/text_agent_info.dart';
 import 'package:vagina/feat/callv2/models/text_agent_thread.dart';
-import 'package:vagina/feat/callv2/services/text_agent_transport.dart';
-import 'package:vagina/feat/callv2/services/text_agent_transport_azure.dart';
+import 'package:vagina/feat/callv2/services/transport/text_agent_transport.dart';
+import 'package:vagina/feat/callv2/services/transport/text_agent_transport_azure.dart';
+import 'package:vagina/feat/callv2/services/notepad_service.dart';
 import 'package:vagina/feat/callv2/services/tool_runner.dart';
 import 'package:vagina/services/tools_runtime/tool_definition.dart';
 
@@ -18,12 +19,13 @@ class TextAgentService {
   static const String _defaultThreadId = 'default';
 
   final Map<String, TextAgentInfo> _agentsById = <String, TextAgentInfo>{};
-  
+
   /// Thread storage: agentId → threadId → thread.
   /// Currently uses threadId='default' for single-thread-per-agent.
   final Map<String, Map<String, TextAgentThread>> _threadsByAgent =
       <String, Map<String, TextAgentThread>>{};
 
+  NotepadService? _notepadService;
   ToolRunner? _toolRunner;
   bool _started = false;
   bool _disposed = false;
@@ -32,6 +34,16 @@ class TextAgentService {
     Iterable<TextAgentInfo> agents = const <TextAgentInfo>[],
   }) {
     _registerAgents(agents);
+  }
+
+  /// Inject NotepadService for dynamic active file tracking.
+  ///
+  /// Must be called before [start]. Required for dynamic tool filtering.
+  void setNotepadService(NotepadService notepadService) {
+    if (_started) {
+      throw StateError('setNotepadService() must be called before start().');
+    }
+    _notepadService = notepadService;
   }
 
   /// Read-only view of the text agents available during this call.
@@ -70,7 +82,7 @@ class TextAgentService {
   /// multiple threads per agent can be added by passing a threadId parameter.
   TextAgentThread getOrCreateThread(String agentId, {String? threadId}) {
     final effectiveThreadId = threadId ?? _defaultThreadId;
-    
+
     final agentThreads = _threadsByAgent.putIfAbsent(
       agentId,
       () => <String, TextAgentThread>{},
@@ -102,7 +114,6 @@ class TextAgentService {
     String prompt, {
     String? threadId,
     Duration? timeout,
-    Set<String> activeExtensions = const {},
   }) async {
     if (!_started) {
       throw StateError('TextAgentService has not been started.');
@@ -135,7 +146,6 @@ class TextAgentService {
         agent: agent,
         thread: thread,
         transport: transport,
-        activeExtensions: activeExtensions,
         timeout: effectiveTimeout,
       );
 
@@ -157,7 +167,6 @@ class TextAgentService {
           agent: agent,
           thread: thread,
           transport: transport,
-          activeExtensions: activeExtensions,
           timeout: effectiveTimeout,
         );
       }
@@ -252,7 +261,6 @@ class TextAgentService {
     required TextAgentInfo agent,
     required TextAgentThread thread,
     required TextAgentTransport transport,
-    required Set<String> activeExtensions,
     required Duration timeout,
   }) async {
     const maxTurns = 10;
@@ -261,7 +269,8 @@ class TextAgentService {
     while (turnCount < maxTurns) {
       turnCount++;
 
-      // Recompute available tools based on current active extensions
+      // Recompute available tools based on current active file extensions
+      final activeExtensions = _getCurrentActiveExtensions();
       final availableTools = _getAvailableToolsForAgent(agent, activeExtensions);
 
       // Send request via transport (transport handles tool format conversion)
@@ -290,13 +299,13 @@ class TextAgentService {
         // AI requested tool execution
         // Convert tool calls to domain model
         final domainToolCalls = <TextAgentToolCall>[];
-        
+
         for (final toolCallData in toolCalls) {
           final toolCallId = toolCallData['id'] as String;
           final function = toolCallData['function'] as Map<String, dynamic>;
           final toolName = function['name'] as String;
           final argumentsStr = function['arguments'] as String;
-          
+
           domainToolCalls.add(TextAgentToolCall(
             id: toolCallId,
             name: toolName,
@@ -321,7 +330,8 @@ class TextAgentService {
             if (_toolRunner == null) {
               throw StateError('ToolRunner not available');
             }
-            toolResult = await _toolRunner!.execute(toolCall.name, toolCall.arguments);
+            toolResult =
+                await _toolRunner!.execute(toolCall.name, toolCall.arguments);
           } catch (e) {
             toolResult = jsonEncode({
               'success': false,
@@ -369,10 +379,27 @@ class TextAgentService {
     throw Exception('Max turns ($maxTurns) reached without completion');
   }
 
+  Set<String> _getCurrentActiveExtensions() {
+    if (_notepadService == null) {
+      return const {};
+    }
+
+    final activeFiles = _notepadService!.listActive();
+    return activeFiles
+        .map((file) {
+          final parts = file.path.split('.');
+          final ext = parts.length > 1 ? parts.last.toLowerCase() : '';
+          return ext.isNotEmpty ? '.$ext' : '';  // Add dot prefix
+        })
+        .where((ext) => ext.isNotEmpty)
+        .toSet();
+  }
+
   /// Dispose the service and release session-scoped resources.
   Future<void> dispose() async {
     _agentsById.clear();
     _threadsByAgent.clear();
+    _notepadService = null;
     _toolRunner = null;
     _started = false;
     _disposed = true;

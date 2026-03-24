@@ -190,13 +190,11 @@ class CallService {
     _toolRunner = ToolRunner(
       filesystemApi: CallFilesystemApi(notepadService: _notepadService),
       callApi: CallControlApi(callService: this),
-      textAgentApi: CallTextAgentApi(
-        textAgentService: _textAgentService,
-        notepadService: _notepadService,
-      ),
+      textAgentApi: CallTextAgentApi(textAgentService: _textAgentService),
     );
 
-    // Wire ToolRunner into TextAgentService for tool execution support
+    // Wire dependencies into TextAgentService
+    _textAgentService.setNotepadService(_notepadService);
     _textAgentService.setToolRunner(_toolRunner);
 
     _exposedToolKeys = Set<String>.from(_voiceAgent!.enabledTools);
@@ -442,9 +440,9 @@ class CallService {
   }
 
   Future<void> endCall({String? endContext}) async {
-    if (state == CallState.disposing || state == CallState.disposed) {
-      return;
-    }
+    // if (state == CallState.disposing || state == CallState.disposed) {
+    //   return;
+    // }
 
     state = CallState.disposing;
 
@@ -453,10 +451,10 @@ class CallService {
       await _notepadService.persistAll();
       _notepadService.exportSessionTabs();
       // TODO: Save exported session tabs to CallSession when session repository is wired
-      await _dispose();
     } catch (e) {
       // 継続
     }
+    await _dispose();
   }
 
   Future<void> _dispose() async {
@@ -475,14 +473,18 @@ class CallService {
     await _playbackService.unbindInputStream();
     await _recorderService.stopRecordingSession();
 
-    await Future.wait<void>([
-      _realtimeService.dispose(),
-      _recorderService.dispose(),
-      _playbackService.dispose(),
-      _toolRunner.dispose(),
-      _textAgentService.dispose(),
-      _notepadService.dispose(),
-    ]);
+    try {
+      await Future.wait<void>([
+        _realtimeService.dispose(),
+        _recorderService.dispose(),
+        _playbackService.dispose(),
+        _toolRunner.dispose(),
+        _textAgentService.dispose(),
+        _notepadService.dispose(),
+      ]);
+    } catch (e) {
+      // Cleanup失敗は無視して確実にdisposed状態に遷移させる
+    }
 
     state = CallState.disposed;
     await _durationController.close();
