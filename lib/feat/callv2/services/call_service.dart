@@ -190,8 +190,14 @@ class CallService {
     _toolRunner = ToolRunner(
       filesystemApi: CallFilesystemApi(notepadService: _notepadService),
       callApi: CallControlApi(callService: this),
-      textAgentApi: CallTextAgentApi(textAgentService: _textAgentService),
+      textAgentApi: CallTextAgentApi(
+        textAgentService: _textAgentService,
+        notepadService: _notepadService,
+      ),
     );
+
+    // Wire ToolRunner into TextAgentService for tool execution support
+    _textAgentService.setToolRunner(_toolRunner);
 
     _exposedToolKeys = Set<String>.from(_voiceAgent!.enabledTools);
   }

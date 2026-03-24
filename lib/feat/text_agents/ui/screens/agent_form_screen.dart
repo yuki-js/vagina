@@ -5,6 +5,7 @@ import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/feat/callv2/models/text_agent_api_config.dart';
 import 'package:vagina/feat/callv2/models/text_agent_info.dart';
 import 'package:vagina/feat/shared/widgets/tool_config_section.dart';
+import 'package:vagina/feat/text_agents/model/text_agent_config.dart';
 import 'package:vagina/feat/text_agents/model/text_agent_provider.dart';
 import 'package:vagina/feat/text_agents/state/text_agent_providers.dart';
 import 'package:vagina/feat/text_agents/util/provider_parser.dart';
@@ -118,13 +119,14 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
     });
 
     try {
+      final endpoint = _apiEndpointController.text.trim();
+      final modelIdentifier = _extractModelIdentifier(_provider, endpoint);
+      
       final apiConfig = SelfhostedTextAgentApiConfig(
         provider: _provider.value,
-        baseUrl: _apiEndpointController.text.trim(),
+        baseUrl: endpoint,
         apiKey: _apiKeyController.text.trim(),
-        model: _provider == TextAgentProvider.azure
-            ? 'gpt-4o'  // Azure extracts model from URL deployment
-            : _apiEndpointController.text.trim(),
+        model: modelIdentifier,
       );
 
       final now = DateTime.now();
@@ -219,6 +221,23 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
           );
         }
       }
+    }
+  }
+
+  String _extractModelIdentifier(TextAgentProvider provider, String endpoint) {
+    switch (provider) {
+      case TextAgentProvider.openai:
+        // For OpenAI, endpoint is actually the model name
+        return endpoint;
+      case TextAgentProvider.azure:
+        // Try to extract deployment from URL
+        final deployment =
+            TextAgentConfig.tryExtractAzureDeploymentFromUrl(endpoint);
+        return deployment ?? 'unknown-deployment';
+      case TextAgentProvider.litellm:
+      case TextAgentProvider.custom:
+        // For proxy endpoints, we don't know the model from URL
+        return 'default';
     }
   }
 

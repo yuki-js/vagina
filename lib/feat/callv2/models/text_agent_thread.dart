@@ -1,5 +1,3 @@
-library;
-
 /// Provider-agnostic thread model for a single CallV2 text-agent session.
 ///
 /// This is intentionally a domain model, not a direct Chat Completions payload.
@@ -9,15 +7,30 @@ library;
 /// Design notes:
 /// - Semi-mutable for efficient in-place assembly and future streaming support.
 /// - Text-first: only text content parts are modeled for now.
-/// - Tool activity is explicit via dedicated item types rather than hidden inside
-///   assistant message blobs.
+/// - Tool calls are modeled as part of assistant messages (matching all major
+///   provider APIs), while tool results remain independent items.
 /// - Suitable for APIs that are request/response based, even when they do not
 ///   expose realtime item events like the voice stack does.
 
 enum TextAgentThreadItemType {
   message,
-  toolCall,
   toolResult,
+}
+
+/// Provider-neutral tool call representation.
+///
+/// Represents a single tool invocation request from the assistant.
+/// Multiple tool calls can be grouped in a single assistant message.
+class TextAgentToolCall {
+  final String id;
+  final String name;
+  final String arguments; // JSON string
+
+  TextAgentToolCall({
+    required this.id,
+    required this.name,
+    required this.arguments,
+  });
 }
 
 enum TextAgentThreadItemRole {
@@ -115,18 +128,16 @@ final class TextAgentThreadItem {
   TextAgentThreadItemStatus status;
   final List<TextAgentThreadContentPart> content;
 
-  /// Correlates a tool call with its result.
-  String? callId;
+  /// Tool calls (for assistant messages only).
+  ///
+  /// When an assistant message includes tool calls, they are stored here.
+  /// Multiple tool calls can be present for parallel execution.
+  List<TextAgentToolCall>? toolCalls;
 
-  /// Tool name for [TextAgentThreadItemType.toolCall] items.
-  String? name;
-
-  /// Provider-neutral serialized arguments for tool calls.
-  String? arguments;
-
-  /// Provider-neutral serialized output for tool results.
-  String? output;
-
+  /// Tool result fields (for [TextAgentThreadItemType.toolResult] items only).
+  String? toolCallId;
+  String? toolName;
+  String? toolOutput;
   TextAgentToolResultDisposition? toolResultDisposition;
   String? toolErrorMessage;
 
@@ -136,10 +147,10 @@ final class TextAgentThreadItem {
     this.role,
     this.status = TextAgentThreadItemStatus.inProgress,
     List<TextAgentThreadContentPart>? content,
-    this.callId,
-    this.name,
-    this.arguments,
-    this.output,
+    this.toolCalls,
+    this.toolCallId,
+    this.toolName,
+    this.toolOutput,
     this.toolResultDisposition,
     this.toolErrorMessage,
   }) : content = content ?? <TextAgentThreadContentPart>[];
