@@ -10,6 +10,7 @@ import 'package:vagina/feat/callv2/services/notepad_service.dart';
 import 'package:vagina/feat/callv2/services/playback_service.dart';
 import 'package:vagina/feat/callv2/services/realtime_service.dart';
 import 'package:vagina/feat/callv2/services/recorder_service.dart';
+import 'package:vagina/feat/callv2/services/text_agent_api.dart';
 import 'package:vagina/feat/callv2/services/tool_runner.dart';
 import 'package:vagina/interfaces/virtual_filesystem_repository.dart';
 import 'package:vagina/feat/callv2/models/active_file.dart';
@@ -41,7 +42,6 @@ class CallService {
 
   late final VirtualFilesystemService _vfs;
   late final NotepadService _notepadService;
-  late final CallFilesystemApi _filesystemApi;
   late final RealtimeService _realtimeService;
   late final RecorderService _recorderService;
   late final PlaybackService _playbackService;
@@ -160,25 +160,19 @@ class CallService {
 
   /// サービスインスタンス生成
   Future<void> _instantiateServices() async {
-    // 1. Initialize VFS
     _vfs = VirtualFilesystemService(_filesystemRepository);
     await _vfs.initialize();
 
-    // 2. Initialize NotepadService
     _notepadService = NotepadService(_vfs);
 
-    // 3. Initialize CallFilesystemApi (adapter to NotepadService)
-    _filesystemApi = CallFilesystemApi(notepadService: _notepadService);
-
-    // 4. Initialize RealtimeService, RecorderService, PlaybackService
     _realtimeService = RealtimeService(voiceAgent: _voiceAgent!);
     _recorderService = RecorderService();
     _playbackService = PlaybackService();
 
-    // 5. Initialize ToolRunner with dependencies
     _toolRunner = ToolRunner(
-      filesystemApi: _filesystemApi,
+      filesystemApi: CallFilesystemApi(notepadService: _notepadService),
       callApi: CallControlApi(callService: this),
+      textAgentApi: CallTextAgentApi(textAgents: textAgents),
     );
 
     _exposedToolKeys = Set<String>.from(_voiceAgent!.enabledTools);

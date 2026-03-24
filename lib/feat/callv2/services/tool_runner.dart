@@ -26,10 +26,10 @@ class ToolRunner {
   ToolRunner({
     required FilesystemApi filesystemApi,
     required CallApi callApi,
-    TextAgentApi? textAgentApi,
+    required TextAgentApi textAgentApi,
   })  : _filesystemApi = filesystemApi,
         _callApi = callApi,
-        _textAgentApi = textAgentApi ?? const _StubTextAgentApi();
+        _textAgentApi = textAgentApi;
 
   /// Whether [start] has been called.
   bool get isStarted => _started;
@@ -55,12 +55,15 @@ class ToolRunner {
     final normalizedExtensions =
         activeExtensions.map((ext) => ext.toLowerCase()).toSet();
 
-    return _tools.values.where((tool) {
-      final activation = tool.definition.activation;
+    return _tools.values
+        .where((tool) {
+          final activation = tool.definition.activation;
 
-      // Filter by extension activation rules
-      return activation.isEnabledForExtensions(normalizedExtensions);
-    }).map((tool) => tool.definition).toList(growable: false);
+          // Filter by extension activation rules
+          return activation.isEnabledForExtensions(normalizedExtensions);
+        })
+        .map((tool) => tool.definition)
+        .toList(growable: false);
   }
 
   /// Instantiate and initialise every tool from the toolbox.
@@ -116,21 +119,5 @@ class ToolRunner {
   Future<void> dispose() async {
     _tools.clear();
     _started = false;
-  }
-}
-
-final class _StubTextAgentApi implements TextAgentApi {
-  const _StubTextAgentApi();
-
-  @override
-  Future<String> sendQuery(String agentId, String prompt) async {
-    return jsonEncode({
-      'error': 'Text agent API is not available in this session.',
-    });
-  }
-
-  @override
-  Future<List<Map<String, dynamic>>> listAgents() async {
-    return const <Map<String, dynamic>>[];
   }
 }

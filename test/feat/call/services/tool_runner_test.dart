@@ -1,10 +1,13 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:vagina/feat/callv2/models/text_agent_api_config.dart';
+import 'package:vagina/feat/callv2/models/text_agent_info.dart';
 import 'package:vagina/feat/callv2/models/voice_agent_api_config.dart';
 import 'package:vagina/feat/callv2/models/voice_agent_info.dart';
 import 'package:vagina/feat/callv2/services/call_control_api.dart';
 import 'package:vagina/feat/callv2/services/call_service.dart';
+import 'package:vagina/feat/callv2/services/text_agent_api.dart';
 import 'package:vagina/feat/callv2/services/tool_runner.dart';
 import 'package:vagina/interfaces/virtual_filesystem_repository.dart';
 import 'package:vagina/models/virtual_file.dart';
@@ -22,6 +25,22 @@ void main() {
       runner = ToolRunner(
         filesystemApi: _FakeFilesystemApi(filesystemRepository),
         callApi: CallControlApi(callService: callService),
+        callV2TextAgentApi: TextAgentApi(
+          textAgents: const <TextAgentInfo>[
+            TextAgentInfo(
+              id: 'text-agent',
+              name: 'Text Agent',
+              description: 'Tool runner test text agent',
+              prompt: 'Be brief.',
+              apiConfig: SelfhostedTextAgentApiConfig(
+                provider: 'azure',
+                baseUrl: 'https://example.openai.azure.com',
+                apiKey: 'test-api-key',
+                model: 'gpt-4o',
+              ),
+            ),
+          ],
+        ),
       );
     });
 
