@@ -1,5 +1,5 @@
 import 'package:vagina/models/android_audio_config.dart';
-import 'package:vagina/feat/text_agents/model/text_agent.dart';
+import 'package:vagina/feat/callv2/models/text_agent_info.dart';
 
 /// Repository for managing application configuration
 abstract class ConfigRepository {
@@ -19,9 +19,9 @@ abstract class ConfigRepository {
   Future<AndroidAudioConfig> getAndroidAudioConfig();
 
   /// Text Agent Configuration
-  Future<List<TextAgent>> getAllTextAgents();
-  Future<TextAgent?> getTextAgentById(String id);
-  Future<void> saveTextAgent(TextAgent agent);
+  Future<List<TextAgentInfo>> getAllTextAgents();
+  Future<TextAgentInfo?> getTextAgentById(String id);
+  Future<void> saveTextAgent(TextAgentInfo agent);
   Future<void> deleteTextAgent(String id);
   Future<String?> getSelectedTextAgentId();
   Future<void> setSelectedTextAgentId(String? id);

@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:vagina/core/widgets/adaptive_tri_column_layout.dart';
-import 'package:vagina/feat/callv2/models/text_agent_api_config.dart';
 import 'package:vagina/feat/callv2/models/text_agent_info.dart';
 import 'package:vagina/feat/callv2/models/voice_agent_api_config.dart';
 import 'package:vagina/feat/callv2/models/voice_agent_info.dart';
@@ -11,7 +10,6 @@ import 'package:vagina/feat/callv2/panes/chat.dart';
 import 'package:vagina/feat/callv2/panes/notepad.dart';
 import 'package:vagina/feat/callv2/services/call_service.dart';
 import 'package:vagina/feat/callv2/widgets/call_screen_shell.dart';
-import 'package:vagina/feat/text_agents/model/text_agent.dart';
 import 'package:vagina/models/speed_dial.dart';
 import 'package:vagina/repositories/repository_factory.dart';
 import 'package:vagina/tools/tools.dart';
@@ -189,39 +187,5 @@ Future<VoiceAgentInfo> _buildVoiceAgent(SpeedDial speedDial) async {
 
 Future<List<TextAgentInfo>> _buildTextAgents() async {
   final configRepository = RepositoryFactory.config;
-  final agents = await configRepository.getAllTextAgents();
-
-  return agents.map(_mapTextAgentInfo).toList(growable: false);
-}
-
-TextAgentInfo _mapTextAgentInfo(TextAgent agent) {
-  return TextAgentInfo(
-    id: agent.id,
-    name: agent.name,
-    description: agent.description ?? '',
-    prompt: '',
-    enabledTools: toolbox.tools
-        .map((tool) => tool.definition.toolKey)
-        .where((toolKey) => agent.enabledTools[toolKey] ?? true)
-        .toList(growable: false),
-    apiConfig: _mapTextAgentApiConfig(agent),
-  );
-}
-
-TextAgentApiConfig _mapTextAgentApiConfig(TextAgent agent) {
-  final config = agent.config;
-  final provider = config.provider;
-
-  if (provider.value != 'azure') {
-    throw UnsupportedError(
-      'Only Azure text agents are supported in CallV2 currently: ${agent.id}',
-    );
-  }
-
-  return SelfhostedTextAgentApiConfig(
-    provider: provider.value,
-    baseUrl: config.apiIdentifier,
-    apiKey: config.apiKey,
-    model: config.getModelIdentifier(),
-  );
+  return configRepository.getAllTextAgents();
 }

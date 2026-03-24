@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:vagina/feat/callv2/models/text_agent_api_config.dart';
 import 'package:vagina/interfaces/config_repository.dart';
 import 'package:vagina/services/text_agent_service.dart';
 import 'package:vagina/services/log_service.dart';
@@ -87,12 +88,24 @@ class TextAgentHostApi {
     final agents = await _configRepository.getAllTextAgents();
 
     return agents.map((agent) {
+      final apiConfig = agent.apiConfig;
+      String providerDisplay = 'unknown';
+      String provider = 'unknown';
+      
+      if (apiConfig is SelfhostedTextAgentApiConfig) {
+        providerDisplay = '${apiConfig.provider}: ${apiConfig.model}';
+        provider = apiConfig.provider;
+      } else if (apiConfig is HostedTextAgentApiConfig) {
+        providerDisplay = 'Hosted: ${apiConfig.modelId}';
+        provider = 'hosted';
+      }
+      
       return {
         'id': agent.id,
         'name': agent.name,
-        'description': agent.description ?? '',
-        'provider': agent.config.provider.value,
-        'config': agent.config.getDisplayString(),
+        'description': agent.description,
+        'provider': provider,
+        'config': providerDisplay,
       };
     }).toList();
   }

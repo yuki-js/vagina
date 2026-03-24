@@ -3,8 +3,8 @@ import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
-import 'package:vagina/feat/text_agents/model/text_agent.dart';
-import 'package:vagina/feat/text_agents/model/text_agent_provider.dart';
+import 'package:vagina/feat/callv2/models/text_agent_api_config.dart';
+import 'package:vagina/feat/callv2/models/text_agent_info.dart';
 import 'package:vagina/services/log_service.dart';
 
 /// Service for making HTTP calls to OpenAI-compatible Chat Completions APIs
@@ -25,7 +25,7 @@ class TextAgentService {
   /// Throws [TimeoutException] if the request times out.
   /// Throws [Exception] for other errors.
   Future<String> sendQuery(
-    TextAgent agent,
+    TextAgentInfo agent,
     String prompt, {
     Duration? timeout,
   }) async {
@@ -54,20 +54,26 @@ class TextAgentService {
 
   /// Execute HTTP request to OpenAI-compatible Chat Completions API
   Future<String> _sendHttpRequest(
-    TextAgent agent,
+    TextAgentInfo agent,
     String prompt, {
     required Duration timeout,
   }) async {
-    final config = agent.config;
+    final apiConfig = agent.apiConfig;
+    
+    if (apiConfig is! SelfhostedTextAgentApiConfig) {
+      throw UnsupportedError(
+        'Only selfhosted text agents are supported in v1 service: ${agent.id}',
+      );
+    }
 
     // Build the endpoint URL based on provider
-    final url = Uri.parse(config.getEndpointUrl());
-    final model = config.getModelIdentifier();
-    final headers = config.getRequestHeaders();
+    final url = _buildEndpointUrl(apiConfig);
+    final model = apiConfig.model;
+    final headers = _buildRequestHeaders(apiConfig);
 
     _logService.debug(
       _tag,
-      'Provider: ${config.provider.displayName}, Model: $model, URL: $url',
+      'Provider: ${apiConfig.provider}, Model: $model, URL: $url',
     );
 
     // Build request body
@@ -80,7 +86,7 @@ class TextAgentService {
     };
 
     // Azure identifies the model via the deployment in the URL, not the body.
-    if (config.provider != TextAgentProvider.azure) {
+    if (apiConfig.provider != 'azure') {
       requestBody['model'] = model;
     }
 
@@ -148,6 +154,35 @@ class TextAgentService {
       _logService.error(_tag, 'Unexpected error: $e');
       rethrow;
     }
+  }
+
+  Uri _buildEndpointUrl(SelfhostedTextAgentApiConfig config) {
+    // For now, construct Chat Completions URL from baseUrl
+    final baseUrl = config.baseUrl.replaceAll(RegExp(r'/$'), '');
+    return Uri.parse('$baseUrl/chat/completions');
+  }
+
+  Map<String, String> _buildRequestHeaders(SelfhostedTextAgentApiConfig config) {
+    final headers = <String, String>{
+      'Content-Type': 'application/json',
+    };
+
+    switch (config.provider) {
+      case 'openai':
+      case 'litellm':
+      case 'custom':
+        headers['Authorization'] = 'Bearer ${config.apiKey}';
+        break;
+      case 'azure':
+        headers['api-key'] = config.apiKey;
+        break;
+      default:
+        // Fallback: try both header formats
+        headers['Authorization'] = 'Bearer ${config.apiKey}';
+        headers['api-key'] = config.apiKey;
+    }
+
+    return headers;
   }
 
   /// Dispose resources

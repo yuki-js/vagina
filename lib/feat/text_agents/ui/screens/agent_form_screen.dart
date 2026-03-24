@@ -2,23 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vagina/core/state/repository_providers.dart';
 import 'package:vagina/core/theme/app_theme.dart';
+import 'package:vagina/feat/callv2/models/text_agent_api_config.dart';
+import 'package:vagina/feat/callv2/models/text_agent_info.dart';
 import 'package:vagina/feat/shared/widgets/tool_config_section.dart';
-import 'package:vagina/feat/text_agents/model/text_agent.dart';
-import 'package:vagina/feat/text_agents/model/text_agent_config.dart';
 import 'package:vagina/feat/text_agents/model/text_agent_provider.dart';
 import 'package:vagina/feat/text_agents/state/text_agent_providers.dart';
 import 'package:vagina/feat/text_agents/util/provider_parser.dart';
 
 /// Screen for creating or editing a text agent with simplified multi-provider support
 ///
-/// Configuration fields (3 main + basic info):
-/// 1. Agent Name (basic info)
-/// 2. Description (basic info)
-/// 3. Provider (OpenAI, Azure, LiteLLM, Custom)
-/// 4. API Endpoint / Model (depends on provider)
-/// 5. API Key
+/// Configuration fields:
+/// 1. Agent Name
+/// 2. Description (for list_available_agents)
+/// 3. System Prompt
+/// 4. Provider (OpenAI, Azure, LiteLLM, Custom)
+/// 5. API Endpoint / Model (depends on provider)
+/// 6. API Key
 class AgentFormScreen extends ConsumerStatefulWidget {
-  final TextAgent? agent; // null for new agent
+  final TextAgentInfo? agent; // null for new agent
 
   const AgentFormScreen({
     super.key,
@@ -33,6 +34,7 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
   late TextEditingController _descriptionController;
+  late TextEditingController _promptController;
   late TextEditingController _apiKeyController;
   late TextEditingController _apiEndpointController;
   late TextAgentProvider _provider;
@@ -48,19 +50,29 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
     if (_isNewAgent) {
       _nameController = TextEditingController();
       _descriptionController = TextEditingController();
+      _promptController = TextEditingController();
       _apiKeyController = TextEditingController();
       _apiEndpointController = TextEditingController();
-      _provider = TextAgentProvider.openai;
-      _enabledTools = {}; // Empty map = all tools enabled
+      _provider = TextAgentProvider.azure;
+      _enabledTools = {};
     } else {
       final agent = widget.agent!;
       _nameController = TextEditingController(text: agent.name);
-      _descriptionController =
-          TextEditingController(text: agent.description ?? '');
-      _apiKeyController = TextEditingController(text: agent.config.apiKey);
-      _apiEndpointController =
-          TextEditingController(text: agent.config.apiIdentifier);
-      _provider = agent.config.provider;
+      _descriptionController = TextEditingController(text: agent.description);
+      _promptController = TextEditingController(text: agent.prompt);
+      
+      final apiConfig = agent.apiConfig;
+      if (apiConfig is SelfhostedTextAgentApiConfig) {
+        _apiKeyController = TextEditingController(text: apiConfig.apiKey);
+        _apiEndpointController = TextEditingController(text: apiConfig.baseUrl);
+        _provider = TextAgentProvider.fromString(apiConfig.provider);
+      } else {
+        // Fallback for hosted config (should not happen in current implementation)
+        _apiKeyController = TextEditingController();
+        _apiEndpointController = TextEditingController();
+        _provider = TextAgentProvider.azure;
+      }
+      
       _enabledTools = Map<String, bool>.from(agent.enabledTools);
     }
   }
@@ -69,6 +81,7 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
   void dispose() {
     _nameController.dispose();
     _descriptionController.dispose();
+    _promptController.dispose();
     _apiKeyController.dispose();
     _apiEndpointController.dispose();
     super.dispose();
@@ -105,23 +118,23 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
     });
 
     try {
-      final config = TextAgentConfig(
-        provider: _provider,
+      final apiConfig = SelfhostedTextAgentApiConfig(
+        provider: _provider.value,
+        baseUrl: _apiEndpointController.text.trim(),
         apiKey: _apiKeyController.text.trim(),
-        apiIdentifier: _apiEndpointController.text.trim(),
+        model: _provider == TextAgentProvider.azure
+            ? 'gpt-4o'  // Azure extracts model from URL deployment
+            : _apiEndpointController.text.trim(),
       );
 
       final now = DateTime.now();
-      final agent = TextAgent(
+      final agent = TextAgentInfo(
         id: _isNewAgent ? 'ta_${now.millisecondsSinceEpoch}' : widget.agent!.id,
         name: _nameController.text.trim(),
-        description: _descriptionController.text.trim().isNotEmpty
-            ? _descriptionController.text.trim()
-            : null,
-        config: config,
+        description: _descriptionController.text.trim(),
+        prompt: _promptController.text.trim(),
+        apiConfig: apiConfig,
         enabledTools: _enabledTools,
-        createdAt: _isNewAgent ? now : widget.agent!.createdAt,
-        updatedAt: now,
       );
 
       final configRepository = ref.read(configRepositoryProvider);
@@ -291,6 +304,21 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
                         fillColor: Colors.grey[50],
                       ),
                       maxLines: 3,
+                      textInputAction: TextInputAction.next,
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _promptController,
+                      decoration: InputDecoration(
+                        labelText: 'System Prompt (オプション)',
+                        hintText: '例: You are a helpful research assistant...',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey[50],
+                      ),
+                      maxLines: 5,
                       textInputAction: TextInputAction.next,
                     ),
                   ],

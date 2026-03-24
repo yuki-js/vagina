@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vagina/core/state/repository_providers.dart';
 import 'package:vagina/core/theme/app_theme.dart';
+import 'package:vagina/feat/callv2/models/text_agent_api_config.dart';
+import 'package:vagina/feat/callv2/models/text_agent_info.dart';
 import 'package:vagina/feat/text_agents/state/text_agent_providers.dart';
 
 /// Dialog for quickly selecting a text agent
@@ -165,7 +167,7 @@ class AgentSelectionDialog extends ConsumerWidget {
                                           ),
                                           const SizedBox(height: 2),
                                           Text(
-                                            agent.config.getDisplayString(),
+                                            _getProviderDisplayString(agent),
                                             style: TextStyle(
                                               fontSize: 11,
                                               color:
@@ -211,5 +213,15 @@ class AgentSelectionDialog extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  String _getProviderDisplayString(TextAgentInfo agent) {
+    final apiConfig = agent.apiConfig;
+    if (apiConfig is SelfhostedTextAgentApiConfig) {
+      return '${apiConfig.provider}: ${apiConfig.model}';
+    } else if (apiConfig is HostedTextAgentApiConfig) {
+      return 'Hosted: ${apiConfig.modelId}';
+    }
+    return 'Unknown';
   }
 }

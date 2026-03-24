@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:vagina/core/theme/app_theme.dart';
-import 'package:vagina/feat/text_agents/model/text_agent.dart';
+import 'package:vagina/feat/callv2/models/text_agent_api_config.dart';
+import 'package:vagina/feat/callv2/models/text_agent_info.dart';
 
 /// Card widget for displaying a text agent
 class AgentCard extends StatelessWidget {
-  final TextAgent agent;
+  final TextAgentInfo agent;
   final bool isSelected;
   final VoidCallback onTap;
   final VoidCallback onEdit;
@@ -118,11 +119,10 @@ class AgentCard extends StatelessWidget {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
-              if (agent.description != null &&
-                  agent.description!.isNotEmpty) ...[
+              if (agent.description.isNotEmpty) ...[
                 const SizedBox(height: 8),
                 Text(
-                  agent.description!,
+                  agent.description,
                   style: TextStyle(
                     fontSize: 13,
                     color: AppTheme.lightTextSecondary,
@@ -143,7 +143,7 @@ class AgentCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
-                  agent.config.getDisplayString(),
+                  _getProviderDisplayString(agent),
                   style: TextStyle(
                     fontSize: 11,
                     color: AppTheme.lightTextSecondary,
@@ -156,5 +156,15 @@ class AgentCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _getProviderDisplayString(TextAgentInfo agent) {
+    final apiConfig = agent.apiConfig;
+    if (apiConfig is SelfhostedTextAgentApiConfig) {
+      return '${apiConfig.provider}: ${apiConfig.model}';
+    } else if (apiConfig is HostedTextAgentApiConfig) {
+      return 'Hosted: ${apiConfig.modelId}';
+    }
+    return 'Unknown';
   }
 }

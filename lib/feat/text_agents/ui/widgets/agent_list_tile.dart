@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:vagina/core/theme/app_theme.dart';
-import 'package:vagina/feat/text_agents/model/text_agent.dart';
+import 'package:vagina/feat/callv2/models/text_agent_api_config.dart';
+import 'package:vagina/feat/callv2/models/text_agent_info.dart';
 
 /// List tile widget for displaying a text agent in compact view
 class AgentListTile extends StatelessWidget {
-  final TextAgent agent;
+  final TextAgentInfo agent;
   final bool isSelected;
   final VoidCallback onTap;
   final VoidCallback onEdit;
@@ -107,9 +108,9 @@ class AgentListTile extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            agent.description?.isNotEmpty == true
-                                ? agent.description!
-                                : agent.config.getDisplayString(),
+                            agent.description.isNotEmpty
+                                ? agent.description
+                                : _getProviderDisplayString(agent),
                             style: TextStyle(
                               fontSize: 12,
                               color: AppTheme.lightTextSecondary,
@@ -143,5 +144,15 @@ class AgentListTile extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _getProviderDisplayString(TextAgentInfo agent) {
+    final apiConfig = agent.apiConfig;
+    if (apiConfig is SelfhostedTextAgentApiConfig) {
+      return '${apiConfig.provider}: ${apiConfig.model}';
+    } else if (apiConfig is HostedTextAgentApiConfig) {
+      return 'Hosted: ${apiConfig.modelId}';
+    }
+    return 'Unknown';
   }
 }

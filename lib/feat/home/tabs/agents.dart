@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vagina/core/theme/app_theme.dart';
-import 'package:vagina/feat/text_agents/model/text_agent.dart';
+import 'package:vagina/feat/callv2/models/text_agent_api_config.dart';
+import 'package:vagina/feat/callv2/models/text_agent_info.dart';
 import 'package:vagina/feat/text_agents/state/text_agent_providers.dart';
 import 'package:vagina/feat/text_agents/ui/screens/agent_form_screen.dart';
 
@@ -43,11 +44,7 @@ class _AgentsTabState extends ConsumerState<AgentsTab> {
             : agents.where((agent) {
                 final query = _searchQuery.toLowerCase();
                 return agent.name.toLowerCase().contains(query) ||
-                    (agent.description?.toLowerCase().contains(query) ??
-                        false) ||
-                    agent.config.provider.displayName
-                        .toLowerCase()
-                        .contains(query);
+                    agent.description.toLowerCase().contains(query);
               }).toList();
 
         return Column(
@@ -115,7 +112,7 @@ class _AgentsTabState extends ConsumerState<AgentsTab> {
     );
   }
 
-  Widget _buildAgentList(List<TextAgent> agents) {
+  Widget _buildAgentList(List<TextAgentInfo> agents) {
     return ListView.builder(
       itemCount: agents.length,
       itemBuilder: (context, index) {
@@ -124,7 +121,7 @@ class _AgentsTabState extends ConsumerState<AgentsTab> {
     );
   }
 
-  Widget _buildAgentListTile(TextAgent agent) {
+  Widget _buildAgentListTile(TextAgentInfo agent) {
     // Generate a color based on agent name for avatar
     final colorIndex =
         agent.name.codeUnits.isNotEmpty ? agent.name.codeUnits.first % 10 : 0;
@@ -165,7 +162,7 @@ class _AgentsTabState extends ConsumerState<AgentsTab> {
           ),
         ),
         subtitle: Text(
-          agent.config.provider.displayName,
+          _getProviderDisplayString(agent),
           style: TextStyle(
             fontSize: 14,
             color: AppTheme.lightTextSecondary,
@@ -251,9 +248,19 @@ class _AgentsTabState extends ConsumerState<AgentsTab> {
     );
   }
 
+  String _getProviderDisplayString(TextAgentInfo agent) {
+    final apiConfig = agent.apiConfig;
+    if (apiConfig is SelfhostedTextAgentApiConfig) {
+      return '${apiConfig.provider}: ${apiConfig.model}';
+    } else if (apiConfig is HostedTextAgentApiConfig) {
+      return 'Hosted: ${apiConfig.modelId}';
+    }
+    return 'Unknown';
+  }
+
   Future<void> _editAgent(
     BuildContext context,
-    TextAgent agent,
+    TextAgentInfo agent,
   ) async {
     await Navigator.of(context).push(
       MaterialPageRoute(
