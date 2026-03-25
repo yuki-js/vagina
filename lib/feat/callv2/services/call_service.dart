@@ -7,6 +7,7 @@ import 'package:vagina/feat/callv2/models/voice_agent_info.dart';
 import 'package:vagina/feat/callv2/services/call_control_api.dart';
 import 'package:vagina/feat/callv2/services/call_filesystem_api.dart';
 import 'package:vagina/feat/callv2/services/feedback_service.dart';
+import 'package:vagina/feat/callv2/services/filesystem/virtual_filesystem_service.dart';
 import 'package:vagina/feat/callv2/services/notepad_service.dart';
 import 'package:vagina/feat/callv2/services/playback_service.dart';
 import 'package:vagina/feat/callv2/services/realtime_service.dart';
@@ -18,7 +19,6 @@ import 'package:vagina/interfaces/virtual_filesystem_repository.dart';
 import 'package:vagina/feat/callv2/models/active_file.dart';
 import 'package:vagina/feat/callv2/models/voice_agent_api_config.dart';
 import 'package:vagina/services/tools_runtime/tool_definition.dart';
-import 'package:vagina/services/virtual_filesystem_service.dart';
 
 /// One-way lifecycle state for a single call session.
 enum CallState {
@@ -180,7 +180,6 @@ class CallService {
     _playbackService = PlaybackService();
     _feedbackService = FeedbackService(this);
     _vfs = VirtualFilesystemService(_filesystemRepository);
-    await _vfs.initialize();
 
     _notepadService = NotepadService(_vfs);
 
@@ -227,6 +226,7 @@ class CallService {
   /// リソース確保と接続開始
   Future<void> _igniteCall() async {
     await Future.wait<void>([
+      _vfs.start(),
       _realtimeService.start(),
       _recorderService.start(),
       _playbackService.start(),
@@ -494,6 +494,7 @@ class CallService {
         _toolRunner.dispose(),
         _textAgentService.dispose(),
         _notepadService.dispose(),
+        _vfs.dispose(),
       ]);
     } catch (e) {
       // Cleanup失敗は無視して確実にdisposed状態に遷移させる
