@@ -386,11 +386,7 @@ class TextAgentService {
 
     final activeFiles = _notepadService!.listActive();
     return activeFiles
-        .map((file) {
-          final parts = file.path.split('.');
-          final ext = parts.length > 1 ? parts.last.toLowerCase() : '';
-          return ext.isNotEmpty ? '.$ext' : '';  // Add dot prefix
-        })
+        .map((file) => file.extension.toLowerCase())
         .where((ext) => ext.isNotEmpty)
         .toSet();
   }

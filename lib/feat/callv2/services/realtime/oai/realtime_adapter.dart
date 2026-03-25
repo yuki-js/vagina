@@ -37,6 +37,8 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
 
   StreamSubscription<Uint8List>? _audioInputSubscription;
   List<ToolDefinition> _tools = const <ToolDefinition>[];
+  final Set<String> _locallyCancelledFunctionItemIds = <String>{};
+  final Set<String> _locallyCancelledFunctionCallIds = <String>{};
   int _localIdCounter = 0;
   bool _disposed = false;
   bool _isUserSpeaking = false;
@@ -157,7 +159,17 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
       }),
       _client.responseOutputItemDoneEvents.listen((event) {
         final item = _upsertConversationItem(event.item);
-        item.status = RealtimeThreadItemStatus.fromWireValue(event.item.status);
+        final nextStatus = RealtimeThreadItemStatus.fromWireValue(
+          event.item.status,
+        );
+        final isLocallyCancelled = _isLocallyCancelledFunctionCall(
+          itemId: item.id,
+          callId: item.callId,
+        );
+        if (!isLocallyCancelled ||
+            nextStatus == RealtimeThreadItemStatus.incomplete) {
+          item.status = nextStatus;
+        }
         _emitThreadUpdate();
       }),
       _client.responseContentPartAddedEvents.listen((event) {
@@ -529,6 +541,34 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
     return itemId;
   }
 
+  @override
+  void cancelFunctionCalls({
+    Set<String> itemIds = const <String>{},
+    Set<String> callIds = const <String>{},
+  }) {
+    _ensureNotDisposed();
+    _locallyCancelledFunctionItemIds.addAll(itemIds);
+    _locallyCancelledFunctionCallIds.addAll(callIds);
+
+    var hasChanges = false;
+    for (final item in _thread.items) {
+      if (item.type != RealtimeThreadItemType.functionCall) {
+        continue;
+      }
+      if (!_isLocallyCancelledFunctionCall(itemId: item.id, callId: item.callId)) {
+        continue;
+      }
+      if (item.status == RealtimeThreadItemStatus.incomplete) {
+        continue;
+      }
+      item.markIncomplete();
+      hasChanges = true;
+    }
+    if (hasChanges) {
+      _emitThreadUpdate();
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // Response control
   // ---------------------------------------------------------------------------
@@ -564,13 +604,21 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
     final existing = _thread.findItem(conversationItem.id);
     if (existing != null) {
       existing.role = _mapRole(conversationItem.role);
-      existing.status = RealtimeThreadItemStatus.fromWireValue(
+      final nextStatus = RealtimeThreadItemStatus.fromWireValue(
         conversationItem.status,
       );
       existing.callId = conversationItem.callId ?? existing.callId;
       existing.name = conversationItem.name ?? existing.name;
       existing.arguments = conversationItem.arguments ?? existing.arguments;
       existing.output = conversationItem.output ?? existing.output;
+      final isLocallyCancelled = _isLocallyCancelledFunctionCall(
+        itemId: existing.id,
+        callId: existing.callId,
+      );
+      if (!isLocallyCancelled ||
+          nextStatus == RealtimeThreadItemStatus.incomplete) {
+        existing.status = nextStatus;
+      }
       if (existing.content.isEmpty && conversationItem.content.isNotEmpty) {
         for (final part in conversationItem.content) {
           _mergeContentPart(existing, part, isDone: true);
@@ -579,12 +627,20 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
       return existing;
     }
 
+    final itemType = _mapItemType(conversationItem.type);
+    final itemCallId = conversationItem.callId;
     final item = RealtimeThreadItem(
       id: conversationItem.id,
-      type: _mapItemType(conversationItem.type),
+      type: itemType,
       role: _mapRole(conversationItem.role),
-      status: RealtimeThreadItemStatus.fromWireValue(conversationItem.status),
-      callId: conversationItem.callId,
+      status: itemType == RealtimeThreadItemType.functionCall &&
+              _isLocallyCancelledFunctionCall(
+                itemId: conversationItem.id,
+                callId: itemCallId,
+              )
+          ? RealtimeThreadItemStatus.incomplete
+          : RealtimeThreadItemStatus.fromWireValue(conversationItem.status),
+      callId: itemCallId,
       name: conversationItem.name,
       arguments: conversationItem.arguments,
       output: conversationItem.output,
@@ -636,18 +692,34 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
     if (existing != null) {
       existing.callId = callId ?? existing.callId;
       existing.name = name ?? existing.name;
+      if (_isLocallyCancelledFunctionCall(
+        itemId: existing.id,
+        callId: existing.callId,
+      )) {
+        existing.markIncomplete();
+      }
       return existing;
     }
     final item = RealtimeThreadItem(
       id: itemId,
       type: RealtimeThreadItemType.functionCall,
       role: RealtimeThreadItemRole.assistant,
-      status: RealtimeThreadItemStatus.inProgress,
+      status: _isLocallyCancelledFunctionCall(itemId: itemId, callId: callId)
+          ? RealtimeThreadItemStatus.incomplete
+          : RealtimeThreadItemStatus.inProgress,
       callId: callId,
       name: name,
     );
     _thread.addItem(item);
     return item;
+  }
+
+  bool _isLocallyCancelledFunctionCall({
+    required String itemId,
+    required String? callId,
+  }) {
+    return _locallyCancelledFunctionItemIds.contains(itemId) ||
+        (callId != null && _locallyCancelledFunctionCallIds.contains(callId));
   }
 
   void _stageLocalFunctionOutputItem(

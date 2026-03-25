@@ -58,6 +58,7 @@ class CallService {
   /// Item IDs for function-call items that have already been dispatched
   /// (or are currently being executed). Prevents double-dispatch.
   final Set<String> _dispatchedToolCallIds = <String>{};
+  final Set<String> _cancelledToolCallIds = <String>{};
 
   StreamSubscription<RealtimeThread>? _threadSubscription;
   StreamSubscription<void>? _assistantAudioCompletedSubscription;
@@ -330,6 +331,7 @@ class CallService {
   }
 
   Future<void> _interruptAssistantOutput() async {
+    _cancelPendingToolWork(playSound: true);
     await _playbackService.interrupt();
     if (_realtimeService.isConnected) {
       await _realtimeService.interrupt();
@@ -343,6 +345,9 @@ class CallService {
     final arguments = item.arguments;
 
     if (callId == null || callId.isEmpty) {
+      return;
+    }
+    if (_shouldSuppressToolResult(callId)) {
       return;
     }
     if (name == null || name.isEmpty) {
@@ -363,16 +368,16 @@ class CallService {
         name,
         arguments ?? '{}',
       );
-      final outputMetadata = _deriveToolOutputMetadata(result);
-      // Only send if we haven't started disposing.
-      if (state != CallState.disposing && state != CallState.disposed) {
-        await _realtimeService.sendFunctionOutput(
-          callId: callId,
-          output: result,
-          disposition: outputMetadata.disposition,
-          errorMessage: outputMetadata.errorMessage,
-        );
+      if (_shouldSuppressToolResult(callId)) {
+        return;
       }
+      final outputMetadata = _deriveToolOutputMetadata(result);
+      await _realtimeService.sendFunctionOutput(
+        callId: callId,
+        output: result,
+        disposition: outputMetadata.disposition,
+        errorMessage: outputMetadata.errorMessage,
+      );
 
       if (outputMetadata.disposition == RealtimeToolOutputDisposition.error) {
         _feedbackService.onToolExecutionFailed(callId);
@@ -380,17 +385,83 @@ class CallService {
         _feedbackService.onToolExecutionCompleted(callId);
       }
     } catch (e) {
+      if (_shouldSuppressToolResult(callId)) {
+        return;
+      }
       _feedbackService.onToolExecutionFailed(callId);
       final errorMessage = e.toString();
-      if (state != CallState.disposing && state != CallState.disposed) {
-        await _realtimeService.sendFunctionOutput(
-          callId: callId,
-          output: jsonEncode({'error': errorMessage}),
-          disposition: RealtimeToolOutputDisposition.error,
-          errorMessage: errorMessage,
-        );
+      await _realtimeService.sendFunctionOutput(
+        callId: callId,
+        output: jsonEncode({'error': errorMessage}),
+        disposition: RealtimeToolOutputDisposition.error,
+        errorMessage: errorMessage,
+      );
+    }
+  }
+
+  void _cancelPendingToolWork({required bool playSound}) {
+    final pendingToolCalls = _collectPendingToolCalls(_realtimeService.thread);
+    if (pendingToolCalls.isEmpty) {
+      _feedbackService.onToolExecutionsCancelled(playSound: playSound);
+      return;
+    }
+
+    final itemIds = <String>{};
+    final callIds = <String>{};
+    for (final pendingToolCall in pendingToolCalls) {
+      itemIds.add(pendingToolCall.itemId);
+      callIds.add(pendingToolCall.callId);
+      _cancelledToolCallIds.add(pendingToolCall.callId);
+    }
+
+    _realtimeService.cancelFunctionCalls(itemIds: itemIds, callIds: callIds);
+    _feedbackService.onToolExecutionsCancelled(playSound: playSound);
+  }
+
+  List<_PendingToolCall> _collectPendingToolCalls(RealtimeThread thread) {
+    final matchedCallItemIds = <String>{};
+    final pendingCallItemIdsByCallId = <String, List<String>>{};
+
+    for (final item in thread.items) {
+      final callId = item.callId;
+      if (callId == null || callId.isEmpty) {
+        continue;
+      }
+
+      if (item.type == RealtimeThreadItemType.functionCall) {
+        pendingCallItemIdsByCallId.putIfAbsent(callId, () => <String>[]).add(
+              item.id,
+            );
+        continue;
+      }
+
+      if (item.type == RealtimeThreadItemType.functionCallOutput) {
+        final pendingCallItemIds = pendingCallItemIdsByCallId[callId];
+        if (pendingCallItemIds != null && pendingCallItemIds.isNotEmpty) {
+          matchedCallItemIds.add(pendingCallItemIds.removeAt(0));
+        }
       }
     }
+
+    final pendingToolCalls = <_PendingToolCall>[];
+    for (final item in thread.items) {
+      final callId = item.callId;
+      if (item.type != RealtimeThreadItemType.functionCall ||
+          callId == null ||
+          callId.isEmpty ||
+          item.status == RealtimeThreadItemStatus.incomplete ||
+          matchedCallItemIds.contains(item.id)) {
+        continue;
+      }
+      pendingToolCalls.add(_PendingToolCall(itemId: item.id, callId: callId));
+    }
+    return pendingToolCalls;
+  }
+
+  bool _shouldSuppressToolResult(String callId) {
+    return _cancelledToolCallIds.contains(callId) ||
+        state == CallState.disposing ||
+        state == CallState.disposed;
   }
 
   _ToolOutputMetadata _deriveToolOutputMetadata(String output) {
@@ -469,6 +540,7 @@ class CallService {
       _endContext = endContext;
     }
 
+    _cancelPendingToolWork(playSound: false);
     state = CallState.disposing;
 
     try {
@@ -499,6 +571,7 @@ class CallService {
     await _activeFilesSubscription?.cancel();
     _activeFilesSubscription = null;
     _dispatchedToolCallIds.clear();
+    _cancelledToolCallIds.clear();
     await _realtimeService.unbindAudioInput();
     await _playbackService.unbindInputStream();
     await _recorderService.stopRecordingSession();
@@ -626,5 +699,15 @@ final class _ToolOutputMetadata {
   const _ToolOutputMetadata({
     required this.disposition,
     this.errorMessage,
+  });
+}
+
+final class _PendingToolCall {
+  final String itemId;
+  final String callId;
+
+  const _PendingToolCall({
+    required this.itemId,
+    required this.callId,
   });
 }

@@ -122,6 +122,15 @@ abstract interface class RealtimeAdapter {
     String? errorMessage,
   });
 
+  /// Mark pending/running function calls as locally cancelled.
+  ///
+  /// This is used when the current assistant turn is interrupted so stale tool
+  /// work no longer appears executable in the projected thread state.
+  void cancelFunctionCalls({
+    Set<String> itemIds = const <String>{},
+    Set<String> callIds = const <String>{},
+  });
+
   // ---------------------------------------------------------------------------
   // Response control
   // ---------------------------------------------------------------------------
