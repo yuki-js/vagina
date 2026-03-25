@@ -6,6 +6,7 @@ import 'package:vagina/feat/callv2/models/text_agent_info.dart';
 import 'package:vagina/feat/callv2/models/voice_agent_info.dart';
 import 'package:vagina/feat/callv2/services/call_control_api.dart';
 import 'package:vagina/feat/callv2/services/call_filesystem_api.dart';
+import 'package:vagina/feat/callv2/services/feedback_service.dart';
 import 'package:vagina/feat/callv2/services/notepad_service.dart';
 import 'package:vagina/feat/callv2/services/playback_service.dart';
 import 'package:vagina/feat/callv2/services/realtime_service.dart';
@@ -46,6 +47,7 @@ class CallService {
   late final RealtimeService _realtimeService;
   late final RecorderService _recorderService;
   late final PlaybackService _playbackService;
+  late final FeedbackService _feedbackService;
   late final ToolRunner _toolRunner;
   late final TextAgentService _textAgentService;
   late final Set<String> _exposedToolKeys;
@@ -175,6 +177,8 @@ class CallService {
 
   /// サービスインスタンス生成
   Future<void> _instantiateServices() async {
+    _playbackService = PlaybackService();
+    _feedbackService = FeedbackService(this);
     _vfs = VirtualFilesystemService(_filesystemRepository);
     await _vfs.initialize();
 
@@ -182,7 +186,6 @@ class CallService {
 
     _realtimeService = RealtimeService(voiceAgent: _voiceAgent!);
     _recorderService = RecorderService();
-    _playbackService = PlaybackService();
     _textAgentService = TextAgentService(
       agents: _textAgents!,
     );
@@ -346,6 +349,8 @@ class CallService {
       return;
     }
 
+    _feedbackService.onToolExecutionStarted(callId);
+
     try {
       final result = await _toolRunner.execute(
         name,
@@ -361,7 +366,14 @@ class CallService {
           errorMessage: outputMetadata.errorMessage,
         );
       }
+
+      if (outputMetadata.disposition == RealtimeToolOutputDisposition.error) {
+        _feedbackService.onToolExecutionFailed(callId);
+      } else {
+        _feedbackService.onToolExecutionCompleted(callId);
+      }
     } catch (e) {
+      _feedbackService.onToolExecutionFailed(callId);
       final errorMessage = e.toString();
       if (state != CallState.disposing && state != CallState.disposed) {
         await _realtimeService.sendFunctionOutput(
@@ -478,6 +490,7 @@ class CallService {
         _realtimeService.dispose(),
         _recorderService.dispose(),
         _playbackService.dispose(),
+        _feedbackService.dispose(),
         _toolRunner.dispose(),
         _textAgentService.dispose(),
         _notepadService.dispose(),
