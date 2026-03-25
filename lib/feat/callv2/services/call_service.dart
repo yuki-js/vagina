@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:vagina/feat/callv2/models/active_file.dart';
 import 'package:vagina/feat/callv2/models/realtime/realtime_thread.dart';
 import 'package:vagina/feat/callv2/models/text_agent_info.dart';
+import 'package:vagina/feat/callv2/models/voice_agent_api_config.dart';
 import 'package:vagina/feat/callv2/models/voice_agent_info.dart';
 import 'package:vagina/feat/callv2/services/call_control_api.dart';
 import 'package:vagina/feat/callv2/services/call_filesystem_api.dart';
@@ -15,9 +17,9 @@ import 'package:vagina/feat/callv2/services/recorder_service.dart';
 import 'package:vagina/feat/callv2/services/text_agent_api.dart';
 import 'package:vagina/feat/callv2/services/text_agent_service.dart';
 import 'package:vagina/feat/callv2/services/tool_runner.dart';
+import 'package:vagina/interfaces/call_session_repository.dart';
 import 'package:vagina/interfaces/virtual_filesystem_repository.dart';
-import 'package:vagina/feat/callv2/models/active_file.dart';
-import 'package:vagina/feat/callv2/models/voice_agent_api_config.dart';
+import 'package:vagina/models/call_session.dart';
 import 'package:vagina/services/tools_runtime/tool_definition.dart';
 
 /// One-way lifecycle state for a single call session.
@@ -41,6 +43,7 @@ class CallService {
   VoiceAgentInfo? _voiceAgent;
   List<TextAgentInfo>? _textAgents;
   final VirtualFilesystemRepository _filesystemRepository;
+  final CallSessionRepository _sessionRepository;
 
   late final VirtualFilesystemService _vfs;
   late final NotepadService _notepadService;
@@ -72,10 +75,14 @@ class CallService {
   DateTime? _callStartedAt;
   Duration _callDuration = Duration.zero;
   bool _speakerMuted = false;
+  String? _endContext;
 
   CallService({
     required VirtualFilesystemRepository filesystemRepository,
-  }) : _filesystemRepository = filesystemRepository;
+    required CallSessionRepository sessionRepository,
+    bool enableFeedback = true,
+  })  : _filesystemRepository = filesystemRepository,
+        _sessionRepository = sessionRepository;
 
   CallState get state => _state;
 
@@ -161,7 +168,6 @@ class CallService {
     // 3. リソース確保と接続（ここからはエラー時に dispose 必要）
     try {
       await _igniteCall();
-      _startDurationTracking();
       state = CallState.active;
     } catch (e) {
       // リソース確保後のエラーなので cleanup が必要
@@ -260,6 +266,7 @@ class CallService {
       }
       unawaited(_interruptAssistantOutput());
     });
+    _startDurationTracking();
   }
 
   Future<void> interruptAssistantOutput() async {
@@ -452,20 +459,31 @@ class CallService {
   }
 
   Future<void> endCall({String? endContext}) async {
-    // if (state == CallState.disposing || state == CallState.disposed) {
-    //   return;
-    // }
+    if (state == CallState.disposing ||
+        state == CallState.disposed ||
+        state == CallState.uninitialized) {
+      return;
+    }
+
+    if (endContext != null && endContext.isNotEmpty) {
+      _endContext = endContext;
+    }
 
     state = CallState.disposing;
 
-    // Persist all active files before cleanup - エラーがあっても継続
     try {
       await _notepadService.persistAll();
-      _notepadService.exportSessionTabs();
-      // TODO: Save exported session tabs to CallSession when session repository is wired
-    } catch (e) {
+    } catch (_) {
       // 継続
     }
+
+    try {
+      final sessionTabs = _notepadService.exportSessionTabs();
+      await _saveSession(sessionTabs: sessionTabs);
+    } catch (_) {
+      // 継続
+    }
+
     await _dispose();
   }
 
@@ -504,6 +522,100 @@ class CallService {
     await _durationController.close();
     await _speakerMuteController.close();
     await _stateController.close();
+  }
+
+  Future<void> _saveSession({
+    required List<SessionNotepadTab> sessionTabs,
+  }) async {
+    final callStartedAt = _callStartedAt;
+    final voiceAgent = _voiceAgent;
+    if (callStartedAt == null || voiceAgent == null) {
+      return;
+    }
+
+    final endTime = DateTime.now();
+    final session = CallSession(
+      id: endTime.millisecondsSinceEpoch.toString(),
+      startTime: callStartedAt,
+      endTime: endTime,
+      duration: endTime.difference(callStartedAt).inSeconds,
+      chatMessages: _buildSessionChatMessages(
+        startTime: callStartedAt,
+        endTime: endTime,
+      ),
+      notepadTabs: sessionTabs.isEmpty ? null : sessionTabs,
+      speedDialId: voiceAgent.id,
+      endContext: _endContext,
+    );
+
+    await _sessionRepository.save(session);
+  }
+
+  List<String> _buildSessionChatMessages({
+    required DateTime startTime,
+    required DateTime endTime,
+  }) {
+    final thread = realtimeService?.thread;
+    if (thread == null) {
+      return const <String>[];
+    }
+
+    final messageItems = thread.items
+        .where((item) => item.type == RealtimeThreadItemType.message)
+        .toList(growable: false);
+    if (messageItems.isEmpty) {
+      return const <String>[];
+    }
+
+    final totalMilliseconds = endTime.difference(startTime).inMilliseconds;
+    final timestampStep = messageItems.length <= 1
+        ? 0
+        : (totalMilliseconds ~/ messageItems.length);
+    final chatMessages = <String>[];
+
+    for (var index = 0; index < messageItems.length; index++) {
+      final item = messageItems[index];
+      final role = _sessionRoleForItem(item);
+      final content = _sessionContentForItem(item);
+      if (role == null || content.isEmpty) {
+        continue;
+      }
+
+      final timestamp = startTime.add(
+        Duration(milliseconds: timestampStep * index),
+      );
+      chatMessages.add(
+        jsonEncode({
+          'role': role,
+          'content': content,
+          'timestamp': timestamp.toIso8601String(),
+        }),
+      );
+    }
+
+    return chatMessages;
+  }
+
+  String? _sessionRoleForItem(RealtimeThreadItem item) {
+    return switch (item.role) {
+      RealtimeThreadItemRole.user => 'user',
+      RealtimeThreadItemRole.assistant => 'assistant',
+      _ => null,
+    };
+  }
+
+  String _sessionContentForItem(RealtimeThreadItem item) {
+    final fragments = <String>[];
+    for (final part in item.content) {
+      if (part is RealtimeThreadTextPart && part.text.isNotEmpty) {
+        fragments.add(part.text);
+      } else if (part is RealtimeThreadAudioPart &&
+          (part.transcript?.isNotEmpty ?? false)) {
+        fragments.add(part.transcript!);
+      }
+    }
+
+    return fragments.join('\n').trim();
   }
 }
 

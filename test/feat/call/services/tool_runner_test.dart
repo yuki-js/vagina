@@ -1,17 +1,17 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vagina/feat/callv2/models/text_agent_api_config.dart';
-import 'package:vagina/feat/callv2/models/text_agent_info.dart';
 import 'package:vagina/feat/callv2/models/voice_agent_api_config.dart';
 import 'package:vagina/feat/callv2/models/voice_agent_info.dart';
 import 'package:vagina/feat/callv2/services/call_control_api.dart';
 import 'package:vagina/feat/callv2/services/call_service.dart';
-import 'package:vagina/feat/callv2/services/text_agent_api.dart';
 import 'package:vagina/feat/callv2/services/tool_runner.dart';
+import 'package:vagina/interfaces/call_session_repository.dart';
 import 'package:vagina/interfaces/virtual_filesystem_repository.dart';
+import 'package:vagina/models/call_session.dart';
 import 'package:vagina/models/virtual_file.dart';
 import 'package:vagina/services/tools_runtime/apis/filesystem_api.dart';
+import 'package:vagina/services/tools_runtime/apis/text_agent_api.dart';
 
 void main() {
   group('ToolRunner', () {
@@ -25,22 +25,7 @@ void main() {
       runner = ToolRunner(
         filesystemApi: _FakeFilesystemApi(filesystemRepository),
         callApi: CallControlApi(callService: callService),
-        callV2TextAgentApi: TextAgentApi(
-          textAgents: const <TextAgentInfo>[
-            TextAgentInfo(
-              id: 'text-agent',
-              name: 'Text Agent',
-              description: 'Tool runner test text agent',
-              prompt: 'Be brief.',
-              apiConfig: SelfhostedTextAgentApiConfig(
-                provider: 'azure',
-                baseUrl: 'https://example.openai.azure.com',
-                apiKey: 'test-api-key',
-                model: 'gpt-4o',
-              ),
-            ),
-          ],
-        ),
+        textAgentApi: _FakeTextAgentApi(),
       );
     });
 
@@ -260,6 +245,7 @@ final class _TestCallService extends CallService {
   _TestCallService()
       : super(
           filesystemRepository: _FakeVirtualFilesystemRepository(),
+          sessionRepository: _FakeCallSessionRepository(),
         ) {
     setVoiceAgent(
       const VoiceAgentInfo(
@@ -278,4 +264,33 @@ final class _TestCallService extends CallService {
     endCallCalled = true;
     lastEndContext = endContext;
   }
+}
+
+final class _FakeTextAgentApi implements TextAgentApi {
+  @override
+  Future<List<Map<String, dynamic>>> listAgents() async {
+    return const <Map<String, dynamic>>[];
+  }
+
+  @override
+  Future<String> sendQuery(String agentId, String prompt) async {
+    return 'ok';
+  }
+}
+
+final class _FakeCallSessionRepository implements CallSessionRepository {
+  @override
+  Future<void> save(CallSession session) async {}
+
+  @override
+  Future<List<CallSession>> getAll() async => const <CallSession>[];
+
+  @override
+  Future<CallSession?> getById(String id) async => null;
+
+  @override
+  Future<bool> delete(String id) async => false;
+
+  @override
+  Future<void> deleteAll() async {}
 }

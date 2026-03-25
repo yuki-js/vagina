@@ -41,6 +41,7 @@ class _CallScreenState extends State<CallScreen> {
     super.initState();
     _callService = CallService(
       filesystemRepository: RepositoryFactory.filesystem,
+      sessionRepository: RepositoryFactory.callSessions,
     );
 
     // CallStateの変化を監視してpaneを再構築

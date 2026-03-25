@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_sound_platform_interface/flutter_sound_player_platform_interface.dart';
 import 'package:logger/logger.dart';
@@ -13,11 +14,17 @@ import 'package:record/record.dart';
 import 'package:record_platform_interface/record_platform_interface.dart';
 import 'package:taudio/taudio.dart';
 import 'package:vagina/core/config/app_config.dart';
+import 'package:vagina/feat/callv2/models/text_agent_info.dart';
 import 'package:vagina/feat/callv2/models/voice_agent_api_config.dart';
 import 'package:vagina/feat/callv2/models/voice_agent_info.dart';
 import 'package:vagina/feat/callv2/services/call_service.dart';
+import 'package:vagina/interfaces/call_session_repository.dart';
 import 'package:vagina/interfaces/virtual_filesystem_repository.dart';
+import 'package:vagina/models/call_session.dart';
 import 'package:vagina/models/virtual_file.dart';
+
+const MethodChannel _justAudioMethodsChannel =
+    MethodChannel('com.ryanheise.just_audio.methods');
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -29,11 +36,20 @@ void main() {
     late _FakeFlutterSoundPlayerPlatform fakePlayerPlatform;
     late HttpServer server;
     late _RealtimeSocketHarness harness;
+    late _FakeVirtualFilesystemRepository filesystemRepository;
+    late _FakeCallSessionRepository sessionRepository;
     late CallService service;
 
     setUp(() async {
       originalRecordPlatform = RecordPlatform.instance;
       originalPlayerPlatform = FlutterSoundPlayerPlatform.instance;
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+        _justAudioMethodsChannel,
+        (methodCall) async {
+          return null;
+        },
+      );
 
       fakeRecordPlatform = _FakeRecordPlatform();
       fakePlayerPlatform = _FakeFlutterSoundPlayerPlatform();
@@ -43,10 +59,15 @@ void main() {
       harness = _RealtimeSocketHarness();
       server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
       unawaited(_serveHarness(server, harness));
+      filesystemRepository = _FakeVirtualFilesystemRepository();
+      sessionRepository = _FakeCallSessionRepository();
 
       service = CallService(
-        filesystemRepository: _FakeVirtualFilesystemRepository(),
+        filesystemRepository: filesystemRepository,
+        sessionRepository: sessionRepository,
+        enableFeedback: false,
       );
+      service.setTextAgents(const <TextAgentInfo>[]);
       service.setVoiceAgent(
         VoiceAgentInfo(
           id: 'voice-agent',
@@ -74,6 +95,8 @@ void main() {
       await server.close(force: true);
       RecordPlatform.instance = originalRecordPlatform;
       FlutterSoundPlayerPlatform.instance = originalPlayerPlatform;
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(_justAudioMethodsChannel, null);
     });
 
     test('pipes recorder PCM into realtime and assistant PCM into playback',
@@ -198,6 +221,83 @@ void main() {
 
       await speakingStateSubscription.cancel();
     });
+
+    test('persists saved session with notepad tabs and end context', () async {
+      await service.startCall();
+      await harness.waitForCommand('session.update');
+
+      harness.sendEvent({
+        'type': 'conversation.item.created',
+        'event_id': 'evt_user_message_created',
+        'previous_item_id': null,
+        'item': {
+          'id': 'user_item_1',
+          'object': 'realtime.item',
+          'type': 'message',
+          'status': 'completed',
+          'role': 'user',
+          'content': [
+            {
+              'type': 'input_text',
+              'text': 'Need a summary',
+            },
+          ],
+        },
+      });
+      harness.sendEvent({
+        'type': 'response.output_item.done',
+        'event_id': 'evt_assistant_message_done',
+        'response_id': 'resp_session_save',
+        'output_index': 0,
+        'item': {
+          'id': 'assistant_item_1',
+          'object': 'realtime.item',
+          'type': 'message',
+          'status': 'completed',
+          'role': 'assistant',
+          'content': [
+            {
+              'type': 'output_text',
+              'text': 'Summary ready',
+            },
+          ],
+        },
+      });
+
+      await _eventually(() {
+        expect(service.realtimeService!.thread.items, hasLength(2));
+      });
+
+      await service.notepadService.open('/notes.md', '# Session Notes');
+      await service.endCall(endContext: 'tool completed the task');
+
+      expect(service.state, CallState.disposed);
+      expect(sessionRepository.savedSessions, hasLength(1));
+      expect(filesystemRepository.files['/notes.md']?.content, '# Session Notes');
+
+      final savedSession = sessionRepository.savedSessions.single;
+      expect(savedSession.speedDialId, equals('voice-agent'));
+      expect(savedSession.endContext, equals('tool completed the task'));
+      expect(savedSession.endTime, isNotNull);
+      expect(savedSession.notepadTabs, hasLength(1));
+      expect(savedSession.notepadTabs!.single.title, equals('notes.md'));
+      expect(savedSession.notepadTabs!.single.content, equals('# Session Notes'));
+      expect(savedSession.notepadTabs!.single.mimeType, equals('text/markdown'));
+
+      final decodedMessages = savedSession.chatMessages
+          .map((value) => jsonDecode(value) as Map<String, dynamic>)
+          .toList(growable: false);
+      expect(
+        decodedMessages.map((message) => message['role']).toList(growable: false),
+        orderedEquals(const <String>['user', 'assistant']),
+      );
+      expect(
+        decodedMessages
+            .map((message) => message['content'])
+            .toList(growable: false),
+        orderedEquals(const <String>['Need a summary', 'Summary ready']),
+      );
+    });
   });
 }
 
@@ -246,7 +346,9 @@ final class _RealtimeSocketHarness {
       final payload =
           Map<String, dynamic>.from(jsonDecode(message as String) as Map);
       _commands.add(payload);
-      _commandController.add(payload);
+      if (!_commandController.isClosed) {
+        _commandController.add(payload);
+      }
     });
 
     sendEvent({
@@ -447,6 +549,41 @@ final class _FakeFlutterSoundPlayerPlatform extends FlutterSoundPlayerPlatform
     required double volume,
   }) async {
     return PlayerState.isStopped.index;
+  }
+}
+
+final class _FakeCallSessionRepository implements CallSessionRepository {
+  final List<CallSession> savedSessions = <CallSession>[];
+
+  @override
+  Future<void> save(CallSession session) async {
+    savedSessions.removeWhere((existing) => existing.id == session.id);
+    savedSessions.add(session);
+  }
+
+  @override
+  Future<List<CallSession>> getAll() async => List<CallSession>.from(savedSessions);
+
+  @override
+  Future<CallSession?> getById(String id) async {
+    for (final session in savedSessions) {
+      if (session.id == id) {
+        return session;
+      }
+    }
+    return null;
+  }
+
+  @override
+  Future<bool> delete(String id) async {
+    final beforeLength = savedSessions.length;
+    savedSessions.removeWhere((session) => session.id == id);
+    return savedSessions.length != beforeLength;
+  }
+
+  @override
+  Future<void> deleteAll() async {
+    savedSessions.clear();
   }
 }
 
