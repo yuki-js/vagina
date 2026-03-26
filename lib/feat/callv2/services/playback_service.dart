@@ -4,7 +4,7 @@ import 'dart:typed_data';
 
 import 'package:taudio/taudio.dart';
 import 'package:vagina/core/config/app_config.dart';
-import 'package:vagina/services/log_service.dart';
+import 'package:vagina/feat/callv2/services/subservice.dart';
 
 /// Lifecycle state for [PlaybackService].
 enum PlaybackServiceState {
@@ -55,7 +55,7 @@ final class PlaybackMetrics {
 ///
 /// Owns PCM playback buffering, input-stream binding, and interruption
 /// semantics for assistant audio responses.
-final class PlaybackService {
+final class PlaybackService implements SubService {
   static const _tag = 'PlaybackService';
 
   final Queue<Uint8List> _bufferQueue = Queue<Uint8List>();
@@ -87,6 +87,7 @@ final class PlaybackService {
 
   Stream<PlaybackMetrics> get metrics => _metricsController.stream;
 
+  @override
   Future<void> start() async {
     if (_state == PlaybackServiceState.disposed) {
       throw StateError('PlaybackService has already been disposed.');
@@ -158,6 +159,7 @@ final class PlaybackService {
     await _player.setVolume(_volume);
   }
 
+  @override
   Future<void> dispose() async {
     if (_state == PlaybackServiceState.disposed) {
       return;

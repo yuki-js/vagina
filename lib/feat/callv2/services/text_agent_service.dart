@@ -8,6 +8,7 @@ import 'package:vagina/feat/callv2/models/text_agent_thread.dart';
 import 'package:vagina/feat/callv2/services/transport/text_agent_transport.dart';
 import 'package:vagina/feat/callv2/services/transport/text_agent_transport_azure.dart';
 import 'package:vagina/feat/callv2/services/notepad_service.dart';
+import 'package:vagina/feat/callv2/services/subservice.dart';
 import 'package:vagina/feat/callv2/services/tool_runner.dart';
 import 'package:vagina/services/tools_runtime/tool_definition.dart';
 
@@ -15,7 +16,7 @@ import 'package:vagina/services/tools_runtime/tool_definition.dart';
 ///
 /// Owns the text agent registry, thread management, and query execution.
 /// Delegates HTTP transport to provider-specific [TextAgentTransport] implementations.
-class TextAgentService {
+class TextAgentService implements SubService {
   static const String _defaultThreadId = 'default';
 
   final Map<String, TextAgentInfo> _agentsById = <String, TextAgentInfo>{};
@@ -242,7 +243,7 @@ class TextAgentService {
     }
   }
 
-  /// Start the service.
+  @override
   Future<void> start() async {
     if (_disposed) {
       throw StateError('TextAgentService has already been disposed.');
@@ -391,7 +392,7 @@ class TextAgentService {
         .toSet();
   }
 
-  /// Dispose the service and release session-scoped resources.
+  @override
   Future<void> dispose() async {
     _agentsById.clear();
     _threadsByAgent.clear();

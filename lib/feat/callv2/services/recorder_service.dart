@@ -3,8 +3,8 @@ import 'dart:typed_data';
 
 import 'package:record/record.dart';
 import 'package:vagina/core/config/app_config.dart';
+import 'package:vagina/feat/callv2/services/subservice.dart';
 import 'package:vagina/models/android_audio_config.dart';
-import 'package:vagina/services/log_service.dart';
 import 'package:vagina/utils/audio_utils.dart';
 
 /// Lifecycle state for [RecorderService].
@@ -21,7 +21,7 @@ enum RecorderServiceState {
 ///
 /// Owns microphone capture, mute behavior, amplitude reporting, and PCM stream
 /// fan-out for call sessions.
-final class RecorderService {
+final class RecorderService implements SubService {
   static const _tag = 'RecorderService';
 
   final StreamController<Uint8List> _audioController =
@@ -58,6 +58,7 @@ final class RecorderService {
 
   AndroidAudioConfig get androidAudioConfig => _androidAudioConfig;
 
+  @override
   Future<void> start() async {
     if (_state == RecorderServiceState.disposed) {
       throw StateError('RecorderService has already been disposed.');
@@ -184,6 +185,7 @@ final class RecorderService {
     }
   }
 
+  @override
   Future<void> dispose() async {
     if (_state == RecorderServiceState.disposed) {
       return;

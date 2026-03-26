@@ -4,13 +4,14 @@ import 'package:vagina/feat/callv2/models/realtime/realtime_adapter_models.dart'
 import 'package:vagina/feat/callv2/models/realtime/realtime_thread.dart';
 import 'package:vagina/feat/callv2/models/voice_agent_api_config.dart';
 import 'package:vagina/feat/callv2/models/voice_agent_info.dart';
+import 'package:vagina/feat/callv2/services/subservice.dart';
 import 'package:vagina/services/tools_runtime/tool_definition.dart';
 
 import 'realtime/oai/realtime_adapter.dart';
 import 'realtime/realtime_adapter.dart';
 
 /// Session-scoped realtime backing service for a single call.
-final class RealtimeService {
+final class RealtimeService implements SubService {
   final VoiceAgentInfo voiceAgent;
   late final RealtimeAdapter _adapter;
 
@@ -29,10 +30,7 @@ final class RealtimeService {
 
   bool get isConnected => _adapter.isConnected;
 
-  /// Connect and configure the session.
-  ///
-  /// Voice, instructions, and all provider-specific defaults (audio format,
-  /// VAD, transcription model) are handled inside the adapter.
+  @override
   Future<void> start() async {
     if (_started) {
       return;
@@ -141,6 +139,7 @@ final class RealtimeService {
   // Lifecycle
   // ---------------------------------------------------------------------------
 
+  @override
   Future<void> dispose() async {
     _started = false;
     await _adapter.dispose();

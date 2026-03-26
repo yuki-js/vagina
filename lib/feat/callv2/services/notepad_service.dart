@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:vagina/feat/callv2/models/active_file.dart';
 import 'package:vagina/feat/callv2/services/filesystem/virtual_filesystem_service.dart';
+import 'package:vagina/feat/callv2/services/subservice.dart';
 import 'package:vagina/models/call_session.dart';
 import 'package:vagina/models/virtual_file.dart';
 
@@ -12,7 +13,7 @@ import 'package:vagina/models/virtual_file.dart';
 /// - Stream of active files for external consumers
 /// - Write-through persistence to VFS (immediate for tool mutations)
 /// - Session export to SessionNotepadTab
-class NotepadService {
+class NotepadService implements SubService {
   final VirtualFilesystemService _vfs;
   final Map<String, String> _activeFiles = <String, String>{};
   final StreamController<List<ActiveFile>> _activeFilesController =
@@ -177,13 +178,13 @@ class NotepadService {
     }
   }
 
-  /// Start the service.
+  @override
   Future<void> start() async {
     // Emit initial empty state
     _emitChanged();
   }
 
-  /// Dispose the service and release resources.
+  @override
   Future<void> dispose() async {
     if (_disposed) {
       return;

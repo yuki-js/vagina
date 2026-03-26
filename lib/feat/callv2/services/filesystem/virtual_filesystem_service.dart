@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:vagina/feat/callv2/services/subservice.dart';
 import 'package:vagina/interfaces/virtual_filesystem_repository.dart';
 import 'package:vagina/models/virtual_file.dart';
 
@@ -13,7 +14,7 @@ class VirtualFilesystemException implements Exception {
 }
 
 /// Session-scoped filesystem backing service for a single call.
-final class VirtualFilesystemService {
+final class VirtualFilesystemService implements SubService {
   static const int defaultMaxFileSizeBytes = 1024 * 1024; // 1 MB
   static const int defaultMaxTotalSizeBytes = 100 * 1024 * 1024; // 100 MB
   static const int defaultMaxPathLength = 512;
@@ -36,6 +37,7 @@ final class VirtualFilesystemService {
         _maxTotalSizeBytes = maxTotalSizeBytes,
         _maxPathLength = maxPathLength;
 
+  @override
   Future<void> start() async {
     if (_disposed) {
       throw StateError('VirtualFilesystemService has already been disposed.');
@@ -48,6 +50,7 @@ final class VirtualFilesystemService {
     _started = true;
   }
 
+  @override
   Future<void> dispose() async {
     if (_disposed) {
       return;

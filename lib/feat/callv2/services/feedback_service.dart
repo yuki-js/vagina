@@ -5,11 +5,12 @@ import 'package:just_audio/just_audio.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:vagina/feat/callv2/services/call_service.dart';
 import 'package:vagina/feat/callv2/services/playback_service.dart';
+import 'package:vagina/feat/callv2/services/subservice.dart';
 
 /// Unified feedback service for callv2 (audio + haptic)
 ///
 /// Provides multi-sensory user feedback for call lifecycle events.
-class FeedbackService {
+class FeedbackService implements SubService {
   final CallService _callService;
   final Set<String> _executingToolCallIds = <String>{};
   StreamSubscription<CallState>? _callStateSubscription;
@@ -319,7 +320,13 @@ class FeedbackService {
     ]);
   }
 
-  /// Dispose of all audio players
+  @override
+  Future<void> start() async {
+    // FeedbackService is initialized in constructor and starts
+    // listening to call state immediately. No additional startup needed.
+  }
+
+  @override
   Future<void> dispose() async {
     await _disableWakeLock();
     await _callStateSubscription?.cancel();

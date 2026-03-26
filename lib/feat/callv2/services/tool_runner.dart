@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:vagina/feat/callv2/services/subservice.dart';
 import 'package:vagina/services/tools_runtime/apis/call_api.dart';
 import 'package:vagina/services/tools_runtime/apis/filesystem_api.dart';
 import 'package:vagina/services/tools_runtime/apis/text_agent_api.dart';
@@ -14,7 +15,7 @@ import 'package:vagina/tools/tools.dart';
 /// hold active file state, or decide whether a tool may be called.
 /// Tool definition visibility is computed on-demand via
 /// [computeAvailableTools].
-class ToolRunner {
+class ToolRunner implements SubService {
   final FilesystemApi _filesystemApi;
   final CallApi _callApi;
   final TextAgentApi _textAgentApi;
@@ -66,7 +67,7 @@ class ToolRunner {
         .toList(growable: false);
   }
 
-  /// Instantiate and initialise every tool from the toolbox.
+  @override
   Future<void> start() async {
     if (_started) {
       return;
@@ -115,7 +116,7 @@ class ToolRunner {
     return tool.execute(args);
   }
 
-  /// Release resources.
+  @override
   Future<void> dispose() async {
     _tools.clear();
     _started = false;
