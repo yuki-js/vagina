@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:vagina/feat/callv2/models/active_file.dart';
+import 'package:vagina/feat/callv2/models/realtime/realtime_adapter_models.dart';
 import 'package:vagina/feat/callv2/models/realtime/realtime_thread.dart';
 import 'package:vagina/feat/callv2/models/text_agent_info.dart';
 import 'package:vagina/feat/callv2/models/voice_agent_api_config.dart';
@@ -64,6 +65,8 @@ class CallService {
   StreamSubscription<void>? _assistantAudioCompletedSubscription;
   StreamSubscription<bool>? _userSpeakingStateSubscription;
   StreamSubscription<List<ActiveFile>>? _activeFilesSubscription;
+  StreamSubscription<RealtimeAdapterError>? _errorSubscription;
+  Timer? _silenceTimer;
 
   final StreamController<CallState> _stateController =
       StreamController<CallState>.broadcast();
@@ -71,6 +74,8 @@ class CallService {
       StreamController<Duration>.broadcast();
   final StreamController<bool> _speakerMuteController =
       StreamController<bool>.broadcast();
+  final StreamController<String> _errorController =
+      StreamController<String>.broadcast();
   CallState _state = CallState.uninitialized;
   Timer? _callDurationTimer;
   DateTime? _callStartedAt;
@@ -107,6 +112,10 @@ class CallService {
       _speakerMuteController.stream; // todo: playbackServiceに移譲する
 
   bool get isSpeakerMuted => _speakerMuted;
+
+  /// Aggregated error stream from all services.
+  /// For UI display only. Use direct service access for detailed debugging.
+  Stream<String> get errors => _errorController.stream;
 
   RecorderService get recorderService => _recorderService;
 
@@ -258,16 +267,25 @@ class CallService {
         _realtimeService.threadUpdates.listen(_onThreadUpdate);
     _assistantAudioCompletedSubscription =
         _realtimeService.assistantAudioCompleted.listen((_) {
+      _resetSilenceTimer();
       unawaited(_playbackService.markResponseComplete());
     });
     _userSpeakingStateSubscription =
         _realtimeService.userSpeakingStates.listen((isSpeaking) {
+      if (isSpeaking) {
+        _resetSilenceTimer();
+      }
       if (!isSpeaking) {
         return;
       }
       unawaited(_interruptAssistantOutput());
     });
+    _errorSubscription = _realtimeService.errors.listen((error) {
+      // Emit simplified message to UI for critical errors
+      _emitError(error.message);
+    });
     _startDurationTracking();
+    _resetSilenceTimer();
   }
 
   Future<void> interruptAssistantOutput() async {
@@ -511,6 +529,24 @@ class CallService {
     }
   }
 
+  void _resetSilenceTimer() {
+    _silenceTimer?.cancel();
+    if (state != CallState.active) return;
+
+    _silenceTimer = Timer(
+      const Duration(seconds: 180), // 3 minutes
+      () {
+        endCall(endContext: '無音状態が続いたため通話を終了しました');
+      },
+    );
+  }
+
+  void _emitError(String message) {
+    if (!_errorController.isClosed) {
+      _errorController.add(message);
+    }
+  }
+
   void _startDurationTracking() {
     _callDurationTimer?.cancel();
     _callStartedAt = DateTime.now();
@@ -562,6 +598,8 @@ class CallService {
   Future<void> _dispose() async {
     _callDurationTimer?.cancel();
     _callDurationTimer = null;
+    _silenceTimer?.cancel();
+    _silenceTimer = null;
     await _threadSubscription?.cancel();
     _threadSubscription = null;
     await _assistantAudioCompletedSubscription?.cancel();
@@ -570,6 +608,8 @@ class CallService {
     _userSpeakingStateSubscription = null;
     await _activeFilesSubscription?.cancel();
     _activeFilesSubscription = null;
+    await _errorSubscription?.cancel();
+    _errorSubscription = null;
     _dispatchedToolCallIds.clear();
     _cancelledToolCallIds.clear();
     await _realtimeService.unbindAudioInput();
@@ -592,6 +632,7 @@ class CallService {
     }
 
     state = CallState.disposed;
+    await _errorController.close();
     await _durationController.close();
     await _speakerMuteController.close();
     await _stateController.close();

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/services.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:vagina/feat/callv2/services/call_service.dart';
 import 'package:vagina/feat/callv2/services/playback_service.dart';
 
@@ -63,6 +64,7 @@ class FeedbackService {
     if (previousState != CallState.connecting &&
         currentState == CallState.connecting) {
       await playDialTone();
+      await _enableWakeLock();
       return;
     }
 
@@ -132,6 +134,26 @@ class FeedbackService {
 
     if (playSound && hadPendingToolCalls) {
       unawaited(playToolCancelled());
+    }
+  }
+
+  // ==========================================================================
+  // Wake-Lock Management
+  // ==========================================================================
+
+  Future<void> _enableWakeLock() async {
+    try {
+      await WakelockPlus.enable();
+    } catch (e) {
+      // Log but don't fail - wake lock is nice-to-have
+    }
+  }
+
+  Future<void> _disableWakeLock() async {
+    try {
+      await WakelockPlus.disable();
+    } catch (e) {
+      // Log but don't fail
     }
   }
 
@@ -299,6 +321,7 @@ class FeedbackService {
 
   /// Dispose of all audio players
   Future<void> dispose() async {
+    await _disableWakeLock();
     await _callStateSubscription?.cancel();
     _callStateSubscription = null;
     await _playbackStateSubscription?.cancel();
