@@ -56,8 +56,6 @@ final class PlaybackMetrics {
 /// Owns PCM playback buffering, input-stream binding, and interruption
 /// semantics for assistant audio responses.
 final class PlaybackService extends SubService {
-  static const _tag = 'PlaybackService';
-
   /// Buffer size for audio playback streaming
   static const int playbackBufferSize = 8192;
 
@@ -98,6 +96,7 @@ final class PlaybackService extends SubService {
       return;
     }
 
+    logger.info('Starting PlaybackService');
     await _player.openPlayer();
     _playerOpened = true;
     await _player.setVolume(_volume);
@@ -110,11 +109,14 @@ final class PlaybackService extends SubService {
     await start();
     await unbindInputStream();
 
+    logger.info('Binding input stream');
     _inputSubscription = audioStream.listen(
       (chunk) {
         unawaited(_handleInputChunk(chunk));
       },
-      onError: (Object error, StackTrace stackTrace) {},
+      onError: (Object error, StackTrace stackTrace) {
+        logger.severe('Input stream error', error, stackTrace);
+      },
     );
 
     _metrics = _metrics.copyWith(isInputBound: true);
@@ -122,6 +124,9 @@ final class PlaybackService extends SubService {
   }
 
   Future<void> unbindInputStream() async {
+    if (_inputSubscription != null) {
+      logger.info('Unbinding input stream');
+    }
     await _inputSubscription?.cancel();
     _inputSubscription = null;
     _metrics = _metrics.copyWith(isInputBound: false);
@@ -133,11 +138,13 @@ final class PlaybackService extends SubService {
     await start();
 
     if (_bufferQueue.isEmpty && !isPlaying) {
+      logger.fine('Response complete with empty buffer and not playing');
       _metrics = _metrics.copyWith(isResponseComplete: false);
       _emitMetrics();
       return;
     }
 
+    logger.info('Response marked complete, draining remaining buffer');
     _metrics = _metrics.copyWith(isResponseComplete: true);
     _emitMetrics();
     _ensureDrainLoop();
@@ -146,23 +153,27 @@ final class PlaybackService extends SubService {
 
   Future<void> interrupt() async {
     ensureNotDisposed();
+    logger.info('Interrupting playback');
     await _resetPlaybackState();
   }
 
   Future<void> stop() async {
     ensureNotDisposed();
+    logger.info('Stopping playback');
     await _resetPlaybackState();
   }
 
   Future<void> setVolume(double volume) async {
     ensureNotDisposed();
     _volume = volume.clamp(0.0, 1.0);
+    logger.fine('Setting volume: $_volume');
     await start();
     await _player.setVolume(_volume);
   }
 
   @override
   Future<void> dispose() async {
+    logger.info('Disposing PlaybackService');
     await super.dispose();
 
     _generation += 1;
@@ -181,6 +192,8 @@ final class PlaybackService extends SubService {
     _state = PlaybackServiceState.disposed;
     await _stateController.close();
     await _metricsController.close();
+    
+    logger.info('PlaybackService disposed successfully');
   }
 
   Future<void> _handleInputChunk(Uint8List chunk) async {
@@ -193,6 +206,7 @@ final class PlaybackService extends SubService {
     if (_bufferQueue.isEmpty &&
         (_state == PlaybackServiceState.idle ||
             _state == PlaybackServiceState.priming)) {
+      logger.fine('First audio chunk received, starting buffering');
       _metrics = _metrics.copyWith(isResponseComplete: false);
     }
 
@@ -218,10 +232,12 @@ final class PlaybackService extends SubService {
   }
 
   Future<void> _drainBufferedAudio(int generation) async {
+    logger.fine('Starting buffer drain loop (generation: $generation)');
     while (
         generation == _generation && _state != PlaybackServiceState.disposed) {
       if (_bufferQueue.isEmpty) {
         if (_metrics.isResponseComplete) {
+          logger.fine('Buffer drain complete, returning to idle');
           _setState(PlaybackServiceState.idle);
           _metrics = _metrics.copyWith(isResponseComplete: false);
           _emitMetrics();
@@ -233,6 +249,8 @@ final class PlaybackService extends SubService {
           _bufferedBytes >= AppConfig.minAudioBufferSizeBeforeStart ||
               _metrics.isResponseComplete;
       if (!shouldStartPlayback) {
+        logger.fine(
+            'Buffering: $_bufferedBytes/${AppConfig.minAudioBufferSizeBeforeStart} bytes');
         _setState(PlaybackServiceState.priming);
         _emitMetrics();
         return;
@@ -253,6 +271,7 @@ final class PlaybackService extends SubService {
   Future<void> _resetPlaybackState() async {
     await start();
 
+    logger.fine('Resetting playback state');
     _generation += 1;
     _setState(PlaybackServiceState.stopping);
 
@@ -271,6 +290,8 @@ final class PlaybackService extends SubService {
       return;
     }
 
+    logger.info(
+        'Starting audio player stream: sampleRate=${AppConfig.sampleRate}, channels=${AppConfig.channels}');
     _playerStreaming = true;
     try {
       await _player.startPlayerFromStream(
@@ -280,7 +301,8 @@ final class PlaybackService extends SubService {
         bufferSize: playbackBufferSize,
         interleaved: true,
       );
-    } catch (_) {
+    } catch (e, stackTrace) {
+      logger.severe('Failed to start audio player', e, stackTrace);
       _playerStreaming = false;
       rethrow;
     }
@@ -291,16 +313,20 @@ final class PlaybackService extends SubService {
       return;
     }
 
+    logger.fine('Stopping audio player');
     try {
       await _player.stopPlayer();
-    } catch (e) {
+    } catch (e, stackTrace) {
+      logger.warning('Error stopping audio player', e, stackTrace);
     } finally {
       _playerStreaming = false;
     }
   }
 
   void _setState(PlaybackServiceState next) {
+    final previous = _state;
     _state = next;
+    logger.info('State transition: $previous → $next');
     if (!_stateController.isClosed) {
       _stateController.add(next);
     }

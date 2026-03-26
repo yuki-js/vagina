@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:vagina/feat/settings/widgets/android_audio_section.dart';
 import 'package:vagina/feat/settings/widgets/azure_config_section.dart';
-import 'package:vagina/feat/settings/widgets/developer_section.dart';
 import 'package:vagina/feat/settings/widgets/setup_section.dart';
 import 'package:vagina/feat/settings/widgets/settings_card.dart';
 import 'package:vagina/feat/settings/widgets/voice_settings_section.dart';
@@ -47,12 +46,7 @@ class SettingsScreen extends StatelessWidget {
 
                 // PiP Settings removed - PiP button is now in call screen control panel
                 // Window settings removed - always-on-top is now in title bar
-                const SizedBox(height: 24),
-
-                // Developer Section
-                const SectionHeader(title: '開発者向け'),
-                const SizedBox(height: 12),
-                const DeveloperSection(),
+                // Developer Section removed - logging moved to package:logging
                 const SizedBox(height: 24),
 
                 // Setup Section

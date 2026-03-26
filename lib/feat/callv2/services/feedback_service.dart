@@ -24,10 +24,7 @@ final class FeedbackService extends SubService {
   AudioPlayer? _endTonePlayer;
   AudioPlayer? _toolExecutingPlayer;
 
-  FeedbackService(this._callService) {
-    // Play dial tone immediately on construction
-    unawaited(playDialTone());
-  }
+  FeedbackService(this._callService);
 
   Future<void> _bindRealtimeFeedback() async {
     final realtimeService = _callService.realtimeService!;
@@ -49,8 +46,11 @@ final class FeedbackService extends SubService {
     CallState previousState,
     CallState currentState,
   ) async {
+    logger.info('Call state changed: $previousState → $currentState');
+    
     if (previousState != CallState.connecting &&
         currentState == CallState.connecting) {
+      logger.info('Starting dial tone and enabling wake lock');
       await playDialTone();
       await _enableWakeLock();
       return;
@@ -58,11 +58,13 @@ final class FeedbackService extends SubService {
 
     if (previousState == CallState.connecting &&
         currentState != CallState.connecting) {
+      logger.info('Stopping dial tone');
       await stopDialTone();
     }
 
     if (previousState == CallState.active &&
         currentState == CallState.disposing) {
+      logger.info('Playing call end tone');
       await playCallEndTone();
     }
   }
@@ -95,32 +97,41 @@ final class FeedbackService extends SubService {
   void onToolExecutionStarted(String callId) {
     final wasEmpty = _executingToolCallIds.isEmpty;
     final added = _executingToolCallIds.add(callId);
+    logger.info('Tool execution started: $callId (total executing: ${_executingToolCallIds.length})');
     if (added && wasEmpty) {
+      logger.fine('Starting tool executing sound');
       unawaited(playToolExecuting());
     }
   }
 
   void onToolExecutionCompleted(String callId) {
     _executingToolCallIds.remove(callId);
+    logger.info('Tool execution completed: $callId (remaining: ${_executingToolCallIds.length})');
     if (_executingToolCallIds.isEmpty) {
+      logger.fine('Stopping tool executing sound');
       unawaited(stopToolExecuting());
     }
   }
 
   void onToolExecutionFailed(String callId) {
     _executingToolCallIds.remove(callId);
+    logger.warning('Tool execution failed: $callId (remaining: ${_executingToolCallIds.length})');
     if (_executingToolCallIds.isEmpty) {
+      logger.fine('Stopping tool executing sound');
       unawaited(stopToolExecuting());
     }
+    logger.fine('Playing tool error sound');
     unawaited(playToolError());
   }
 
   void onToolExecutionsCancelled({required bool playSound}) {
     final hadPendingToolCalls = _executingToolCallIds.isNotEmpty;
+    logger.info('Tool executions cancelled (count: ${_executingToolCallIds.length}, playSound: $playSound)');
     _executingToolCallIds.clear();
     unawaited(stopToolExecuting());
 
     if (playSound && hadPendingToolCalls) {
+      logger.fine('Playing tool cancelled sound');
       unawaited(playToolCancelled());
     }
   }
@@ -132,16 +143,18 @@ final class FeedbackService extends SubService {
   Future<void> _enableWakeLock() async {
     try {
       await WakelockPlus.enable();
-    } catch (e) {
-      // Log but don't fail - wake lock is nice-to-have
+      logger.fine('Wake lock enabled');
+    } catch (e, stackTrace) {
+      logger.warning('Failed to enable wake lock', e, stackTrace);
     }
   }
 
   Future<void> _disableWakeLock() async {
     try {
       await WakelockPlus.disable();
-    } catch (e) {
-      // Log but don't fail
+      logger.fine('Wake lock disabled');
+    } catch (e, stackTrace) {
+      logger.warning('Failed to disable wake lock', e, stackTrace);
     }
   }
 
@@ -164,8 +177,8 @@ final class FeedbackService extends SubService {
       await player.setLoopMode(LoopMode.one);
       await player.setVolume(volume);
       await player.play();
-    } catch (e) {
-      // Ignore errors in feedback
+    } catch (e, stackTrace) {
+      logger.warning('Failed to play looping audio: $assetPath', e, stackTrace);
     }
   }
 
@@ -189,8 +202,8 @@ final class FeedbackService extends SubService {
         clearPlayer: () => assignPlayer(null),
         stopFirst: false,
       );
-    } catch (e) {
-      // Ignore errors
+    } catch (e, stackTrace) {
+      logger.warning('Failed to play one-shot audio: $assetPath', e, stackTrace);
     }
   }
 
@@ -206,8 +219,8 @@ final class FeedbackService extends SubService {
         await player.stop();
       }
       await player.dispose();
-    } catch (e) {
-      // Ignore errors
+    } catch (e, stackTrace) {
+      logger.warning('Failed to dispose audio player', e, stackTrace);
     } finally {
       clearPlayer();
     }
@@ -279,6 +292,7 @@ final class FeedbackService extends SubService {
       await HapticFeedback.heavyImpact();
     } catch (e) {
       // Ignore errors (no platform channels in tests)
+      logger.fine('Haptic feedback not available: heavyImpact');
     }
   }
 
@@ -292,6 +306,7 @@ final class FeedbackService extends SubService {
       await HapticFeedback.selectionClick();
     } catch (e) {
       // Ignore errors (no platform channels in tests)
+      logger.fine('Haptic feedback not available: selectionClick');
     }
   }
 
@@ -311,9 +326,15 @@ final class FeedbackService extends SubService {
   Future<void> start() async {
     await super.start();
 
+    logger.info('Starting FeedbackService');
+    
     // Initialize state tracking
     _lastObservedState = _callService.state;
     _lastPlaybackState = _callService.playbackService.state;
+
+    // Play dial tone on start
+    logger.fine('Playing initial dial tone');
+    unawaited(playDialTone());
 
     // Start listening to CallService and PlaybackService state changes
     _callStateSubscription = _callService.states.listen((state) {
@@ -326,11 +347,13 @@ final class FeedbackService extends SubService {
         _callService.playbackService.states.listen(_handlePlaybackStateChanged);
 
     // Bind RealtimeService-dependent feedback
+    logger.fine('Binding realtime feedback');
     await _bindRealtimeFeedback();
   }
 
   @override
   Future<void> dispose() async {
+    logger.info('Disposing FeedbackService (${_executingToolCallIds.length} pending tool calls)');
     await super.dispose();
 
     await _disableWakeLock();
@@ -351,5 +374,7 @@ final class FeedbackService extends SubService {
       clearPlayer: () => _endTonePlayer = null,
       stopFirst: false,
     );
+    
+    logger.info('FeedbackService disposed successfully');
   }
 }

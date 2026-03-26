@@ -45,6 +45,7 @@ final class ToolRunner extends SubService {
   /// Returns a fresh list of tool definitions on each call.
   List<ToolDefinition> computeAvailableTools(Set<String> activeExtensions) {
     if (!isStarted) {
+      logger.fine('computeAvailableTools called before service started');
       return const [];
     }
 
@@ -52,7 +53,7 @@ final class ToolRunner extends SubService {
     final normalizedExtensions =
         activeExtensions.map((ext) => ext.toLowerCase()).toSet();
 
-    return _tools.values
+    final availableTools = _tools.values
         .where((tool) {
           final activation = tool.definition.activation;
 
@@ -61,11 +62,17 @@ final class ToolRunner extends SubService {
         })
         .map((tool) => tool.definition)
         .toList(growable: false);
+
+    logger.fine(
+        'Computed available tools: ${availableTools.length}/${_tools.length} (extensions: ${normalizedExtensions.join(", ")})');
+    return availableTools;
   }
 
   @override
   Future<void> start() async {
     await super.start();
+
+    logger.info('Starting ToolRunner with ${_toolbox.tools.length} tools');
 
     for (final tool in _toolbox.tools) {
       final key = tool.definition.toolKey;
@@ -75,9 +82,12 @@ final class ToolRunner extends SubService {
         filesystemApi: _filesystemApi,
         textAgentApi: _textAgentApi,
       );
+      logger.fine('Initializing tool: $key');
       await tool.init(context);
       _tools[key] = tool;
     }
+
+    logger.info('ToolRunner started successfully with ${_tools.length} tools');
   }
 
   /// Execute a tool by its key with JSON-encoded arguments.
@@ -87,31 +97,48 @@ final class ToolRunner extends SubService {
   Future<String> execute(String toolKey, String argumentsJson) async {
     ensureNotDisposed();
     if (!isStarted) {
+      logger.severe('Tool execution attempted before service started: $toolKey');
       throw StateError('ToolRunner has not been started.');
     }
 
+    logger.info('Executing tool: $toolKey');
+    logger.fine('Tool arguments: $argumentsJson');
+
     final tool = _tools[toolKey];
     if (tool == null) {
+      logger.warning('Unknown tool requested: $toolKey');
       return jsonEncode({
         'error': 'Unknown tool: $toolKey',
       });
     }
+    
     final Map<String, dynamic> args;
     try {
       final decoded = jsonDecode(argumentsJson);
       args = decoded is Map<String, dynamic> ? decoded : <String, dynamic>{};
-    } catch (_) {
+    } catch (e, stackTrace) {
+      logger.warning('Invalid JSON arguments for tool $toolKey', e, stackTrace);
       return jsonEncode({
         'error': 'Invalid JSON arguments for tool $toolKey.',
       });
     }
 
-    return tool.execute(args);
+    try {
+      final result = await tool.execute(args);
+      logger.info('Tool execution completed: $toolKey');
+      logger.fine('Tool result length: ${result.length} chars');
+      return result;
+    } catch (e, stackTrace) {
+      logger.severe('Tool execution failed: $toolKey', e, stackTrace);
+      rethrow;
+    }
   }
 
   @override
   Future<void> dispose() async {
+    logger.info('Disposing ToolRunner (${_tools.length} tools)');
     await super.dispose();
     _tools.clear();
+    logger.info('ToolRunner disposed successfully');
   }
 }

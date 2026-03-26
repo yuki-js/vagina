@@ -1,3 +1,5 @@
+import 'package:logging/logging.dart';
+
 /// Base class for all services managed by [CallService].
 ///
 /// Provides common lifecycle management with [start] and [dispose] methods,
@@ -7,6 +9,11 @@
 /// beginning of their overridden methods to leverage the built-in state
 /// management.
 abstract base class SubService {
+  /// Logger instance automatically named after the concrete service type.
+  ///
+  /// Example: RecorderService will have logger name 'CallV2.RecorderService'.
+  late final Logger logger = Logger('CallV2.$runtimeType');
+
   bool _started = false;
   bool _disposed = false;
 

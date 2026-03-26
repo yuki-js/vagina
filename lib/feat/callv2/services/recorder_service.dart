@@ -22,8 +22,6 @@ enum RecorderServiceState {
 /// Owns microphone capture, mute behavior, amplitude reporting, and PCM stream
 /// fan-out for call sessions.
 final class RecorderService extends SubService {
-  static const _tag = 'RecorderService';
-
   /// Interval for amplitude updates
   static const Duration amplitudeUpdateInterval = Duration(milliseconds: 100);
 
@@ -69,19 +67,24 @@ final class RecorderService extends SubService {
       return;
     }
 
+    logger.info('Starting RecorderService');
     _recorder = AudioRecorder();
     _setState(RecorderServiceState.idle);
   }
 
   void configureAndroid(AndroidAudioConfig config) {
     ensureNotDisposed();
+    logger.fine(
+        'Configuring Android audio: source=${config.audioSource}, mode=${config.audioManagerMode}');
     _androidAudioConfig = config;
   }
 
   Future<bool> hasPermission() async {
     ensureNotDisposed();
     await start();
-    return (_recorder ??= AudioRecorder()).hasPermission();
+    final hasPermission = await (_recorder ??= AudioRecorder()).hasPermission();
+    logger.fine('Microphone permission check: $hasPermission');
+    return hasPermission;
   }
 
   void setMute(bool muted) {
@@ -90,6 +93,7 @@ final class RecorderService extends SubService {
       return;
     }
     _isMuted = muted;
+    logger.info('Mute state changed: ${_isMuted ? "muted" : "unmuted"}');
     if (!_muteStateController.isClosed) {
       _muteStateController.add(_isMuted);
     }
@@ -104,15 +108,19 @@ final class RecorderService extends SubService {
 
     if (_state == RecorderServiceState.recording ||
         _state == RecorderServiceState.starting) {
+      logger.fine('Recording session already started or starting');
       return;
     }
 
     final recorder = _recorder ??= AudioRecorder();
     final hasPermission = await recorder.hasPermission();
     if (!hasPermission) {
+      logger.severe('Microphone permission not granted');
       throw StateError('Microphone permission not granted.');
     }
 
+    logger.info(
+        'Starting recording session: sampleRate=${AppConfig.sampleRate}, channels=${AppConfig.channels}');
     _setState(RecorderServiceState.starting);
 
     try {
@@ -134,6 +142,7 @@ final class RecorderService extends SubService {
       _rawAudioSubscription = rawStream.listen(
         _onRawAudioChunk,
         onError: (Object error, StackTrace stackTrace) {
+          logger.severe('Audio stream error', error, stackTrace);
           if (!_audioController.isClosed) {
             _audioController.addError(error, stackTrace);
           }
@@ -150,11 +159,14 @@ final class RecorderService extends SubService {
           }
           _emitAmplitude(AudioUtils.normalizeAmplitude(amplitude.current));
         },
-        onError: (Object error, StackTrace stackTrace) {},
+        onError: (Object error, StackTrace stackTrace) {
+          logger.warning('Amplitude stream error', error, stackTrace);
+        },
       );
 
       _setState(RecorderServiceState.recording);
-    } catch (e) {
+    } catch (e, stackTrace) {
+      logger.severe('Failed to start recording session', e, stackTrace);
       _setState(RecorderServiceState.idle);
       rethrow;
     }
@@ -163,12 +175,15 @@ final class RecorderService extends SubService {
   Future<void> stopRecordingSession() async {
     if (_state == RecorderServiceState.idle ||
         _state == RecorderServiceState.uninitialized) {
+      logger.fine('Recording session already stopped');
       return;
     }
     if (_state == RecorderServiceState.stopping) {
+      logger.fine('Recording session already stopping');
       return;
     }
 
+    logger.info('Stopping recording session');
     _setState(RecorderServiceState.stopping);
 
     try {
@@ -181,7 +196,8 @@ final class RecorderService extends SubService {
       await _recorder?.stop();
       _emitAmplitude(0.0);
       _setState(RecorderServiceState.idle);
-    } catch (e) {
+    } catch (e, stackTrace) {
+      logger.severe('Failed to stop recording session', e, stackTrace);
       _setState(RecorderServiceState.idle);
       rethrow;
     }
@@ -189,6 +205,7 @@ final class RecorderService extends SubService {
 
   @override
   Future<void> dispose() async {
+    logger.info('Disposing RecorderService');
     await super.dispose();
 
     await _rawAudioSubscription?.cancel();
@@ -199,7 +216,9 @@ final class RecorderService extends SubService {
 
     try {
       await _recorder?.stop();
-    } catch (e) {}
+    } catch (e, stackTrace) {
+      logger.warning('Error stopping recorder during disposal', e, stackTrace);
+    }
 
     await _recorder?.dispose();
     _recorder = null;
@@ -210,6 +229,8 @@ final class RecorderService extends SubService {
     await _amplitudeController.close();
     await _muteStateController.close();
     await _stateController.close();
+    
+    logger.info('RecorderService disposed successfully');
   }
 
   void _onRawAudioChunk(Uint8List bytes) {
@@ -235,7 +256,9 @@ final class RecorderService extends SubService {
     RecorderServiceState next, {
     bool emitWhenClosed = true,
   }) {
+    final previous = _state;
     _state = next;
+    logger.info('State transition: $previous → $next');
     if (emitWhenClosed && !_stateController.isClosed) {
       _stateController.add(next);
     }
