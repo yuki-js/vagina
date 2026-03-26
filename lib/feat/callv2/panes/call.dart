@@ -101,8 +101,8 @@ class _CallPaneState extends State<CallPane> {
             final isSpeakerMuted = speakerSnapshot.data ?? false;
 
             return StreamBuilder<Duration>(
-              stream: widget.callService.durationStream,
-              initialData: widget.callService.currentCallDuration,
+              stream: widget.callService.timerService?.durationUpdates,
+              initialData: widget.callService.timerService?.elapsed ?? Duration.zero,
               builder: (context, durationSnapshot) {
                 final callDuration = durationSnapshot.data ?? Duration.zero;
 

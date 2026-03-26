@@ -11,12 +11,11 @@ abstract class TextAgentTransport {
   /// Returns the raw response data from the provider API, which the caller
   /// should parse to extract messages, tool calls, etc.
   ///
-  /// Throws on network errors, API errors, or timeout.
+  /// Throws on network errors or API errors.
   Future<Map<String, dynamic>> sendRequest({
     required TextAgentThread thread,
     required String systemPrompt,
     required List<ToolDefinition> availableTools,
-    required Duration timeout,
   });
 
   /// Dispose transport resources (e.g., HTTP client).

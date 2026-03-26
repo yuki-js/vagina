@@ -14,12 +14,11 @@ import 'package:vagina/feat/callv2/services/playback_service.dart';
 import 'package:vagina/feat/callv2/services/realtime_service.dart';
 import 'package:vagina/feat/callv2/services/recorder_service.dart';
 import 'package:vagina/feat/callv2/services/text_agent_service.dart';
+import 'package:vagina/feat/callv2/services/timer_service.dart';
 import 'package:vagina/feat/callv2/services/tool_runner.dart';
 import 'package:vagina/feat/callv2/services/toolapi/call_control_api.dart';
 import 'package:vagina/feat/callv2/services/toolapi/call_filesystem_api.dart';
 import 'package:vagina/feat/callv2/services/toolapi/text_agent_api.dart';
-import 'package:vagina/feat/callv2/services/text_agent_service.dart';
-import 'package:vagina/feat/callv2/services/tool_runner.dart';
 import 'package:vagina/interfaces/call_session_repository.dart';
 import 'package:vagina/interfaces/virtual_filesystem_repository.dart';
 import 'package:vagina/models/call_session.dart';
@@ -54,6 +53,7 @@ class CallService {
   late final RecorderService _recorderService;
   late final PlaybackService _playbackService;
   late final FeedbackService _feedbackService;
+  late final TimerService _timerService;
   late final ToolRunner _toolRunner;
   late final TextAgentService _textAgentService;
   late final Set<String> _exposedToolKeys;
@@ -68,20 +68,15 @@ class CallService {
   StreamSubscription<bool>? _userSpeakingStateSubscription;
   StreamSubscription<List<ActiveFile>>? _activeFilesSubscription;
   StreamSubscription<RealtimeAdapterError>? _errorSubscription;
-  Timer? _silenceTimer;
 
   final StreamController<CallState> _stateController =
       StreamController<CallState>.broadcast();
-  final StreamController<Duration> _durationController =
-      StreamController<Duration>.broadcast();
   final StreamController<bool> _speakerMuteController =
       StreamController<bool>.broadcast();
   final StreamController<String> _errorController =
       StreamController<String>.broadcast();
   CallState _state = CallState.uninitialized;
-  Timer? _callDurationTimer;
   DateTime? _callStartedAt;
-  Duration _callDuration = Duration.zero;
   bool _speakerMuted = false;
   String? _endContext;
 
@@ -106,10 +101,6 @@ class CallService {
 
   Stream<CallState> get states => _stateController.stream;
 
-  Stream<Duration> get durationStream => _durationController.stream;
-
-  Duration get currentCallDuration => _callDuration;
-
   Stream<bool> get speakerMuteStates =>
       _speakerMuteController.stream; // todo: playbackServiceに移譲する
 
@@ -124,6 +115,13 @@ class CallService {
   PlaybackService get playbackService => _playbackService;
 
   NotepadService get notepadService => _notepadService;
+
+  TimerService? get timerService {
+    if (state == CallState.uninitialized || state == CallState.disposed) {
+      return null;
+    }
+    return _timerService;
+  }
 
   RealtimeService? get realtimeService {
     if (state == CallState.uninitialized || state == CallState.disposed) {
@@ -197,6 +195,7 @@ class CallService {
   Future<void> _instantiateServices() async {
     _playbackService = PlaybackService();
     _feedbackService = FeedbackService(this);
+    _timerService = TimerService(this);
     _vfs = VirtualFilesystemService(_filesystemRepository);
 
     _notepadService = NotepadService(_vfs);
@@ -243,6 +242,8 @@ class CallService {
 
   /// リソース確保と接続開始
   Future<void> _igniteCall() async {
+    _callStartedAt = DateTime.now();
+
     await Future.wait<void>([
       _vfs.start(),
       _realtimeService.start(),
@@ -250,6 +251,7 @@ class CallService {
       _playbackService.start(),
       _notepadService.start(),
       _textAgentService.start(),
+      _timerService.start(),
       _toolRunner.start(),
     ]);
 
@@ -269,14 +271,10 @@ class CallService {
         _realtimeService.threadUpdates.listen(_onThreadUpdate);
     _assistantAudioCompletedSubscription =
         _realtimeService.assistantAudioCompleted.listen((_) {
-      _resetSilenceTimer();
       unawaited(_playbackService.markResponseComplete());
     });
     _userSpeakingStateSubscription =
         _realtimeService.userSpeakingStates.listen((isSpeaking) {
-      if (isSpeaking) {
-        _resetSilenceTimer();
-      }
       if (!isSpeaking) {
         return;
       }
@@ -286,8 +284,6 @@ class CallService {
       // Emit simplified message to UI for critical errors
       _emitError(error.message);
     });
-    _startDurationTracking();
-    _resetSilenceTimer();
   }
 
   Future<void> interruptAssistantOutput() async {
@@ -531,40 +527,10 @@ class CallService {
     }
   }
 
-  void _resetSilenceTimer() {
-    _silenceTimer?.cancel();
-    if (state != CallState.active) return;
-
-    _silenceTimer = Timer(
-      const Duration(seconds: 180), // 3 minutes
-      () {
-        endCall(endContext: '無音状態が続いたため通話を終了しました');
-      },
-    );
-  }
-
   void _emitError(String message) {
     if (!_errorController.isClosed) {
       _errorController.add(message);
     }
-  }
-
-  void _startDurationTracking() {
-    _callDurationTimer?.cancel();
-    _callStartedAt = DateTime.now();
-    _callDuration = Duration.zero;
-
-    _callDurationTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      final callStartedAt = _callStartedAt;
-      if (callStartedAt == null) {
-        return;
-      }
-
-      _callDuration = DateTime.now().difference(callStartedAt);
-      if (!_durationController.isClosed) {
-        _durationController.add(_callDuration);
-      }
-    });
   }
 
   Future<void> endCall({String? endContext}) async {
@@ -598,10 +564,6 @@ class CallService {
   }
 
   Future<void> _dispose() async {
-    _callDurationTimer?.cancel();
-    _callDurationTimer = null;
-    _silenceTimer?.cancel();
-    _silenceTimer = null;
     await _threadSubscription?.cancel();
     _threadSubscription = null;
     await _assistantAudioCompletedSubscription?.cancel();
@@ -624,6 +586,7 @@ class CallService {
         _recorderService.dispose(),
         _playbackService.dispose(),
         _feedbackService.dispose(),
+        _timerService.dispose(),
         _toolRunner.dispose(),
         _textAgentService.dispose(),
         _notepadService.dispose(),
@@ -635,7 +598,6 @@ class CallService {
 
     state = CallState.disposed;
     await _errorController.close();
-    await _durationController.close();
     await _speakerMuteController.close();
     await _stateController.close();
   }

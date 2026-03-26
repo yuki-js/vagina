@@ -109,12 +109,11 @@ class TextAgentService implements SubService {
   /// via the configured [ToolRunner].
   ///
   /// Throws [StateError] if agent not found or service not started.
-  /// Throws [Exception] on API errors, timeout, or tool execution failures.
+  /// Throws [Exception] on API errors or tool execution failures.
   Future<String> sendQuery(
     String agentId,
     String prompt, {
     String? threadId,
-    Duration? timeout,
   }) async {
     if (!_started) {
       throw StateError('TextAgentService has not been started.');
@@ -139,20 +138,15 @@ class TextAgentService implements SubService {
     // Create transport
     final transport = _createTransport(agent);
 
-    final effectiveTimeout = timeout ?? const Duration(seconds: 30);
-
     try {
       // Execute query with tool calling support
       final result = await _executeQueryLoop(
         agent: agent,
         thread: thread,
         transport: transport,
-        timeout: effectiveTimeout,
       );
 
       return result;
-    } on TimeoutException {
-      throw Exception('Query timeout after ${effectiveTimeout.inSeconds}s');
     } catch (e) {
       // Check for context length errors and retry
       if (_isContextLengthError(e) && thread.length > 0) {
@@ -168,7 +162,6 @@ class TextAgentService implements SubService {
           agent: agent,
           thread: thread,
           transport: transport,
-          timeout: effectiveTimeout,
         );
       }
 
@@ -262,7 +255,6 @@ class TextAgentService implements SubService {
     required TextAgentInfo agent,
     required TextAgentThread thread,
     required TextAgentTransport transport,
-    required Duration timeout,
   }) async {
     const maxTurns = 10;
     int turnCount = 0;
@@ -279,7 +271,6 @@ class TextAgentService implements SubService {
         thread: thread,
         systemPrompt: agent.prompt,
         availableTools: availableTools,
-        timeout: timeout,
       );
 
       // Parse response

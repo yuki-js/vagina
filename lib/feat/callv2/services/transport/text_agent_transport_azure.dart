@@ -32,7 +32,6 @@ class AzureTextAgentTransport implements TextAgentTransport {
     required TextAgentThread thread,
     required String systemPrompt,
     required List<ToolDefinition> availableTools,
-    required Duration timeout,
   }) async {
     // Build URL
     final url = _buildChatCompletionsUrl();
@@ -60,13 +59,11 @@ class AzureTextAgentTransport implements TextAgentTransport {
     }
 
     // Send request
-    final response = await _httpClient
-        .post(
-          url,
-          headers: headers,
-          body: jsonEncode(requestBody),
-        )
-        .timeout(timeout);
+    final response = await _httpClient.post(
+      url,
+      headers: headers,
+      body: jsonEncode(requestBody),
+    );
 
     if (response.statusCode != 200) {
       throw Exception(
