@@ -8,7 +8,7 @@ import 'package:vagina/feat/callv2/models/text_agent_info.dart';
 import 'package:vagina/feat/callv2/models/voice_agent_api_config.dart';
 import 'package:vagina/feat/callv2/models/voice_agent_info.dart';
 import 'package:vagina/feat/callv2/services/feedback_service.dart';
-import 'package:vagina/feat/callv2/services/filesystem/virtual_filesystem_service.dart';
+import 'package:vagina/feat/callv2/services/virtual_filesystem_service.dart';
 import 'package:vagina/feat/callv2/services/notepad_service.dart';
 import 'package:vagina/feat/callv2/services/playback_service.dart';
 import 'package:vagina/feat/callv2/services/realtime_service.dart';

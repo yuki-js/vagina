@@ -21,7 +21,7 @@ enum TimerServiceState {
 /// - Automatic tracking start when CallService becomes active
 ///
 /// Uses a single timer for both duration updates and timeout detection.
-final class TimerService implements SubService {
+final class TimerService extends SubService {
   final CallService _callService;
   final StreamController<Duration> _durationController =
       StreamController<Duration>.broadcast();
@@ -72,9 +72,8 @@ final class TimerService implements SubService {
 
   @override
   Future<void> start() async {
-    if (_state == TimerServiceState.disposed) {
-      throw StateError('TimerService has already been disposed.');
-    }
+    await super.start();
+
     if (_state != TimerServiceState.uninitialized) {
       return;
     }
@@ -85,7 +84,7 @@ final class TimerService implements SubService {
 
   /// Start elapsed time tracking and silence timeout detection.
   void startTracking() {
-    _ensureNotDisposed();
+    ensureNotDisposed();
 
     if (_state == TimerServiceState.tracking) {
       return;
@@ -104,7 +103,7 @@ final class TimerService implements SubService {
 
   /// Stop elapsed time tracking and silence timeout detection.
   void stopTracking() {
-    _ensureNotDisposed();
+    ensureNotDisposed();
 
     if (_state != TimerServiceState.tracking) {
       return;
@@ -121,7 +120,7 @@ final class TimerService implements SubService {
   /// Call this whenever activity is detected (user speaking, assistant responding, etc.)
   /// to prevent the timeout from firing.
   void resetSilenceTimer() {
-    _ensureNotDisposed();
+    ensureNotDisposed();
 
     if (_state != TimerServiceState.tracking) {
       return;
@@ -134,15 +133,13 @@ final class TimerService implements SubService {
   ///
   /// If tracking is active, takes effect immediately.
   void setSilenceTimeout(Duration timeout) {
-    _ensureNotDisposed();
+    ensureNotDisposed();
     _silenceTimeout = timeout;
   }
 
   @override
   Future<void> dispose() async {
-    if (_state == TimerServiceState.disposed) {
-      return;
-    }
+    await super.dispose();
 
     _timer?.cancel();
     _timer = null;
@@ -248,9 +245,4 @@ final class TimerService implements SubService {
     }
   }
 
-  void _ensureNotDisposed() {
-    if (_state == TimerServiceState.disposed) {
-      throw StateError('TimerService has already been disposed.');
-    }
-  }
 }

@@ -11,11 +11,9 @@ import 'realtime/oai/realtime_adapter.dart';
 import 'realtime/realtime_adapter.dart';
 
 /// Session-scoped realtime backing service for a single call.
-final class RealtimeService implements SubService {
+final class RealtimeService extends SubService {
   final VoiceAgentInfo voiceAgent;
   late final RealtimeAdapter _adapter;
-
-  bool _started = false;
 
   RealtimeService({required this.voiceAgent});
 
@@ -32,13 +30,10 @@ final class RealtimeService implements SubService {
 
   @override
   Future<void> start() async {
-    if (_started) {
-      return;
-    }
+    await super.start();
 
     _adapter = _createAdapter(voiceAgent.apiConfig);
 
-    _started = true;
     try {
       await _adapter.connect(
         voiceAgent.apiConfig,
@@ -46,13 +41,15 @@ final class RealtimeService implements SubService {
         instructions: voiceAgent.prompt,
       );
     } catch (_) {
-      _started = false;
+      // Reset _started flag on connection failure
+      await dispose();
       rethrow;
     }
   }
 
   Future<void> disconnect() async {
-    if (!_started) {
+    ensureNotDisposed();
+    if (!isStarted) {
       return;
     }
     await _adapter.disconnect();
@@ -141,8 +138,8 @@ final class RealtimeService implements SubService {
 
   @override
   Future<void> dispose() async {
-    _started = false;
     await _adapter.dispose();
+    await super.dispose();
   }
 
   // ---------------------------------------------------------------------------

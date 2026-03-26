@@ -16,7 +16,7 @@ import 'package:vagina/services/tools_runtime/tool_definition.dart';
 ///
 /// Owns the text agent registry, thread management, and query execution.
 /// Delegates HTTP transport to provider-specific [TextAgentTransport] implementations.
-class TextAgentService implements SubService {
+final class TextAgentService extends SubService {
   static const String _defaultThreadId = 'default';
 
   final Map<String, TextAgentInfo> _agentsById = <String, TextAgentInfo>{};
@@ -28,8 +28,6 @@ class TextAgentService implements SubService {
 
   NotepadService? _notepadService;
   ToolRunner? _toolRunner;
-  bool _started = false;
-  bool _disposed = false;
 
   TextAgentService({
     Iterable<TextAgentInfo> agents = const <TextAgentInfo>[],
@@ -41,7 +39,7 @@ class TextAgentService implements SubService {
   ///
   /// Must be called before [start]. Required for dynamic tool filtering.
   void setNotepadService(NotepadService notepadService) {
-    if (_started) {
+    if (isStarted) {
       throw StateError('setNotepadService() must be called before start().');
     }
     _notepadService = notepadService;
@@ -50,9 +48,6 @@ class TextAgentService implements SubService {
   /// Read-only view of the text agents available during this call.
   List<TextAgentInfo> get agents =>
       UnmodifiableListView<TextAgentInfo>(_agentsById.values);
-
-  /// Whether [start] has been called successfully.
-  bool get isStarted => _started;
 
   /// Find a text agent by id.
   TextAgentInfo? findAgent(String agentId) => _agentsById[agentId];
@@ -71,7 +66,7 @@ class TextAgentService implements SubService {
   /// Must be called before [start]. Allows breaking circular dependency
   /// between [TextAgentService] and [ToolRunner].
   void setToolRunner(ToolRunner toolRunner) {
-    if (_started) {
+    if (isStarted) {
       throw StateError('setToolRunner() must be called before start().');
     }
     _toolRunner = toolRunner;
@@ -115,7 +110,7 @@ class TextAgentService implements SubService {
     String prompt, {
     String? threadId,
   }) async {
-    if (!_started) {
+    if (!isStarted) {
       throw StateError('TextAgentService has not been started.');
     }
 
@@ -238,13 +233,7 @@ class TextAgentService implements SubService {
 
   @override
   Future<void> start() async {
-    if (_disposed) {
-      throw StateError('TextAgentService has already been disposed.');
-    }
-    if (_started) {
-      return;
-    }
-    _started = true;
+    await super.start();
   }
 
   /// Execute a query with multi-turn tool calling support.
@@ -385,11 +374,10 @@ class TextAgentService implements SubService {
 
   @override
   Future<void> dispose() async {
+    await super.dispose();
     _agentsById.clear();
     _threadsByAgent.clear();
     _notepadService = null;
     _toolRunner = null;
-    _started = false;
-    _disposed = true;
   }
 }

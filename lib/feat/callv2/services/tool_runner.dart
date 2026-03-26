@@ -15,14 +15,13 @@ import 'package:vagina/tools/tools.dart';
 /// hold active file state, or decide whether a tool may be called.
 /// Tool definition visibility is computed on-demand via
 /// [computeAvailableTools].
-class ToolRunner implements SubService {
+final class ToolRunner extends SubService {
   final FilesystemApi _filesystemApi;
   final CallApi _callApi;
   final TextAgentApi _textAgentApi;
   final Toolbox _toolbox = RootToolbox();
 
   final Map<String, Tool> _tools = <String, Tool>{};
-  bool _started = false;
 
   ToolRunner({
     required FilesystemApi filesystemApi,
@@ -31,9 +30,6 @@ class ToolRunner implements SubService {
   })  : _filesystemApi = filesystemApi,
         _callApi = callApi,
         _textAgentApi = textAgentApi;
-
-  /// Whether [start] has been called.
-  bool get isStarted => _started;
 
   /// Tool definitions registered for this session.
   List<ToolDefinition> get allDefinitions {
@@ -48,7 +44,7 @@ class ToolRunner implements SubService {
   ///
   /// Returns a fresh list of tool definitions on each call.
   List<ToolDefinition> computeAvailableTools(Set<String> activeExtensions) {
-    if (!_started) {
+    if (!isStarted) {
       return const [];
     }
 
@@ -69,9 +65,7 @@ class ToolRunner implements SubService {
 
   @override
   Future<void> start() async {
-    if (_started) {
-      return;
-    }
+    await super.start();
 
     for (final tool in _toolbox.tools) {
       final key = tool.definition.toolKey;
@@ -84,8 +78,6 @@ class ToolRunner implements SubService {
       await tool.init(context);
       _tools[key] = tool;
     }
-
-    _started = true;
   }
 
   /// Execute a tool by its key with JSON-encoded arguments.
@@ -93,7 +85,8 @@ class ToolRunner implements SubService {
   /// Returns the tool result as a JSON string.
   /// Throws if the tool key is unknown or the tool throws.
   Future<String> execute(String toolKey, String argumentsJson) async {
-    if (!_started) {
+    ensureNotDisposed();
+    if (!isStarted) {
       throw StateError('ToolRunner has not been started.');
     }
 
@@ -118,7 +111,7 @@ class ToolRunner implements SubService {
 
   @override
   Future<void> dispose() async {
+    await super.dispose();
     _tools.clear();
-    _started = false;
   }
 }

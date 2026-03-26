@@ -10,36 +10,23 @@ import 'package:vagina/feat/callv2/services/subservice.dart';
 /// Unified feedback service for callv2 (audio + haptic)
 ///
 /// Provides multi-sensory user feedback for call lifecycle events.
-class FeedbackService implements SubService {
+final class FeedbackService extends SubService {
   final CallService _callService;
   final Set<String> _executingToolCallIds = <String>{};
   StreamSubscription<CallState>? _callStateSubscription;
   StreamSubscription<PlaybackServiceState>? _playbackStateSubscription;
   StreamSubscription<void>? _assistantAudioCompletedSubscription;
   StreamSubscription<bool>? _userSpeakingStateSubscription;
-  CallState _lastObservedState;
-  PlaybackServiceState _lastPlaybackState;
+  late CallState _lastObservedState;
+  late PlaybackServiceState _lastPlaybackState;
   bool _awaitingAssistantPlaybackCompletionFeedback = false;
   AudioPlayer? _dialTonePlayer;
   AudioPlayer? _endTonePlayer;
   AudioPlayer? _toolExecutingPlayer;
 
-  FeedbackService(this._callService)
-      : _lastObservedState = _callService.state,
-        _lastPlaybackState = _callService.playbackService.state {
-    _callStateSubscription = _callService.states.listen((state) {
-      final previousState = _lastObservedState;
-      _lastObservedState = state;
-      unawaited(_handleCallStateChanged(previousState, state));
-    });
-    _playbackStateSubscription =
-        _callService.playbackService.states.listen(_handlePlaybackStateChanged);
-
-    if (_lastObservedState == CallState.connecting) {
-      unawaited(playDialTone());
-    }
-
-    _bindRealtimeFeedback();
+  FeedbackService(this._callService) {
+    // Play dial tone immediately on construction
+    unawaited(playDialTone());
   }
 
   Future<void> _bindRealtimeFeedback() async {
@@ -322,12 +309,30 @@ class FeedbackService implements SubService {
 
   @override
   Future<void> start() async {
-    // FeedbackService is initialized in constructor and starts
-    // listening to call state immediately. No additional startup needed.
+    await super.start();
+
+    // Initialize state tracking
+    _lastObservedState = _callService.state;
+    _lastPlaybackState = _callService.playbackService.state;
+
+    // Start listening to CallService and PlaybackService state changes
+    _callStateSubscription = _callService.states.listen((state) {
+      final previousState = _lastObservedState;
+      _lastObservedState = state;
+      unawaited(_handleCallStateChanged(previousState, state));
+    });
+
+    _playbackStateSubscription =
+        _callService.playbackService.states.listen(_handlePlaybackStateChanged);
+
+    // Bind RealtimeService-dependent feedback
+    await _bindRealtimeFeedback();
   }
 
   @override
   Future<void> dispose() async {
+    await super.dispose();
+
     await _disableWakeLock();
     await _callStateSubscription?.cancel();
     _callStateSubscription = null;

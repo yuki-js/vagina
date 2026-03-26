@@ -55,7 +55,7 @@ final class PlaybackMetrics {
 ///
 /// Owns PCM playback buffering, input-stream binding, and interruption
 /// semantics for assistant audio responses.
-final class PlaybackService implements SubService {
+final class PlaybackService extends SubService {
   static const _tag = 'PlaybackService';
 
   final Queue<Uint8List> _bufferQueue = Queue<Uint8List>();
@@ -89,9 +89,8 @@ final class PlaybackService implements SubService {
 
   @override
   Future<void> start() async {
-    if (_state == PlaybackServiceState.disposed) {
-      throw StateError('PlaybackService has already been disposed.');
-    }
+    await super.start();
+
     if (_state != PlaybackServiceState.uninitialized) {
       return;
     }
@@ -104,7 +103,7 @@ final class PlaybackService implements SubService {
   }
 
   Future<void> bindInputStream(Stream<Uint8List> audioStream) async {
-    _ensureNotDisposed();
+    ensureNotDisposed();
     await start();
     await unbindInputStream();
 
@@ -127,7 +126,7 @@ final class PlaybackService implements SubService {
   }
 
   Future<void> markResponseComplete() async {
-    _ensureNotDisposed();
+    ensureNotDisposed();
     await start();
 
     if (_bufferQueue.isEmpty && !isPlaying) {
@@ -143,17 +142,17 @@ final class PlaybackService implements SubService {
   }
 
   Future<void> interrupt() async {
-    _ensureNotDisposed();
+    ensureNotDisposed();
     await _resetPlaybackState();
   }
 
   Future<void> stop() async {
-    _ensureNotDisposed();
+    ensureNotDisposed();
     await _resetPlaybackState();
   }
 
   Future<void> setVolume(double volume) async {
-    _ensureNotDisposed();
+    ensureNotDisposed();
     _volume = volume.clamp(0.0, 1.0);
     await start();
     await _player.setVolume(_volume);
@@ -161,9 +160,7 @@ final class PlaybackService implements SubService {
 
   @override
   Future<void> dispose() async {
-    if (_state == PlaybackServiceState.disposed) {
-      return;
-    }
+    await super.dispose();
 
     _generation += 1;
     await unbindInputStream();
@@ -317,9 +314,4 @@ final class PlaybackService implements SubService {
     }
   }
 
-  void _ensureNotDisposed() {
-    if (_state == PlaybackServiceState.disposed) {
-      throw StateError('PlaybackService has already been disposed.');
-    }
-  }
 }

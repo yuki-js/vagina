@@ -21,7 +21,7 @@ enum RecorderServiceState {
 ///
 /// Owns microphone capture, mute behavior, amplitude reporting, and PCM stream
 /// fan-out for call sessions.
-final class RecorderService implements SubService {
+final class RecorderService extends SubService {
   static const _tag = 'RecorderService';
 
   final StreamController<Uint8List> _audioController =
@@ -60,9 +60,8 @@ final class RecorderService implements SubService {
 
   @override
   Future<void> start() async {
-    if (_state == RecorderServiceState.disposed) {
-      throw StateError('RecorderService has already been disposed.');
-    }
+    await super.start();
+
     if (_state != RecorderServiceState.uninitialized) {
       return;
     }
@@ -72,18 +71,18 @@ final class RecorderService implements SubService {
   }
 
   void configureAndroid(AndroidAudioConfig config) {
-    _ensureNotDisposed();
+    ensureNotDisposed();
     _androidAudioConfig = config;
   }
 
   Future<bool> hasPermission() async {
-    _ensureNotDisposed();
+    ensureNotDisposed();
     await start();
     return (_recorder ??= AudioRecorder()).hasPermission();
   }
 
   void setMute(bool muted) {
-    _ensureNotDisposed();
+    ensureNotDisposed();
     if (_isMuted == muted) {
       return;
     }
@@ -97,7 +96,7 @@ final class RecorderService implements SubService {
   }
 
   Future<void> startRecordingSession() async {
-    _ensureNotDisposed();
+    ensureNotDisposed();
     await start();
 
     if (_state == RecorderServiceState.recording ||
@@ -187,9 +186,7 @@ final class RecorderService implements SubService {
 
   @override
   Future<void> dispose() async {
-    if (_state == RecorderServiceState.disposed) {
-      return;
-    }
+    await super.dispose();
 
     await _rawAudioSubscription?.cancel();
     _rawAudioSubscription = null;
@@ -241,9 +238,4 @@ final class RecorderService implements SubService {
     }
   }
 
-  void _ensureNotDisposed() {
-    if (_state == RecorderServiceState.disposed) {
-      throw StateError('RecorderService has already been disposed.');
-    }
-  }
 }

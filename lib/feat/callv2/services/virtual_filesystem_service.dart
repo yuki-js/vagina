@@ -14,7 +14,7 @@ class VirtualFilesystemException implements Exception {
 }
 
 /// Session-scoped filesystem backing service for a single call.
-final class VirtualFilesystemService implements SubService {
+final class VirtualFilesystemService extends SubService {
   static const int defaultMaxFileSizeBytes = 1024 * 1024; // 1 MB
   static const int defaultMaxTotalSizeBytes = 100 * 1024 * 1024; // 100 MB
   static const int defaultMaxPathLength = 512;
@@ -24,9 +24,6 @@ final class VirtualFilesystemService implements SubService {
   final int _maxTotalSizeBytes;
   final int _maxPathLength;
   final Set<String> _systemPaths = <String>{};
-
-  bool _started = false;
-  bool _disposed = false;
 
   VirtualFilesystemService(
     this._repository, {
@@ -39,25 +36,13 @@ final class VirtualFilesystemService implements SubService {
 
   @override
   Future<void> start() async {
-    if (_disposed) {
-      throw StateError('VirtualFilesystemService has already been disposed.');
-    }
-    if (_started) {
-      return;
-    }
-
+    await super.start();
     await _repository.initialize();
-    _started = true;
   }
 
   @override
   Future<void> dispose() async {
-    if (_disposed) {
-      return;
-    }
-
-    _disposed = true;
-    _started = false;
+    await super.dispose();
     _systemPaths.clear();
   }
 
@@ -236,10 +221,8 @@ final class VirtualFilesystemService implements SubService {
   }
 
   void _ensureReady() {
-    if (_disposed) {
-      throw StateError('VirtualFilesystemService has already been disposed.');
-    }
-    if (!_started) {
+    ensureNotDisposed();
+    if (!isStarted) {
       throw StateError('VirtualFilesystemService has not been started.');
     }
   }
