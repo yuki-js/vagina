@@ -11,6 +11,12 @@ import 'package:vagina/services/log_service.dart';
 class TextAgentService {
   static const _tag = 'TextAgentService';
 
+  // Default configuration constants
+  static const int defaultMaxTokens = 4096;
+  static const double defaultTemperature = 1.0;
+  static const int defaultTimeoutSeconds = 30;
+  static const int httpStatusOk = 200;
+
   final LogService _logService;
   final http.Client _httpClient;
 
@@ -29,9 +35,17 @@ class TextAgentService {
     String prompt, {
     Duration? timeout,
   }) async {
+    if (prompt.trim().isEmpty) {
+      throw ArgumentError.value(
+        prompt,
+        'prompt',
+        'Prompt cannot be empty',
+      );
+    }
+
     _logService.info(_tag, 'Sending query to agent: ${agent.name}');
 
-    final effectiveTimeout = timeout ?? const Duration(seconds: 30);
+    final effectiveTimeout = timeout ?? const Duration(seconds: defaultTimeoutSeconds);
 
     try {
       final response = await _sendHttpRequest(
@@ -81,8 +95,8 @@ class TextAgentService {
       'messages': [
         {'role': 'user', 'content': prompt}
       ],
-      'max_tokens': 4096,
-      'temperature': 1.0,
+      'max_tokens': defaultMaxTokens,
+      'temperature': defaultTemperature,
     };
 
     // Azure identifies the model via the deployment in the URL, not the body.
@@ -109,7 +123,7 @@ class TextAgentService {
         'Response status: ${response.statusCode}',
       );
 
-      if (response.statusCode != 200) {
+      if (response.statusCode != httpStatusOk) {
         final errorBody = response.body;
         _logService.error(
           _tag,

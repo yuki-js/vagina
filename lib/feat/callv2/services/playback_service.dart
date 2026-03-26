@@ -58,6 +58,9 @@ final class PlaybackMetrics {
 final class PlaybackService extends SubService {
   static const _tag = 'PlaybackService';
 
+  /// Buffer size for audio playback streaming
+  static const int playbackBufferSize = 8192;
+
   final Queue<Uint8List> _bufferQueue = Queue<Uint8List>();
   final StreamController<PlaybackServiceState> _stateController =
       StreamController<PlaybackServiceState>.broadcast();
@@ -274,7 +277,7 @@ final class PlaybackService extends SubService {
         codec: Codec.pcm16,
         sampleRate: AppConfig.sampleRate,
         numChannels: AppConfig.channels,
-        bufferSize: 8192,
+        bufferSize: playbackBufferSize,
         interleaved: true,
       );
     } catch (_) {

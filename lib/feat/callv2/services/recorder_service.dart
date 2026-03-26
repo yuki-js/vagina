@@ -24,6 +24,9 @@ enum RecorderServiceState {
 final class RecorderService extends SubService {
   static const _tag = 'RecorderService';
 
+  /// Interval for amplitude updates
+  static const Duration amplitudeUpdateInterval = Duration(milliseconds: 100);
+
   final StreamController<Uint8List> _audioController =
       StreamController<Uint8List>.broadcast();
   final StreamController<double> _amplitudeController =
@@ -139,7 +142,7 @@ final class RecorderService extends SubService {
 
       await _amplitudeSubscription?.cancel();
       _amplitudeSubscription =
-          recorder.onAmplitudeChanged(const Duration(milliseconds: 100)).listen(
+          recorder.onAmplitudeChanged(amplitudeUpdateInterval).listen(
         (amplitude) {
           if (_isMuted) {
             _emitAmplitude(0.0);

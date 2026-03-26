@@ -22,6 +22,9 @@ enum TimerServiceState {
 ///
 /// Uses a single timer for both duration updates and timeout detection.
 final class TimerService extends SubService {
+  /// Minimum allowed silence timeout duration (5 seconds)
+  static const Duration minSilenceTimeout = Duration(seconds: 5);
+
   final CallService _callService;
   final StreamController<Duration> _durationController =
       StreamController<Duration>.broadcast();
@@ -134,6 +137,23 @@ final class TimerService extends SubService {
   /// If tracking is active, takes effect immediately.
   void setSilenceTimeout(Duration timeout) {
     ensureNotDisposed();
+    
+    if (timeout.isNegative) {
+      throw ArgumentError.value(
+        timeout,
+        'timeout',
+        'Silence timeout cannot be negative',
+      );
+    }
+    
+    if (timeout < minSilenceTimeout) {
+      throw ArgumentError.value(
+        timeout,
+        'timeout',
+        'Silence timeout must be at least ${minSilenceTimeout.inSeconds} seconds',
+      );
+    }
+    
     _silenceTimeout = timeout;
   }
 

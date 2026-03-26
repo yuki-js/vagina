@@ -9,6 +9,18 @@ import 'log_service.dart';
 class CallFeedbackService {
   static const _tag = 'CallFeedback';
 
+  // Audio volume constants (0.0 to 1.0)
+  static const double dialToneVolume = 0.3;
+  static const double endToneVolume = 0.5;
+  static const double toolExecutingVolume = 0.15;
+  static const double toolErrorVolume = 0.4;
+  static const double toolCancelledVolume = 0.25;
+
+  // Timing constants
+  static const int endToneDelayMs = 500;
+  static const int toolErrorDelayMs = 500;
+  static const int toolCancelledDelayMs = 250;
+
   final LogService _logService;
   AudioPlayer? _dialTonePlayer;
   AudioPlayer? _endTonePlayer;
@@ -32,7 +44,7 @@ class CallFeedbackService {
       _dialTonePlayer = AudioPlayer();
       await _dialTonePlayer!.setAsset('assets/audio/dial_tone.wav');
       await _dialTonePlayer!.setLoopMode(LoopMode.one);
-      await _dialTonePlayer!.setVolume(0.3);
+      await _dialTonePlayer!.setVolume(dialToneVolume);
       await _dialTonePlayer!.play();
 
       _logService.info(_tag, 'Dial tone started');
@@ -63,13 +75,13 @@ class CallFeedbackService {
 
       _endTonePlayer = AudioPlayer();
       await _endTonePlayer!.setAsset('assets/audio/call_end.wav');
-      await _endTonePlayer!.setVolume(0.5);
+      await _endTonePlayer!.setVolume(endToneVolume);
       await _endTonePlayer!.play();
 
       _logService.info(_tag, 'Call end tone played');
 
       // Dispose after playing
-      await Future.delayed(const Duration(milliseconds: 500));
+      await Future.delayed(const Duration(milliseconds: endToneDelayMs));
       await _endTonePlayer!.dispose();
       _endTonePlayer = null;
     } catch (e) {
@@ -88,7 +100,7 @@ class CallFeedbackService {
       _toolExecutingPlayer = AudioPlayer();
       await _toolExecutingPlayer!.setAsset('assets/audio/tool_executing.wav');
       await _toolExecutingPlayer!.setLoopMode(LoopMode.one);
-      await _toolExecutingPlayer!.setVolume(0.15);
+      await _toolExecutingPlayer!.setVolume(toolExecutingVolume);
       await _toolExecutingPlayer!.play();
 
       _logService.info(_tag, 'Tool executing sound started');
@@ -119,13 +131,13 @@ class CallFeedbackService {
 
       final player = AudioPlayer();
       await player.setAsset('assets/audio/tool_error.wav');
-      await player.setVolume(0.4);
+      await player.setVolume(toolErrorVolume);
       await player.play();
 
       _logService.info(_tag, 'Tool error sound played');
 
       // Dispose after playing
-      await Future.delayed(const Duration(milliseconds: 500));
+      await Future.delayed(const Duration(milliseconds: toolErrorDelayMs));
       await player.dispose();
     } catch (e) {
       _logService.error(_tag, 'Tool error sound error: $e');
@@ -139,13 +151,13 @@ class CallFeedbackService {
 
       final player = AudioPlayer();
       await player.setAsset('assets/audio/tool_cancelled.wav');
-      await player.setVolume(0.25);
+      await player.setVolume(toolCancelledVolume);
       await player.play();
 
       _logService.info(_tag, 'Tool cancelled sound played');
 
       // Dispose after playing
-      await Future.delayed(const Duration(milliseconds: 250));
+      await Future.delayed(const Duration(milliseconds: toolCancelledDelayMs));
       await player.dispose();
     } catch (e) {
       _logService.error(_tag, 'Tool cancelled sound error: $e');

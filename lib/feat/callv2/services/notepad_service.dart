@@ -24,6 +24,29 @@ final class NotepadService extends SubService {
   /// Stream of active files for UI and orchestrator.
   Stream<List<ActiveFile>> get activeFiles => _activeFilesController.stream;
 
+  /// Validate that a path is valid for filesystem operations.
+  ///
+  /// Throws [ArgumentError] if the path is:
+  /// - Empty string
+  /// - Contains null characters
+  void _validatePath(String path, String paramName) {
+    if (path.isEmpty) {
+      throw ArgumentError.value(
+        path,
+        paramName,
+        'Path cannot be empty',
+      );
+    }
+
+    if (path.contains('\x00')) {
+      throw ArgumentError.value(
+        path,
+        paramName,
+        'Path cannot contain null characters',
+      );
+    }
+  }
+
   /// Get current snapshot of active files.
   List<ActiveFile> listActive() {
     return _activeFiles.entries
@@ -38,6 +61,7 @@ final class NotepadService extends SubService {
   /// Call [update] with persist=true to write to VFS.
   Future<void> open(String path, String content) async {
     ensureNotDisposed();
+    _validatePath(path, 'path');
 
     _activeFiles[path] = content;
     _emitChanged();
@@ -51,6 +75,7 @@ final class NotepadService extends SubService {
   Future<void> update(String path, String content,
       {bool persist = false}) async {
     ensureNotDisposed();
+    _validatePath(path, 'path');
 
     if (!_activeFiles.containsKey(path)) {
       throw Exception('File is not active: $path');
@@ -70,6 +95,7 @@ final class NotepadService extends SubService {
   /// if you want to save changes.
   Future<void> close(String path) async {
     ensureNotDisposed();
+    _validatePath(path, 'path');
 
     _activeFiles.remove(path);
     _emitChanged();
@@ -81,6 +107,7 @@ final class NotepadService extends SubService {
   /// Use [getActive] to read from the active set.
   Future<String?> read(String path) async {
     ensureNotDisposed();
+    _validatePath(path, 'path');
 
     final file = await _vfs.read(path);
     return file?.content;
@@ -99,6 +126,7 @@ final class NotepadService extends SubService {
   /// If the file is active, consider using [update] with persist=true instead.
   Future<void> write(String path, String content) async {
     ensureNotDisposed();
+    _validatePath(path, 'path');
 
     await _vfs.write(VirtualFile(path: path, content: content));
   }
@@ -108,6 +136,7 @@ final class NotepadService extends SubService {
   /// Does not affect the active set. Call [close] separately if needed.
   Future<void> delete(String path) async {
     ensureNotDisposed();
+    _validatePath(path, 'path');
 
     await _vfs.delete(path);
   }
@@ -117,6 +146,8 @@ final class NotepadService extends SubService {
   /// Does not affect the active set. Call [close]/[open] separately if needed.
   Future<void> move(String fromPath, String toPath) async {
     ensureNotDisposed();
+    _validatePath(fromPath, 'fromPath');
+    _validatePath(toPath, 'toPath');
 
     await _vfs.move(fromPath, toPath);
   }
@@ -124,6 +155,7 @@ final class NotepadService extends SubService {
   /// List files in VFS.
   Future<List<String>> list(String path, {bool recursive = false}) async {
     ensureNotDisposed();
+    _validatePath(path, 'path');
 
     return _vfs.list(path, recursive: recursive);
   }
