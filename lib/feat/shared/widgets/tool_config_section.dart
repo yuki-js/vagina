@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/feat/home/tools/tool_icon_mapper.dart';
 import 'package:vagina/services/tool_registry.dart';
-import 'package:vagina/services/tool_metadata.dart';
+import 'package:vagina/models/tool_metadata.dart';
 
 /// ツール設定セクション - AgentFormScreenとSpeedDialConfigScreenで共通利用
 ///

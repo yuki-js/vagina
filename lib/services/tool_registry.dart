@@ -1,4 +1,4 @@
-import 'package:vagina/services/tool_metadata.dart';
+import 'package:vagina/models/tool_metadata.dart';
 import 'package:vagina/tools/tools.dart';
 
 /// Service that provides UI-facing tool metadata from the runtime toolbox.

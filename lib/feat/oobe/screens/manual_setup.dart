@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vagina/core/state/repository_providers.dart';
-import 'package:vagina/services/realtime_connection_test.dart';
+import 'package:vagina/utils/realtime_connection_test.dart';
 import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/utils/url_utils.dart';
 
