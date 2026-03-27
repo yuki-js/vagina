@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:typed_data';
 import 'package:record/record.dart';
 import 'package:vagina/core/config/app_config.dart';
-import 'package:vagina/models/android_audio_config.dart';
 import 'package:vagina/services/log_service.dart';
 
 /// Unified PCM recorder for microphone input.
@@ -30,13 +29,7 @@ class PcmRecorder {
   Stream<Amplitude>? _amplitudeStream;
   bool _isRecording = false;
 
-  // Android configuration
-  AndroidAudioConfig _androidAudioConfig = const AndroidAudioConfig();
-
   bool get isRecording => _isRecording;
-
-  /// Current Android audio configuration
-  AndroidAudioConfig get androidAudioConfig => _androidAudioConfig;
 
   /// Stream of recording state changes
   Stream<RecordState>? get stateStream => _stateStream;
@@ -46,11 +39,6 @@ class PcmRecorder {
 
   PcmRecorder({LogService? logService})
       : _logService = logService ?? LogService();
-
-  /// Update Android audio configuration
-  void setAndroidAudioConfig(AndroidAudioConfig config) {
-    _androidAudioConfig = config;
-  }
 
   /// Check if microphone permission is granted
   Future<bool> hasPermission() async {
@@ -83,10 +71,8 @@ class PcmRecorder {
         // as echo cancellation and noise suppression are handled by the
         // platform-level echoCancel and noiseSuppress flags above.
         androidConfig: AndroidRecordConfig(
-          // Use configurable audio source (default: voiceCommunication)
-          audioSource: _androidAudioConfig.audioSource,
-          // Use configurable audio manager mode (default: modeInCommunication)
-          audioManagerMode: _androidAudioConfig.audioManagerMode,
+          audioSource: AndroidAudioSource.voiceCommunication,
+          audioManagerMode: AudioManagerMode.modeInCommunication,
         ),
       ),
     );

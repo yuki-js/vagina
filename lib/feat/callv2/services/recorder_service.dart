@@ -4,7 +4,6 @@ import 'dart:typed_data';
 import 'package:record/record.dart';
 import 'package:vagina/core/config/app_config.dart';
 import 'package:vagina/feat/callv2/services/subservice.dart';
-import 'package:vagina/models/android_audio_config.dart';
 import 'package:vagina/utils/audio_utils.dart';
 
 /// Lifecycle state for [RecorderService].
@@ -37,7 +36,6 @@ final class RecorderService extends SubService {
   AudioRecorder? _recorder;
   StreamSubscription<Uint8List>? _rawAudioSubscription;
   StreamSubscription<Amplitude>? _amplitudeSubscription;
-  AndroidAudioConfig _androidAudioConfig = const AndroidAudioConfig();
   RecorderServiceState _state = RecorderServiceState.uninitialized;
   bool _isMuted = false;
 
@@ -57,8 +55,6 @@ final class RecorderService extends SubService {
 
   Stream<RecorderServiceState> get states => _stateController.stream;
 
-  AndroidAudioConfig get androidAudioConfig => _androidAudioConfig;
-
   @override
   Future<void> start() async {
     await super.start();
@@ -70,13 +66,6 @@ final class RecorderService extends SubService {
     logger.info('Starting RecorderService');
     _recorder = AudioRecorder();
     _setState(RecorderServiceState.idle);
-  }
-
-  void configureAndroid(AndroidAudioConfig config) {
-    ensureNotDisposed();
-    logger.fine(
-        'Configuring Android audio: source=${config.audioSource}, mode=${config.audioManagerMode}');
-    _androidAudioConfig = config;
   }
 
   Future<bool> hasPermission() async {
@@ -132,8 +121,8 @@ final class RecorderService extends SubService {
           echoCancel: true,
           noiseSuppress: true,
           androidConfig: AndroidRecordConfig(
-            audioSource: _androidAudioConfig.audioSource,
-            audioManagerMode: _androidAudioConfig.audioManagerMode,
+            audioSource: AndroidAudioSource.voiceCommunication,
+            audioManagerMode: AudioManagerMode.modeInCommunication,
           ),
         ),
       );

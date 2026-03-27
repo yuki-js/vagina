@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vagina/core/theme/app_theme.dart';
-import 'package:vagina/feat/call/state/call_service_providers.dart';
 import 'package:vagina/feat/home/tools/tool_icon_mapper.dart';
+import 'package:vagina/services/tool_registry.dart';
 import 'package:vagina/services/tool_metadata.dart';
 
 /// ツール設定セクション - AgentFormScreenとSpeedDialConfigScreenで共通利用
 ///
 /// カテゴリ別折りたたみ表示とチェックボックスでツールの有効/無効を設定する。
 /// 設計ドキュメントのセクション7.3-7.5に基づく。
-class ToolConfigSection extends ConsumerStatefulWidget {
+class ToolConfigSection extends StatefulWidget {
   /// 現在のツール設定（キー: ツール名, 値: 有効/無効）
   /// 空Mapまたはキー不在の場合は `true`（有効）として扱う
   final Map<String, bool> enabledTools;
@@ -25,10 +24,10 @@ class ToolConfigSection extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<ToolConfigSection> createState() => _ToolConfigSectionState();
+  State<ToolConfigSection> createState() => _ToolConfigSectionState();
 }
 
-class _ToolConfigSectionState extends ConsumerState<ToolConfigSection> {
+class _ToolConfigSectionState extends State<ToolConfigSection> {
   /// カテゴリの展開状態を管理
   final Map<ToolCategory, bool> _expandedCategories = {};
 
@@ -95,8 +94,8 @@ class _ToolConfigSectionState extends ConsumerState<ToolConfigSection> {
 
   @override
   Widget build(BuildContext context) {
-    final toolService = ref.watch(toolServiceProvider);
-    final toolList = toolService.registeredToolMeta;
+    final toolRegistry = ToolRegistry();
+    final toolList = toolRegistry.registeredToolMeta;
 
     // カテゴリ別にグルーピング
     final toolsByCategory =

@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vagina/core/state/repository_providers.dart';
-import 'package:vagina/services/realtime_api_client.dart';
+import 'package:vagina/services/realtime_connection_test.dart';
 import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/utils/url_utils.dart';
 import 'settings_card.dart';
@@ -130,25 +130,11 @@ class _AzureConfigSectionState extends ConsumerState<AzureConfigSection> {
 
     setState(() => _isTesting = true);
 
-    RealtimeApiClient? apiClient;
     try {
-      apiClient = RealtimeApiClient();
-
-      await apiClient
-          .connect(
+      await testRealtimeConnection(
         _realtimeUrlController.text.trim(),
         _apiKeyController.text.trim(),
-      )
-          .timeout(
-        const Duration(seconds: 10),
-        onTimeout: () {
-          throw TimeoutException('接続がタイムアウトしました');
-        },
       );
-
-      await apiClient.disconnect();
-      await apiClient.dispose();
-      apiClient = null;
 
       final config = ref.read(configRepositoryProvider);
       await config.saveRealtimeUrl(_realtimeUrlController.text.trim());
@@ -156,8 +142,6 @@ class _AzureConfigSectionState extends ConsumerState<AzureConfigSection> {
       _showSnackBar('接続テスト成功');
     } catch (e) {
       _showSnackBar('接続テスト失敗: $e', isError: true);
-      await apiClient?.disconnect();
-      await apiClient?.dispose();
     } finally {
       if (mounted) {
         setState(() => _isTesting = false);

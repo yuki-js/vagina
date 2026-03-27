@@ -1,4 +1,3 @@
-import 'package:vagina/models/android_audio_config.dart';
 import 'package:vagina/interfaces/config_repository.dart';
 import 'package:vagina/interfaces/key_value_store.dart';
 import 'package:vagina/services/log_service.dart';
@@ -11,7 +10,6 @@ class JsonConfigRepository implements ConfigRepository {
   // Config keys
   static const _apiKeyKey = 'api_key';
   static const _realtimeUrlKey = 'realtime_url';
-  static const _androidAudioConfigKey = 'android_audio_config';
   static const _textAgentsKey = 'text_agents';
   static const _selectedTextAgentIdKey = 'selected_text_agent_id';
 
@@ -68,25 +66,6 @@ class JsonConfigRepository implements ConfigRepository {
     final hasKey = await hasApiKey();
     final url = await getRealtimeUrl();
     return hasKey && url != null && url.isNotEmpty;
-  }
-
-  // Android Audio Configuration
-
-  @override
-  Future<void> saveAndroidAudioConfig(AndroidAudioConfig config) async {
-    _logService.debug(_tag, 'Saving Android audio config');
-    await _store.set(_androidAudioConfigKey, config.toJson());
-  }
-
-  @override
-  Future<AndroidAudioConfig> getAndroidAudioConfig() async {
-    final data = await _store.get(_androidAudioConfigKey);
-
-    if (data == null) {
-      return const AndroidAudioConfig();
-    }
-
-    return AndroidAudioConfig.fromJson(data as Map<String, dynamic>);
   }
 
   // Text Agent Configuration

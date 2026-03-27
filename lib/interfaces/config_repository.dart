@@ -1,4 +1,3 @@
-import 'package:vagina/models/android_audio_config.dart';
 import 'package:vagina/feat/callv2/models/text_agent_info.dart';
 
 /// Repository for managing application configuration
@@ -13,10 +12,6 @@ abstract class ConfigRepository {
   Future<String?> getRealtimeUrl();
   Future<void> deleteRealtimeUrl();
   Future<bool> hasAzureConfig();
-
-  /// Android Audio Configuration
-  Future<void> saveAndroidAudioConfig(AndroidAudioConfig config);
-  Future<AndroidAudioConfig> getAndroidAudioConfig();
 
   /// Text Agent Configuration
   Future<List<TextAgentInfo>> getAllTextAgents();

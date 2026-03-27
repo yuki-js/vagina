@@ -4,7 +4,7 @@ import 'dart:convert';
 // Platform-agnostic HTTP client
 import 'package:http/http.dart' as http;
 
-import '../models/text_agent_thread.dart';
+import 'package:vagina/feat/callv2/models/text_agent_thread.dart';
 
 /// Abstract API for text agent query operations
 ///
@@ -230,10 +230,13 @@ class TextAgentApiClient implements TextAgentApi {
     }
 
     // Get or create conversation thread for this agent
-    final thread = _threads.putIfAbsent(agentId, () => TextAgentThread());
+    final thread = _threads.putIfAbsent(
+      agentId,
+      () => TextAgentThread(id: 'thread_$agentId'),
+    );
 
     // Add user message to thread
-    thread.addUser(prompt);
+    _addUserMessage(thread, prompt);
 
     try {
       // Execute query with 30-second timeout
@@ -245,10 +248,10 @@ class TextAgentApiClient implements TextAgentApi {
         final trimCount = (thread.length * 0.25).ceil().clamp(1, 10);
 
         // Remove oldest messages
-        thread.trimOldest(trimCount);
+        thread.trimLeadingItems(trimCount);
 
         // Re-add the current user message (it was removed by trimming)
-        thread.addUser(prompt);
+        _addUserMessage(thread, prompt);
 
         // Retry once with reduced history
         return await _executeQuery(agent, thread, const Duration(seconds: 30));
@@ -286,7 +289,7 @@ class TextAgentApiClient implements TextAgentApi {
 
     // Build request body with conversation history
     final requestBody = <String, dynamic>{
-      'messages': thread.messages.toList(),
+      'messages': _threadToMessages(thread),
     };
 
     // Add model for non-Azure providers
@@ -340,7 +343,7 @@ class TextAgentApiClient implements TextAgentApi {
         if (toolCalls != null && toolCalls.isNotEmpty) {
           // AI wants to call tools
           // Add assistant message with tool calls to conversation
-          thread.addAssistant(message);
+          _addAssistantMessage(thread, message);
 
           // Execute each tool call
           for (final toolCallData in toolCalls) {
@@ -358,10 +361,11 @@ class TextAgentApiClient implements TextAgentApi {
               final result = await _executeToolCallback!(toolName, arguments);
 
               // Add tool result to conversation thread
-              thread.addTool(toolCallId, toolName, result);
+              _addToolResult(thread, toolCallId, toolName, result);
             } catch (e) {
               // Add error result to thread
-              thread.addTool(
+              _addToolResult(
+                thread,
                 toolCallId,
                 toolName,
                 jsonEncode({
@@ -373,7 +377,7 @@ class TextAgentApiClient implements TextAgentApi {
           }
 
           // Update request with updated thread messages and continue loop
-          requestBody['messages'] = thread.messages.toList();
+          requestBody['messages'] = _threadToMessages(thread);
           continue;
         }
 
@@ -384,7 +388,7 @@ class TextAgentApiClient implements TextAgentApi {
         }
 
         // Add final assistant message to thread
-        thread.addAssistant(message);
+        _addAssistantMessage(thread, message);
 
         return content;
       }
@@ -407,6 +411,116 @@ class TextAgentApiClient implements TextAgentApi {
         errorStr.contains('maximum context') ||
         errorStr.contains('token limit') ||
         errorStr.contains('tokens exceeded');
+  }
+
+  /// Add user message to thread
+  void _addUserMessage(TextAgentThread thread, String content) {
+    final item = TextAgentThreadItem(
+      id: 'msg_${DateTime.now().millisecondsSinceEpoch}',
+      type: TextAgentThreadItemType.message,
+      role: TextAgentThreadItemRole.user,
+      status: TextAgentThreadItemStatus.completed,
+    );
+    final textPart = TextAgentThreadTextPart(text: content, isDone: true);
+    item.addContentPart(textPart);
+    thread.addItem(item);
+  }
+
+  /// Add assistant message to thread
+  void _addAssistantMessage(
+    TextAgentThread thread,
+    Map<String, dynamic> message,
+  ) {
+    final item = TextAgentThreadItem(
+      id: 'msg_${DateTime.now().millisecondsSinceEpoch}',
+      type: TextAgentThreadItemType.message,
+      role: TextAgentThreadItemRole.assistant,
+      status: TextAgentThreadItemStatus.completed,
+    );
+
+    // Add text content if present
+    final content = message['content'] as String?;
+    if (content != null && content.isNotEmpty) {
+      final textPart = TextAgentThreadTextPart(text: content, isDone: true);
+      item.addContentPart(textPart);
+    }
+
+    // Add tool calls if present
+    final toolCalls = message['tool_calls'] as List?;
+    if (toolCalls != null && toolCalls.isNotEmpty) {
+      item.toolCalls = toolCalls
+          .map((tc) => TextAgentToolCall(
+                id: tc['id'] as String,
+                name: (tc['function'] as Map<String, dynamic>)['name'] as String,
+                arguments: (tc['function'] as Map<String, dynamic>)['arguments']
+                    as String,
+              ))
+          .toList();
+    }
+
+    thread.addItem(item);
+  }
+
+  /// Add tool result to thread
+  void _addToolResult(
+    TextAgentThread thread,
+    String toolCallId,
+    String toolName,
+    String output,
+  ) {
+    final item = TextAgentThreadItem(
+      id: 'toolresult_${DateTime.now().millisecondsSinceEpoch}',
+      type: TextAgentThreadItemType.toolResult,
+      status: TextAgentThreadItemStatus.completed,
+      toolCallId: toolCallId,
+      toolName: toolName,
+      toolOutput: output,
+    );
+    thread.addItem(item);
+  }
+
+  /// Convert thread to Chat Completions messages format
+  List<Map<String, dynamic>> _threadToMessages(TextAgentThread thread) {
+    final messages = <Map<String, dynamic>>[];
+
+    for (final item in thread.items) {
+      if (item.type == TextAgentThreadItemType.message) {
+        final message = <String, dynamic>{
+          'role': item.role!.name,
+        };
+
+        // Add text content
+        final textParts = item.content.whereType<TextAgentThreadTextPart>();
+        if (textParts.isNotEmpty) {
+          message['content'] = textParts.first.text;
+        }
+
+        // Add tool calls if present (assistant messages only)
+        if (item.toolCalls != null && item.toolCalls!.isNotEmpty) {
+          message['tool_calls'] = item.toolCalls!
+              .map((tc) => {
+                    'id': tc.id,
+                    'type': 'function',
+                    'function': {
+                      'name': tc.name,
+                      'arguments': tc.arguments,
+                    },
+                  })
+              .toList();
+        }
+
+        messages.add(message);
+      } else if (item.type == TextAgentThreadItemType.toolResult) {
+        // Tool result item
+        messages.add({
+          'role': 'tool',
+          'tool_call_id': item.toolCallId!,
+          'content': item.toolOutput!,
+        });
+      }
+    }
+
+    return messages;
   }
 
   void dispose() {

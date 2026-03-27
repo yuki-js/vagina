@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vagina/core/state/repository_providers.dart';
-import 'package:vagina/services/realtime_api_client.dart';
+import 'package:vagina/services/realtime_connection_test.dart';
 import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/utils/url_utils.dart';
 
@@ -90,25 +90,11 @@ class _ManualSetupScreenState extends ConsumerState<ManualSetupScreen> {
     setState(() => _isSaving = true);
 
     // Test connection before saving
-    RealtimeApiClient? apiClient;
     try {
-      apiClient = RealtimeApiClient();
-
-      await apiClient
-          .connect(
+      await testRealtimeConnection(
         _realtimeUrlController.text.trim(),
         _apiKeyController.text.trim(),
-      )
-          .timeout(
-        const Duration(seconds: 10),
-        onTimeout: () {
-          throw TimeoutException('接続がタイムアウトしました');
-        },
       );
-
-      await apiClient.disconnect();
-      await apiClient.dispose();
-      apiClient = null;
 
       // Connection successful, save the config
       final config = ref.read(configRepositoryProvider);
@@ -120,8 +106,6 @@ class _ManualSetupScreenState extends ConsumerState<ManualSetupScreen> {
       }
     } catch (e) {
       _showSnackBar('接続に失敗しました: $e', isError: true);
-      await apiClient?.disconnect();
-      await apiClient?.dispose();
     } finally {
       if (mounted) {
         setState(() => _isSaving = false);

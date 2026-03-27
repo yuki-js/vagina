@@ -638,30 +638,90 @@ class CallService {
       return const <String>[];
     }
 
-    final messageItems = thread.items
-        .where((item) => item.type == RealtimeThreadItemType.message)
+    // Include both messages and function calls
+    final allItems = thread.items
+        .where((item) =>
+            item.type == RealtimeThreadItemType.message ||
+            item.type == RealtimeThreadItemType.functionCall)
         .toList(growable: false);
-    if (messageItems.isEmpty) {
+    if (allItems.isEmpty) {
       return const <String>[];
     }
 
+    // Match tool outputs with their calls
+    final matchedToolOutputIndices = <int, int>{};
+    final pendingCallIndicesByCallId = <String, List<int>>{};
+
+    for (int i = 0; i < thread.items.length; i++) {
+      final item = thread.items[i];
+      if (item.type == RealtimeThreadItemType.functionCall &&
+          item.callId != null) {
+        pendingCallIndicesByCallId
+            .putIfAbsent(item.callId!, () => <int>[])
+            .add(i);
+      }
+      if (item.type == RealtimeThreadItemType.functionCallOutput &&
+          item.callId != null) {
+        final pendingCalls = pendingCallIndicesByCallId[item.callId!];
+        if (pendingCalls != null && pendingCalls.isNotEmpty) {
+          matchedToolOutputIndices[pendingCalls.removeAt(0)] = i;
+        }
+      }
+    }
+
     final totalMilliseconds = endTime.difference(startTime).inMilliseconds;
-    final timestampStep = messageItems.length <= 1
-        ? 0
-        : (totalMilliseconds ~/ messageItems.length);
+    final timestampStep =
+        allItems.length <= 1 ? 0 : (totalMilliseconds ~/ allItems.length);
     final chatMessages = <String>[];
 
-    for (var index = 0; index < messageItems.length; index++) {
-      final item = messageItems[index];
+    for (var index = 0; index < allItems.length; index++) {
+      final item = allItems[index];
+      final timestamp = startTime.add(
+        Duration(milliseconds: timestampStep * index),
+      );
+
+      // Handle function calls
+      if (item.type == RealtimeThreadItemType.functionCall) {
+        final itemIndex = thread.items.indexOf(item);
+        final outputIndex = matchedToolOutputIndices[itemIndex];
+        final outputItem =
+            outputIndex != null ? thread.items[outputIndex] : null;
+
+        final status = _getToolCallStatus(item, outputItem);
+        final toolCallData = <String, dynamic>{
+          'name': item.name ?? 'unknown',
+          'status': status,
+        };
+
+        if (item.arguments?.isNotEmpty ?? false) {
+          toolCallData['arguments'] = item.arguments;
+        }
+
+        if (outputItem != null) {
+          if (outputItem.toolErrorMessage?.isNotEmpty ?? false) {
+            toolCallData['errorMessage'] = outputItem.toolErrorMessage;
+          } else if (outputItem.output?.isNotEmpty ?? false) {
+            toolCallData['result'] = outputItem.output;
+          }
+        }
+
+        chatMessages.add(
+          jsonEncode({
+            'role': 'assistant',
+            'timestamp': timestamp.toIso8601String(),
+            'toolCalls': [toolCallData],
+          }),
+        );
+        continue;
+      }
+
+      // Handle regular messages
       final role = _sessionRoleForItem(item);
       final content = _sessionContentForItem(item);
       if (role == null || content.isEmpty) {
         continue;
       }
 
-      final timestamp = startTime.add(
-        Duration(milliseconds: timestampStep * index),
-      );
       chatMessages.add(
         jsonEncode({
           'role': role,
@@ -672,6 +732,23 @@ class CallService {
     }
 
     return chatMessages;
+  }
+
+  String _getToolCallStatus(
+    RealtimeThreadItem callItem,
+    RealtimeThreadItem? outputItem,
+  ) {
+    if (outputItem?.toolOutputDisposition ==
+        RealtimeToolOutputDisposition.error) {
+      return 'error';
+    }
+    if (outputItem != null) {
+      return 'completed';
+    }
+    if (callItem.status == RealtimeThreadItemStatus.incomplete) {
+      return 'cancelled';
+    }
+    return 'completed';
   }
 
   String? _sessionRoleForItem(RealtimeThreadItem item) {
