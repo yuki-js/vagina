@@ -4,7 +4,7 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/models/call_session.dart';
 import 'package:vagina/models/tabular_data.dart';
-import 'package:vagina/feat/callv2/widgets/spreadsheet/editable_spreadsheet_table.dart';
+import 'package:vagina/feat/call/widgets/spreadsheet/editable_spreadsheet_table.dart';
 import 'package:vagina/utils/file_icon_utils.dart';
 
 /// Read-only notepad viewer for session detail screen

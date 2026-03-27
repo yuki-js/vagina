@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vagina/core/theme/app_theme.dart';
-import 'package:vagina/feat/callv2/models/text_agent_api_config.dart';
-import 'package:vagina/feat/callv2/models/text_agent_info.dart';
+import 'package:vagina/feat/call/models/text_agent_api_config.dart';
+import 'package:vagina/feat/call/models/text_agent_info.dart';
 import 'package:vagina/feat/text_agents/state/text_agent_providers.dart';
 import 'package:vagina/feat/text_agents/screens/agent_form_screen.dart';
 

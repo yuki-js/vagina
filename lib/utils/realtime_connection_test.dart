@@ -1,7 +1,7 @@
 import 'dart:async';
-import 'package:vagina/feat/callv2/services/realtime/oai/realtime_binding.dart';
-import 'package:vagina/feat/callv2/services/realtime/oai/realtime_connect_config.dart';
-import 'package:vagina/feat/callv2/services/realtime/oai/realtime_connection_state.dart';
+import 'package:vagina/feat/call/services/realtime/oai/realtime_binding.dart';
+import 'package:vagina/feat/call/services/realtime/oai/realtime_connect_config.dart';
+import 'package:vagina/feat/call/services/realtime/oai/realtime_connection_state.dart';
 import 'package:vagina/utils/url_utils.dart';
 
 /// Test Azure OpenAI Realtime API connectivity.

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:vagina/core/theme/app_theme.dart';
-import 'package:vagina/feat/callv2/models/text_agent_api_config.dart';
-import 'package:vagina/feat/callv2/models/text_agent_info.dart';
+import 'package:vagina/feat/call/models/text_agent_api_config.dart';
+import 'package:vagina/feat/call/models/text_agent_info.dart';
 
 /// List tile widget for displaying a text agent in compact view
 class AgentListTile extends StatelessWidget {

@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:vagina/feat/callv2/models/text_agent_api_config.dart';
+import 'package:vagina/feat/call/models/text_agent_api_config.dart';
 import 'package:vagina/interfaces/config_repository.dart';
 import 'package:vagina/services/log_service.dart';
 import 'package:vagina/services/tools_runtime/tool.dart';

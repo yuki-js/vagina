@@ -1,4 +1,4 @@
-import 'package:vagina/feat/callv2/models/text_agent_info.dart';
+import 'package:vagina/feat/call/models/text_agent_info.dart';
 
 /// Repository for managing application configuration
 abstract class ConfigRepository {

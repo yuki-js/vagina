@@ -4,7 +4,7 @@ import 'dart:convert';
 // Platform-agnostic HTTP client
 import 'package:http/http.dart' as http;
 
-import 'package:vagina/feat/callv2/models/text_agent_thread.dart';
+import 'package:vagina/feat/call/models/text_agent_thread.dart';
 
 /// Abstract API for text agent query operations
 ///

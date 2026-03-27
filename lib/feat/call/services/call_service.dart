@@ -1,0 +1,792 @@
+import 'dart:async';
+import 'dart:convert';
+
+import 'package:vagina/feat/call/models/active_file.dart';
+import 'package:vagina/feat/call/models/realtime/realtime_adapter_models.dart';
+import 'package:vagina/feat/call/models/realtime/realtime_thread.dart';
+import 'package:vagina/feat/call/models/text_agent_info.dart';
+import 'package:vagina/feat/call/models/voice_agent_api_config.dart';
+import 'package:vagina/feat/call/models/voice_agent_info.dart';
+import 'package:vagina/feat/call/services/feedback_service.dart';
+import 'package:vagina/feat/call/services/virtual_filesystem_service.dart';
+import 'package:vagina/feat/call/services/notepad_service.dart';
+import 'package:vagina/feat/call/services/playback_service.dart';
+import 'package:vagina/feat/call/services/realtime_service.dart';
+import 'package:vagina/feat/call/services/recorder_service.dart';
+import 'package:vagina/feat/call/services/text_agent_service.dart';
+import 'package:vagina/feat/call/services/timer_service.dart';
+import 'package:vagina/feat/call/services/tool_runner.dart';
+import 'package:vagina/feat/call/services/toolapi/call_control_api.dart';
+import 'package:vagina/feat/call/services/toolapi/call_filesystem_api.dart';
+import 'package:vagina/feat/call/services/toolapi/text_agent_api.dart';
+import 'package:vagina/interfaces/call_session_repository.dart';
+import 'package:vagina/interfaces/virtual_filesystem_repository.dart';
+import 'package:vagina/models/call_session.dart';
+import 'package:vagina/services/tools_runtime/tool_definition.dart';
+
+/// One-way lifecycle state for a single call session.
+enum CallState {
+  uninitialized, // constructed, but start not triggered
+  connecting, // starting session resources and connecting
+  active, // connected, and call end not triggered
+  disposing, // call end triggered, and cleanup in progress
+  disposed, // cleanup completed, and service is no longer reusable
+}
+
+/// Session-scoped call service instantiated by the call screen.
+///
+/// Orchestrates all call-related services:
+/// - NotepadService: active file management
+/// - ToolRunner: tool catalog and execution
+/// - RealtimeService: model connection
+/// - RecorderService: microphone input
+/// - PlaybackService: audio output
+class CallService {
+  VoiceAgentInfo? _voiceAgent;
+  List<TextAgentInfo>? _textAgents;
+  final VirtualFilesystemRepository _filesystemRepository;
+  final CallSessionRepository _sessionRepository;
+
+  late final VirtualFilesystemService _vfs;
+  late final NotepadService _notepadService;
+  late final RealtimeService _realtimeService;
+  late final RecorderService _recorderService;
+  late final PlaybackService _playbackService;
+  late final FeedbackService _feedbackService;
+  late final TimerService _timerService;
+  late final ToolRunner _toolRunner;
+  late final TextAgentService _textAgentService;
+  late final Set<String> _exposedToolKeys;
+
+  /// Item IDs for function-call items that have already been dispatched
+  /// (or are currently being executed). Prevents double-dispatch.
+  final Set<String> _dispatchedToolCallIds = <String>{};
+  final Set<String> _cancelledToolCallIds = <String>{};
+
+  StreamSubscription<RealtimeThread>? _threadSubscription;
+  StreamSubscription<void>? _assistantAudioCompletedSubscription;
+  StreamSubscription<bool>? _userSpeakingStateSubscription;
+  StreamSubscription<List<ActiveFile>>? _activeFilesSubscription;
+  StreamSubscription<RealtimeAdapterError>? _errorSubscription;
+
+  final StreamController<CallState> _stateController =
+      StreamController<CallState>.broadcast();
+  final StreamController<bool> _speakerMuteController =
+      StreamController<bool>.broadcast();
+  final StreamController<String> _errorController =
+      StreamController<String>.broadcast();
+  CallState _state = CallState.uninitialized;
+  DateTime? _callStartedAt;
+  bool _speakerMuted = false;
+  String? _endContext;
+
+  CallService(
+      {required VirtualFilesystemRepository filesystemRepository,
+      required CallSessionRepository sessionRepository})
+      : _filesystemRepository = filesystemRepository,
+        _sessionRepository = sessionRepository;
+
+  CallState get state => _state;
+
+  set state(CallState value) {
+    if (_state == value) {
+      return;
+    }
+    _state = value;
+    if (!_stateController.isClosed) {
+      _stateController.add(value);
+    }
+  }
+
+  Stream<CallState> get states => _stateController.stream;
+
+  Stream<bool> get speakerMuteStates =>
+      _speakerMuteController.stream; // todo: playbackServiceに移譲する
+
+  bool get isSpeakerMuted => _speakerMuted;
+
+  /// Aggregated error stream from all services.
+  /// For UI display only. Use direct service access for detailed debugging.
+  Stream<String> get errors => _errorController.stream;
+
+  RecorderService get recorderService => _recorderService;
+
+  PlaybackService get playbackService => _playbackService;
+
+  NotepadService get notepadService => _notepadService;
+
+  TimerService? get timerService {
+    if (state == CallState.uninitialized || state == CallState.disposed) {
+      return null;
+    }
+    return _timerService;
+  }
+
+  RealtimeService? get realtimeService {
+    if (state == CallState.uninitialized || state == CallState.disposed) {
+      return null;
+    }
+    return _realtimeService;
+  }
+
+  /// Stream of active files for UI.
+  ///
+  /// Re-exposes NotepadService.activeFiles for UI compatibility.
+  Stream<List<ActiveFile>> get activeFilesStream => _notepadService.activeFiles;
+
+  void setVoiceAgent(VoiceAgentInfo voiceAgent) {
+    if (state != CallState.uninitialized) {
+      throw StateError(
+        'setVoiceAgent() can only be called from uninitialized state.',
+      );
+    }
+    if (_voiceAgent != null) {
+      throw StateError('Voice agent has already been set.');
+    }
+
+    _voiceAgent = voiceAgent;
+  }
+
+  void setTextAgents(Iterable<TextAgentInfo> textAgents) {
+    if (state != CallState.uninitialized) {
+      throw StateError(
+        'setTextAgents() can only be called from uninitialized state.',
+      );
+    }
+    if (_textAgents != null) {
+      throw StateError('Text agents have already been set.');
+    }
+
+    _textAgents = textAgents.toList(growable: false);
+  }
+
+  Future<void> startCall() async {
+    if (state != CallState.uninitialized) {
+      throw StateError(
+          'startCall() can only be called from uninitialized state.');
+    }
+
+    // 1. サービスインスタンス生成
+    _instantiateServices();
+
+    // 2. 事前条件検証（fail-fast、この時点ではリソース未確保）
+    await _checkPreconditions();
+
+    state = CallState.connecting;
+
+    // 3. リソース確保と接続（ここからはエラー時に dispose 必要）
+    try {
+      await _igniteCall();
+      state = CallState.active;
+    } catch (e) {
+      // リソース確保後のエラーなので cleanup が必要
+      state = CallState.disposing;
+      try {
+        await _dispose();
+      } catch (_) {
+        // cleanup失敗は無視
+      }
+      rethrow;
+    }
+  }
+
+  /// サービスインスタンス生成
+  Future<void> _instantiateServices() async {
+    _playbackService = PlaybackService();
+    _feedbackService = FeedbackService(this);
+    _timerService = TimerService(this);
+    _vfs = VirtualFilesystemService(_filesystemRepository);
+
+    _notepadService = NotepadService(_vfs);
+
+    _realtimeService = RealtimeService(voiceAgent: _voiceAgent!);
+    _recorderService = RecorderService();
+    _textAgentService = TextAgentService(
+      agents: _textAgents!,
+    );
+
+    _toolRunner = ToolRunner(
+      filesystemApi: CallFilesystemApi(notepadService: _notepadService),
+      callApi: CallControlApi(callService: this),
+      textAgentApi: CallTextAgentApi(textAgentService: _textAgentService),
+    );
+
+    // Wire dependencies into TextAgentService
+    _textAgentService.setNotepadService(_notepadService);
+    _textAgentService.setToolRunner(_toolRunner);
+
+    _exposedToolKeys = Set<String>.from(_voiceAgent!.enabledTools);
+  }
+
+  /// 事前条件検証
+  Future<void> _checkPreconditions() async {
+    // Voice agent設定検証
+    if (_voiceAgent == null) {
+      throw StateError('Voice agent not set');
+    }
+
+    final config = _voiceAgent!.apiConfig;
+    if (config is SelfhostedVoiceAgentApiConfig) {
+      if (config.baseUrl.isEmpty || config.apiKey.isEmpty) {
+        throw Exception('Realtime APIの設定が不完全です');
+      }
+    }
+
+    // マイク権限検証
+    final hasPermission = await _recorderService.hasPermission();
+    if (!hasPermission) {
+      throw Exception('マイクの使用を許可してください');
+    }
+  }
+
+  /// リソース確保と接続開始
+  Future<void> _igniteCall() async {
+    _callStartedAt = DateTime.now();
+
+    await Future.wait<void>([
+      _feedbackService.start(),
+      _vfs.start(),
+      _realtimeService.start(),
+      _recorderService.start(),
+      _playbackService.start(),
+      _notepadService.start(),
+      _textAgentService.start(),
+      _timerService.start(),
+      _toolRunner.start(),
+    ]);
+
+    _activeFilesSubscription =
+        _notepadService.activeFiles.listen(_onActiveFilesChanged);
+
+    final initialDefinitions = _computeExposedTools(<String>{});
+
+    await _realtimeService.registerTools(initialDefinitions);
+    await _recorderService.startRecordingSession();
+    await _realtimeService.bindAudioInput(_recorderService.audioStream);
+    await _playbackService
+        .bindInputStream(_realtimeService.assistantAudioStream);
+
+    // 2. Subscribe to thread updates and watch for completed function calls.
+    _threadSubscription =
+        _realtimeService.threadUpdates.listen(_onThreadUpdate);
+    _assistantAudioCompletedSubscription =
+        _realtimeService.assistantAudioCompleted.listen((_) {
+      unawaited(_playbackService.markResponseComplete());
+    });
+    _userSpeakingStateSubscription =
+        _realtimeService.userSpeakingStates.listen((isSpeaking) {
+      if (!isSpeaking) {
+        return;
+      }
+      unawaited(_interruptAssistantOutput());
+    });
+    _errorSubscription = _realtimeService.errors.listen((error) {
+      // Emit simplified message to UI for critical errors
+      _emitError(error.message);
+    });
+  }
+
+  Future<void> interruptAssistantOutput() async {
+    if (state != CallState.connecting && state != CallState.active) {
+      return;
+    }
+
+    await _interruptAssistantOutput();
+  }
+
+  Future<void> setSpeakerMuted(bool muted) async {
+    if (state == CallState.uninitialized || state == CallState.disposed) {
+      return;
+    }
+    if (_speakerMuted == muted) {
+      return;
+    }
+
+    _speakerMuted = muted;
+    if (!_speakerMuteController.isClosed) {
+      _speakerMuteController.add(_speakerMuted);
+    }
+    if (_speakerMuted) {
+      await _playbackService.interrupt();
+    }
+    await _playbackService.setVolume(_speakerMuted ? 0.0 : 1.0);
+  }
+
+  Future<void> toggleSpeakerMuted() async {
+    await setSpeakerMuted(!_speakerMuted);
+  }
+
+  Future<void> sendTextMessage(String text) async {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty || state != CallState.active) {
+      return;
+    }
+
+    await _interruptAssistantOutput();
+    await _realtimeService.sendText(trimmed);
+  }
+
+  /// Called on every thread mutation. Scans for completed function-call items
+  /// that have not yet been dispatched.
+  void _onThreadUpdate(RealtimeThread thread) {
+    for (final item in thread.items) {
+      if (item.type != RealtimeThreadItemType.functionCall) {
+        continue;
+      }
+      if (item.status != RealtimeThreadItemStatus.completed) {
+        continue;
+      }
+      if (_dispatchedToolCallIds.contains(item.id)) {
+        continue;
+      }
+      // Mark dispatched immediately to prevent duplicate execution.
+      _dispatchedToolCallIds.add(item.id);
+      // Fire and forget — errors are caught inside _executeTool.
+      unawaited(_executeTool(item));
+    }
+  }
+
+  Future<void> _interruptAssistantOutput() async {
+    _cancelPendingToolWork(playSound: true);
+    await _playbackService.interrupt();
+    if (_realtimeService.isConnected) {
+      await _realtimeService.interrupt();
+    }
+  }
+
+  /// Execute a single tool call and send the result back to the model.
+  Future<void> _executeTool(RealtimeThreadItem item) async {
+    final callId = item.callId;
+    final name = item.name;
+    final arguments = item.arguments;
+
+    if (callId == null || callId.isEmpty) {
+      return;
+    }
+    if (_shouldSuppressToolResult(callId)) {
+      return;
+    }
+    if (name == null || name.isEmpty) {
+      const errorMessage = 'Missing tool name.';
+      await _realtimeService.sendFunctionOutput(
+        callId: callId,
+        output: jsonEncode({'error': errorMessage}),
+        disposition: RealtimeToolOutputDisposition.error,
+        errorMessage: errorMessage,
+      );
+      return;
+    }
+
+    _feedbackService.onToolExecutionStarted(callId);
+
+    try {
+      final result = await _toolRunner.execute(
+        name,
+        arguments ?? '{}',
+      );
+      if (_shouldSuppressToolResult(callId)) {
+        return;
+      }
+      final outputMetadata = _deriveToolOutputMetadata(result);
+      await _realtimeService.sendFunctionOutput(
+        callId: callId,
+        output: result,
+        disposition: outputMetadata.disposition,
+        errorMessage: outputMetadata.errorMessage,
+      );
+
+      if (outputMetadata.disposition == RealtimeToolOutputDisposition.error) {
+        _feedbackService.onToolExecutionFailed(callId);
+      } else {
+        _feedbackService.onToolExecutionCompleted(callId);
+      }
+    } catch (e) {
+      if (_shouldSuppressToolResult(callId)) {
+        return;
+      }
+      _feedbackService.onToolExecutionFailed(callId);
+      final errorMessage = e.toString();
+      await _realtimeService.sendFunctionOutput(
+        callId: callId,
+        output: jsonEncode({'error': errorMessage}),
+        disposition: RealtimeToolOutputDisposition.error,
+        errorMessage: errorMessage,
+      );
+    }
+  }
+
+  void _cancelPendingToolWork({required bool playSound}) {
+    final pendingToolCalls = _collectPendingToolCalls(_realtimeService.thread);
+    if (pendingToolCalls.isEmpty) {
+      _feedbackService.onToolExecutionsCancelled(playSound: playSound);
+      return;
+    }
+
+    final itemIds = <String>{};
+    final callIds = <String>{};
+    for (final pendingToolCall in pendingToolCalls) {
+      itemIds.add(pendingToolCall.itemId);
+      callIds.add(pendingToolCall.callId);
+      _cancelledToolCallIds.add(pendingToolCall.callId);
+    }
+
+    _realtimeService.cancelFunctionCalls(itemIds: itemIds, callIds: callIds);
+    _feedbackService.onToolExecutionsCancelled(playSound: playSound);
+  }
+
+  List<_PendingToolCall> _collectPendingToolCalls(RealtimeThread thread) {
+    final matchedCallItemIds = <String>{};
+    final pendingCallItemIdsByCallId = <String, List<String>>{};
+
+    for (final item in thread.items) {
+      final callId = item.callId;
+      if (callId == null || callId.isEmpty) {
+        continue;
+      }
+
+      if (item.type == RealtimeThreadItemType.functionCall) {
+        pendingCallItemIdsByCallId.putIfAbsent(callId, () => <String>[]).add(
+              item.id,
+            );
+        continue;
+      }
+
+      if (item.type == RealtimeThreadItemType.functionCallOutput) {
+        final pendingCallItemIds = pendingCallItemIdsByCallId[callId];
+        if (pendingCallItemIds != null && pendingCallItemIds.isNotEmpty) {
+          matchedCallItemIds.add(pendingCallItemIds.removeAt(0));
+        }
+      }
+    }
+
+    final pendingToolCalls = <_PendingToolCall>[];
+    for (final item in thread.items) {
+      final callId = item.callId;
+      if (item.type != RealtimeThreadItemType.functionCall ||
+          callId == null ||
+          callId.isEmpty ||
+          item.status == RealtimeThreadItemStatus.incomplete ||
+          matchedCallItemIds.contains(item.id)) {
+        continue;
+      }
+      pendingToolCalls.add(_PendingToolCall(itemId: item.id, callId: callId));
+    }
+    return pendingToolCalls;
+  }
+
+  bool _shouldSuppressToolResult(String callId) {
+    return _cancelledToolCallIds.contains(callId) ||
+        state == CallState.disposing ||
+        state == CallState.disposed;
+  }
+
+  _ToolOutputMetadata _deriveToolOutputMetadata(String output) {
+    try {
+      final decoded = jsonDecode(output);
+      if (decoded is Map<String, dynamic> && decoded['error'] != null) {
+        return _ToolOutputMetadata(
+          disposition: RealtimeToolOutputDisposition.error,
+          errorMessage: decoded['error'].toString(),
+        );
+      }
+    } catch (_) {
+      // Non-JSON output is treated as a successful tool result.
+    }
+
+    return const _ToolOutputMetadata(
+      disposition: RealtimeToolOutputDisposition.success,
+    );
+  }
+
+  List<ToolDefinition> _computeExposedTools(Set<String> activeExtensions) {
+    final availableDefinitions = _toolRunner.computeAvailableTools(
+      activeExtensions,
+    );
+
+    return availableDefinitions
+        .where((definition) => _exposedToolKeys.contains(definition.toolKey))
+        .toList(growable: false);
+  }
+
+  /// Called whenever active files change via NotepadService stream.
+  ///
+  /// Recomputes visible tool sets based on active file extensions and
+  /// re-registers tools with the model.
+  void _onActiveFilesChanged(List<ActiveFile> activeFiles) {
+    // Extract extensions from active files
+    final extensions = activeFiles
+        .map((file) => file.extension.toLowerCase())
+        .where((ext) => ext.isNotEmpty)
+        .toSet();
+
+    final definitions = _computeExposedTools(extensions);
+
+    // Re-register tools with the model
+    if (state == CallState.active) {
+      unawaited(_realtimeService.registerTools(definitions));
+    }
+  }
+
+  void _emitError(String message) {
+    if (!_errorController.isClosed) {
+      _errorController.add(message);
+    }
+  }
+
+  Future<void> endCall({String? endContext}) async {
+    if (state == CallState.disposing ||
+        state == CallState.disposed ||
+        state == CallState.uninitialized) {
+      return;
+    }
+
+    if (endContext != null && endContext.isNotEmpty) {
+      _endContext = endContext;
+    }
+
+    _cancelPendingToolWork(playSound: false);
+    state = CallState.disposing;
+
+    try {
+      await _notepadService.persistAll();
+    } catch (_) {
+      // 継続
+    }
+
+    try {
+      final sessionTabs = _notepadService.exportSessionTabs();
+      await _saveSession(sessionTabs: sessionTabs);
+    } catch (_) {
+      // 継続
+    }
+
+    await _dispose();
+  }
+
+  Future<void> _dispose() async {
+    try {
+      await Future.wait<void>([
+        _realtimeService.dispose(),
+        _recorderService.dispose(),
+        _playbackService.dispose(),
+        _feedbackService.dispose(),
+        _timerService.dispose(),
+        _toolRunner.dispose(),
+        _textAgentService.dispose(),
+        _notepadService.dispose(),
+        _vfs.dispose(),
+      ]);
+    } catch (e) {
+      // Cleanup失敗は無視して確実にdisposed状態に遷移させる
+    }
+
+    state = CallState.disposed;
+    await _errorController.close();
+    await _speakerMuteController.close();
+    await _stateController.close();
+
+    await _threadSubscription?.cancel();
+    _threadSubscription = null;
+    await _assistantAudioCompletedSubscription?.cancel();
+    _assistantAudioCompletedSubscription = null;
+    await _userSpeakingStateSubscription?.cancel();
+    _userSpeakingStateSubscription = null;
+    await _activeFilesSubscription?.cancel();
+    _activeFilesSubscription = null;
+    await _errorSubscription?.cancel();
+    _errorSubscription = null;
+    _dispatchedToolCallIds.clear();
+    _cancelledToolCallIds.clear();
+  }
+
+  Future<void> _saveSession({
+    required List<SessionNotepadTab> sessionTabs,
+  }) async {
+    final callStartedAt = _callStartedAt;
+    final voiceAgent = _voiceAgent;
+    if (callStartedAt == null || voiceAgent == null) {
+      return;
+    }
+
+    final endTime = DateTime.now();
+    final session = CallSession(
+      id: endTime.millisecondsSinceEpoch.toString(),
+      startTime: callStartedAt,
+      endTime: endTime,
+      duration: endTime.difference(callStartedAt).inSeconds,
+      chatMessages: _buildSessionChatMessages(
+        startTime: callStartedAt,
+        endTime: endTime,
+      ),
+      notepadTabs: sessionTabs.isEmpty ? null : sessionTabs,
+      speedDialId: voiceAgent.id,
+      endContext: _endContext,
+    );
+
+    await _sessionRepository.save(session);
+  }
+
+  List<String> _buildSessionChatMessages({
+    required DateTime startTime,
+    required DateTime endTime,
+  }) {
+    final thread = realtimeService?.thread;
+    if (thread == null) {
+      return const <String>[];
+    }
+
+    // Include both messages and function calls
+    final allItems = thread.items
+        .where((item) =>
+            item.type == RealtimeThreadItemType.message ||
+            item.type == RealtimeThreadItemType.functionCall)
+        .toList(growable: false);
+    if (allItems.isEmpty) {
+      return const <String>[];
+    }
+
+    // Match tool outputs with their calls
+    final matchedToolOutputIndices = <int, int>{};
+    final pendingCallIndicesByCallId = <String, List<int>>{};
+
+    for (int i = 0; i < thread.items.length; i++) {
+      final item = thread.items[i];
+      if (item.type == RealtimeThreadItemType.functionCall &&
+          item.callId != null) {
+        pendingCallIndicesByCallId
+            .putIfAbsent(item.callId!, () => <int>[])
+            .add(i);
+      }
+      if (item.type == RealtimeThreadItemType.functionCallOutput &&
+          item.callId != null) {
+        final pendingCalls = pendingCallIndicesByCallId[item.callId!];
+        if (pendingCalls != null && pendingCalls.isNotEmpty) {
+          matchedToolOutputIndices[pendingCalls.removeAt(0)] = i;
+        }
+      }
+    }
+
+    final totalMilliseconds = endTime.difference(startTime).inMilliseconds;
+    final timestampStep =
+        allItems.length <= 1 ? 0 : (totalMilliseconds ~/ allItems.length);
+    final chatMessages = <String>[];
+
+    for (var index = 0; index < allItems.length; index++) {
+      final item = allItems[index];
+      final timestamp = startTime.add(
+        Duration(milliseconds: timestampStep * index),
+      );
+
+      // Handle function calls
+      if (item.type == RealtimeThreadItemType.functionCall) {
+        final itemIndex = thread.items.indexOf(item);
+        final outputIndex = matchedToolOutputIndices[itemIndex];
+        final outputItem =
+            outputIndex != null ? thread.items[outputIndex] : null;
+
+        final status = _getToolCallStatus(item, outputItem);
+        final toolCallData = <String, dynamic>{
+          'name': item.name ?? 'unknown',
+          'status': status,
+        };
+
+        if (item.arguments?.isNotEmpty ?? false) {
+          toolCallData['arguments'] = item.arguments;
+        }
+
+        if (outputItem != null) {
+          if (outputItem.toolErrorMessage?.isNotEmpty ?? false) {
+            toolCallData['errorMessage'] = outputItem.toolErrorMessage;
+          } else if (outputItem.output?.isNotEmpty ?? false) {
+            toolCallData['result'] = outputItem.output;
+          }
+        }
+
+        chatMessages.add(
+          jsonEncode({
+            'role': 'assistant',
+            'timestamp': timestamp.toIso8601String(),
+            'toolCalls': [toolCallData],
+          }),
+        );
+        continue;
+      }
+
+      // Handle regular messages
+      final role = _sessionRoleForItem(item);
+      final content = _sessionContentForItem(item);
+      if (role == null || content.isEmpty) {
+        continue;
+      }
+
+      chatMessages.add(
+        jsonEncode({
+          'role': role,
+          'content': content,
+          'timestamp': timestamp.toIso8601String(),
+        }),
+      );
+    }
+
+    return chatMessages;
+  }
+
+  String _getToolCallStatus(
+    RealtimeThreadItem callItem,
+    RealtimeThreadItem? outputItem,
+  ) {
+    if (outputItem?.toolOutputDisposition ==
+        RealtimeToolOutputDisposition.error) {
+      return 'error';
+    }
+    if (outputItem != null) {
+      return 'completed';
+    }
+    if (callItem.status == RealtimeThreadItemStatus.incomplete) {
+      return 'cancelled';
+    }
+    return 'completed';
+  }
+
+  String? _sessionRoleForItem(RealtimeThreadItem item) {
+    return switch (item.role) {
+      RealtimeThreadItemRole.user => 'user',
+      RealtimeThreadItemRole.assistant => 'assistant',
+      _ => null,
+    };
+  }
+
+  String _sessionContentForItem(RealtimeThreadItem item) {
+    final fragments = <String>[];
+    for (final part in item.content) {
+      if (part is RealtimeThreadTextPart && part.text.isNotEmpty) {
+        fragments.add(part.text);
+      } else if (part is RealtimeThreadAudioPart &&
+          (part.transcript?.isNotEmpty ?? false)) {
+        fragments.add(part.transcript!);
+      }
+    }
+
+    return fragments.join('\n').trim();
+  }
+}
+
+final class _ToolOutputMetadata {
+  final RealtimeToolOutputDisposition disposition;
+  final String? errorMessage;
+
+  const _ToolOutputMetadata({
+    required this.disposition,
+    this.errorMessage,
+  });
+}
+
+final class _PendingToolCall {
+  final String itemId;
+  final String callId;
+
+  const _PendingToolCall({
+    required this.itemId,
+    required this.callId,
+  });
+}

@@ -1,7 +1,7 @@
 import 'package:vagina/interfaces/config_repository.dart';
 import 'package:vagina/interfaces/key_value_store.dart';
 import 'package:vagina/services/log_service.dart';
-import 'package:vagina/feat/callv2/models/text_agent_info.dart';
+import 'package:vagina/feat/call/models/text_agent_info.dart';
 
 /// JSON-based implementation of ConfigRepository
 class JsonConfigRepository implements ConfigRepository {

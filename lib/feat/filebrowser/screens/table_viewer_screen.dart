@@ -7,7 +7,7 @@ import 'package:vagina/models/tabular_data.dart';
 import 'package:vagina/repositories/repository_factory.dart';
 import 'package:vagina/services/virtual_filesystem_service.dart';
 import 'package:vagina/utils/file_icon_utils.dart';
-import 'package:vagina/feat/callv2/widgets/spreadsheet/editable_spreadsheet_table.dart';
+import 'package:vagina/feat/call/widgets/spreadsheet/editable_spreadsheet_table.dart';
 import 'package:vagina/tools/builtin/shared/file_type_support.dart';
 
 /// Table viewer screen - view and edit tabular data files.
