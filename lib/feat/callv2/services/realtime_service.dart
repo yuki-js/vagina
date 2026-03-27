@@ -15,7 +15,9 @@ final class RealtimeService extends SubService {
   final VoiceAgentInfo voiceAgent;
   late final RealtimeAdapter _adapter;
 
-  RealtimeService({required this.voiceAgent});
+  RealtimeService({required this.voiceAgent}) {
+    _adapter = _createAdapter(voiceAgent.apiConfig);
+  }
 
   RealtimeThread get thread => _adapter.thread;
 
@@ -32,8 +34,8 @@ final class RealtimeService extends SubService {
   Future<void> start() async {
     await super.start();
 
-    logger.info('Starting RealtimeService for provider: ${voiceAgent.apiConfig.runtimeType}');
-    _adapter = _createAdapter(voiceAgent.apiConfig);
+    logger.info(
+        'Starting RealtimeService for provider: ${voiceAgent.apiConfig.runtimeType}');
 
     try {
       logger.info('Connecting to realtime API with voice: ${voiceAgent.voice}');
@@ -105,7 +107,8 @@ final class RealtimeService extends SubService {
 
   Future<String> sendText(String text) {
     logger.info('Sending text message (${text.length} chars)');
-    logger.fine('Text content: ${text.length > 100 ? "${text.substring(0, 100)}..." : text}');
+    logger.fine(
+        'Text content: ${text.length > 100 ? "${text.substring(0, 100)}..." : text}');
     return _adapter.sendText(text);
   }
 
@@ -121,7 +124,8 @@ final class RealtimeService extends SubService {
         RealtimeToolOutputDisposition.success,
     String? errorMessage,
   }) {
-    logger.info('Sending function output for call: $callId, disposition: $disposition');
+    logger.info(
+        'Sending function output for call: $callId, disposition: $disposition');
     if (errorMessage != null) {
       logger.warning('Function output contains error: $errorMessage');
     }
@@ -137,7 +141,8 @@ final class RealtimeService extends SubService {
     Set<String> itemIds = const <String>{},
     Set<String> callIds = const <String>{},
   }) {
-    logger.info('Cancelling function calls: ${itemIds.length} items, ${callIds.length} calls');
+    logger.info(
+        'Cancelling function calls: ${itemIds.length} items, ${callIds.length} calls');
     _adapter.cancelFunctionCalls(itemIds: itemIds, callIds: callIds);
   }
 
@@ -158,6 +163,7 @@ final class RealtimeService extends SubService {
   @override
   Future<void> dispose() async {
     logger.info('Disposing RealtimeService');
+    await unbindAudioInput();
     await _adapter.dispose();
     await super.dispose();
     logger.info('RealtimeService disposed successfully');
@@ -168,7 +174,8 @@ final class RealtimeService extends SubService {
   // ---------------------------------------------------------------------------
 
   RealtimeAdapter _createAdapter(VoiceAgentApiConfig apiConfig) {
-    logger.fine('Creating realtime adapter for config type: ${apiConfig.runtimeType}');
+    logger.fine(
+        'Creating realtime adapter for config type: ${apiConfig.runtimeType}');
     return switch (apiConfig) {
       SelfhostedVoiceAgentApiConfig(
         providerType: VoiceAgentProviderType.openai

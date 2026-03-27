@@ -6,15 +6,6 @@ import 'package:taudio/taudio.dart';
 import 'package:vagina/core/config/app_config.dart';
 import 'package:vagina/feat/callv2/services/subservice.dart';
 
-/// Lifecycle state for [PlaybackService].
-enum PlaybackServiceState {
-  uninitialized,
-  idle,
-  priming,
-  playing,
-  stopping,
-  disposed,
-}
 
 /// Immutable snapshot of [PlaybackService] buffering state.
 final class PlaybackMetrics {
@@ -60,15 +51,15 @@ final class PlaybackService extends SubService {
   static const int playbackBufferSize = 8192;
 
   final Queue<Uint8List> _bufferQueue = Queue<Uint8List>();
-  final StreamController<PlaybackServiceState> _stateController =
-      StreamController<PlaybackServiceState>.broadcast();
+  final StreamController<bool> _playingStateController =
+      StreamController<bool>.broadcast();
   final StreamController<PlaybackMetrics> _metricsController =
       StreamController<PlaybackMetrics>.broadcast();
   final FlutterSoundPlayer _player = FlutterSoundPlayer();
 
   StreamSubscription<Uint8List>? _inputSubscription;
   Future<void>? _drainFuture;
-  PlaybackServiceState _state = PlaybackServiceState.uninitialized;
+  bool _isPlaying = false;
   PlaybackMetrics _metrics = const PlaybackMetrics.idle();
   int _bufferedBytes = 0;
   int _generation = 0;
@@ -78,13 +69,11 @@ final class PlaybackService extends SubService {
 
   PlaybackService();
 
-  PlaybackServiceState get state => _state;
-
-  bool get isPlaying => _state == PlaybackServiceState.playing;
+  bool get isPlaying => _isPlaying;
 
   int get bufferedBytes => _bufferedBytes;
 
-  Stream<PlaybackServiceState> get states => _stateController.stream;
+  Stream<bool> get playingStates => _playingStateController.stream;
 
   Stream<PlaybackMetrics> get metrics => _metricsController.stream;
 
@@ -92,7 +81,7 @@ final class PlaybackService extends SubService {
   Future<void> start() async {
     await super.start();
 
-    if (_state != PlaybackServiceState.uninitialized) {
+    if (_playerOpened) {
       return;
     }
 
@@ -100,7 +89,6 @@ final class PlaybackService extends SubService {
     await _player.openPlayer();
     _playerOpened = true;
     await _player.setVolume(_volume);
-    _setState(PlaybackServiceState.idle);
     _emitMetrics();
   }
 
@@ -189,34 +177,26 @@ final class PlaybackService extends SubService {
       _playerOpened = false;
     }
 
-    _state = PlaybackServiceState.disposed;
-    await _stateController.close();
+    await _playingStateController.close();
     await _metricsController.close();
     
     logger.info('PlaybackService disposed successfully');
   }
 
   Future<void> _handleInputChunk(Uint8List chunk) async {
-    if (_state == PlaybackServiceState.disposed || chunk.isEmpty) {
+    if (isDisposed || chunk.isEmpty) {
       return;
     }
 
     await start();
 
-    if (_bufferQueue.isEmpty &&
-        (_state == PlaybackServiceState.idle ||
-            _state == PlaybackServiceState.priming)) {
+    if (_bufferQueue.isEmpty && !_isPlaying) {
       logger.fine('First audio chunk received, starting buffering');
       _metrics = _metrics.copyWith(isResponseComplete: false);
     }
 
     _bufferQueue.add(chunk);
     _bufferedBytes += chunk.length;
-
-    if (_state != PlaybackServiceState.playing) {
-      _setState(PlaybackServiceState.priming);
-    }
-
     _emitMetrics();
     _ensureDrainLoop();
   }
@@ -233,12 +213,11 @@ final class PlaybackService extends SubService {
 
   Future<void> _drainBufferedAudio(int generation) async {
     logger.fine('Starting buffer drain loop (generation: $generation)');
-    while (
-        generation == _generation && _state != PlaybackServiceState.disposed) {
+    while (generation == _generation && !isDisposed) {
       if (_bufferQueue.isEmpty) {
         if (_metrics.isResponseComplete) {
           logger.fine('Buffer drain complete, returning to idle');
-          _setState(PlaybackServiceState.idle);
+          _setPlayingState(false);
           _metrics = _metrics.copyWith(isResponseComplete: false);
           _emitMetrics();
         }
@@ -251,14 +230,13 @@ final class PlaybackService extends SubService {
       if (!shouldStartPlayback) {
         logger.fine(
             'Buffering: $_bufferedBytes/${AppConfig.minAudioBufferSizeBeforeStart} bytes');
-        _setState(PlaybackServiceState.priming);
         _emitMetrics();
         return;
       }
 
-      if (_state != PlaybackServiceState.playing) {
+      if (!_isPlaying) {
         await _startPlayerIfNeeded();
-        _setState(PlaybackServiceState.playing);
+        _setPlayingState(true);
       }
 
       final chunk = _bufferQueue.removeFirst();
@@ -273,7 +251,6 @@ final class PlaybackService extends SubService {
 
     logger.fine('Resetting playback state');
     _generation += 1;
-    _setState(PlaybackServiceState.stopping);
 
     _bufferQueue.clear();
     _bufferedBytes = 0;
@@ -281,7 +258,7 @@ final class PlaybackService extends SubService {
     _emitMetrics();
 
     await _stopPlayerIfNeeded();
-    _setState(PlaybackServiceState.idle);
+    _setPlayingState(false);
     _emitMetrics();
   }
 
@@ -323,12 +300,15 @@ final class PlaybackService extends SubService {
     }
   }
 
-  void _setState(PlaybackServiceState next) {
-    final previous = _state;
-    _state = next;
-    logger.info('State transition: $previous → $next');
-    if (!_stateController.isClosed) {
-      _stateController.add(next);
+  void _setPlayingState(bool isPlaying) {
+    if (_isPlaying == isPlaying) {
+      return;
+    }
+    final previous = _isPlaying;
+    _isPlaying = isPlaying;
+    logger.info('Playing state: $previous → $isPlaying');
+    if (!_playingStateController.isClosed) {
+      _playingStateController.add(_isPlaying);
     }
   }
 

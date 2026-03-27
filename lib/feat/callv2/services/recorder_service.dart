@@ -6,15 +6,6 @@ import 'package:vagina/core/config/app_config.dart';
 import 'package:vagina/feat/callv2/services/subservice.dart';
 import 'package:vagina/utils/audio_utils.dart';
 
-/// Lifecycle state for [RecorderService].
-enum RecorderServiceState {
-  uninitialized,
-  idle,
-  starting,
-  recording,
-  stopping,
-  disposed,
-}
 
 /// Session-scoped microphone recorder service.
 ///
@@ -30,22 +21,18 @@ final class RecorderService extends SubService {
       StreamController<double>.broadcast();
   final StreamController<bool> _muteStateController =
       StreamController<bool>.broadcast();
-  final StreamController<RecorderServiceState> _stateController =
-      StreamController<RecorderServiceState>.broadcast();
 
-  AudioRecorder? _recorder;
+  final AudioRecorder _recorder = AudioRecorder();
   StreamSubscription<Uint8List>? _rawAudioSubscription;
   StreamSubscription<Amplitude>? _amplitudeSubscription;
-  RecorderServiceState _state = RecorderServiceState.uninitialized;
+  bool _isRecording = false;
   bool _isMuted = false;
 
   RecorderService();
 
-  RecorderServiceState get state => _state;
-
   bool get isMuted => _isMuted;
 
-  bool get isRecording => _state == RecorderServiceState.recording;
+  bool get isRecording => _isRecording;
 
   Stream<Uint8List> get audioStream => _audioController.stream;
 
@@ -53,25 +40,16 @@ final class RecorderService extends SubService {
 
   Stream<bool> get muteState => _muteStateController.stream;
 
-  Stream<RecorderServiceState> get states => _stateController.stream;
-
   @override
   Future<void> start() async {
     await super.start();
-
-    if (_state != RecorderServiceState.uninitialized) {
-      return;
-    }
-
-    logger.info('Starting RecorderService');
-    _recorder = AudioRecorder();
-    _setState(RecorderServiceState.idle);
+    logger.info('RecorderService started');
   }
 
   Future<bool> hasPermission() async {
     ensureNotDisposed();
     await start();
-    final hasPermission = await (_recorder ??= AudioRecorder()).hasPermission();
+    final hasPermission = await _recorder.hasPermission();
     logger.fine('Microphone permission check: $hasPermission');
     return hasPermission;
   }
@@ -95,14 +73,12 @@ final class RecorderService extends SubService {
     ensureNotDisposed();
     await start();
 
-    if (_state == RecorderServiceState.recording ||
-        _state == RecorderServiceState.starting) {
-      logger.fine('Recording session already started or starting');
+    if (_isRecording) {
+      logger.fine('Recording session already started');
       return;
     }
 
-    final recorder = _recorder ??= AudioRecorder();
-    final hasPermission = await recorder.hasPermission();
+    final hasPermission = await _recorder.hasPermission();
     if (!hasPermission) {
       logger.severe('Microphone permission not granted');
       throw StateError('Microphone permission not granted.');
@@ -110,10 +86,10 @@ final class RecorderService extends SubService {
 
     logger.info(
         'Starting recording session: sampleRate=${AppConfig.sampleRate}, channels=${AppConfig.channels}');
-    _setState(RecorderServiceState.starting);
 
     try {
-      final rawStream = await recorder.startStream(
+      _isRecording = true;
+      final rawStream = await _recorder.startStream(
         RecordConfig(
           encoder: AudioEncoder.pcm16bits,
           sampleRate: AppConfig.sampleRate,
@@ -140,7 +116,7 @@ final class RecorderService extends SubService {
 
       await _amplitudeSubscription?.cancel();
       _amplitudeSubscription =
-          recorder.onAmplitudeChanged(amplitudeUpdateInterval).listen(
+          _recorder.onAmplitudeChanged(amplitudeUpdateInterval).listen(
         (amplitude) {
           if (_isMuted) {
             _emitAmplitude(0.0);
@@ -153,27 +129,22 @@ final class RecorderService extends SubService {
         },
       );
 
-      _setState(RecorderServiceState.recording);
+      logger.info('Recording started successfully');
     } catch (e, stackTrace) {
       logger.severe('Failed to start recording session', e, stackTrace);
-      _setState(RecorderServiceState.idle);
+      _isRecording = false;
       rethrow;
     }
   }
 
   Future<void> stopRecordingSession() async {
-    if (_state == RecorderServiceState.idle ||
-        _state == RecorderServiceState.uninitialized) {
+    if (!_isRecording) {
       logger.fine('Recording session already stopped');
-      return;
-    }
-    if (_state == RecorderServiceState.stopping) {
-      logger.fine('Recording session already stopping');
       return;
     }
 
     logger.info('Stopping recording session');
-    _setState(RecorderServiceState.stopping);
+    _isRecording = false;
 
     try {
       await _rawAudioSubscription?.cancel();
@@ -182,12 +153,11 @@ final class RecorderService extends SubService {
       await _amplitudeSubscription?.cancel();
       _amplitudeSubscription = null;
 
-      await _recorder?.stop();
+      await _recorder.stop();
       _emitAmplitude(0.0);
-      _setState(RecorderServiceState.idle);
+      logger.info('Recording stopped successfully');
     } catch (e, stackTrace) {
       logger.severe('Failed to stop recording session', e, stackTrace);
-      _setState(RecorderServiceState.idle);
       rethrow;
     }
   }
@@ -204,20 +174,16 @@ final class RecorderService extends SubService {
     _amplitudeSubscription = null;
 
     try {
-      await _recorder?.stop();
+      await _recorder.stop();
     } catch (e, stackTrace) {
       logger.warning('Error stopping recorder during disposal', e, stackTrace);
     }
 
-    await _recorder?.dispose();
-    _recorder = null;
-
-    _setState(RecorderServiceState.disposed, emitWhenClosed: false);
+    await _recorder.dispose();
 
     await _audioController.close();
     await _amplitudeController.close();
     await _muteStateController.close();
-    await _stateController.close();
     
     logger.info('RecorderService disposed successfully');
   }
@@ -240,17 +206,4 @@ final class RecorderService extends SubService {
       _amplitudeController.add(value.clamp(0.0, 1.0));
     }
   }
-
-  void _setState(
-    RecorderServiceState next, {
-    bool emitWhenClosed = true,
-  }) {
-    final previous = _state;
-    _state = next;
-    logger.info('State transition: $previous → $next');
-    if (emitWhenClosed && !_stateController.isClosed) {
-      _stateController.add(next);
-    }
-  }
-
 }

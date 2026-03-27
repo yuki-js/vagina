@@ -80,11 +80,10 @@ class CallService {
   bool _speakerMuted = false;
   String? _endContext;
 
-  CallService({
-    required VirtualFilesystemRepository filesystemRepository,
-    required CallSessionRepository sessionRepository,
-    bool enableFeedback = true,
-  })  : _filesystemRepository = filesystemRepository,
+  CallService(
+      {required VirtualFilesystemRepository filesystemRepository,
+      required CallSessionRepository sessionRepository})
+      : _filesystemRepository = filesystemRepository,
         _sessionRepository = sessionRepository;
 
   CallState get state => _state;
@@ -168,7 +167,7 @@ class CallService {
     }
 
     // 1. サービスインスタンス生成
-    await _instantiateServices();
+    _instantiateServices();
 
     // 2. 事前条件検証（fail-fast、この時点ではリソース未確保）
     await _checkPreconditions();
@@ -245,6 +244,7 @@ class CallService {
     _callStartedAt = DateTime.now();
 
     await Future.wait<void>([
+      _feedbackService.start(),
       _vfs.start(),
       _realtimeService.start(),
       _recorderService.start(),
@@ -564,22 +564,6 @@ class CallService {
   }
 
   Future<void> _dispose() async {
-    await _threadSubscription?.cancel();
-    _threadSubscription = null;
-    await _assistantAudioCompletedSubscription?.cancel();
-    _assistantAudioCompletedSubscription = null;
-    await _userSpeakingStateSubscription?.cancel();
-    _userSpeakingStateSubscription = null;
-    await _activeFilesSubscription?.cancel();
-    _activeFilesSubscription = null;
-    await _errorSubscription?.cancel();
-    _errorSubscription = null;
-    _dispatchedToolCallIds.clear();
-    _cancelledToolCallIds.clear();
-    await _realtimeService.unbindAudioInput();
-    await _playbackService.unbindInputStream();
-    await _recorderService.stopRecordingSession();
-
     try {
       await Future.wait<void>([
         _realtimeService.dispose(),
@@ -600,6 +584,19 @@ class CallService {
     await _errorController.close();
     await _speakerMuteController.close();
     await _stateController.close();
+
+    await _threadSubscription?.cancel();
+    _threadSubscription = null;
+    await _assistantAudioCompletedSubscription?.cancel();
+    _assistantAudioCompletedSubscription = null;
+    await _userSpeakingStateSubscription?.cancel();
+    _userSpeakingStateSubscription = null;
+    await _activeFilesSubscription?.cancel();
+    _activeFilesSubscription = null;
+    await _errorSubscription?.cancel();
+    _errorSubscription = null;
+    _dispatchedToolCallIds.clear();
+    _cancelledToolCallIds.clear();
   }
 
   Future<void> _saveSession({

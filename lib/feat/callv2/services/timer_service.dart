@@ -4,13 +4,6 @@ import 'package:vagina/feat/callv2/models/realtime/realtime_thread.dart';
 import 'package:vagina/feat/callv2/services/call_service.dart';
 import 'package:vagina/feat/callv2/services/subservice.dart';
 
-/// Lifecycle state for [TimerService].
-enum TimerServiceState {
-  uninitialized,
-  idle,
-  tracking,
-  disposed,
-}
 
 /// Session-scoped timer service for call duration tracking and timeout detection.
 ///
@@ -30,8 +23,6 @@ final class TimerService extends SubService {
       StreamController<Duration>.broadcast();
   final StreamController<void> _timeoutController =
       StreamController<void>.broadcast();
-  final StreamController<TimerServiceState> _stateController =
-      StreamController<TimerServiceState>.broadcast();
 
   Timer? _timer;
   StreamSubscription<RealtimeThread>? _threadSubscription;
@@ -41,14 +32,15 @@ final class TimerService extends SubService {
   DateTime? _startedAt;
   DateTime? _lastActivityAt;
   Duration _silenceTimeout;
-  TimerServiceState _state = TimerServiceState.uninitialized;
+  bool _isTracking = false;
 
   TimerService(
     this._callService, {
     Duration silenceTimeout = const Duration(seconds: 180),
   }) : _silenceTimeout = silenceTimeout;
 
-  TimerServiceState get state => _state;
+  /// Whether the timer is currently tracking.
+  bool get isTracking => _isTracking;
 
   /// Computed elapsed time since tracking started.
   /// Returns [Duration.zero] if not tracking.
@@ -70,33 +62,25 @@ final class TimerService extends SubService {
   /// Stream that emits when silence timeout occurs.
   Stream<void> get timeoutEvents => _timeoutController.stream;
 
-  /// Stream of state changes.
-  Stream<TimerServiceState> get states => _stateController.stream;
-
   @override
   Future<void> start() async {
     await super.start();
 
-    if (_state != TimerServiceState.uninitialized) {
-      return;
-    }
-
     logger.info('Starting TimerService with silence timeout: ${_silenceTimeout.inSeconds}s');
     _subscribeToCallServiceEvents();
-    _setState(TimerServiceState.idle);
   }
 
   /// Start elapsed time tracking and silence timeout detection.
   void startTracking() {
     ensureNotDisposed();
 
-    if (_state == TimerServiceState.tracking) {
+    if (_isTracking) {
       logger.fine('Tracking already active');
       return;
     }
 
     logger.info('Starting time tracking');
-    _setState(TimerServiceState.tracking);
+    _isTracking = true;
 
     final now = DateTime.now();
     _startedAt = now;
@@ -111,7 +95,7 @@ final class TimerService extends SubService {
   void stopTracking() {
     ensureNotDisposed();
 
-    if (_state != TimerServiceState.tracking) {
+    if (!_isTracking) {
       logger.fine('Tracking already stopped');
       return;
     }
@@ -119,8 +103,7 @@ final class TimerService extends SubService {
     logger.info('Stopping time tracking (elapsed: ${elapsed.inSeconds}s)');
     _timer?.cancel();
     _timer = null;
-
-    _setState(TimerServiceState.idle);
+    _isTracking = false;
   }
 
   /// Reset the silence timeout timer.
@@ -130,7 +113,7 @@ final class TimerService extends SubService {
   void resetSilenceTimer() {
     ensureNotDisposed();
 
-    if (_state != TimerServiceState.tracking) {
+    if (!_isTracking) {
       return;
     }
 
@@ -178,11 +161,8 @@ final class TimerService extends SubService {
 
     await _unsubscribeFromCallServiceEvents();
 
-    _setState(TimerServiceState.disposed);
-
     await _durationController.close();
     await _timeoutController.close();
-    await _stateController.close();
     
     logger.info('TimerService disposed successfully');
   }
@@ -193,10 +173,10 @@ final class TimerService extends SubService {
     
     // Auto-start tracking when call becomes active
     _callStateSubscription = _callService.states.listen((callState) {
-      if (callState == CallState.active && _state == TimerServiceState.idle) {
+      if (callState == CallState.active && !_isTracking) {
         logger.fine('Call became active, auto-starting tracking');
         startTracking();
-      } else if (callState == CallState.disposing && _state == TimerServiceState.tracking) {
+      } else if (callState == CallState.disposing && _isTracking) {
         logger.fine('Call disposing, auto-stopping tracking');
         stopTracking();
       }
@@ -210,7 +190,7 @@ final class TimerService extends SubService {
 
     // Reset on thread updates (message, function call, etc.)
     _threadSubscription = realtimeService.threadUpdates.listen((_) {
-      if (_state == TimerServiceState.tracking) {
+      if (_isTracking) {
         resetSilenceTimer();
       }
     });
@@ -218,7 +198,7 @@ final class TimerService extends SubService {
     // Reset on assistant audio completion
     _assistantAudioCompletedSubscription =
         realtimeService.assistantAudioCompleted.listen((_) {
-      if (_state == TimerServiceState.tracking) {
+      if (_isTracking) {
         resetSilenceTimer();
       }
     });
@@ -226,7 +206,7 @@ final class TimerService extends SubService {
     // Reset on user speaking
     _userSpeakingSubscription =
         realtimeService.userSpeakingStates.listen((isSpeaking) {
-      if (isSpeaking && _state == TimerServiceState.tracking) {
+      if (isSpeaking && _isTracking) {
         resetSilenceTimer();
       }
     });
@@ -248,7 +228,7 @@ final class TimerService extends SubService {
   /// Called every second by the timer.
   /// Handles both duration updates and timeout detection.
   void _onTimerTick() {
-    if (_state != TimerServiceState.tracking) {
+    if (!_isTracking) {
       return;
     }
 
@@ -277,14 +257,4 @@ final class TimerService extends SubService {
       ));
     }
   }
-
-  void _setState(TimerServiceState next) {
-    final previous = _state;
-    _state = next;
-    logger.info('State transition: $previous → $next');
-    if (!_stateController.isClosed) {
-      _stateController.add(next);
-    }
-  }
-
 }

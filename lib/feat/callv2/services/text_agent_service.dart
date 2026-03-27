@@ -26,8 +26,8 @@ final class TextAgentService extends SubService {
   final Map<String, Map<String, TextAgentThread>> _threadsByAgent =
       <String, Map<String, TextAgentThread>>{};
 
-  NotepadService? _notepadService;
-  ToolRunner? _toolRunner;
+  late final NotepadService _notepadService;
+  late final ToolRunner _toolRunner;
 
   TextAgentService({
     Iterable<TextAgentInfo> agents = const <TextAgentInfo>[],
@@ -120,7 +120,8 @@ final class TextAgentService extends SubService {
     }
 
     logger.info('Sending query to agent: $agentId (${prompt.length} chars)');
-    logger.fine('Query prompt: ${prompt.length > 100 ? "${prompt.substring(0, 100)}..." : prompt}');
+    logger.fine(
+        'Query prompt: ${prompt.length > 100 ? "${prompt.substring(0, 100)}..." : prompt}');
 
     // Get agent
     final agent = getAgent(agentId);
@@ -150,7 +151,8 @@ final class TextAgentService extends SubService {
         transport: transport,
       );
 
-      logger.info('Query completed successfully (response: ${result.length} chars)');
+      logger.info(
+          'Query completed successfully (response: ${result.length} chars)');
       return result;
     } catch (e, stackTrace) {
       // Check for context length errors and retry
@@ -183,7 +185,8 @@ final class TextAgentService extends SubService {
   TextAgentTransport _createTransport(TextAgentInfo agent) {
     final apiConfig = agent.apiConfig;
 
-    logger.fine('Creating transport for agent: ${agent.id}, config type: ${apiConfig.runtimeType}');
+    logger.fine(
+        'Creating transport for agent: ${agent.id}, config type: ${apiConfig.runtimeType}');
 
     if (apiConfig is SelfhostedTextAgentApiConfig) {
       if (apiConfig.provider == 'azure') {
@@ -209,14 +212,9 @@ final class TextAgentService extends SubService {
     TextAgentInfo agent,
     Set<String> activeExtensions,
   ) {
-    if (_toolRunner == null) {
-      logger.fine('No ToolRunner available, returning empty tools list');
-      return const [];
-    }
-
     // Get tools filtered by active file extensions
     final extensionFilteredTools =
-        _toolRunner!.computeAvailableTools(activeExtensions);
+        _toolRunner.computeAvailableTools(activeExtensions);
 
     // If agent's enabledTools is empty, all extension-filtered tools are enabled
     if (agent.enabledTools.isEmpty) {
@@ -229,7 +227,7 @@ final class TextAgentService extends SubService {
     final filtered = extensionFilteredTools.where((tool) {
       return agent.enabledTools[tool.toolKey] ?? true;
     }).toList();
-    
+
     logger.fine(
         'Agent ${agent.id}: ${filtered.length}/${extensionFilteredTools.length} tools available after agent filtering');
     return filtered;
@@ -261,12 +259,6 @@ final class TextAgentService extends SubService {
     }
   }
 
-  @override
-  Future<void> start() async {
-    await super.start();
-    logger.info('Starting TextAgentService with ${_agentsById.length} agents');
-  }
-
   /// Execute a query with multi-turn tool calling support.
   ///
   /// Returns the final text response from the agent after all tool calls complete.
@@ -288,7 +280,8 @@ final class TextAgentService extends SubService {
       // Recompute available tools based on current active file extensions
       final activeExtensions = _getCurrentActiveExtensions();
       logger.fine('Active file extensions: ${activeExtensions.join(", ")}');
-      final availableTools = _getAvailableToolsForAgent(agent, activeExtensions);
+      final availableTools =
+          _getAvailableToolsForAgent(agent, activeExtensions);
 
       // Send request via transport (transport handles tool format conversion)
       logger.fine('Sending API request with ${availableTools.length} tools');
@@ -316,7 +309,7 @@ final class TextAgentService extends SubService {
 
       if (toolCalls != null && toolCalls.isNotEmpty) {
         logger.info('Agent requested ${toolCalls.length} tool call(s)');
-        
+
         // AI requested tool execution
         // Convert tool calls to domain model
         final domainToolCalls = <TextAgentToolCall>[];
@@ -351,15 +344,13 @@ final class TextAgentService extends SubService {
         for (final toolCall in domainToolCalls) {
           String toolResult;
           try {
-            if (_toolRunner == null) {
-              throw StateError('ToolRunner not available');
-            }
             logger.fine('Executing tool: ${toolCall.name}');
             toolResult =
-                await _toolRunner!.execute(toolCall.name, toolCall.arguments);
+                await _toolRunner.execute(toolCall.name, toolCall.arguments);
             logger.fine('Tool execution succeeded: ${toolCall.name}');
           } catch (e, stackTrace) {
-            logger.severe('Tool execution failed: ${toolCall.name}', e, stackTrace);
+            logger.severe(
+                'Tool execution failed: ${toolCall.name}', e, stackTrace);
             toolResult = jsonEncode({
               'success': false,
               'error': 'Tool execution failed: $e',
@@ -390,7 +381,7 @@ final class TextAgentService extends SubService {
       }
 
       logger.info('Query loop completed in $turnCount turns');
-      
+
       // Add final assistant message item to thread
       final textPart = TextAgentThreadTextPart(text: content, isDone: true);
       final assistantItem = TextAgentThreadItem(
@@ -406,16 +397,13 @@ final class TextAgentService extends SubService {
     }
 
     // Max turns reached
-    logger.warning('Query loop reached max turns ($maxTurns) without completion');
+    logger
+        .warning('Query loop reached max turns ($maxTurns) without completion');
     throw Exception('Max turns ($maxTurns) reached without completion');
   }
 
   Set<String> _getCurrentActiveExtensions() {
-    if (_notepadService == null) {
-      return const {};
-    }
-
-    final activeFiles = _notepadService!.listActive();
+    final activeFiles = _notepadService.listActive();
     return activeFiles
         .map((file) => file.extension.toLowerCase())
         .where((ext) => ext.isNotEmpty)
@@ -424,12 +412,11 @@ final class TextAgentService extends SubService {
 
   @override
   Future<void> dispose() async {
-    logger.info('Disposing TextAgentService (${_agentsById.length} agents, ${_threadsByAgent.length} threads)');
+    logger.info(
+        'Disposing TextAgentService (${_agentsById.length} agents, ${_threadsByAgent.length} threads)');
     await super.dispose();
     _agentsById.clear();
     _threadsByAgent.clear();
-    _notepadService = null;
-    _toolRunner = null;
     logger.info('TextAgentService disposed successfully');
   }
 }

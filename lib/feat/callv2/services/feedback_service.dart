@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:vagina/feat/callv2/services/call_service.dart';
-import 'package:vagina/feat/callv2/services/playback_service.dart';
 import 'package:vagina/feat/callv2/services/subservice.dart';
 
 /// Unified feedback service for callv2 (audio + haptic)
@@ -14,17 +13,19 @@ final class FeedbackService extends SubService {
   final CallService _callService;
   final Set<String> _executingToolCallIds = <String>{};
   StreamSubscription<CallState>? _callStateSubscription;
-  StreamSubscription<PlaybackServiceState>? _playbackStateSubscription;
+  StreamSubscription<bool>? _playbackStateSubscription;
   StreamSubscription<void>? _assistantAudioCompletedSubscription;
   StreamSubscription<bool>? _userSpeakingStateSubscription;
   late CallState _lastObservedState;
-  late PlaybackServiceState _lastPlaybackState;
+  bool _lastPlayingState = false;
   bool _awaitingAssistantPlaybackCompletionFeedback = false;
   AudioPlayer? _dialTonePlayer;
   AudioPlayer? _endTonePlayer;
   AudioPlayer? _toolExecutingPlayer;
 
-  FeedbackService(this._callService);
+  FeedbackService(this._callService) {
+    unawaited(playDialTone());
+  }
 
   Future<void> _bindRealtimeFeedback() async {
     final realtimeService = _callService.realtimeService!;
@@ -47,7 +48,7 @@ final class FeedbackService extends SubService {
     CallState currentState,
   ) async {
     logger.info('Call state changed: $previousState → $currentState');
-    
+
     if (previousState != CallState.connecting &&
         currentState == CallState.connecting) {
       logger.info('Starting dial tone and enabling wake lock');
@@ -69,18 +70,17 @@ final class FeedbackService extends SubService {
     }
   }
 
-  void _handlePlaybackStateChanged(PlaybackServiceState state) {
-    final previousState = _lastPlaybackState;
-    _lastPlaybackState = state;
+  void _handlePlayingStateChanged(bool isPlaying) {
+    final previousState = _lastPlayingState;
+    _lastPlayingState = isPlaying;
 
-    if (previousState != PlaybackServiceState.playing &&
-        state == PlaybackServiceState.playing) {
+    // Playing started: provide feedback
+    if (!previousState && isPlaying) {
       unawaited(selectionClick());
     }
 
-    if (_awaitingAssistantPlaybackCompletionFeedback &&
-        previousState != PlaybackServiceState.idle &&
-        state == PlaybackServiceState.idle) {
+    // Playing stopped: provide feedback if we were waiting for completion
+    if (_awaitingAssistantPlaybackCompletionFeedback && previousState && !isPlaying) {
       _awaitingAssistantPlaybackCompletionFeedback = false;
       unawaited(heavyImpact());
     }
@@ -88,7 +88,7 @@ final class FeedbackService extends SubService {
 
   Future<void> _handleAssistantAudioCompletedSignal() async {
     _awaitingAssistantPlaybackCompletionFeedback = true;
-    if (_callService.playbackService.state == PlaybackServiceState.idle) {
+    if (!_callService.playbackService.isPlaying) {
       _awaitingAssistantPlaybackCompletionFeedback = false;
       await heavyImpact();
     }
@@ -97,7 +97,8 @@ final class FeedbackService extends SubService {
   void onToolExecutionStarted(String callId) {
     final wasEmpty = _executingToolCallIds.isEmpty;
     final added = _executingToolCallIds.add(callId);
-    logger.info('Tool execution started: $callId (total executing: ${_executingToolCallIds.length})');
+    logger.info(
+        'Tool execution started: $callId (total executing: ${_executingToolCallIds.length})');
     if (added && wasEmpty) {
       logger.fine('Starting tool executing sound');
       unawaited(playToolExecuting());
@@ -106,7 +107,8 @@ final class FeedbackService extends SubService {
 
   void onToolExecutionCompleted(String callId) {
     _executingToolCallIds.remove(callId);
-    logger.info('Tool execution completed: $callId (remaining: ${_executingToolCallIds.length})');
+    logger.info(
+        'Tool execution completed: $callId (remaining: ${_executingToolCallIds.length})');
     if (_executingToolCallIds.isEmpty) {
       logger.fine('Stopping tool executing sound');
       unawaited(stopToolExecuting());
@@ -115,7 +117,8 @@ final class FeedbackService extends SubService {
 
   void onToolExecutionFailed(String callId) {
     _executingToolCallIds.remove(callId);
-    logger.warning('Tool execution failed: $callId (remaining: ${_executingToolCallIds.length})');
+    logger.warning(
+        'Tool execution failed: $callId (remaining: ${_executingToolCallIds.length})');
     if (_executingToolCallIds.isEmpty) {
       logger.fine('Stopping tool executing sound');
       unawaited(stopToolExecuting());
@@ -126,7 +129,8 @@ final class FeedbackService extends SubService {
 
   void onToolExecutionsCancelled({required bool playSound}) {
     final hadPendingToolCalls = _executingToolCallIds.isNotEmpty;
-    logger.info('Tool executions cancelled (count: ${_executingToolCallIds.length}, playSound: $playSound)');
+    logger.info(
+        'Tool executions cancelled (count: ${_executingToolCallIds.length}, playSound: $playSound)');
     _executingToolCallIds.clear();
     unawaited(stopToolExecuting());
 
@@ -203,7 +207,8 @@ final class FeedbackService extends SubService {
         stopFirst: false,
       );
     } catch (e, stackTrace) {
-      logger.warning('Failed to play one-shot audio: $assetPath', e, stackTrace);
+      logger.warning(
+          'Failed to play one-shot audio: $assetPath', e, stackTrace);
     }
   }
 
@@ -327,10 +332,10 @@ final class FeedbackService extends SubService {
     await super.start();
 
     logger.info('Starting FeedbackService');
-    
+
     // Initialize state tracking
     _lastObservedState = _callService.state;
-    _lastPlaybackState = _callService.playbackService.state;
+    _lastPlayingState = _callService.playbackService.isPlaying;
 
     // Play dial tone on start
     logger.fine('Playing initial dial tone');
@@ -344,7 +349,7 @@ final class FeedbackService extends SubService {
     });
 
     _playbackStateSubscription =
-        _callService.playbackService.states.listen(_handlePlaybackStateChanged);
+        _callService.playbackService.playingStates.listen(_handlePlayingStateChanged);
 
     // Bind RealtimeService-dependent feedback
     logger.fine('Binding realtime feedback');
@@ -353,7 +358,8 @@ final class FeedbackService extends SubService {
 
   @override
   Future<void> dispose() async {
-    logger.info('Disposing FeedbackService (${_executingToolCallIds.length} pending tool calls)');
+    logger.info(
+        'Disposing FeedbackService (${_executingToolCallIds.length} pending tool calls)');
     await super.dispose();
 
     await _disableWakeLock();
@@ -374,7 +380,7 @@ final class FeedbackService extends SubService {
       clearPlayer: () => _endTonePlayer = null,
       stopFirst: false,
     );
-    
+
     logger.info('FeedbackService disposed successfully');
   }
 }
