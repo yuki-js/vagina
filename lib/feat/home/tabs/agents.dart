@@ -4,7 +4,7 @@ import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/feat/callv2/models/text_agent_api_config.dart';
 import 'package:vagina/feat/callv2/models/text_agent_info.dart';
 import 'package:vagina/feat/text_agents/state/text_agent_providers.dart';
-import 'package:vagina/feat/text_agents/ui/screens/agent_form_screen.dart';
+import 'package:vagina/feat/text_agents/screens/agent_form_screen.dart';
 
 /// Agents tab - Text agent management with phone book interface
 class AgentsTab extends ConsumerStatefulWidget {
