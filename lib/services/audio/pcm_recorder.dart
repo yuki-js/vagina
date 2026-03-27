@@ -8,7 +8,6 @@ import 'package:vagina/services/log_service.dart';
 ///
 /// This service provides a consistent interface for recording audio from the
 /// microphone with support for platform-specific configuration (Android audio mode).
-/// Both CallAudioService and AudioVisualizerService use this recorder.
 ///
 /// Features:
 /// - PCM16 recording at configurable sample rate/channels

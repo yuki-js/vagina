@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vagina/core/theme/app_theme.dart';
-import 'package:vagina/feat/about/screens/about.dart';
 import 'package:vagina/feat/home/tabs/agents.dart';
 import 'package:vagina/feat/home/tabs/more.dart';
 import 'package:vagina/feat/home/tabs/sessions.dart';
@@ -76,12 +75,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  void _openAbout() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) => const AboutScreen()),
-    );
-  }
-
   Future<void> _handleAddButton() async {
     // Context-sensitive add button based on current tab
     final tab = _tabs[_currentTabIndex];
@@ -142,17 +135,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     child: Row(
                       children: [
                         const Spacer(),
-                        // Title with easter egg
-                        GestureDetector(
-                          onTap: _openAbout,
-                          child: const Text(
-                            'VAGINA',
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: AppTheme.primaryColor,
-                              letterSpacing: 4,
-                            ),
+                        // Title
+                        const Text(
+                          'VAGINA',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.primaryColor,
+                            letterSpacing: 4,
                           ),
                         ),
                         const Spacer(),
