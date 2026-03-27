@@ -1,5 +1,4 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:vagina/core/state/log_provider.dart';
 import 'package:vagina/core/data/permission_manager.dart';
 import 'package:vagina/interfaces/call_session_repository.dart';
 import 'package:vagina/interfaces/config_repository.dart';
@@ -31,7 +30,7 @@ PreferencesRepository preferencesRepository(Ref ref) {
 
 @Riverpod(keepAlive: true)
 PermissionManager permissionManager(Ref ref) {
-  return PermissionManager(
-    logService: ref.watch(logServiceProvider),
-  );
+  // LogService is deprecated but still used here until Phase 2 migration
+  // ignore: deprecated_member_use_from_same_package
+  return PermissionManager();
 }

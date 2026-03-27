@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vagina/core/state/repository_providers.dart';
-import 'package:vagina/feat/text_agents/model/text_agent.dart';
+import 'package:vagina/feat/call/models/text_agent_info.dart';
 
-final textAgentsProvider = FutureProvider<List<TextAgent>>((ref) async {
+final textAgentsProvider = FutureProvider<List<TextAgentInfo>>((ref) async {
   final repo = ref.watch(configRepositoryProvider);
   return repo.getAllTextAgents();
 });

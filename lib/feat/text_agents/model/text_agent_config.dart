@@ -70,7 +70,7 @@ class TextAgentConfig {
   }
 
   /// Try to extract Azure deployment name from a full Azure URL.
-  static String? _tryExtractAzureDeploymentFromUrl(String url) {
+  static String? tryExtractAzureDeploymentFromUrl(String url) {
     final trimmed = url.trim();
     final uri = Uri.tryParse(trimmed);
 
@@ -131,7 +131,7 @@ class TextAgentConfig {
       case TextAgentProvider.azure:
         // Azure identifies the model via the deployment name in the URL path.
         // If the user provided a full endpoint URL, extract it for better logging/debugging.
-        return _tryExtractAzureDeploymentFromUrl(apiIdentifier) ?? 'gpt-4o';
+        return tryExtractAzureDeploymentFromUrl(apiIdentifier) ?? 'gpt-4o';
       case TextAgentProvider.litellm:
         return 'gpt-4o'; // Default, can be overridden in request
       case TextAgentProvider.custom:

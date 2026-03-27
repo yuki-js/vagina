@@ -1,8 +1,7 @@
-import 'package:vagina/models/android_audio_config.dart';
 import 'package:vagina/interfaces/config_repository.dart';
 import 'package:vagina/interfaces/key_value_store.dart';
 import 'package:vagina/services/log_service.dart';
-import 'package:vagina/feat/text_agents/model/text_agent.dart';
+import 'package:vagina/feat/call/models/text_agent_info.dart';
 
 /// JSON-based implementation of ConfigRepository
 class JsonConfigRepository implements ConfigRepository {
@@ -11,7 +10,6 @@ class JsonConfigRepository implements ConfigRepository {
   // Config keys
   static const _apiKeyKey = 'api_key';
   static const _realtimeUrlKey = 'realtime_url';
-  static const _androidAudioConfigKey = 'android_audio_config';
   static const _textAgentsKey = 'text_agents';
   static const _selectedTextAgentIdKey = 'selected_text_agent_id';
 
@@ -70,29 +68,10 @@ class JsonConfigRepository implements ConfigRepository {
     return hasKey && url != null && url.isNotEmpty;
   }
 
-  // Android Audio Configuration
-
-  @override
-  Future<void> saveAndroidAudioConfig(AndroidAudioConfig config) async {
-    _logService.debug(_tag, 'Saving Android audio config');
-    await _store.set(_androidAudioConfigKey, config.toJson());
-  }
-
-  @override
-  Future<AndroidAudioConfig> getAndroidAudioConfig() async {
-    final data = await _store.get(_androidAudioConfigKey);
-
-    if (data == null) {
-      return const AndroidAudioConfig();
-    }
-
-    return AndroidAudioConfig.fromJson(data as Map<String, dynamic>);
-  }
-
   // Text Agent Configuration
 
   @override
-  Future<void> saveTextAgent(TextAgent agent) async {
+  Future<void> saveTextAgent(TextAgentInfo agent) async {
     _logService.debug(_tag, 'Saving text agent: ${agent.id}');
 
     final agents = await getAllTextAgents();
@@ -114,7 +93,7 @@ class JsonConfigRepository implements ConfigRepository {
   }
 
   @override
-  Future<List<TextAgent>> getAllTextAgents() async {
+  Future<List<TextAgentInfo>> getAllTextAgents() async {
     final data = await _store.get(_textAgentsKey);
 
     if (data == null || data is! List) {
@@ -126,7 +105,7 @@ class JsonConfigRepository implements ConfigRepository {
 
     try {
       return data
-          .map((json) => TextAgent.fromJson(json as Map<String, dynamic>))
+          .map((json) => TextAgentInfo.fromJson(json as Map<String, dynamic>))
           .toList();
     } catch (e) {
       _logService.error(_tag, 'Error parsing text agents: $e');
@@ -135,7 +114,7 @@ class JsonConfigRepository implements ConfigRepository {
   }
 
   @override
-  Future<TextAgent?> getTextAgentById(String id) async {
+  Future<TextAgentInfo?> getTextAgentById(String id) async {
     final agents = await getAllTextAgents();
     try {
       return agents.firstWhere((a) => a.id == id);

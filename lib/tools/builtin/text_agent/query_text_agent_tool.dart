@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:vagina/feat/call/models/text_agent_api_config.dart';
 import 'package:vagina/interfaces/config_repository.dart';
 import 'package:vagina/services/log_service.dart';
 import 'package:vagina/services/tools_runtime/tool.dart';
@@ -17,13 +18,19 @@ class QueryTextAgentTool extends Tool {
     try {
       final agents = await config.getAllTextAgents();
       final agentConfigs = agents.map((agent) {
+        final apiConfig = agent.apiConfig;
+        if (apiConfig is! SelfhostedTextAgentApiConfig) {
+          throw UnsupportedError(
+            'Only selfhosted text agents are supported: ${agent.id}',
+          );
+        }
         return {
           'id': agent.id,
           'name': agent.name,
           'description': agent.description,
-          'provider': agent.config.provider.value,
-          'apiKey': agent.config.apiKey,
-          'apiIdentifier': agent.config.apiIdentifier,
+          'provider': apiConfig.provider,
+          'apiKey': apiConfig.apiKey,
+          'apiIdentifier': apiConfig.baseUrl,
           'enabledTools': agent.enabledTools,
         };
       }).toList();
