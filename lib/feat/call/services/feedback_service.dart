@@ -22,6 +22,7 @@ final class FeedbackService extends SubService {
   AudioPlayer? _dialTonePlayer;
   AudioPlayer? _endTonePlayer;
   AudioPlayer? _toolExecutingPlayer;
+  Future<void>? _pendingOneShotAudio;
 
   FeedbackService(this._callService) {
     unawaited(playDialTone());
@@ -80,7 +81,9 @@ final class FeedbackService extends SubService {
     }
 
     // Playing stopped: provide feedback if we were waiting for completion
-    if (_awaitingAssistantPlaybackCompletionFeedback && previousState && !isPlaying) {
+    if (_awaitingAssistantPlaybackCompletionFeedback &&
+        previousState &&
+        !isPlaying) {
       _awaitingAssistantPlaybackCompletionFeedback = false;
       unawaited(heavyImpact());
     }
@@ -193,22 +196,30 @@ final class FeedbackService extends SubService {
     required double volume,
     required int disposeDelayMs,
   }) async {
-    try {
-      final currentPlayer = player ?? AudioPlayer();
-      assignPlayer(currentPlayer);
-      await currentPlayer.setAsset(assetPath);
-      await currentPlayer.setVolume(volume);
-      await currentPlayer.play();
+    final playback = () async {
+      try {
+        final currentPlayer = player ?? AudioPlayer();
+        assignPlayer(currentPlayer);
+        await currentPlayer.setAsset(assetPath);
+        await currentPlayer.setVolume(volume);
+        await currentPlayer.play();
 
-      await Future.delayed(Duration(milliseconds: disposeDelayMs));
-      await _disposePlayer(
-        currentPlayer,
-        clearPlayer: () => assignPlayer(null),
-        stopFirst: false,
-      );
-    } catch (e, stackTrace) {
-      logger.warning(
-          'Failed to play one-shot audio: $assetPath', e, stackTrace);
+        await Future.delayed(Duration(milliseconds: disposeDelayMs));
+        await _disposePlayer(
+          currentPlayer,
+          clearPlayer: () => assignPlayer(null),
+          stopFirst: false,
+        );
+      } catch (e, stackTrace) {
+        logger.warning(
+            'Failed to play one-shot audio: $assetPath', e, stackTrace);
+      }
+    }();
+
+    _pendingOneShotAudio = playback;
+    await playback;
+    if (identical(_pendingOneShotAudio, playback)) {
+      _pendingOneShotAudio = null;
     }
   }
 
@@ -236,7 +247,7 @@ final class FeedbackService extends SubService {
         stopExisting: stopDialTone,
         assignPlayer: (player) => _dialTonePlayer = player,
         assetPath: 'assets/audio/dial_tone.wav',
-        volume: 0.3,
+        volume: 0.7,
       );
 
   /// Stop dial tone
@@ -250,7 +261,7 @@ final class FeedbackService extends SubService {
         player: _endTonePlayer ?? AudioPlayer(),
         assignPlayer: (player) => _endTonePlayer = player,
         assetPath: 'assets/audio/call_end.wav',
-        volume: 0.5,
+        volume: 0.7,
         disposeDelayMs: 500,
       );
 
@@ -259,7 +270,7 @@ final class FeedbackService extends SubService {
         stopExisting: stopToolExecuting,
         assignPlayer: (player) => _toolExecutingPlayer = player,
         assetPath: 'assets/audio/tool_executing.wav',
-        volume: 0.15,
+        volume: 0.5,
       );
 
   /// Stop the tool executing sound
@@ -272,7 +283,7 @@ final class FeedbackService extends SubService {
   Future<void> playToolError() => _playOneShotAudio(
         assignPlayer: (_) {},
         assetPath: 'assets/audio/tool_error.wav',
-        volume: 0.4,
+        volume: 0.7,
         disposeDelayMs: 500,
       );
 
@@ -280,7 +291,7 @@ final class FeedbackService extends SubService {
   Future<void> playToolCancelled() => _playOneShotAudio(
         assignPlayer: (_) {},
         assetPath: 'assets/audio/tool_cancelled.wav',
-        volume: 0.25,
+        volume: 0.7,
         disposeDelayMs: 250,
       );
 
@@ -348,8 +359,8 @@ final class FeedbackService extends SubService {
       unawaited(_handleCallStateChanged(previousState, state));
     });
 
-    _playbackStateSubscription =
-        _callService.playbackService.playingStates.listen(_handlePlayingStateChanged);
+    _playbackStateSubscription = _callService.playbackService.playingStates
+        .listen(_handlePlayingStateChanged);
 
     // Bind RealtimeService-dependent feedback
     logger.fine('Binding realtime feedback');
@@ -362,6 +373,7 @@ final class FeedbackService extends SubService {
         'Disposing FeedbackService (${_executingToolCallIds.length} pending tool calls)');
     await super.dispose();
 
+    await _pendingOneShotAudio;
     await _disableWakeLock();
     await _callStateSubscription?.cancel();
     _callStateSubscription = null;
