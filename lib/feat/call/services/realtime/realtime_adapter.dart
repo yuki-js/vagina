@@ -5,6 +5,8 @@ import 'package:vagina/feat/call/models/realtime/realtime_thread.dart';
 import 'package:vagina/feat/call/models/voice_agent_api_config.dart';
 import 'package:vagina/services/tools_runtime/tool_definition.dart';
 
+enum RealtimeAudioTurnMode { voiceActivity, manual }
+
 /// Provider-agnostic realtime voice adapter.
 ///
 /// Design principles:
@@ -72,6 +74,26 @@ abstract interface class RealtimeAdapter {
 
   /// Stop forwarding audio. Safe to call if nothing is bound.
   Future<void> unbindAudioInput();
+
+  /// Switch between server-side VAD turn handling and manual client-side turn
+  /// control.
+  Future<void> setAudioTurnMode(RealtimeAudioTurnMode mode);
+
+  /// Start a manual audio turn.
+  ///
+  /// In manual mode, chunks from the bound audio stream are forwarded only while
+  /// the turn is active.
+  Future<void> beginManualAudioInputTurn();
+
+  /// End the current manual audio turn.
+  ///
+  /// Returns `true` when buffered audio met the minimum duration and was
+  /// committed for response generation, otherwise `false`.
+  Future<bool> endManualAudioInputTurn({required Duration minAudioDuration});
+
+  /// Cancel the current manual audio turn and discard any pending buffered
+  /// input audio.
+  Future<void> cancelManualAudioInputTurn();
 
   /// Provider-decoded assistant PCM output stream.
   ///

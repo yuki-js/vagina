@@ -79,6 +79,28 @@ final class RealtimeService extends SubService {
     return _adapter.unbindAudioInput();
   }
 
+  Future<void> setAudioTurnMode(RealtimeAudioTurnMode mode) {
+    logger.info('Setting audio turn mode to: $mode');
+    return _adapter.setAudioTurnMode(mode);
+  }
+
+  Future<void> beginManualAudioInputTurn() {
+    logger.info('Beginning manual audio input turn');
+    return _adapter.beginManualAudioInputTurn();
+  }
+
+  Future<bool> endManualAudioInputTurn({required Duration minAudioDuration}) {
+    logger.info('Ending manual audio input turn');
+    return _adapter.endManualAudioInputTurn(
+      minAudioDuration: minAudioDuration,
+    );
+  }
+
+  Future<void> cancelManualAudioInputTurn() {
+    logger.info('Cancelling manual audio input turn');
+    return _adapter.cancelManualAudioInputTurn();
+  }
+
   /// Provider-decoded assistant PCM output stream.
   Stream<Uint8List> get assistantAudioStream => _adapter.assistantAudioStream;
 

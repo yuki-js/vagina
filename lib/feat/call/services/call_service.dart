@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:vagina/core/config/app_config.dart';
 import 'package:vagina/feat/call/models/active_file.dart';
 import 'package:vagina/feat/call/models/realtime/realtime_adapter_models.dart';
 import 'package:vagina/feat/call/models/realtime/realtime_thread.dart';
@@ -11,6 +12,7 @@ import 'package:vagina/feat/call/services/feedback_service.dart';
 import 'package:vagina/feat/call/services/virtual_filesystem_service.dart';
 import 'package:vagina/feat/call/services/notepad_service.dart';
 import 'package:vagina/feat/call/services/playback_service.dart';
+import 'package:vagina/feat/call/services/realtime/realtime_adapter.dart';
 import 'package:vagina/feat/call/services/realtime_service.dart';
 import 'package:vagina/feat/call/services/recorder_service.dart';
 import 'package:vagina/feat/call/services/text_agent_service.dart';
@@ -76,6 +78,10 @@ class CallService {
   CallState _state = CallState.uninitialized;
   DateTime? _callStartedAt;
   String? _endContext;
+  bool _pushToTalkEnabled = false;
+  bool _pushToTalkActive = false;
+  int _pushToTalkGeneration = 0;
+  Future<void>? _pendingPushToTalkRelease;
 
   CallService(
       {required VirtualFilesystemRepository filesystemRepository,
@@ -125,6 +131,89 @@ class CallService {
   ///
   /// Re-exposes NotepadService.activeFiles for UI compatibility.
   Stream<List<ActiveFile>> get activeFilesStream => _notepadService.activeFiles;
+
+  Future<void> setPushToTalkEnabled(bool enabled) async {
+    _pushToTalkEnabled = enabled;
+
+    if (state == CallState.uninitialized || state == CallState.disposed) {
+      return;
+    }
+
+    if (!enabled) {
+      await cancelPushToTalk();
+    }
+
+    await _realtimeService.setAudioTurnMode(
+      enabled
+          ? RealtimeAudioTurnMode.manual
+          : RealtimeAudioTurnMode.voiceActivity,
+    );
+  }
+
+  Future<void> beginPushToTalk() async {
+    if (!_pushToTalkEnabled ||
+        state != CallState.active ||
+        !_realtimeService.isConnected) {
+      return;
+    }
+
+    _pushToTalkGeneration += 1;
+    _pendingPushToTalkRelease = null;
+
+    if (_pushToTalkActive) {
+      return;
+    }
+
+    await _interruptAssistantOutput();
+    _pushToTalkActive = true;
+    await _realtimeService.beginManualAudioInputTurn();
+  }
+
+  Future<bool> endPushToTalk() async {
+    if (!_pushToTalkEnabled || !_pushToTalkActive) {
+      return false;
+    }
+
+    final releaseGeneration = ++_pushToTalkGeneration;
+    final completer = Completer<void>();
+    _pendingPushToTalkRelease = completer.future;
+
+    await Future<void>.delayed(AppConfig.pttReleaseDebounce);
+
+    if (_pushToTalkGeneration != releaseGeneration || !_pushToTalkActive) {
+      completer.complete();
+      return false;
+    }
+
+    _pushToTalkActive = false;
+    try {
+      return await _realtimeService.endManualAudioInputTurn(
+        minAudioDuration: AppConfig.minPttAudioDuration,
+      );
+    } finally {
+      completer.complete();
+      if (identical(_pendingPushToTalkRelease, completer.future)) {
+        _pendingPushToTalkRelease = null;
+      }
+    }
+  }
+
+  Future<void> cancelPushToTalk() async {
+    _pushToTalkGeneration += 1;
+    _pushToTalkActive = false;
+    final pendingRelease = _pendingPushToTalkRelease;
+    _pendingPushToTalkRelease = null;
+
+    if (pendingRelease != null) {
+      await pendingRelease;
+    }
+
+    if (state == CallState.uninitialized || state == CallState.disposed) {
+      return;
+    }
+
+    await _realtimeService.cancelManualAudioInputTurn();
+  }
 
   void setVoiceAgent(VoiceAgentInfo voiceAgent) {
     if (state != CallState.uninitialized) {
@@ -253,6 +342,11 @@ class CallService {
     final initialDefinitions = _computeExposedTools(<String>{});
 
     await _realtimeService.registerTools(initialDefinitions);
+    await _realtimeService.setAudioTurnMode(
+      _pushToTalkEnabled
+          ? RealtimeAudioTurnMode.manual
+          : RealtimeAudioTurnMode.voiceActivity,
+    );
     await _recorderService.startRecordingSession();
     await _realtimeService.bindAudioInput(_recorderService.audioStream);
     await _playbackService
@@ -267,7 +361,7 @@ class CallService {
     });
     _userSpeakingStateSubscription =
         _realtimeService.userSpeakingStates.listen((isSpeaking) {
-      if (!isSpeaking) {
+      if (!isSpeaking || _pushToTalkEnabled) {
         return;
       }
       unawaited(_interruptAssistantOutput());
@@ -514,6 +608,7 @@ class CallService {
       _endContext = endContext;
     }
 
+    await cancelPushToTalk();
     _cancelPendingToolWork(playSound: false);
     state = CallState.disposing;
 
@@ -566,6 +661,9 @@ class CallService {
     _errorSubscription = null;
     _dispatchedToolCallIds.clear();
     _cancelledToolCallIds.clear();
+    _pushToTalkActive = false;
+    _pushToTalkGeneration += 1;
+    _pendingPushToTalkRelease = null;
   }
 
   Future<void> _saveSession({

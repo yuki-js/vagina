@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 import 'dart:ui';
 
@@ -7,6 +8,10 @@ import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/feat/call/services/call_service.dart';
 import 'package:vagina/models/speed_dial.dart';
 import 'package:vagina/utils/duration_formatter.dart';
+
+enum _TalkMode { ptt, hf }
+
+enum _NoiseReductionMode { off, nearField, farField }
 
 class CallPane extends StatefulWidget {
   final SpeedDial speedDial;
@@ -29,6 +34,9 @@ class CallPane extends StatefulWidget {
 }
 
 class _CallPaneState extends State<CallPane> {
+  _TalkMode _talkMode = _TalkMode.hf;
+  _NoiseReductionMode _noiseReductionMode = _NoiseReductionMode.nearField;
+
   CallService? get _activeCallService {
     final callService = widget.callService;
     if (callService.state == CallState.uninitialized ||
@@ -60,6 +68,143 @@ class _CallPaneState extends State<CallPane> {
 
   bool get _isConnected {
     return _activeCallService?.state == CallState.active;
+  }
+
+  bool get _isPttMode {
+    return _talkMode == _TalkMode.ptt;
+  }
+
+  List<Widget> _buildPrimaryControls({
+    required bool isSpeakerMuted,
+    required bool isMuted,
+  }) {
+    if (_isPttMode) {
+      return [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            _buildSpeakerControl(isSpeakerMuted),
+            const SizedBox(width: 12),
+            _buildInterruptControl(),
+          ],
+        ),
+      ];
+    }
+
+    if (widget.hideNavigationButtons) {
+      return [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            _buildSpeakerControl(isSpeakerMuted),
+            const SizedBox(width: 12),
+            _buildMuteControl(isMuted),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            _buildInterruptControl(),
+          ],
+        ),
+      ];
+    }
+
+    return [
+      Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          _buildSpeakerControl(isSpeakerMuted),
+          const SizedBox(width: 12),
+          _buildMuteControl(isMuted),
+          const SizedBox(width: 12),
+          _buildInterruptControl(),
+        ],
+      ),
+    ];
+  }
+
+  Widget _buildSpeakerControl(bool isSpeakerMuted) {
+    return Expanded(
+      child: _ControlButton(
+        icon: isSpeakerMuted ? Icons.volume_off : Icons.volume_up,
+        label: 'スピーカー',
+        onTap: _handleSpeakerToggle,
+        isActive: isSpeakerMuted,
+        activeColor: AppTheme.warningColor,
+      ),
+    );
+  }
+
+  Widget _buildMuteControl(bool isMuted) {
+    return Expanded(
+      child: _ControlButton(
+        icon: isMuted ? Icons.mic_off : Icons.mic,
+        label: '消音',
+        onTap: _handleMuteToggle,
+        isActive: isMuted,
+        activeColor: AppTheme.errorColor,
+      ),
+    );
+  }
+
+  Widget _buildInterruptControl() {
+    return Expanded(
+      child: _ControlButton(
+        icon: Icons.front_hand,
+        label: '割込み',
+        onTap: _handleInterrupt,
+      ),
+    );
+  }
+
+  void _handleTalkModeChanged(_TalkMode value) {
+    if (_talkMode == value) {
+      return;
+    }
+
+    setState(() {
+      _talkMode = value;
+    });
+
+    final callService = _activeCallService;
+    if (callService == null) {
+      return;
+    }
+
+    if (value == _TalkMode.ptt && callService.recorderService.isMuted) {
+      callService.recorderService.setMute(false);
+    }
+
+    unawaited(callService.setPushToTalkEnabled(value == _TalkMode.ptt));
+  }
+
+  void _handlePttPressStart() {
+    final callService = _activeCallService;
+    if (callService == null) {
+      return;
+    }
+
+    unawaited(callService.beginPushToTalk());
+  }
+
+  void _handlePttPressEnd() {
+    final callService = _activeCallService;
+    if (callService == null) {
+      return;
+    }
+
+    unawaited(callService.endPushToTalk());
+  }
+
+  void _handlePttPressCancel() {
+    final callService = _activeCallService;
+    if (callService == null) {
+      return;
+    }
+
+    unawaited(callService.cancelPushToTalk());
   }
 
   Future<void> _handleSpeakerToggle() async {
@@ -95,6 +240,55 @@ class _CallPaneState extends State<CallPane> {
     await widget.callService.endCall();
   }
 
+  void _showSettingsSheet() {
+    showGeneralDialog<void>(
+      context: context,
+      barrierLabel: '設定',
+      barrierDismissible: true,
+      barrierColor: Colors.black.withValues(alpha: 0.2),
+      transitionDuration: const Duration(milliseconds: 320),
+      pageBuilder: (context, animation, secondaryAnimation) {
+        return Center(
+          child: _CallSettingsSheet(
+            initialTalkMode: _talkMode,
+            initialNoiseReductionMode: _noiseReductionMode,
+            onTalkModeChanged: _handleTalkModeChanged,
+            onNoiseReductionModeChanged: (_NoiseReductionMode value) {
+              setState(() {
+                _noiseReductionMode = value;
+              });
+            },
+          ),
+        );
+      },
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        final curvedAnimation = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutCubic,
+          reverseCurve: Curves.easeInCubic,
+        );
+        final beginOffset = widget.hideNavigationButtons
+            ? const Offset(0.12, -0.5)
+            : const Offset(0.5, -0.5);
+
+        return SlideTransition(
+          position: Tween<Offset>(
+            begin: beginOffset,
+            end: Offset.zero,
+          ).animate(curvedAnimation),
+          child: ScaleTransition(
+            alignment: Alignment.center,
+            scale: Tween<double>(
+              begin: 0,
+              end: 1,
+            ).animate(curvedAnimation),
+            child: child,
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<bool>(
@@ -111,12 +305,18 @@ class _CallPaneState extends State<CallPane> {
 
             return StreamBuilder<Duration>(
               stream: widget.callService.timerService?.durationUpdates,
-              initialData: widget.callService.timerService?.elapsed ?? Duration.zero,
+              initialData:
+                  widget.callService.timerService?.elapsed ?? Duration.zero,
               builder: (context, durationSnapshot) {
                 final callDuration = durationSnapshot.data ?? Duration.zero;
 
                 return Column(
                   children: [
+                    _CallHeader(
+                      onChatPressed: widget.onChatPressed,
+                      onNotepadPressed: widget.onNotepadPressed,
+                      onSettingsPressed: _showSettingsSheet,
+                    ),
                     Expanded(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -196,7 +396,8 @@ class _CallPaneState extends State<CallPane> {
                           child: Container(
                             padding: const EdgeInsets.all(20),
                             decoration: BoxDecoration(
-                              color: AppTheme.surfaceColor.withValues(alpha: 0.6),
+                              color:
+                                  AppTheme.surfaceColor.withValues(alpha: 0.6),
                               borderRadius: BorderRadius.circular(24),
                             ),
                             child: Column(
@@ -226,99 +427,40 @@ class _CallPaneState extends State<CallPane> {
                                   ),
                                 if (!widget.hideNavigationButtons)
                                   const SizedBox(height: 16),
-                                if (widget.hideNavigationButtons) ...[
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceEvenly,
-                                    children: [
-                                      Expanded(
-                                        child: _ControlButton(
-                                          icon: isSpeakerMuted
-                                              ? Icons.volume_off
-                                              : Icons.volume_up,
-                                          label: 'スピーカー',
-                                          onTap: _handleSpeakerToggle,
-                                          isActive: isSpeakerMuted,
-                                          activeColor: AppTheme.warningColor,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: _ControlButton(
-                                          icon: isMuted ? Icons.mic_off : Icons.mic,
-                                          label: '消音',
-                                          onTap: _handleMuteToggle,
-                                          isActive: isMuted,
-                                          activeColor: AppTheme.errorColor,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceEvenly,
-                                    children: [
-                                      Expanded(
-                                        child: _ControlButton(
-                                          icon: Icons.front_hand,
-                                          label: '割込み',
-                                          onTap: _handleInterrupt,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ] else
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceEvenly,
-                                    children: [
-                                      Expanded(
-                                        child: _ControlButton(
-                                          icon: isSpeakerMuted
-                                              ? Icons.volume_off
-                                              : Icons.volume_up,
-                                          label: 'スピーカー',
-                                          onTap: _handleSpeakerToggle,
-                                          isActive: isSpeakerMuted,
-                                          activeColor: AppTheme.warningColor,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: _ControlButton(
-                                          icon: isMuted ? Icons.mic_off : Icons.mic,
-                                          label: '消音',
-                                          onTap: _handleMuteToggle,
-                                          isActive: isMuted,
-                                          activeColor: AppTheme.errorColor,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: _ControlButton(
-                                          icon: Icons.front_hand,
-                                          label: '割込み',
-                                          onTap: _handleInterrupt,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                                ..._buildPrimaryControls(
+                                  isSpeakerMuted: isSpeakerMuted,
+                                  isMuted: isMuted,
+                                ),
                                 const SizedBox(height: 24),
-                                SizedBox(
-                                  height: 72,
-                                  width: 72,
-                                  child: FloatingActionButton(
-                                    heroTag: 'call_fab',
-                                    onPressed: _handleEndCall,
-                                    backgroundColor: AppTheme.errorColor,
-                                    shape: const CircleBorder(),
-                                    child: const Icon(
-                                      Icons.call_end,
-                                      color: Colors.white,
-                                      size: 40,
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    SizedBox(
+                                      height: 72,
+                                      width: 72,
+                                      child: FloatingActionButton(
+                                        heroTag: 'call_fab',
+                                        onPressed: _handleEndCall,
+                                        backgroundColor: AppTheme.errorColor,
+                                        shape: const CircleBorder(),
+                                        child: const Icon(
+                                          Icons.call_end,
+                                          color: Colors.white,
+                                          size: 40,
+                                        ),
+                                      ),
                                     ),
-                                  ),
+                                    if (_isPttMode) ...[
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: _PttHoldButton(
+                                          onPressStart: _handlePttPressStart,
+                                          onPressEnd: _handlePttPressEnd,
+                                          onPressCancel: _handlePttPressCancel,
+                                        ),
+                                      ),
+                                    ]
+                                  ],
                                 ),
                               ],
                             ),
@@ -389,6 +531,59 @@ class _AudioLevelVisualizer extends StatelessWidget {
   }
 }
 
+class _CallHeader extends StatelessWidget {
+  final VoidCallback onChatPressed;
+  final VoidCallback onNotepadPressed;
+  final VoidCallback onSettingsPressed;
+
+  const _CallHeader({
+    required this.onChatPressed,
+    required this.onNotepadPressed,
+    required this.onSettingsPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          _CallHeaderIcon(
+            icon: Icons.settings,
+            tooltip: '設定',
+            onPressed: onSettingsPressed,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CallHeaderIcon extends StatelessWidget {
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onPressed;
+
+  const _CallHeaderIcon({
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      onPressed: onPressed,
+      tooltip: tooltip,
+      icon: Icon(
+        icon,
+        color: AppTheme.textSecondary,
+      ),
+    );
+  }
+}
+
 class _ControlButton extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -440,6 +635,345 @@ class _ControlButton extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _PttHoldButton extends StatefulWidget {
+  final VoidCallback onPressStart;
+  final VoidCallback onPressEnd;
+  final VoidCallback onPressCancel;
+
+  const _PttHoldButton({
+    required this.onPressStart,
+    required this.onPressEnd,
+    required this.onPressCancel,
+  });
+
+  @override
+  State<_PttHoldButton> createState() => _PttHoldButtonState();
+}
+
+class _PttHoldButtonState extends State<_PttHoldButton> {
+  bool _isPressed = false;
+
+  void _setPressed(bool value) {
+    if (_isPressed == value) {
+      return;
+    }
+    setState(() {
+      _isPressed = value;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final backgroundColor = _isPressed
+        ? AppTheme.primaryColor.withValues(alpha: 0.22)
+        : Colors.white.withValues(alpha: 0.04);
+    final borderColor = _isPressed
+        ? AppTheme.primaryColor
+        : AppTheme.textSecondary.withValues(alpha: 0.16);
+    final contentColor =
+        _isPressed ? AppTheme.textPrimary : AppTheme.primaryColor;
+
+    return SizedBox(
+      height: 72,
+      width: double.infinity,
+      child: GestureDetector(
+        onTapDown: (_) {
+          _setPressed(true);
+          widget.onPressStart();
+        },
+        onTapUp: (_) {
+          _setPressed(false);
+          widget.onPressEnd();
+        },
+        onTapCancel: () {
+          _setPressed(false);
+          widget.onPressCancel();
+        },
+        behavior: HitTestBehavior.opaque,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 120),
+          curve: Curves.easeOut,
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          decoration: BoxDecoration(
+            color: backgroundColor,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: borderColor),
+            boxShadow: _isPressed
+                ? [
+                    BoxShadow(
+                      color: AppTheme.primaryColor.withValues(alpha: 0.18),
+                      blurRadius: 20,
+                      spreadRadius: 1,
+                    ),
+                  ]
+                : const [],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                _isPressed ? Icons.mic : Icons.mic_none,
+                color: contentColor,
+                size: 28,
+              ),
+              const SizedBox(width: 12),
+              Flexible(
+                child: Text(
+                  _isPressed ? '離して終了' : '押して話す',
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    color: contentColor,
+                  ),
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CallSettingsSheet extends StatefulWidget {
+  final _TalkMode initialTalkMode;
+  final _NoiseReductionMode initialNoiseReductionMode;
+  final ValueChanged<_TalkMode> onTalkModeChanged;
+  final ValueChanged<_NoiseReductionMode> onNoiseReductionModeChanged;
+
+  const _CallSettingsSheet({
+    required this.initialTalkMode,
+    required this.initialNoiseReductionMode,
+    required this.onTalkModeChanged,
+    required this.onNoiseReductionModeChanged,
+  });
+
+  @override
+  State<_CallSettingsSheet> createState() => _CallSettingsSheetState();
+}
+
+class _CallSettingsSheetState extends State<_CallSettingsSheet> {
+  late _TalkMode _talkMode;
+  late _NoiseReductionMode _noiseReductionMode;
+
+  @override
+  void initState() {
+    super.initState();
+    _talkMode = widget.initialTalkMode;
+    _noiseReductionMode = widget.initialNoiseReductionMode;
+  }
+
+  void _handleTalkModeChanged(_TalkMode value) {
+    setState(() {
+      _talkMode = value;
+    });
+    widget.onTalkModeChanged(value);
+  }
+
+  void _handleNoiseReductionModeChanged(_NoiseReductionMode value) {
+    setState(() {
+      _noiseReductionMode = value;
+    });
+    widget.onNoiseReductionModeChanged(value);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 520),
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: AppTheme.surfaceColor,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: AppTheme.textSecondary.withValues(alpha: 0.12),
+                ),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Expanded(
+                        child: Text(
+                          '通話設定',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.textPrimary,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(
+                          Icons.close,
+                          color: AppTheme.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  _SettingsSection(
+                    title: '通話モード',
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _SettingsOptionButton(
+                            label: 'ハンズフリー',
+                            isSelected: _talkMode == _TalkMode.hf,
+                            onTap: () => _handleTalkModeChanged(_TalkMode.hf),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _SettingsOptionButton(
+                            label: '押して話す',
+                            isSelected: _talkMode == _TalkMode.ptt,
+                            onTap: () => _handleTalkModeChanged(_TalkMode.ptt),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _SettingsSection(
+                    title: 'ノイズ抑制',
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _SettingsOptionButton(
+                            label: 'オフ',
+                            isSelected:
+                                _noiseReductionMode == _NoiseReductionMode.off,
+                            onTap: () => _handleNoiseReductionModeChanged(
+                              _NoiseReductionMode.off,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _SettingsOptionButton(
+                            label: '近距離',
+                            isSelected: _noiseReductionMode ==
+                                _NoiseReductionMode.nearField,
+                            onTap: () => _handleNoiseReductionModeChanged(
+                              _NoiseReductionMode.nearField,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _SettingsOptionButton(
+                            label: '遠距離',
+                            isSelected: _noiseReductionMode ==
+                                _NoiseReductionMode.farField,
+                            onTap: () => _handleNoiseReductionModeChanged(
+                              _NoiseReductionMode.farField,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SettingsSection extends StatelessWidget {
+  final String title;
+  final Widget child;
+
+  const _SettingsSection({
+    required this.title,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: AppTheme.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        child,
+      ],
+    );
+  }
+}
+
+class _SettingsOptionButton extends StatelessWidget {
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _SettingsOptionButton({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final borderColor = isSelected
+        ? AppTheme.primaryColor
+        : AppTheme.textSecondary.withValues(alpha: 0.16);
+    final backgroundColor = isSelected
+        ? AppTheme.primaryColor.withValues(alpha: 0.16)
+        : Colors.white.withValues(alpha: 0.03);
+    final textColor =
+        isSelected ? AppTheme.textPrimary : AppTheme.textSecondary;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          curve: Curves.easeOut,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: backgroundColor,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: borderColor),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: textColor,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
       ),
     );
   }

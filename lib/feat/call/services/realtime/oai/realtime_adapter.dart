@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:vagina/core/config/app_config.dart';
+
 import '../realtime_adapter.dart';
 
 import 'package:vagina/feat/call/models/realtime/realtime_adapter_models.dart';
@@ -42,6 +44,9 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
   int _localIdCounter = 0;
   bool _disposed = false;
   bool _isUserSpeaking = false;
+  RealtimeAudioTurnMode _audioTurnMode = RealtimeAudioTurnMode.voiceActivity;
+  bool _isManualAudioInputTurnActive = false;
+  int _manualAudioInputBytes = 0;
 
   OaiRealtimeAdapter({OaiRealtimeClient? client, String? threadId})
       : _client = client ?? OaiRealtimeClient(),
@@ -429,7 +434,9 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
     _ensureNotDisposed();
     await _cancelAudioInput();
     _audioInputSubscription = audioStream.listen(
-      (bytes) => _client.appendInputAudio(bytes),
+      (bytes) {
+        unawaited(_handleInputAudioChunk(bytes));
+      },
       onError: (Object error) {
         _errorController.add(
           RealtimeAdapterError(
@@ -445,6 +452,77 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
   @override
   Future<void> unbindAudioInput() async {
     await _cancelAudioInput();
+  }
+
+  @override
+  Future<void> setAudioTurnMode(RealtimeAudioTurnMode mode) async {
+    _ensureNotDisposed();
+    if (_audioTurnMode == mode) {
+      return;
+    }
+
+    await _cancelManualAudioInputTurn(clearRemoteBuffer: true);
+    _audioTurnMode = mode;
+
+    if (!isConnected) {
+      return;
+    }
+
+    await _client.updateSession({
+      'turn_detection': _buildTurnDetectionConfig(mode),
+    });
+  }
+
+  @override
+  Future<void> beginManualAudioInputTurn() async {
+    _ensureNotDisposed();
+    if (_audioTurnMode != RealtimeAudioTurnMode.manual) {
+      await setAudioTurnMode(RealtimeAudioTurnMode.manual);
+    }
+    if (!isConnected || _isManualAudioInputTurnActive) {
+      return;
+    }
+
+    await _client.clearInputAudioBuffer();
+    _manualAudioInputBytes = 0;
+    _isManualAudioInputTurnActive = true;
+    _setUserSpeaking(true);
+  }
+
+  @override
+  Future<bool> endManualAudioInputTurn({
+    required Duration minAudioDuration,
+  }) async {
+    _ensureNotDisposed();
+    if (_audioTurnMode != RealtimeAudioTurnMode.manual ||
+        !_isManualAudioInputTurnActive) {
+      return false;
+    }
+
+    _isManualAudioInputTurnActive = false;
+    _setUserSpeaking(false);
+
+    final capturedAudioBytes = _manualAudioInputBytes;
+    _manualAudioInputBytes = 0;
+
+    if (!isConnected) {
+      return false;
+    }
+
+    if (capturedAudioBytes < _minimumAudioBytes(minAudioDuration)) {
+      await _client.clearInputAudioBuffer();
+      return false;
+    }
+
+    await _client.commitInputAudioBuffer();
+    await _client.createResponse();
+    return true;
+  }
+
+  @override
+  Future<void> cancelManualAudioInputTurn() async {
+    _ensureNotDisposed();
+    await _cancelManualAudioInputTurn(clearRemoteBuffer: true);
   }
 
   // ---------------------------------------------------------------------------
@@ -555,7 +633,8 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
       if (item.type != RealtimeThreadItemType.functionCall) {
         continue;
       }
-      if (!_isLocallyCancelledFunctionCall(itemId: item.id, callId: item.callId)) {
+      if (!_isLocallyCancelledFunctionCall(
+          itemId: item.id, callId: item.callId)) {
         continue;
       }
       if (item.status == RealtimeThreadItemStatus.incomplete) {
@@ -872,12 +951,7 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
       'input_audio_transcription': {
         'model': 'gpt-4o-transcribe',
       },
-      'turn_detection': {
-        'type': 'semantic_vad',
-        'eagerness': 'low',
-        'create_response': true,
-        'interrupt_response': true,
-      },
+      'turn_detection': _buildTurnDetectionConfig(_audioTurnMode),
       'tools': _tools.map((tool) => tool.toRealtimeJson()).toList(),
       'tool_choice': _tools.isEmpty ? 'none' : 'auto',
     };
@@ -946,6 +1020,60 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
   Future<void> _cancelAudioInput() async {
     await _audioInputSubscription?.cancel();
     _audioInputSubscription = null;
+  }
+
+  Future<void> _handleInputAudioChunk(Uint8List bytes) async {
+    if (bytes.isEmpty || !isConnected) {
+      return;
+    }
+
+    if (_audioTurnMode == RealtimeAudioTurnMode.voiceActivity) {
+      await _client.appendInputAudio(bytes);
+      return;
+    }
+
+    if (!_isManualAudioInputTurnActive) {
+      return;
+    }
+
+    _manualAudioInputBytes += bytes.length;
+    await _client.appendInputAudio(bytes);
+  }
+
+  Future<void> _cancelManualAudioInputTurn({
+    required bool clearRemoteBuffer,
+  }) async {
+    _isManualAudioInputTurnActive = false;
+    _manualAudioInputBytes = 0;
+    _setUserSpeaking(false);
+
+    if (clearRemoteBuffer && isConnected) {
+      await _client.clearInputAudioBuffer();
+    }
+  }
+
+  Map<String, dynamic> _buildTurnDetectionConfig(
+    RealtimeAudioTurnMode mode,
+  ) {
+    return switch (mode) {
+      RealtimeAudioTurnMode.voiceActivity => {
+          'type': 'semantic_vad',
+          'eagerness': 'low',
+          'create_response': true,
+          'interrupt_response': true,
+        },
+      RealtimeAudioTurnMode.manual => {
+          'type': 'none',
+        },
+    };
+  }
+
+  int _minimumAudioBytes(Duration duration) {
+    final bytesPerSample = AppConfig.bitDepth ~/ 8;
+    final bytesPerSecond =
+        AppConfig.sampleRate * AppConfig.channels * bytesPerSample;
+    return (duration.inMicroseconds * bytesPerSecond) ~/
+        Duration.microsecondsPerSecond;
   }
 
   void _ensureNotDisposed() {

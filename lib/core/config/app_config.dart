@@ -42,6 +42,12 @@ class AppConfig {
   /// Value: 4800 bytes = 100ms of audio at 24kHz mono 16-bit
   static const int minAudioBufferSizeBeforeStart = 4800;
 
+  /// Minimum captured duration required for a PTT turn to be committed.
+  static const Duration minPttAudioDuration = Duration(milliseconds: 500);
+
+  /// Delay before finalizing a PTT release so brief chatter can be absorbed.
+  static const Duration pttReleaseDebounce = Duration(milliseconds: 200);
+
   // ==========================================================================
   // Logging Configuration
   // ==========================================================================
