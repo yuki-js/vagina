@@ -46,8 +46,16 @@ class _CallPaneState extends State<CallPane> {
     return _activeCallService?.recorderService.muteState;
   }
 
+  Stream<bool>? get _speakerMuteStateStream {
+    return _activeCallService?.playbackService.muteState;
+  }
+
   bool get _currentIsMuted {
     return _activeCallService?.recorderService.isMuted ?? false;
+  }
+
+  bool get _currentIsSpeakerMuted {
+    return _activeCallService?.playbackService.isMuted ?? false;
   }
 
   bool get _isConnected {
@@ -60,7 +68,8 @@ class _CallPaneState extends State<CallPane> {
       return;
     }
 
-    await callService.toggleSpeakerMuted();
+    final playbackService = callService.playbackService;
+    await playbackService.setMute(!playbackService.isMuted);
   }
 
   void _handleMuteToggle() {
@@ -95,8 +104,8 @@ class _CallPaneState extends State<CallPane> {
         final isMuted = muteSnapshot.data ?? false;
 
         return StreamBuilder<bool>(
-          stream: widget.callService.speakerMuteStates,
-          initialData: widget.callService.isSpeakerMuted,
+          stream: _speakerMuteStateStream,
+          initialData: _currentIsSpeakerMuted,
           builder: (context, speakerSnapshot) {
             final isSpeakerMuted = speakerSnapshot.data ?? false;
 

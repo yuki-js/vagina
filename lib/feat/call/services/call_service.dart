@@ -71,13 +71,10 @@ class CallService {
 
   final StreamController<CallState> _stateController =
       StreamController<CallState>.broadcast();
-  final StreamController<bool> _speakerMuteController =
-      StreamController<bool>.broadcast();
   final StreamController<String> _errorController =
       StreamController<String>.broadcast();
   CallState _state = CallState.uninitialized;
   DateTime? _callStartedAt;
-  bool _speakerMuted = false;
   String? _endContext;
 
   CallService(
@@ -99,11 +96,6 @@ class CallService {
   }
 
   Stream<CallState> get states => _stateController.stream;
-
-  Stream<bool> get speakerMuteStates =>
-      _speakerMuteController.stream; // todo: playbackServiceに移譲する
-
-  bool get isSpeakerMuted => _speakerMuted;
 
   /// Aggregated error stream from all services.
   /// For UI display only. Use direct service access for detailed debugging.
@@ -292,28 +284,6 @@ class CallService {
     }
 
     await _interruptAssistantOutput();
-  }
-
-  Future<void> setSpeakerMuted(bool muted) async {
-    if (state == CallState.uninitialized || state == CallState.disposed) {
-      return;
-    }
-    if (_speakerMuted == muted) {
-      return;
-    }
-
-    _speakerMuted = muted;
-    if (!_speakerMuteController.isClosed) {
-      _speakerMuteController.add(_speakerMuted);
-    }
-    if (_speakerMuted) {
-      await _playbackService.interrupt();
-    }
-    await _playbackService.setVolume(_speakerMuted ? 0.0 : 1.0);
-  }
-
-  Future<void> toggleSpeakerMuted() async {
-    await setSpeakerMuted(!_speakerMuted);
   }
 
   Future<void> sendTextMessage(String text) async {
@@ -582,7 +552,6 @@ class CallService {
 
     state = CallState.disposed;
     await _errorController.close();
-    await _speakerMuteController.close();
     await _stateController.close();
 
     await _threadSubscription?.cancel();
