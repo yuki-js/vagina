@@ -5,7 +5,9 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:vagina/core/config/app_config.dart';
 import 'package:vagina/core/theme/app_theme.dart';
+import 'package:vagina/feat/call/models/voice_agent_api_config.dart';
 import 'package:vagina/feat/call/services/call_service.dart';
+import 'package:vagina/feat/call/services/realtime/realtime_provider_extensions.dart';
 import 'package:vagina/models/speed_dial.dart';
 import 'package:vagina/utils/duration_formatter.dart';
 
@@ -72,6 +74,14 @@ class _CallPaneState extends State<CallPane> {
 
   bool get _isPttMode {
     return _talkMode == _TalkMode.ptt;
+  }
+
+  bool get _showsNoiseReductionSettings {
+    final voiceAgent = widget.callService.configuredVoiceAgent;
+    final apiConfig = voiceAgent?.apiConfig;
+    return apiConfig is SelfhostedVoiceAgentApiConfig &&
+        (apiConfig.providerType == VoiceAgentProviderType.openai ||
+            apiConfig.providerType == VoiceAgentProviderType.azureOpenAi);
   }
 
   List<Widget> _buildPrimaryControls({
@@ -180,6 +190,29 @@ class _CallPaneState extends State<CallPane> {
     unawaited(callService.setPushToTalkEnabled(value == _TalkMode.ptt));
   }
 
+  void _handleNoiseReductionModeChanged(_NoiseReductionMode value) {
+    if (_noiseReductionMode == value) {
+      return;
+    }
+
+    setState(() {
+      _noiseReductionMode = value;
+    });
+
+    if (!_showsNoiseReductionSettings) {
+      return;
+    }
+
+    unawaited(
+      widget.callService.applyRealtimeProviderExtension(
+        RealtimeProviderExtensions.inputNoiseReductionSelection,
+        <String, dynamic>{
+          RealtimeProviderExtensions.selectionKey: value.name,
+        },
+      ),
+    );
+  }
+
   void _handlePttPressStart() {
     final callService = _activeCallService;
     if (callService == null) {
@@ -252,12 +285,9 @@ class _CallPaneState extends State<CallPane> {
           child: _CallSettingsSheet(
             initialTalkMode: _talkMode,
             initialNoiseReductionMode: _noiseReductionMode,
+            showNoiseReductionSettings: _showsNoiseReductionSettings,
             onTalkModeChanged: _handleTalkModeChanged,
-            onNoiseReductionModeChanged: (_NoiseReductionMode value) {
-              setState(() {
-                _noiseReductionMode = value;
-              });
-            },
+            onNoiseReductionModeChanged: _handleNoiseReductionModeChanged,
           ),
         );
       },
@@ -745,12 +775,14 @@ class _PttHoldButtonState extends State<_PttHoldButton> {
 class _CallSettingsSheet extends StatefulWidget {
   final _TalkMode initialTalkMode;
   final _NoiseReductionMode initialNoiseReductionMode;
+  final bool showNoiseReductionSettings;
   final ValueChanged<_TalkMode> onTalkModeChanged;
   final ValueChanged<_NoiseReductionMode> onNoiseReductionModeChanged;
 
   const _CallSettingsSheet({
     required this.initialTalkMode,
     required this.initialNoiseReductionMode,
+    required this.showNoiseReductionSettings,
     required this.onTalkModeChanged,
     required this.onNoiseReductionModeChanged,
   });
@@ -849,46 +881,48 @@ class _CallSettingsSheetState extends State<_CallSettingsSheet> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  _SettingsSection(
-                    title: 'ノイズ抑制',
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: _SettingsOptionButton(
-                            label: 'オフ',
-                            isSelected:
-                                _noiseReductionMode == _NoiseReductionMode.off,
-                            onTap: () => _handleNoiseReductionModeChanged(
-                              _NoiseReductionMode.off,
+                  if (widget.showNoiseReductionSettings) ...[
+                    const SizedBox(height: 16),
+                    _SettingsSection(
+                      title: 'ノイズ抑制',
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: _SettingsOptionButton(
+                              label: 'オフ',
+                              isSelected: _noiseReductionMode ==
+                                  _NoiseReductionMode.off,
+                              onTap: () => _handleNoiseReductionModeChanged(
+                                _NoiseReductionMode.off,
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _SettingsOptionButton(
-                            label: '近距離',
-                            isSelected: _noiseReductionMode ==
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _SettingsOptionButton(
+                              label: '近距離',
+                              isSelected: _noiseReductionMode ==
+                                  _NoiseReductionMode.nearField,
+                              onTap: () => _handleNoiseReductionModeChanged(
                                 _NoiseReductionMode.nearField,
-                            onTap: () => _handleNoiseReductionModeChanged(
-                              _NoiseReductionMode.nearField,
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _SettingsOptionButton(
-                            label: '遠距離',
-                            isSelected: _noiseReductionMode ==
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _SettingsOptionButton(
+                              label: '遠距離',
+                              isSelected: _noiseReductionMode ==
+                                  _NoiseReductionMode.farField,
+                              onTap: () => _handleNoiseReductionModeChanged(
                                 _NoiseReductionMode.farField,
-                            onTap: () => _handleNoiseReductionModeChanged(
-                              _NoiseReductionMode.farField,
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
+                  ],
                 ],
               ),
             ),

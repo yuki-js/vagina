@@ -123,6 +123,14 @@ final class RealtimeService extends SubService {
     return _adapter.registerTools(tools);
   }
 
+  Future<bool> applyProviderExtension(
+    String extensionType,
+    Map<String, dynamic> payload,
+  ) {
+    logger.info('Applying realtime provider extension: $extensionType');
+    return _adapter.applyProviderExtension(extensionType, payload);
+  }
+
   // ---------------------------------------------------------------------------
   // User content
   // ---------------------------------------------------------------------------

@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:vagina/core/config/app_config.dart';
 
 import '../realtime_adapter.dart';
+import '../realtime_provider_extensions.dart';
 
 import 'package:vagina/feat/call/models/realtime/realtime_adapter_models.dart';
 import 'package:vagina/feat/call/models/realtime/realtime_thread.dart';
@@ -14,6 +15,17 @@ import 'realtime_binding.dart';
 import 'realtime_connect_config.dart';
 import 'realtime_connection_state.dart';
 import 'realtime_event.dart';
+
+enum _OaiInputAudioNoiseReductionSelection { off, nearField, farField;
+  static _OaiInputAudioNoiseReductionSelection? fromPayload(Object? value) {
+    return switch (value) {
+      'off' => _OaiInputAudioNoiseReductionSelection.off,
+      'nearField' => _OaiInputAudioNoiseReductionSelection.nearField,
+      'farField' => _OaiInputAudioNoiseReductionSelection.farField,
+      _ => null,
+    };
+  }
+}
 
 /// OpenAI / Azure OpenAI implementation of [RealtimeAdapter].
 ///
@@ -39,6 +51,8 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
 
   StreamSubscription<Uint8List>? _audioInputSubscription;
   List<ToolDefinition> _tools = const <ToolDefinition>[];
+  _OaiInputAudioNoiseReductionSelection _inputAudioNoiseReductionSelection =
+      _OaiInputAudioNoiseReductionSelection.nearField;
   final Set<String> _locallyCancelledFunctionItemIds = <String>{};
   final Set<String> _locallyCancelledFunctionCallIds = <String>{};
   int _localIdCounter = 0;
@@ -543,6 +557,44 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
     });
   }
 
+  @override
+  Future<bool> applyProviderExtension(
+    String extensionType,
+    Map<String, dynamic> payload,
+  ) async {
+    _ensureNotDisposed();
+    if (extensionType !=
+        RealtimeProviderExtensions.inputNoiseReductionSelection) {
+      return false;
+    }
+
+    final selection = _OaiInputAudioNoiseReductionSelection.fromPayload(
+      payload[RealtimeProviderExtensions.selectionKey],
+    );
+    if (selection == null) {
+      throw ArgumentError.value(
+        payload[RealtimeProviderExtensions.selectionKey],
+        RealtimeProviderExtensions.selectionKey,
+        'Unsupported input noise reduction selection.',
+      );
+    }
+
+    if (_inputAudioNoiseReductionSelection == selection) {
+      return true;
+    }
+
+    _inputAudioNoiseReductionSelection = selection;
+    if (!isConnected) {
+      return true;
+    }
+
+    await _client.updateSession({
+      'input_audio_noise_reduction':
+          _buildInputAudioNoiseReductionConfig(selection),
+    });
+    return true;
+  }
+
   // ---------------------------------------------------------------------------
   // User content
   // ---------------------------------------------------------------------------
@@ -948,6 +1000,9 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
       if (instructions != null) 'instructions': instructions,
       'input_audio_format': 'pcm16',
       'output_audio_format': 'pcm16',
+      'input_audio_noise_reduction': _buildInputAudioNoiseReductionConfig(
+        _inputAudioNoiseReductionSelection,
+      ),
       'input_audio_transcription': {
         'model': 'gpt-4o-transcribe',
       },
@@ -1064,6 +1119,20 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
         },
       RealtimeAudioTurnMode.manual => {
           'type': 'none',
+        },
+    };
+  }
+
+  Map<String, dynamic>? _buildInputAudioNoiseReductionConfig(
+    _OaiInputAudioNoiseReductionSelection selection,
+  ) {
+    return switch (selection) {
+      _OaiInputAudioNoiseReductionSelection.off => null,
+      _OaiInputAudioNoiseReductionSelection.nearField => {
+          'type': 'near_field',
+        },
+      _OaiInputAudioNoiseReductionSelection.farField => {
+          'type': 'far_field',
         },
     };
   }

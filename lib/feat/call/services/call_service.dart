@@ -107,6 +107,8 @@ class CallService {
   /// For UI display only. Use direct service access for detailed debugging.
   Stream<String> get errors => _errorController.stream;
 
+  VoiceAgentInfo? get configuredVoiceAgent => _voiceAgent;
+
   RecorderService get recorderService => _recorderService;
 
   PlaybackService get playbackService => _playbackService;
@@ -131,6 +133,17 @@ class CallService {
   ///
   /// Re-exposes NotepadService.activeFiles for UI compatibility.
   Stream<List<ActiveFile>> get activeFilesStream => _notepadService.activeFiles;
+
+  Future<bool> applyRealtimeProviderExtension(
+    String extensionType,
+    Map<String, dynamic> payload,
+  ) async {
+    if (state == CallState.uninitialized || state == CallState.disposed) {
+      return false;
+    }
+
+    return _realtimeService.applyProviderExtension(extensionType, payload);
+  }
 
   Future<void> setPushToTalkEnabled(bool enabled) async {
     _pushToTalkEnabled = enabled;

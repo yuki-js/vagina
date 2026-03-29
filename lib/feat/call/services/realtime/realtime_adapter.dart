@@ -124,6 +124,15 @@ abstract interface class RealtimeAdapter {
   /// calling for the session.
   Future<void> registerTools(List<ToolDefinition> tools);
 
+  /// Apply an opaque provider-extension update.
+  ///
+  /// [extensionType] and [payload] are application-defined values. Adapters may
+  /// ignore unsupported extensions by returning `false`.
+  Future<bool> applyProviderExtension(
+    String extensionType,
+    Map<String, dynamic> payload,
+  );
+
   // ---------------------------------------------------------------------------
   // User content  (each call implies "and generate a response")
   // ---------------------------------------------------------------------------
