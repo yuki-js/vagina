@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:vagina/core/config/app_config.dart';
 import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/feat/home/tabs/agents.dart';
 import 'package:vagina/feat/home/tabs/more.dart';
@@ -8,6 +9,7 @@ import 'package:vagina/feat/home/tabs/speed_dial.dart';
 import 'package:vagina/feat/settings/screens/settings.dart';
 import 'package:vagina/feat/speed_dial/screens/config.dart';
 import 'package:vagina/feat/text_agents/screens/agent_form_screen.dart';
+import 'package:vagina/l10n/app_localizations.dart';
 import 'package:vagina/utils/call_navigation_utils.dart';
 
 /// Main home screen with tab bar for phone app design
@@ -23,29 +25,30 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   late final PageController _pageController;
 
-  // Tab definitions
-  final List<_TabInfo> _tabs = const [
-    _TabInfo(
-      icon: Icons.star,
-      label: 'スピードダイヤル',
-      canAdd: true,
-    ),
-    _TabInfo(
-      icon: Icons.history,
-      label: 'セッション',
-      canAdd: false,
-    ),
-    _TabInfo(
-      icon: Icons.contacts,
-      label: 'エージェント',
-      canAdd: true,
-    ),
-    _TabInfo(
-      icon: Icons.apps,
-      label: 'もっと',
-      canAdd: false,
-    ),
-  ];
+  List<_TabInfo> _buildTabs(AppLocalizations l10n) {
+    return [
+      _TabInfo(
+        icon: Icons.star,
+        label: l10n.homeTabSpeedDial,
+        canAdd: true,
+      ),
+      _TabInfo(
+        icon: Icons.history,
+        label: l10n.homeTabSessions,
+        canAdd: false,
+      ),
+      _TabInfo(
+        icon: Icons.contacts,
+        label: l10n.homeTabAgents,
+        canAdd: true,
+      ),
+      _TabInfo(
+        icon: Icons.apps,
+        label: l10n.homeTabMore,
+        canAdd: false,
+      ),
+    ];
+  }
 
   static final List<Widget> _pages = [
     const SpeedDialTab(),
@@ -77,7 +80,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Future<void> _handleAddButton() async {
     // Context-sensitive add button based on current tab
-    final tab = _tabs[_currentTabIndex];
+    final l10n = AppLocalizations.of(context);
+    final tab = _buildTabs(l10n)[_currentTabIndex];
     if (!tab.canAdd) return;
 
     switch (_currentTabIndex) {
@@ -116,7 +120,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final currentTab = _tabs[_currentTabIndex];
+    final l10n = AppLocalizations.of(context);
+    final tabs = _buildTabs(l10n);
+    final currentTab = tabs[_currentTabIndex];
 
     return Scaffold(
       body: Column(
@@ -136,9 +142,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       children: [
                         const Spacer(),
                         // Title
-                        const Text(
-                          'VAGINA',
-                          style: TextStyle(
+                        Text(
+                          l10n.appTitle(AppConfig.appName),
+                          style: const TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
                             color: AppTheme.primaryColor,
@@ -218,24 +224,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         },
         items: [
           BottomNavigationBarItem(
-            icon: Icon(_tabs[0].icon),
-            label: _tabs[0].label,
+            icon: Icon(tabs[0].icon),
+            label: tabs[0].label,
           ),
           BottomNavigationBarItem(
-            icon: Icon(_tabs[1].icon),
-            label: _tabs[1].label,
+            icon: Icon(tabs[1].icon),
+            label: tabs[1].label,
           ),
           const BottomNavigationBarItem(
             icon: SizedBox.shrink(),
             label: '',
           ),
           BottomNavigationBarItem(
-            icon: Icon(_tabs[2].icon),
-            label: _tabs[2].label,
+            icon: Icon(tabs[2].icon),
+            label: tabs[2].label,
           ),
           BottomNavigationBarItem(
-            icon: Icon(_tabs[3].icon),
-            label: _tabs[3].label,
+            icon: Icon(tabs[3].icon),
+            label: tabs[3].label,
           ),
         ],
       ),

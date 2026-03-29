@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/feat/call/models/text_agent_api_config.dart';
 import 'package:vagina/feat/call/models/text_agent_info.dart';
+import 'package:vagina/l10n/app_localizations.dart';
 
 /// Card widget for displaying a text agent
 class AgentCard extends StatelessWidget {
@@ -22,6 +23,8 @@ class AgentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Card(
       elevation: isSelected ? 4 : 1,
       shape: RoundedRectangleBorder(
@@ -65,7 +68,7 @@ class AgentCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            '選択中',
+                            l10n.textAgentsSelectedBadge,
                             style: TextStyle(
                               fontSize: 11,
                               color: AppTheme.primaryColor,
@@ -143,7 +146,7 @@ class AgentCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
-                  _getProviderDisplayString(agent),
+                  _getProviderDisplayString(context, agent),
                   style: TextStyle(
                     fontSize: 11,
                     color: AppTheme.lightTextSecondary,
@@ -158,13 +161,29 @@ class AgentCard extends StatelessWidget {
     );
   }
 
-  String _getProviderDisplayString(TextAgentInfo agent) {
+  String _getProviderDisplayString(BuildContext context, TextAgentInfo agent) {
+    final l10n = AppLocalizations.of(context);
     final apiConfig = agent.apiConfig;
     if (apiConfig is SelfhostedTextAgentApiConfig) {
-      return '${apiConfig.provider}: ${apiConfig.model}';
+      return '${_getProviderLabel(apiConfig.provider, l10n)}: ${apiConfig.model}';
     } else if (apiConfig is HostedTextAgentApiConfig) {
-      return 'Hosted: ${apiConfig.modelId}';
+      return '${l10n.textAgentsProviderHostedPrefix}: ${apiConfig.modelId}';
     }
-    return 'Unknown';
+    return l10n.textAgentsProviderUnknown;
+  }
+
+  String _getProviderLabel(String providerValue, AppLocalizations l10n) {
+    switch (providerValue) {
+      case 'openai':
+        return l10n.textAgentsProviderLabelOpenAi;
+      case 'azure':
+        return l10n.textAgentsProviderLabelAzure;
+      case 'litellm':
+        return l10n.textAgentsProviderLabelLiteLlm;
+      case 'custom':
+        return l10n.textAgentsProviderLabelCustom;
+      default:
+        return providerValue;
+    }
   }
 }

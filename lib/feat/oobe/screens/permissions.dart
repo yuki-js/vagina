@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:vagina/core/theme/app_theme.dart';
+import 'package:vagina/core/config/app_config.dart';
 import 'package:vagina/core/data/permission_manager.dart';
+import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/feat/oobe/widgets/permission_card.dart';
+import 'package:vagina/l10n/app_localizations.dart';
 
 /// Fourth OOBE screen - Permissions and preferences setup
 class PermissionsScreen extends StatefulWidget {
@@ -24,14 +26,22 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
 
   late List<PermissionItem> _permissions;
   bool _isLoading = true;
+  Locale? _lastInitializedLocale;
 
   @override
-  void initState() {
-    super.initState();
-    _initializePermissions();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    final locale = Localizations.localeOf(context);
+    if (_lastInitializedLocale != locale) {
+      _lastInitializedLocale = locale;
+      _initializePermissions();
+    }
   }
 
   Future<void> _initializePermissions() async {
+    final l10n = AppLocalizations.of(context);
+
     // Check current permission states
     final micStatus = await Permission.microphone.status;
     final storageGranted = await _permissionManager.hasStoragePermission();
@@ -40,15 +50,15 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
       setState(() {
         _permissions = [
           PermissionItem(
-            title: 'マイク',
-            description: '音声での会話に必要です',
+            title: l10n.permissionsMicrophoneTitle,
+            description: l10n.permissionsMicrophoneDescription,
             icon: Icons.mic,
             isRequired: true,
             isGranted: micStatus.isGranted,
           ),
           PermissionItem(
-            title: 'ストレージ',
-            description: '会話履歴やメモを保存します',
+            title: l10n.permissionsStorageTitle,
+            description: l10n.permissionsStorageDescription,
             icon: Icons.storage,
             isRequired: false,
             isGranted: storageGranted,
@@ -60,24 +70,25 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
   }
 
   Future<void> _handlePermissionRequest(PermissionItem permission) async {
+    final l10n = AppLocalizations.of(context);
     bool granted = false;
 
     try {
-      if (permission.title == 'マイク') {
+      if (permission.icon == Icons.mic) {
         final status = await Permission.microphone.request();
         granted = status.isGranted;
 
         if (status.isPermanentlyDenied) {
-          _showSettingsDialog('マイク');
+          _showSettingsDialog(permission.title);
           return;
         }
-      } else if (permission.title == 'ストレージ') {
+      } else if (permission.icon == Icons.storage) {
         granted = await _permissionManager.requestStoragePermission();
 
         if (!granted) {
           final status = await Permission.storage.status;
           if (status.isPermanentlyDenied) {
-            _showSettingsDialog('ストレージ');
+            _showSettingsDialog(permission.title);
             return;
           }
         }
@@ -90,7 +101,7 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
       if (granted && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${permission.title}の権限が許可されました'),
+            content: Text(l10n.permissionsGranted(permission.title)),
             backgroundColor: AppTheme.successColor,
             duration: const Duration(seconds: 2),
           ),
@@ -100,7 +111,7 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('権限の要求に失敗しました: $e'),
+            content: Text(l10n.permissionsRequestFailed(e.toString())),
             backgroundColor: AppTheme.errorColor,
             duration: const Duration(seconds: 3),
           ),
@@ -110,18 +121,18 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
   }
 
   void _showSettingsDialog(String permissionName) {
+    final l10n = AppLocalizations.of(context);
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppTheme.lightSurfaceColor,
-        title: Text('$permissionName権限が必要です'),
-        content: Text(
-          '$permissionName権限が拒否されています。設定から権限を有効にしてください。',
-        ),
+        title: Text(l10n.permissionsSettingsDialogTitle(permissionName)),
+        content: Text(l10n.permissionsSettingsDialogBody(permissionName)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('キャンセル'),
+            child: Text(l10n.permissionsDialogCancel),
           ),
           TextButton(
             onPressed: () {
@@ -131,7 +142,7 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
             style: TextButton.styleFrom(
               foregroundColor: AppTheme.primaryColor,
             ),
-            child: const Text('設定を開く'),
+            child: Text(l10n.permissionsOpenSettings),
           ),
         ],
       ),
@@ -144,6 +155,8 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     if (_isLoading) {
       return const Scaffold(
         backgroundColor: Colors.black,
@@ -170,9 +183,9 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
                     const SizedBox(height: 24),
 
                     // Title
-                    const Text(
-                      '権限の設定',
-                      style: TextStyle(
+                    Text(
+                      l10n.permissionsScreenTitle,
+                      style: const TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
@@ -183,7 +196,7 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
                     const SizedBox(height: 12),
 
                     Text(
-                      'VAGINAを最大限に活用するために、\nいくつかの権限が必要です',
+                      l10n.permissionsIntro(AppConfig.appName),
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.white.withValues(alpha: 0.7),
@@ -194,14 +207,17 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
                     const SizedBox(height: 48),
 
                     // Permission items
-                    ..._permissions.map((permission) => Padding(
-                          padding: const EdgeInsets.only(bottom: 16),
-                          child: PermissionCard(
-                            permission: permission,
-                            onRequest: () =>
-                                _handlePermissionRequest(permission),
-                          ),
-                        )),
+                    ..._permissions.map(
+                      (permission) => Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: PermissionCard(
+                          permission: permission,
+                          onRequest: () => _handlePermissionRequest(permission),
+                          requiredLabel: l10n.permissionsRequiredBadge,
+                          requestLabel: l10n.permissionsAllow,
+                        ),
+                      ),
+                    ),
 
                     const SizedBox(height: 32),
 
@@ -222,9 +238,9 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child: const Text(
-                          '続ける',
-                          style: TextStyle(
+                        child: Text(
+                          l10n.permissionsContinue,
+                          style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                           ),
@@ -235,7 +251,7 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
                     if (!_canContinue) ...[
                       const SizedBox(height: 12),
                       Text(
-                        '※必須の権限を許可してください',
+                        l10n.permissionsRequiredHint,
                         style: TextStyle(
                           fontSize: 12,
                           color: AppTheme.warningColor.withValues(alpha: 0.8),
@@ -250,7 +266,7 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
                       child: TextButton(
                         onPressed: widget.onContinue,
                         child: Text(
-                          'あとで設定する',
+                          l10n.permissionsConfigureLater,
                           style: TextStyle(
                             fontSize: 14,
                             color: Colors.white.withValues(alpha: 0.6),

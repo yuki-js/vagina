@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:vagina/core/config/app_config.dart';
 import 'package:vagina/core/theme/app_theme.dart';
+import 'package:vagina/l10n/app_localizations.dart';
 
 /// First OOBE screen - Welcome experience with mic motif and features
 class WelcomeScreen extends StatefulWidget {
@@ -16,16 +18,9 @@ class WelcomeScreen extends StatefulWidget {
 
 class _WelcomeScreenState extends State<WelcomeScreen>
     with TickerProviderStateMixin {
+  static const int _rotatingMessageCount = 4;
+
   late AnimationController _pulseController;
-
-  final List<String> _welcomeMessages = [
-    'VAGINAへようこそ！',
-    '声で、思考を解き放つ',
-    'リアルタイムAI会話',
-    'あなたの創造性パートナー',
-    'Voice AGI Notepad Agent',
-  ];
-
   int _currentMessageIndex = 0;
 
   @override
@@ -45,7 +40,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     if (!mounted) return;
     setState(() {
       _currentMessageIndex =
-          (_currentMessageIndex + 1) % _welcomeMessages.length;
+          (_currentMessageIndex + 1) % (_rotatingMessageCount + 1);
     });
     Future.delayed(const Duration(seconds: 2), _cycleMessages);
   }
@@ -58,6 +53,15 @@ class _WelcomeScreenState extends State<WelcomeScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final welcomeMessages = [
+      l10n.welcomeTitle(AppConfig.appName),
+      l10n.welcomeHeroMessageThoughts,
+      l10n.welcomeHeroMessageRealtimeAi,
+      l10n.welcomeHeroMessageCreativePartner,
+      l10n.welcomeHeroMessageSubtitle,
+    ];
+
     return GestureDetector(
       onTap: widget.onContinue,
       behavior: HitTestBehavior.opaque,
@@ -106,7 +110,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                 animation: _pulseController,
                 builder: (context, child) {
                   return Text(
-                    _welcomeMessages[_currentMessageIndex],
+                    welcomeMessages[_currentMessageIndex],
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 24,
@@ -124,7 +128,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
 
               // Interaction hint
               Text(
-                'タップしてはじめる',
+                l10n.welcomeTapToBegin,
                 style: TextStyle(
                   fontSize: 14,
                   color: Colors.white.withValues(alpha: 0.6),
@@ -141,10 +145,22 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                   runSpacing: 16,
                   alignment: WrapAlignment.center,
                   children: [
-                    _buildFeatureChip('リアルタイム会話', Icons.voice_chat),
-                    _buildFeatureChip('思考整理', Icons.lightbulb_outline),
-                    _buildFeatureChip('音声メモ', Icons.note_add),
-                    _buildFeatureChip('AI支援', Icons.auto_awesome),
+                    _buildFeatureChip(
+                      l10n.welcomeFeatureRealtimeConversation,
+                      Icons.voice_chat,
+                    ),
+                    _buildFeatureChip(
+                      l10n.welcomeFeatureThoughtOrganization,
+                      Icons.lightbulb_outline,
+                    ),
+                    _buildFeatureChip(
+                      l10n.welcomeFeatureVoiceNotes,
+                      Icons.note_add,
+                    ),
+                    _buildFeatureChip(
+                      l10n.welcomeFeatureAiSupport,
+                      Icons.auto_awesome,
+                    ),
                   ],
                 ),
               ),
@@ -153,7 +169,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
 
               // Powered by footer
               Text(
-                'Proudly powered by AokiApp',
+                l10n.welcomePoweredByAokiApp,
                 style: TextStyle(
                   fontSize: 12,
                   color: Colors.white.withValues(alpha: 0.4),

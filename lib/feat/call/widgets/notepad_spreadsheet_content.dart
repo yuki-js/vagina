@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:vagina/core/theme/app_theme.dart';
+import 'package:vagina/l10n/app_localizations.dart';
 import 'package:vagina/models/tabular_data.dart';
 import 'spreadsheet/editable_spreadsheet_table.dart';
 
@@ -30,11 +31,11 @@ class _SpreadsheetContentState extends State<SpreadsheetContent> {
       data = TabularData.parse(widget.content, widget.extension);
     } catch (e) {
       // Parse error: show error banner with raw content
-      return _buildParseError(e);
+      return _buildParseError(context, e);
     }
 
     if (data.columns.isEmpty) {
-      return _buildEmptyTable();
+      return _buildEmptyTable(context);
     }
 
     // Use unified EditableSpreadsheetTable for both read-only and editable modes
@@ -56,7 +57,9 @@ class _SpreadsheetContentState extends State<SpreadsheetContent> {
   }
 
   /// Parse error display with raw content
-  Widget _buildParseError(Object error) {
+  Widget _buildParseError(BuildContext context, Object error) {
+    final l10n = AppLocalizations.of(context);
+
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -66,7 +69,7 @@ class _SpreadsheetContentState extends State<SpreadsheetContent> {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             child: Text(
-              'Parse error: $error',
+              l10n.callNotepadSpreadsheetParseError(error.toString()),
               style: const TextStyle(fontSize: 12, color: Colors.red),
             ),
           ),
@@ -87,11 +90,13 @@ class _SpreadsheetContentState extends State<SpreadsheetContent> {
   }
 
   /// Empty table display
-  Widget _buildEmptyTable() {
-    return const Center(
+  Widget _buildEmptyTable(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
+    return Center(
       child: Text(
-        'Empty table',
-        style: TextStyle(fontSize: 14, color: AppTheme.textSecondary),
+        l10n.callNotepadSpreadsheetEmptyTable,
+        style: const TextStyle(fontSize: 14, color: AppTheme.textSecondary),
       ),
     );
   }

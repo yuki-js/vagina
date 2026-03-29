@@ -5,6 +5,7 @@ import 'package:vagina/core/state/repository_providers.dart';
 import 'package:vagina/utils/realtime_connection_test.dart';
 import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/utils/url_utils.dart';
+import 'package:vagina/l10n/app_localizations.dart';
 import 'settings_card.dart';
 
 /// Azure OpenAI configuration section widget
@@ -55,8 +56,9 @@ class _AzureConfigSectionState extends ConsumerState<AzureConfigSection> {
       }
     } catch (e) {
       if (mounted) {
+        final l10n = AppLocalizations.of(context);
         setState(() => _isLoading = false);
-        _showSnackBar('設定の読み込みに失敗しました', isError: true);
+        _showSnackBar(l10n.settingsAzureLoadFailed, isError: true);
       }
     }
   }
@@ -78,20 +80,22 @@ class _AzureConfigSectionState extends ConsumerState<AzureConfigSection> {
   }
 
   Future<void> _saveSettings() async {
+    final l10n = AppLocalizations.of(context);
+
     if (_realtimeUrlController.text.trim().isEmpty) {
-      _showSnackBar('Realtime URLを入力してください', isError: true);
+      _showSnackBar(l10n.settingsAzureRealtimeUrlRequired, isError: true);
       return;
     }
 
     final parsed =
         UrlUtils.parseAzureRealtimeUrl(_realtimeUrlController.text.trim());
     if (parsed == null) {
-      _showSnackBar('Realtime URLの形式が正しくありません', isError: true);
+      _showSnackBar(l10n.settingsAzureRealtimeUrlInvalid, isError: true);
       return;
     }
 
     if (_apiKeyController.text.trim().isEmpty) {
-      _showSnackBar('APIキーを入力してください', isError: true);
+      _showSnackBar(l10n.settingsAzureApiKeyRequired, isError: true);
       return;
     }
 
@@ -101,9 +105,9 @@ class _AzureConfigSectionState extends ConsumerState<AzureConfigSection> {
       final config = ref.read(configRepositoryProvider);
       await config.saveRealtimeUrl(_realtimeUrlController.text.trim());
       await config.saveApiKey(_apiKeyController.text.trim());
-      _showSnackBar('設定を保存しました');
+      _showSnackBar(l10n.settingsAzureSaveSuccess);
     } catch (e) {
-      _showSnackBar('保存に失敗しました: $e', isError: true);
+      _showSnackBar(l10n.settingsAzureSaveFailed(e.toString()), isError: true);
     } finally {
       if (mounted) {
         setState(() => _isSaving = false);
@@ -112,19 +116,21 @@ class _AzureConfigSectionState extends ConsumerState<AzureConfigSection> {
   }
 
   Future<void> _testConnection() async {
+    final l10n = AppLocalizations.of(context);
+
     if (_realtimeUrlController.text.trim().isEmpty) {
-      _showSnackBar('Realtime URLを入力してください', isError: true);
+      _showSnackBar(l10n.settingsAzureRealtimeUrlRequired, isError: true);
       return;
     }
     if (_apiKeyController.text.trim().isEmpty) {
-      _showSnackBar('APIキーを入力してください', isError: true);
+      _showSnackBar(l10n.settingsAzureApiKeyRequired, isError: true);
       return;
     }
 
     final parsed =
         UrlUtils.parseAzureRealtimeUrl(_realtimeUrlController.text.trim());
     if (parsed == null) {
-      _showSnackBar('Realtime URLの形式が正しくありません', isError: true);
+      _showSnackBar(l10n.settingsAzureRealtimeUrlInvalid, isError: true);
       return;
     }
 
@@ -139,9 +145,12 @@ class _AzureConfigSectionState extends ConsumerState<AzureConfigSection> {
       final config = ref.read(configRepositoryProvider);
       await config.saveRealtimeUrl(_realtimeUrlController.text.trim());
       await config.saveApiKey(_apiKeyController.text.trim());
-      _showSnackBar('接続テスト成功');
+      _showSnackBar(l10n.settingsAzureConnectionTestSuccess);
     } catch (e) {
-      _showSnackBar('接続テスト失敗: $e', isError: true);
+      _showSnackBar(
+        l10n.settingsAzureConnectionTestFailed(e.toString()),
+        isError: true,
+      );
     } finally {
       if (mounted) {
         setState(() => _isTesting = false);
@@ -150,21 +159,22 @@ class _AzureConfigSectionState extends ConsumerState<AzureConfigSection> {
   }
 
   Future<void> _clearSettings() async {
+    final l10n = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppTheme.lightSurfaceColor,
-        title: const Text('設定をクリア?'),
-        content: const Text('保存済みのAPI設定をすべて削除しますか？'),
+        title: Text(l10n.settingsAzureClearDialogTitle),
+        content: Text(l10n.settingsAzureClearDialogBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('キャンセル'),
+            child: Text(l10n.settingsCommonCancel),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
             style: TextButton.styleFrom(foregroundColor: AppTheme.errorColor),
-            child: const Text('削除'),
+            child: Text(l10n.settingsCommonDelete),
           ),
         ],
       ),
@@ -176,22 +186,24 @@ class _AzureConfigSectionState extends ConsumerState<AzureConfigSection> {
         await config.clearAll();
         _realtimeUrlController.clear();
         _apiKeyController.clear();
-        _showSnackBar('設定をクリアしました', isWarning: true);
+        _showSnackBar(l10n.settingsAzureClearSuccess, isWarning: true);
       } catch (e) {
-        _showSnackBar('設定のクリアに失敗しました: $e', isError: true);
+        _showSnackBar(l10n.settingsAzureClearFailed(e.toString()), isError: true);
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return SettingsCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Azure OpenAI Realtime URL',
-            style: TextStyle(
+          Text(
+            l10n.settingsAzureRealtimeUrlLabel,
+            style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
               color: AppTheme.textSecondary,
@@ -203,25 +215,24 @@ class _AzureConfigSectionState extends ConsumerState<AzureConfigSection> {
           else
             TextField(
               controller: _realtimeUrlController,
-              decoration: const InputDecoration(
-                hintText:
-                    'https://<resource>.openai.azure.com/openai/realtime?api-version=2024-10-01-preview&deployment=gpt-4o-realtime',
+              decoration: InputDecoration(
+                hintText: l10n.settingsAzureRealtimeUrlHint,
               ),
               keyboardType: TextInputType.url,
               maxLines: 2,
             ),
           const SizedBox(height: 4),
           Text(
-            '例: https://your-resource.openai.azure.com/openai/realtime?api-version=2024-10-01-preview&deployment=gpt-realtime',
+            l10n.settingsAzureRealtimeUrlExample,
             style: TextStyle(
               fontSize: 11,
               color: AppTheme.textSecondary.withValues(alpha: 0.7),
             ),
           ),
           const SizedBox(height: 16),
-          const Text(
-            'APIキー',
-            style: TextStyle(
+          Text(
+            l10n.settingsAzureApiKeyLabel,
+            style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
               color: AppTheme.textSecondary,
@@ -233,7 +244,7 @@ class _AzureConfigSectionState extends ConsumerState<AzureConfigSection> {
               controller: _apiKeyController,
               obscureText: !_isApiKeyVisible,
               decoration: InputDecoration(
-                hintText: 'APIキーを入力',
+                hintText: l10n.settingsAzureApiKeyHint,
                 suffixIcon: IconButton(
                   icon: Icon(
                     _isApiKeyVisible ? Icons.visibility_off : Icons.visibility,
@@ -256,7 +267,7 @@ class _AzureConfigSectionState extends ConsumerState<AzureConfigSection> {
                           height: 20,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Text('保存'),
+                      : Text(l10n.settingsCommonSave),
                 ),
               ),
               const SizedBox(width: 8),
@@ -269,7 +280,7 @@ class _AzureConfigSectionState extends ConsumerState<AzureConfigSection> {
                           height: 20,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Text('接続テスト'),
+                      : Text(l10n.settingsAzureTestConnectionButton),
                 ),
               ),
               const SizedBox(width: 8),
@@ -278,13 +289,13 @@ class _AzureConfigSectionState extends ConsumerState<AzureConfigSection> {
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppTheme.errorColor,
                 ),
-                child: const Text('クリア'),
+                child: Text(l10n.settingsCommonClear),
               ),
             ],
           ),
           const SizedBox(height: 8),
           Text(
-            '認証情報はデバイス上に安全に保存されます。',
+            l10n.settingsAzureCredentialsStorageNote,
             style: TextStyle(
               fontSize: 12,
               color: AppTheme.textSecondary.withValues(alpha: 0.7),

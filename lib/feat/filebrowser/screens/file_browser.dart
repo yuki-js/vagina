@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:vagina/core/theme/app_theme.dart';
+import 'package:vagina/l10n/app_localizations.dart';
 import 'package:vagina/repositories/repository_factory.dart';
 import 'package:vagina/services/virtual_filesystem_service.dart';
 import 'package:vagina/utils/file_icon_utils.dart';
@@ -37,6 +38,7 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
   final Set<String> _selectedEntries = {};
 
   String get _path => widget.initialPath;
+  AppLocalizations get _l10n => AppLocalizations.of(context);
 
   @override
   void initState() {
@@ -199,22 +201,22 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
     final newName = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('名前変更'),
+        title: Text(_l10n.fileBrowserRenameAction),
         content: TextField(
           controller: controller,
-          decoration: const InputDecoration(
-            labelText: '新しい名前',
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            labelText: _l10n.fileBrowserRenameNewNameLabel,
+            border: const OutlineInputBorder(),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('キャンセル'),
+            child: Text(_l10n.settingsCommonCancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, controller.text),
-            child: const Text('変更'),
+            child: Text(_l10n.fileBrowserRenameAction),
           ),
         ],
       ),
@@ -238,6 +240,8 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
       final isDirectory = oldEntry.endsWith('/');
       final oldPath = _absolutePath(oldEntry);
       final newPath = '$_path/$newName${isDirectory ? '/' : ''}';
+      final oldDisplayName =
+          isDirectory ? oldEntry.substring(0, oldEntry.length - 1) : oldEntry;
 
       await _fsService.move(oldPath, newPath);
 
@@ -246,12 +250,16 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
       unawaited(_loadDirectory());
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('$oldEntry から $newName に変更しました')),
+        SnackBar(
+          content: Text(
+            _l10n.fileBrowserRenameSuccess(oldDisplayName, newName),
+          ),
+        ),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('名前変更に失敗しました: $e')),
+        SnackBar(content: Text(_l10n.fileBrowserRenameFailed(e.toString()))),
       );
     }
   }
@@ -262,19 +270,21 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('削除確認'),
-        content: Text('${_selectedEntries.length}件のアイテムを削除しますか？'),
+        title: Text(_l10n.fileBrowserDeleteConfirmTitle),
+        content: Text(
+          _l10n.fileBrowserDeleteConfirmBody(_selectedEntries.length),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('キャンセル'),
+            child: Text(_l10n.settingsCommonCancel),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
             style: TextButton.styleFrom(
               foregroundColor: AppTheme.errorColor,
             ),
-            child: const Text('削除'),
+            child: Text(_l10n.settingsCommonDelete),
           ),
         ],
       ),
@@ -309,12 +319,12 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
       unawaited(_loadDirectory());
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('$deletedCount 件のアイテムを削除しました')),
+        SnackBar(content: Text(_l10n.fileBrowserDeleteSuccess(deletedCount))),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('削除に失敗しました: $e')),
+        SnackBar(content: Text(_l10n.fileBrowserDeleteFailed(e.toString()))),
       );
     }
   }
@@ -325,12 +335,14 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final dirName = _path == '/' ? 'ファイル' : _path.split('/').last;
+    final l10n = _l10n;
+    final dirName =
+        _path == '/' ? l10n.fileBrowserRootTitle : _path.split('/').last;
 
     return Scaffold(
       appBar: AppBar(
         title: _isSelectionMode
-            ? Text('${_selectedEntries.length}件選択中')
+            ? Text(l10n.fileBrowserSelectedCount(_selectedEntries.length))
             : Text(dirName),
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -358,47 +370,48 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
                   },
                   itemBuilder: (context) => [
                     if (_selectedEntries.length == 1)
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: 'rename',
                         child: ListTile(
-                          leading: Icon(Icons.edit),
-                          title: Text('名前変更'),
+                          leading: const Icon(Icons.edit),
+                          title: Text(l10n.fileBrowserRenameAction),
                           contentPadding: EdgeInsets.zero,
                         ),
                       ),
                     if (_selectedEntries.length == 1)
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: 'info',
                         child: ListTile(
-                          leading: Icon(Icons.info_outline),
-                          title: Text('詳細'),
+                          leading: const Icon(Icons.info_outline),
+                          title: Text(l10n.fileBrowserActionDetails),
                           contentPadding: EdgeInsets.zero,
                         ),
                       ),
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 'select_all',
                       child: ListTile(
-                        leading: Icon(Icons.select_all),
-                        title: Text('すべて選択'),
+                        leading: const Icon(Icons.select_all),
+                        title: Text(l10n.fileBrowserSelectAll),
                         contentPadding: EdgeInsets.zero,
                       ),
                     ),
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 'invert_selection',
                       child: ListTile(
-                        leading: Icon(Icons.flip_to_back),
-                        title: Text('選択を反転'),
+                        leading: const Icon(Icons.flip_to_back),
+                        title: Text(l10n.fileBrowserInvertSelection),
                         contentPadding: EdgeInsets.zero,
                       ),
                     ),
                     const PopupMenuDivider(),
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 'delete',
                       child: ListTile(
-                        leading: Icon(Icons.delete, color: AppTheme.errorColor),
+                        leading: const Icon(Icons.delete,
+                            color: AppTheme.errorColor),
                         title: Text(
-                          '削除',
-                          style: TextStyle(color: AppTheme.errorColor),
+                          l10n.settingsCommonDelete,
+                          style: const TextStyle(color: AppTheme.errorColor),
                         ),
                         contentPadding: EdgeInsets.zero,
                       ),
@@ -423,8 +436,8 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
     if (_error != null) {
       return Center(
         child: Text(
-          'エラー: $_error',
-          style: TextStyle(color: AppTheme.lightTextSecondary),
+          _l10n.fileBrowserLoadError(_error!),
+          style: const TextStyle(color: AppTheme.lightTextSecondary),
         ),
       );
     }
@@ -451,8 +464,8 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
           ),
           const SizedBox(height: 24),
           Text(
-            'ファイルがありません',
-            style: TextStyle(
+            _l10n.fileBrowserEmptyTitle,
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
               color: AppTheme.lightTextPrimary,
@@ -460,8 +473,8 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            '通話中にファイルが作成されます',
-            style: TextStyle(
+            _l10n.fileBrowserEmptyMessage,
+            style: const TextStyle(
               fontSize: 14,
               color: AppTheme.lightTextSecondary,
             ),

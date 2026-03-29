@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vagina/core/state/repository_providers.dart';
-import 'package:vagina/feat/session/state/session_history_providers.dart';
-import 'package:vagina/models/call_session.dart';
 import 'package:vagina/core/theme/app_theme.dart';
-import 'package:vagina/utils/duration_formatter.dart';
 import 'package:vagina/feat/session/screens/session_detail.dart';
+import 'package:vagina/feat/session/state/session_history_providers.dart';
+import 'package:vagina/l10n/app_localizations.dart';
+import 'package:vagina/models/call_session.dart';
+import 'package:vagina/utils/duration_formatter.dart';
 
 /// セッション履歴タブ - 通話履歴を表示
 class SessionsTab extends ConsumerStatefulWidget {
@@ -57,22 +58,27 @@ class _SessionsTabState extends ConsumerState<SessionsTab> {
   Future<void> _deleteSelected() async {
     if (_selectedSessionIds.isEmpty) return;
 
+    final l10n = AppLocalizations.of(context);
+    final selectedCount = _selectedSessionIds.length;
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('削除確認'),
-        content: Text('選択した${_selectedSessionIds.length}件のセッションを削除しますか?'),
+        title: Text(l10n.homeSessionsDeleteConfirmTitle),
+        content: Text(
+          l10n.homeSessionsDeleteConfirmBody(selectedCount),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('キャンセル'),
+            child: Text(l10n.settingsCommonCancel),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
             style: TextButton.styleFrom(
               foregroundColor: AppTheme.errorColor,
             ),
-            child: const Text('削除'),
+            child: Text(l10n.settingsCommonDelete),
           ),
         ],
       ),
@@ -93,7 +99,11 @@ class _SessionsTabState extends ConsumerState<SessionsTab> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('削除しました')),
+          SnackBar(
+            content: Text(
+              l10n.homeSessionsDeleteSuccess(selectedCount),
+            ),
+          ),
         );
       }
     }
@@ -101,12 +111,13 @@ class _SessionsTabState extends ConsumerState<SessionsTab> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final sessionsAsync = ref.watch(callSessionsProvider);
 
     return sessionsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stack) => Center(
-        child: Text('エラー: $error'),
+        child: Text(l10n.homeSessionsLoadError(error.toString())),
       ),
       data: (sessions) {
         return Column(
@@ -118,7 +129,7 @@ class _SessionsTabState extends ConsumerState<SessionsTab> {
                 child: Row(
                   children: [
                     Text(
-                      '${_selectedSessionIds.length}件選択中',
+                      l10n.homeSessionsSelectedCount(_selectedSessionIds.length),
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -129,12 +140,12 @@ class _SessionsTabState extends ConsumerState<SessionsTab> {
                     TextButton.icon(
                       onPressed: () => _selectAll(sessions),
                       icon: const Icon(Icons.select_all, size: 18),
-                      label: const Text('全選択'),
+                      label: Text(l10n.homeSessionsSelectAll),
                     ),
                     TextButton.icon(
                       onPressed: () => _invertSelection(sessions),
                       icon: const Icon(Icons.swap_vert, size: 18),
-                      label: const Text('反転'),
+                      label: Text(l10n.homeSessionsInvertSelection),
                     ),
                     IconButton(
                       onPressed: _selectedSessionIds.isNotEmpty
@@ -152,7 +163,7 @@ class _SessionsTabState extends ConsumerState<SessionsTab> {
               ),
             Expanded(
               child: sessions.isEmpty
-                  ? _buildEmptyState()
+                  ? _buildEmptyState(context)
                   : ListView.builder(
                       itemCount: sessions.length,
                       itemBuilder: (context, index) {
@@ -166,7 +177,9 @@ class _SessionsTabState extends ConsumerState<SessionsTab> {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -178,7 +191,7 @@ class _SessionsTabState extends ConsumerState<SessionsTab> {
           ),
           const SizedBox(height: 24),
           Text(
-            '通話履歴がありません',
+            l10n.homeSessionsEmptyTitle,
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
@@ -187,7 +200,7 @@ class _SessionsTabState extends ConsumerState<SessionsTab> {
           ),
           const SizedBox(height: 8),
           Text(
-            '電話ボタンから通話を開始できます',
+            l10n.homeSessionsEmptyMessage,
             style: TextStyle(
               fontSize: 14,
               color: AppTheme.lightTextSecondary,

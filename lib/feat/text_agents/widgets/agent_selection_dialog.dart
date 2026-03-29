@@ -5,6 +5,7 @@ import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/feat/call/models/text_agent_api_config.dart';
 import 'package:vagina/feat/call/models/text_agent_info.dart';
 import 'package:vagina/feat/text_agents/state/text_agent_providers.dart';
+import 'package:vagina/l10n/app_localizations.dart';
 
 /// Dialog for quickly selecting a text agent
 class AgentSelectionDialog extends ConsumerWidget {
@@ -12,6 +13,7 @@ class AgentSelectionDialog extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final agentsAsync = ref.watch(textAgentsProvider);
     final selectedIdAsync = ref.watch(selectedTextAgentIdProvider);
 
@@ -29,9 +31,9 @@ class AgentSelectionDialog extends ConsumerWidget {
               padding: const EdgeInsets.all(20),
               child: Row(
                 children: [
-                  const Text(
-                    'エージェントを選択',
-                    style: TextStyle(
+                  Text(
+                    l10n.textAgentsSelectionDialogTitle,
+                    style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: AppTheme.lightTextPrimary,
@@ -52,20 +54,20 @@ class AgentSelectionDialog extends ConsumerWidget {
               child: agentsAsync.when(
                 data: (agents) {
                   if (agents.isEmpty) {
-                    return const Padding(
-                      padding: EdgeInsets.all(40),
+                    return Padding(
+                      padding: const EdgeInsets.all(40),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.smart_toy_outlined,
                             size: 48,
                             color: Colors.grey,
                           ),
-                          SizedBox(height: 16),
+                          const SizedBox(height: 16),
                           Text(
-                            'エージェントがありません',
-                            style: TextStyle(
+                            l10n.textAgentsSelectionDialogEmptyTitle,
+                            style: const TextStyle(
                               fontSize: 14,
                               color: Colors.grey,
                             ),
@@ -167,7 +169,10 @@ class AgentSelectionDialog extends ConsumerWidget {
                                           ),
                                           const SizedBox(height: 2),
                                           Text(
-                                            _getProviderDisplayString(agent),
+                                            _getProviderDisplayString(
+                                              context,
+                                              agent,
+                                            ),
                                             style: TextStyle(
                                               fontSize: 11,
                                               color:
@@ -191,7 +196,9 @@ class AgentSelectionDialog extends ConsumerWidget {
                       child: CircularProgressIndicator(),
                     ),
                     error: (error, _) => Center(
-                      child: Text('エラー: $error'),
+                      child: Text(
+                        l10n.textAgentsSelectionDialogError(error.toString()),
+                      ),
                     ),
                   );
                 },
@@ -204,7 +211,9 @@ class AgentSelectionDialog extends ConsumerWidget {
                 error: (error, _) => Center(
                   child: Padding(
                     padding: const EdgeInsets.all(40),
-                    child: Text('エラー: $error'),
+                    child: Text(
+                      l10n.textAgentsSelectionDialogError(error.toString()),
+                    ),
                   ),
                 ),
               ),
@@ -215,13 +224,29 @@ class AgentSelectionDialog extends ConsumerWidget {
     );
   }
 
-  String _getProviderDisplayString(TextAgentInfo agent) {
+  String _getProviderDisplayString(BuildContext context, TextAgentInfo agent) {
+    final l10n = AppLocalizations.of(context);
     final apiConfig = agent.apiConfig;
     if (apiConfig is SelfhostedTextAgentApiConfig) {
-      return '${apiConfig.provider}: ${apiConfig.model}';
+      return '${_getProviderLabel(apiConfig.provider, l10n)}: ${apiConfig.model}';
     } else if (apiConfig is HostedTextAgentApiConfig) {
-      return 'Hosted: ${apiConfig.modelId}';
+      return '${l10n.textAgentsProviderHostedPrefix}: ${apiConfig.modelId}';
     }
-    return 'Unknown';
+    return l10n.textAgentsProviderUnknown;
+  }
+
+  String _getProviderLabel(String providerValue, AppLocalizations l10n) {
+    switch (providerValue) {
+      case 'openai':
+        return l10n.textAgentsProviderLabelOpenAi;
+      case 'azure':
+        return l10n.textAgentsProviderLabelAzure;
+      case 'litellm':
+        return l10n.textAgentsProviderLabelLiteLlm;
+      case 'custom':
+        return l10n.textAgentsProviderLabelCustom;
+      default:
+        return providerValue;
+    }
   }
 }

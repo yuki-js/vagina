@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import 'package:vagina/core/theme/app_theme.dart';
+import 'package:vagina/l10n/app_localizations.dart';
 import 'package:vagina/feat/call/models/active_file.dart';
 import 'package:vagina/feat/call/services/call_service.dart';
 import 'package:vagina/feat/call/widgets/notepad_content_renderer.dart';
@@ -88,7 +89,7 @@ class _NotepadPaneState extends State<NotepadPane> {
         }
         setState(() {
           _isLoading = false;
-          _errorMessage = 'ノートパッドの読み込みに失敗しました';
+          _errorMessage = AppLocalizations.of(context).callNotepadLoadFailed;
         });
       },
     );
@@ -159,7 +160,7 @@ class _NotepadPaneState extends State<NotepadPane> {
           }
           setState(() {
             _isLoading = false;
-            _errorMessage = 'ノートパッドの読み込みに失敗しました';
+            _errorMessage = AppLocalizations.of(context).callNotepadLoadFailed;
           });
         },
       );
@@ -224,7 +225,7 @@ class _NotepadPaneState extends State<NotepadPane> {
       _runFireAndForget(
         widget.callService.notepadService
             .update(selectedTab.id, _editedContent),
-        errorMessage: 'ノートの保存に失敗しました',
+        errorMessage: AppLocalizations.of(context).callNotepadSaveFailed,
       );
     }
 
@@ -247,7 +248,7 @@ class _NotepadPaneState extends State<NotepadPane> {
 
     _runFireAndForget(
       _persistAndCloseTab(tabId),
-      errorMessage: 'ノートを閉じられませんでした',
+      errorMessage: AppLocalizations.of(context).callNotepadCloseFailed,
     );
   }
 
@@ -297,6 +298,7 @@ class _NotepadPaneState extends State<NotepadPane> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final selectedTab = _selectedTab;
 
     return Column(
@@ -304,6 +306,8 @@ class _NotepadPaneState extends State<NotepadPane> {
         _NotepadHeader(
           onBackPressed: widget.onBackPressed,
           hideBackButton: widget.hideBackButton,
+          title: l10n.callNotepadTitle,
+          backLabel: l10n.callNotepadBackToCall,
         ),
         _NotepadTabBar(
           tabs: _tabs,
@@ -312,19 +316,19 @@ class _NotepadPaneState extends State<NotepadPane> {
         ),
         Expanded(
           child: _isLoading
-              ? const _NotepadEmptyState(
-                  title: 'ノートパッドを読み込み中です',
-                  message: 'しばらくお待ちください',
+              ? _NotepadEmptyState(
+                  title: l10n.callNotepadLoadingTitle,
+                  message: l10n.callNotepadLoadingMessage,
                 )
               : _errorMessage != null
                   ? _NotepadEmptyState(
                       title: _errorMessage!,
-                      message: '時間を置いて再度お試しください',
+                      message: l10n.callNotepadRetryMessage,
                     )
                   : selectedTab == null
-                      ? const _NotepadEmptyState(
-                          title: '開いているノートパッドがありません',
-                          message: 'ここに開いているノートの内容が表示されます',
+                      ? _NotepadEmptyState(
+                          title: l10n.callNotepadNoOpenNotesTitle,
+                          message: l10n.callNotepadNoOpenNotesMessage,
                         )
                       : _NotepadContentShell(
                           tab: selectedTab,
@@ -344,10 +348,14 @@ class _NotepadPaneState extends State<NotepadPane> {
 class _NotepadHeader extends StatelessWidget {
   final VoidCallback onBackPressed;
   final bool hideBackButton;
+  final String title;
+  final String backLabel;
 
   const _NotepadHeader({
     required this.onBackPressed,
     required this.hideBackButton,
+    required this.title,
+    required this.backLabel,
   });
 
   @override
@@ -363,7 +371,7 @@ class _NotepadHeader extends StatelessWidget {
                 children: [
                   const Icon(Icons.chevron_left, color: AppTheme.textSecondary),
                   Text(
-                    '通話画面',
+                    backLabel,
                     style: TextStyle(
                       fontSize: 14,
                       color: AppTheme.textSecondary,
@@ -372,11 +380,11 @@ class _NotepadHeader extends StatelessWidget {
                 ],
               ),
             ),
-          const Expanded(
+          Expanded(
             child: Center(
               child: Text(
-                'ノートパッド',
-                style: TextStyle(
+                title,
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
                   color: AppTheme.textPrimary,
@@ -488,6 +496,8 @@ class _NotepadContentShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
       child: Container(
@@ -523,13 +533,15 @@ class _NotepadContentShell extends StatelessWidget {
                   ),
                   _HeaderActionButton(
                     icon: isEditing ? Icons.save_outlined : Icons.edit_outlined,
-                    tooltip: isEditing ? '保存' : '編集',
+                    tooltip: isEditing
+                        ? l10n.callNotepadActionSave
+                        : l10n.callNotepadActionEdit,
                     onTap: onEditToggle,
                   ),
                   const SizedBox(width: 8),
                   _HeaderActionButton(
                     icon: Icons.close,
-                    tooltip: '閉じる',
+                    tooltip: l10n.callActionClose,
                     onTap: onClose,
                   ),
                 ],
@@ -542,8 +554,8 @@ class _NotepadContentShell extends StatelessWidget {
             Expanded(
               child: !isEditing && tab.content.trim().isEmpty
                   ? _NotepadEmptyState(
-                      title: 'このタブはまだ空です',
-                      message: 'ここに ${tab.title} の内容が表示されます',
+                      title: l10n.callNotepadTabEmptyTitle,
+                      message: l10n.callNotepadTabEmptyMessage(tab.title),
                     )
                   : NotepadContentRenderer(
                       path: tab.id,

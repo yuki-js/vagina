@@ -1,3 +1,7 @@
+import 'dart:ui';
+
+import 'package:vagina/core/config/app_config.dart';
+
 /// Configuration for the AI assistant
 class AssistantConfig {
   /// The name of the assistant
@@ -16,9 +20,8 @@ class AssistantConfig {
     'shimmer',
   ];
 
-  /// デフォルトのシステムプロンプト - VAGINAキャラクターとしての自覚
-  static const String defaultInstructions =
-      '''あなたは「VAGINA」（Voice AGI Notepad Agent）という名前の音声AIアシスタントです。
+  static const String _defaultInstructionsTemplateJa =
+      '''あなたは「{appName}」（{appSubtitle}）という名前の音声AIアシスタントです。
 
 あなたの特徴:
 - フレンドリーで親しみやすい
@@ -36,10 +39,66 @@ class AssistantConfig {
 あなたは音声会話を通じてユーザーをサポートします。長すぎる返答は避け、会話のリズムを大切にしてください。
 ''';
 
-  const AssistantConfig({
-    this.name = 'VAGINA',
-    this.instructions = defaultInstructions,
-    this.voice = 'alloy',
+  static const String _defaultInstructionsTemplateEn =
+      '''You are "{appName}" ({appSubtitle}), a voice AI assistant.
+
+Your traits:
+- Friendly and approachable
+- Speak in concise, natural English
+- Help users organize their thinking
+- Support recording and organizing ideas
+- Manage notes as files in the file system when needed
+
+File handling rules:
+- At the start of work, use `fs_list` to confirm the target path
+- Open files with `fs_open` before editing
+- Use `document_read` for reading, `document_overwrite` / `document_patch` or `spreadsheet_*` for editing
+- When finished, save and close with `fs_close`
+
+You support the user through voice conversation. Avoid overly long responses and keep a natural conversational rhythm.
+''';
+
+  /// Legacy default instructions.
+  ///
+  /// This remains Japanese for backward compatibility when no locale-specific
+  /// default is explicitly requested.
+  static String get defaultInstructions =>
+      defaultInstructionsForLocale(const Locale('ja'));
+
+  /// Returns the locale-aware default instructions template for new or reset
+  /// assistant configurations.
+  static String defaultInstructionsForLocale(
+    Locale? locale, {
+    String appName = AppConfig.appName,
+    String appSubtitle = AppConfig.appSubtitle,
+  }) {
+    final template = locale?.languageCode == 'en'
+        ? _defaultInstructionsTemplateEn
+        : _defaultInstructionsTemplateJa;
+
+    return template
+        .replaceAll('{appName}', appName)
+        .replaceAll('{appSubtitle}', appSubtitle);
+  }
+
+  /// Creates a default assistant configuration for the provided locale.
+  factory AssistantConfig({
+    String? name,
+    String? instructions,
+    String? voice,
+    Locale? locale,
+  }) {
+    return AssistantConfig._(
+      name: name ?? AppConfig.appName,
+      instructions: instructions ?? defaultInstructionsForLocale(locale),
+      voice: voice ?? AppConfig.defaultVoice,
+    );
+  }
+
+  const AssistantConfig._({
+    required this.name,
+    required this.instructions,
+    required this.voice,
   });
 
   AssistantConfig copyWith({
@@ -47,7 +106,7 @@ class AssistantConfig {
     String? instructions,
     String? voice,
   }) {
-    return AssistantConfig(
+    return AssistantConfig._(
       name: name ?? this.name,
       instructions: instructions ?? this.instructions,
       voice: voice ?? this.voice,
@@ -62,11 +121,15 @@ class AssistantConfig {
     };
   }
 
-  factory AssistantConfig.fromJson(Map<String, dynamic> json) {
-    return AssistantConfig(
-      name: json['name'] as String? ?? 'VAGINA',
-      instructions: json['instructions'] as String? ?? defaultInstructions,
-      voice: json['voice'] as String? ?? 'alloy',
+  factory AssistantConfig.fromJson(
+    Map<String, dynamic> json, {
+    Locale? locale,
+  }) {
+    return AssistantConfig._(
+      name: json['name'] as String? ?? AppConfig.appName,
+      instructions: json['instructions'] as String? ??
+          defaultInstructionsForLocale(locale),
+      voice: json['voice'] as String? ?? AppConfig.defaultVoice,
     );
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:vagina/core/theme/app_theme.dart';
+import 'package:vagina/l10n/app_localizations.dart';
 
 /// Simple emoji picker widget
 class EmojiPicker extends StatelessWidget {
@@ -82,6 +83,7 @@ class EmojiPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final screenWidth = MediaQuery.of(context).size.width;
     // Calculate responsive column count (more columns on wider screens)
     final crossAxisCount = (screenWidth / 60).floor().clamp(4, 8);
@@ -109,9 +111,9 @@ class EmojiPicker extends StatelessWidget {
               children: [
                 const Icon(Icons.emoji_emotions, color: AppTheme.primaryColor),
                 const SizedBox(width: 12),
-                const Text(
-                  'アイコンを選択',
-                  style: TextStyle(
+                Text(
+                  l10n.speedDialEmojiPickerTitle,
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                     color: AppTheme.lightTextPrimary,

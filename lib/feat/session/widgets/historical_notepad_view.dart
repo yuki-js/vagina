@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:vagina/core/theme/app_theme.dart';
+import 'package:vagina/l10n/app_localizations.dart';
 import 'package:vagina/models/call_session.dart';
 import 'package:vagina/models/tabular_data.dart';
 import 'package:vagina/feat/call/widgets/spreadsheet/editable_spreadsheet_table.dart';
@@ -18,6 +19,8 @@ class HistoricalNotepadView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     // Only use structured tabs
     if (notepadTabs != null && notepadTabs!.isNotEmpty) {
       return _buildTabsView(context);
@@ -36,7 +39,7 @@ class HistoricalNotepadView extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              'ノートパッドは空です',
+              l10n.sessionDetailHistoricalNotepadEmpty,
               style: TextStyle(
                 fontSize: 16,
                 color: AppTheme.lightTextSecondary,
@@ -141,7 +144,7 @@ class HistoricalNotepadView extends StatelessWidget {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        _getFileTypeLabel(tab.title),
+                        _getFileTypeLabel(context, tab.title),
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
@@ -155,40 +158,41 @@ class HistoricalNotepadView extends StatelessWidget {
                 IconButton(
                   icon: const Icon(Icons.copy, size: 20),
                   onPressed: () => _copyTabContent(context, tab),
-                  tooltip: 'コピー',
+                  tooltip: AppLocalizations.of(context)
+                      .sessionDetailHistoricalNotepadCopyTooltip,
                   color: AppTheme.primaryColor,
                 ),
               ],
             ),
           ),
           // Content
-          _buildContent(tab),
+          _buildContent(context, tab),
         ],
       ),
     );
   }
 
-  Widget _buildContent(SessionNotepadTab tab) {
+  Widget _buildContent(BuildContext context, SessionNotepadTab tab) {
     final lowerTitle = tab.title.toLowerCase();
 
     if (lowerTitle.endsWith('.v2d.csv') ||
         lowerTitle.endsWith('.v2d.json') ||
         lowerTitle.endsWith('.v2d.jsonl')) {
-      return _buildSpreadsheetContent(tab);
+      return _buildSpreadsheetContent(context, tab);
     }
 
     if (lowerTitle.endsWith('.html') || lowerTitle.endsWith('.htm')) {
-      return _buildHtmlContent(tab);
+      return _buildHtmlContent(context, tab);
     }
 
     if (lowerTitle.endsWith('.md') || lowerTitle.endsWith('.markdown')) {
-      return _buildMarkdownContent(tab);
+      return _buildMarkdownContent(context, tab);
     }
 
-    return _buildPlainTextContent(tab);
+    return _buildPlainTextContent(context, tab);
   }
 
-  Widget _buildSpreadsheetContent(SessionNotepadTab tab) {
+  Widget _buildSpreadsheetContent(BuildContext context, SessionNotepadTab tab) {
     try {
       final lowerTitle = tab.title.toLowerCase();
       final extension = lowerTitle.contains('.v2d.')
@@ -198,7 +202,7 @@ class HistoricalNotepadView extends StatelessWidget {
       final data = TabularData.parse(tab.content, extension);
 
       if (data.columns.isEmpty) {
-        return _buildEmptyContent();
+        return _buildEmptyContent(context);
       }
 
       return Padding(
@@ -212,15 +216,17 @@ class HistoricalNotepadView extends StatelessWidget {
         ),
       );
     } catch (e) {
-      return _buildParseError(e, tab.content);
+      return _buildParseError(context, e, tab.content);
     }
   }
 
-  Widget _buildMarkdownContent(SessionNotepadTab tab) {
+  Widget _buildMarkdownContent(BuildContext context, SessionNotepadTab tab) {
     return Padding(
       padding: const EdgeInsets.all(20),
       child: MarkdownBody(
-        data: tab.content.isEmpty ? '_（内容なし）_' : tab.content,
+        data: tab.content.isEmpty
+            ? '_${AppLocalizations.of(context).sessionDetailNoContent}_'
+            : tab.content,
         selectable: true,
         styleSheet: MarkdownStyleSheet(
           p: const TextStyle(
@@ -264,11 +270,13 @@ class HistoricalNotepadView extends StatelessWidget {
     );
   }
 
-  Widget _buildHtmlContent(SessionNotepadTab tab) {
+  Widget _buildHtmlContent(BuildContext context, SessionNotepadTab tab) {
     return Padding(
       padding: const EdgeInsets.all(20),
       child: SelectableText(
-        tab.content.isEmpty ? '（内容なし）' : tab.content,
+        tab.content.isEmpty
+            ? AppLocalizations.of(context).sessionDetailNoContent
+            : tab.content,
         style: const TextStyle(
           fontFamily: 'monospace',
           fontSize: 13,
@@ -278,11 +286,13 @@ class HistoricalNotepadView extends StatelessWidget {
     );
   }
 
-  Widget _buildPlainTextContent(SessionNotepadTab tab) {
+  Widget _buildPlainTextContent(BuildContext context, SessionNotepadTab tab) {
     return Padding(
       padding: const EdgeInsets.all(20),
       child: SelectableText(
-        tab.content.isEmpty ? '（内容なし）' : tab.content,
+        tab.content.isEmpty
+            ? AppLocalizations.of(context).sessionDetailNoContent
+            : tab.content,
         style: const TextStyle(
           fontSize: 15,
           height: 1.6,
@@ -292,13 +302,13 @@ class HistoricalNotepadView extends StatelessWidget {
     );
   }
 
-  Widget _buildEmptyContent() {
-    return const Padding(
-      padding: EdgeInsets.all(20),
+  Widget _buildEmptyContent(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(20),
       child: Center(
         child: Text(
-          'Empty table',
-          style: TextStyle(
+          AppLocalizations.of(context).callNotepadSpreadsheetEmptyTable,
+          style: const TextStyle(
             fontSize: 14,
             color: AppTheme.lightTextSecondary,
           ),
@@ -307,7 +317,7 @@ class HistoricalNotepadView extends StatelessWidget {
     );
   }
 
-  Widget _buildParseError(Object error, String content) {
+  Widget _buildParseError(BuildContext context, Object error, String content) {
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -318,7 +328,8 @@ class HistoricalNotepadView extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             child: Text(
-              'Parse error: $error',
+              AppLocalizations.of(context)
+                  .callNotepadSpreadsheetParseError(error.toString()),
               style: const TextStyle(fontSize: 12, color: Colors.red),
             ),
           ),
@@ -336,29 +347,35 @@ class HistoricalNotepadView extends StatelessWidget {
     );
   }
 
-  String _getFileTypeLabel(String filename) {
+  String _getFileTypeLabel(BuildContext context, String filename) {
+    final l10n = AppLocalizations.of(context);
     final lower = filename.toLowerCase();
 
-    if (lower.endsWith('.v2d.csv')) return 'CSV表';
-    if (lower.endsWith('.v2d.json')) return 'JSON表';
-    if (lower.endsWith('.v2d.jsonl')) return 'JSONL表';
+    if (lower.endsWith('.v2d.csv')) return l10n.sessionDetailFileTypeCsvTable;
+    if (lower.endsWith('.v2d.json')) return l10n.sessionDetailFileTypeJsonTable;
+    if (lower.endsWith('.v2d.jsonl')) return l10n.sessionDetailFileTypeJsonlTable;
     if (lower.endsWith('.md') || lower.endsWith('.markdown')) {
-      return 'Markdown';
+      return l10n.sessionDetailFileTypeMarkdown;
     }
-    if (lower.endsWith('.html') || lower.endsWith('.htm')) return 'HTML';
-    if (lower.endsWith('.txt') || lower.endsWith('.text')) return 'Text';
-    if (lower.endsWith('.csv')) return 'CSV';
-    if (lower.endsWith('.json')) return 'JSON';
-    if (lower.endsWith('.jsonl')) return 'JSONL';
+    if (lower.endsWith('.html') || lower.endsWith('.htm')) {
+      return l10n.sessionDetailFileTypeHtml;
+    }
+    if (lower.endsWith('.txt') || lower.endsWith('.text')) {
+      return l10n.sessionDetailFileTypeText;
+    }
+    if (lower.endsWith('.csv')) return l10n.sessionDetailFileTypeCsv;
+    if (lower.endsWith('.json')) return l10n.sessionDetailFileTypeJson;
+    if (lower.endsWith('.jsonl')) return l10n.sessionDetailFileTypeJsonl;
 
-    return 'File';
+    return l10n.sessionDetailFileTypeFile;
   }
 
   void _copyTabContent(BuildContext context, SessionNotepadTab tab) {
     Clipboard.setData(ClipboardData(text: tab.content));
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('「${tab.title}」の内容をコピーしました'),
+        content: Text(AppLocalizations.of(context)
+            .sessionDetailHistoricalNotepadCopied(tab.title)),
         backgroundColor: AppTheme.successColor,
         duration: const Duration(seconds: 2),
       ),

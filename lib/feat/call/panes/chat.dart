@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import 'package:vagina/core/theme/app_theme.dart';
+import 'package:vagina/l10n/app_localizations.dart';
 import 'package:vagina/feat/call/models/realtime/realtime_adapter_models.dart';
 import 'package:vagina/feat/call/models/realtime/realtime_thread.dart';
 import 'package:vagina/feat/call/services/call_service.dart';
@@ -148,15 +149,22 @@ class _ChatPaneState extends State<ChatPane> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Column(
       children: [
         _ChatHeader(
           onBackPressed: widget.onBackPressed,
           hideBackButton: widget.hideBackButton,
+          title: l10n.callChatTitle,
+          backLabel: l10n.callChatBackToCall,
         ),
         Expanded(
           child: _items.isEmpty
-              ? const _ChatEmptyState()
+              ? _ChatEmptyState(
+                  title: l10n.callChatEmptyTitle,
+                  message: l10n.callChatEmptyMessage,
+                )
               : Builder(
                   builder: (context) {
                     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -194,6 +202,8 @@ class _ChatPaneState extends State<ChatPane> {
           controller: _textController,
           enabled: _isConnected,
           onSend: _handleSendMessage,
+          enabledHintText: l10n.callChatInputHintEnabled,
+          disabledHintText: l10n.callChatInputHintDisabled,
         ),
       ],
     );
@@ -219,10 +229,14 @@ class _ChatPaneState extends State<ChatPane> {
 class _ChatHeader extends StatelessWidget {
   final VoidCallback onBackPressed;
   final bool hideBackButton;
+  final String title;
+  final String backLabel;
 
   const _ChatHeader({
     required this.onBackPressed,
     required this.hideBackButton,
+    required this.title,
+    required this.backLabel,
   });
 
   @override
@@ -235,7 +249,7 @@ class _ChatHeader extends StatelessWidget {
           Expanded(
             child: Center(
               child: Text(
-                'チャット',
+                title,
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
@@ -250,7 +264,7 @@ class _ChatHeader extends StatelessWidget {
               child: Row(
                 children: [
                   Text(
-                    '通話画面',
+                    backLabel,
                     style: TextStyle(
                       fontSize: 14,
                       color: AppTheme.textSecondary,
@@ -336,7 +350,7 @@ class _ToolCallBubble extends StatelessWidget {
           const SizedBox(width: 40), // 16 (radius) * 2 + 8 (spacing)
           _ToolBadge(
             icon: details.badgeIcon,
-            label: details.title,
+            label: details.displayTitle(AppLocalizations.of(context)),
             color: details.statusColor,
             active: details.showSpinner,
             onTap: onTap,
@@ -364,7 +378,7 @@ class _RealtimeChatBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // メッセージのみバルーン表示（ツールは_ToolPairBubbleで処理）
-    final contentWidgets = _buildMessageParts();
+    final contentWidgets = _buildMessageParts(context);
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -415,7 +429,8 @@ class _RealtimeChatBubble extends StatelessWidget {
     );
   }
 
-  List<Widget> _buildMessageParts() {
+  List<Widget> _buildMessageParts(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final widgets = <Widget>[];
 
     for (int i = 0; i < item.content.length; i++) {
@@ -450,7 +465,7 @@ class _RealtimeChatBubble extends StatelessWidget {
           _AttachmentBadge(
             icon: Icons.image_outlined,
             label: part.imageUrl,
-            sublabel: 'detail: ${part.detail}',
+            sublabel: l10n.callChatImageDetail(part.detail),
           ),
         );
       }
@@ -619,22 +634,23 @@ final class _ResolvedToolCallDetails {
     );
   }
 
-  String get title => callItem.name ?? 'tool_call';
+  String displayTitle(AppLocalizations l10n) =>
+      callItem.name ?? l10n.callChatToolFallbackName;
 
   String? get arguments => callItem.arguments;
 
   bool get hasArguments => (arguments ?? '').isNotEmpty;
 
-  String get argumentsDisplayText {
+  String argumentsDisplayText(AppLocalizations l10n) {
     if (hasArguments) {
       return arguments!;
     }
     return switch (stage) {
-      _ResolvedToolStage.generating => 'Streaming...',
+      _ResolvedToolStage.generating => l10n.callChatToolArgumentsStreaming,
       _ResolvedToolStage.executing ||
       _ResolvedToolStage.completed ||
-      _ResolvedToolStage.error => 'No arguments',
-      _ResolvedToolStage.cancelled => 'Cancelled before arguments were completed',
+      _ResolvedToolStage.error => l10n.callChatToolArgumentsNone,
+      _ResolvedToolStage.cancelled => l10n.callChatToolArgumentsCancelled,
     };
   }
 
@@ -703,13 +719,13 @@ final class _ResolvedToolCallDetails {
     };
   }
 
-  String get statusText {
+  String statusText(AppLocalizations l10n) {
     return switch (stage) {
-      _ResolvedToolStage.generating => 'Generating arguments...',
-      _ResolvedToolStage.executing => 'Executing...',
-      _ResolvedToolStage.completed => 'Completed',
-      _ResolvedToolStage.error => 'Error',
-      _ResolvedToolStage.cancelled => 'Cancelled',
+      _ResolvedToolStage.generating => l10n.callChatToolStatusGeneratingArguments,
+      _ResolvedToolStage.executing => l10n.callChatToolStatusExecuting,
+      _ResolvedToolStage.completed => l10n.callChatToolStatusCompleted,
+      _ResolvedToolStage.error => l10n.callChatToolStatusError,
+      _ResolvedToolStage.cancelled => l10n.callChatToolStatusCancelled,
     };
   }
 }
@@ -743,9 +759,10 @@ class _ToolDetailsSheet extends StatelessWidget {
   }
 
   Widget _buildContent(BuildContext context, List<RealtimeThreadItem> items) {
+    final l10n = AppLocalizations.of(context);
     final details = _resolveToolCallDetails(items, itemId);
     if (details == null) {
-      return _buildErrorState(context, 'Tool call not found');
+      return _buildErrorState(context, l10n.callChatToolNotFound);
     }
 
     return ConstrainedBox(
@@ -769,16 +786,18 @@ class _ToolDetailsSheet extends StatelessWidget {
                   _ToolDetailsStatusSection(details: details),
                   const SizedBox(height: 12),
                   _ToolDetailsSection(
-                    title: '引数',
+                    title: l10n.callChatToolArgumentsSectionTitle,
                     child: _ToolDetailsCodeBlock(
-                      text: details.argumentsDisplayText,
+                      text: details.argumentsDisplayText(l10n),
                       isPlaceholder: details.argumentsPlaceholder,
                     ),
                   ),
                   if (details.hasResult) ...[
                     const SizedBox(height: 12),
                     _ToolDetailsSection(
-                      title: details.isError ? 'エラー' : '結果',
+                      title: details.isError
+                          ? l10n.callChatToolErrorSectionTitle
+                          : l10n.callChatToolResultSectionTitle,
                       child: _ToolDetailsCodeBlock(
                         text: details.resultDisplayText!,
                         isError: details.isError,
@@ -822,6 +841,7 @@ class _ToolDetailsHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final statusColor = details.statusColor;
 
     return Row(
@@ -841,7 +861,7 @@ class _ToolDetailsHeader extends StatelessWidget {
         const SizedBox(width: 12),
         Expanded(
           child: Text(
-            details.title,
+            details.displayTitle(l10n),
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -870,6 +890,7 @@ class _ToolDetailsStatusSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final statusColor = details.statusColor;
 
     return Container(
@@ -892,7 +913,7 @@ class _ToolDetailsStatusSection extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              details.statusText,
+              details.statusText(l10n),
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
@@ -1055,6 +1076,8 @@ class _ScrollToBottomButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return GestureDetector(
       onTap: onPressed,
       child: Container(
@@ -1080,7 +1103,7 @@ class _ScrollToBottomButton extends StatelessWidget {
             ),
             const SizedBox(width: 4),
             Text(
-              '下に戻る',
+              l10n.callChatScrollToBottom,
               style: TextStyle(
                 fontSize: 12,
                 color: AppTheme.textSecondary.withValues(alpha: 0.7),
@@ -1094,7 +1117,10 @@ class _ScrollToBottomButton extends StatelessWidget {
 }
 
 class _ChatEmptyState extends StatelessWidget {
-  const _ChatEmptyState();
+  final String title;
+  final String message;
+
+  const _ChatEmptyState({required this.title, required this.message});
 
   @override
   Widget build(BuildContext context) {
@@ -1110,9 +1136,9 @@ class _ChatEmptyState extends StatelessWidget {
               color: AppTheme.textSecondary.withValues(alpha: 0.5),
             ),
             const SizedBox(height: 16),
-            const Text(
-              'まだ会話がありません',
-              style: TextStyle(
+            Text(
+              title,
+              style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w500,
                 color: AppTheme.textSecondary,
@@ -1120,7 +1146,7 @@ class _ChatEmptyState extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'ここに会話履歴が表示されます',
+              message,
               style: TextStyle(
                 fontSize: 14,
                 color: AppTheme.textSecondary.withValues(alpha: 0.7),
@@ -1138,11 +1164,15 @@ class _ChatInputShell extends StatelessWidget {
   final TextEditingController controller;
   final bool enabled;
   final VoidCallback? onSend;
+  final String enabledHintText;
+  final String disabledHintText;
 
   const _ChatInputShell({
     required this.controller,
     required this.enabled,
     this.onSend,
+    required this.enabledHintText,
+    required this.disabledHintText,
   });
 
   @override
@@ -1163,7 +1193,7 @@ class _ChatInputShell extends StatelessWidget {
               textInputAction: TextInputAction.send,
               onSubmitted: enabled ? (_) => onSend?.call() : null,
               decoration: InputDecoration(
-                hintText: enabled ? 'メッセージを入力' : '通話中でないと入力できません',
+                hintText: enabled ? enabledHintText : disabledHintText,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(24),
                   borderSide: BorderSide.none,

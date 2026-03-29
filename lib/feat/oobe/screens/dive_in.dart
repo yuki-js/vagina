@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:vagina/core/config/app_config.dart';
 import 'package:vagina/core/theme/app_theme.dart';
+import 'package:vagina/l10n/app_localizations.dart';
 
 /// OOBE 最終画面 - 準備完了
 class DiveInScreen extends StatefulWidget {
@@ -46,6 +48,8 @@ class _DiveInScreenState extends State<DiveInScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return SafeArea(
       child: Stack(
         children: [
@@ -91,10 +95,10 @@ class _DiveInScreenState extends State<DiveInScreen>
                     const SizedBox(height: 48),
 
                     // メインメッセージ
-                    const Text(
-                      '準備完了！',
+                    Text(
+                      l10n.diveInTitle,
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 32,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
@@ -105,7 +109,7 @@ class _DiveInScreenState extends State<DiveInScreen>
                     const SizedBox(height: 16),
 
                     Text(
-                      'これで、VAGINAを使い始める\n準備が整いました',
+                      l10n.diveInReady(AppConfig.appName),
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 16,
@@ -120,17 +124,17 @@ class _DiveInScreenState extends State<DiveInScreen>
                     Column(
                       children: [
                         _buildFeaturePoint(
-                          '声で思考を整理',
+                          l10n.diveInFeatureOrganizeThoughts,
                           Icons.record_voice_over,
                         ),
                         const SizedBox(height: 16),
                         _buildFeaturePoint(
-                          'AIと自然な会話',
+                          l10n.diveInFeatureNaturalAiConversation,
                           Icons.psychology,
                         ),
                         const SizedBox(height: 16),
                         _buildFeaturePoint(
-                          'アイデアを即座に記録',
+                          l10n.diveInFeatureCaptureIdeas,
                           Icons.lightbulb,
                         ),
                       ],
@@ -158,7 +162,7 @@ class _DiveInScreenState extends State<DiveInScreen>
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              'はじめる',
+                              l10n.diveInStart,
                               style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.bold,

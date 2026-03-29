@@ -7,6 +7,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:vagina/feat/session/segments/chat.dart';
 import 'package:vagina/feat/session/segments/info.dart';
 import 'package:vagina/feat/session/segments/notepad.dart';
+import 'package:vagina/l10n/app_localizations.dart';
 
 /// セッション詳細画面 - 過去のセッションのチャットとノートパッドを表示
 class SessionDetailScreen extends ConsumerStatefulWidget {
@@ -27,13 +28,15 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return FutureBuilder<CallSession?>(
       future: _loadSession(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Scaffold(
             appBar: AppBar(
-              title: const Text('セッション詳細'),
+              title: Text(l10n.sessionDetailTitle),
               backgroundColor: Colors.transparent,
               elevation: 0,
             ),
@@ -51,14 +54,14 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
         if (snapshot.hasError || !snapshot.hasData || snapshot.data == null) {
           return Scaffold(
             appBar: AppBar(
-              title: const Text('セッション詳細'),
+              title: Text(l10n.sessionDetailTitle),
               backgroundColor: Colors.transparent,
               elevation: 0,
             ),
             body: Container(
               color: AppTheme.lightBackgroundStart,
-              child: const Center(
-                child: Text('セッションが見つかりません'),
+              child: Center(
+                child: Text(l10n.sessionDetailMissing),
               ),
             ),
           );
@@ -76,9 +79,11 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
   }
 
   Widget _buildSessionDetail(CallSession session) {
+    final l10n = AppLocalizations.of(context);
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('セッション詳細'),
+        title: Text(l10n.sessionDetailTitle),
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
@@ -90,7 +95,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: CupertinoSegmentedControl<int>(
-                children: const {
+                children: {
                   0: Padding(
                     padding: EdgeInsets.symmetric(horizontal: 8),
                     child: Row(
@@ -98,7 +103,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                       children: [
                         Icon(Icons.info_outline, size: 16),
                         SizedBox(width: 4),
-                        Text('詳細'),
+                        Text(l10n.sessionDetailTabInfo),
                       ],
                     ),
                   ),
@@ -109,7 +114,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                       children: [
                         Icon(Icons.chat_bubble_outline, size: 16),
                         SizedBox(width: 4),
-                        Text('チャット'),
+                        Text(l10n.callPaneChat),
                       ],
                     ),
                   ),
@@ -120,7 +125,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                       children: [
                         Icon(Icons.article_outlined, size: 16),
                         SizedBox(width: 4),
-                        Text('ノートパッド'),
+                        Text(l10n.callPaneNotepad),
                       ],
                     ),
                   ),

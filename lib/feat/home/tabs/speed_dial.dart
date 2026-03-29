@@ -5,6 +5,7 @@ import 'package:vagina/models/speed_dial.dart';
 import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/utils/call_navigation_utils.dart';
 import 'package:vagina/feat/speed_dial/screens/config.dart';
+import 'package:vagina/l10n/app_localizations.dart';
 
 /// Speed dial tab - shows saved character presets for quick call start
 class SpeedDialTab extends ConsumerWidget {
@@ -12,12 +13,13 @@ class SpeedDialTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final speedDialsAsync = ref.watch(speedDialsProvider);
 
     return speedDialsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stack) => Center(
-        child: Text('エラー: $error'),
+        child: Text(l10n.speedDialTabLoadError(error.toString())),
       ),
       data: (speedDials) {
         if (speedDials.isEmpty) {
@@ -27,9 +29,9 @@ class SpeedDialTab extends ConsumerWidget {
         return ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            const Text(
-              'スピードダイヤル',
-              style: TextStyle(
+            Text(
+              l10n.homeTabSpeedDial,
+              style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
                 color: AppTheme.lightTextPrimary,
@@ -37,8 +39,8 @@ class SpeedDialTab extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'お気に入りのキャラクターに素早く発信',
-              style: TextStyle(
+              l10n.speedDialTabSubtitle,
+              style: const TextStyle(
                 fontSize: 14,
                 color: AppTheme.lightTextSecondary,
               ),
@@ -80,9 +82,9 @@ class SpeedDialTab extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        const Text(
-          'スピードダイヤル',
-          style: TextStyle(
+        Text(
+          AppLocalizations.of(context).homeTabSpeedDial,
+          style: const TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
             color: AppTheme.lightTextPrimary,
@@ -90,8 +92,8 @@ class SpeedDialTab extends ConsumerWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          'お気に入りのキャラクターに素早く発信',
-          style: TextStyle(
+          AppLocalizations.of(context).speedDialTabSubtitle,
+          style: const TextStyle(
             fontSize: 14,
             color: AppTheme.lightTextSecondary,
           ),
@@ -108,16 +110,16 @@ class SpeedDialTab extends ConsumerWidget {
               ),
               const SizedBox(height: 16),
               Text(
-                'スピードダイヤルがまだありません',
-                style: TextStyle(
+                AppLocalizations.of(context).speedDialTabEmptyTitle,
+                style: const TextStyle(
                   fontSize: 16,
                   color: AppTheme.lightTextSecondary,
                 ),
               ),
               const SizedBox(height: 8),
               Text(
-                '右上の + ボタンで追加できます',
-                style: TextStyle(
+                AppLocalizations.of(context).speedDialTabEmptyBody,
+                style: const TextStyle(
                   fontSize: 14,
                   color: AppTheme.lightTextSecondary,
                 ),

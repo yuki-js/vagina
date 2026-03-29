@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:vagina/core/theme/app_theme.dart';
+import 'package:vagina/l10n/app_localizations.dart';
 import 'package:vagina/models/virtual_file.dart';
 import 'package:vagina/repositories/repository_factory.dart';
 import 'package:vagina/services/virtual_filesystem_service.dart';
@@ -27,6 +28,7 @@ class _FileInfoViewerScreenState extends State<FileInfoViewerScreen> {
 
   String get _fileName => widget.filePath.split('/').last;
   String get _extension => normalizedExtensionFromPath(widget.filePath);
+  AppLocalizations get _l10n => AppLocalizations.of(context);
 
   @override
   void initState() {
@@ -47,7 +49,7 @@ class _FileInfoViewerScreenState extends State<FileInfoViewerScreen> {
 
       if (file == null) {
         setState(() {
-          _error = 'ファイルが見つかりません';
+          _error = _l10n.fileViewerFileNotFound;
           _isLoading = false;
         });
         return;
@@ -118,7 +120,7 @@ class _FileInfoViewerScreenState extends State<FileInfoViewerScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                'エラーが発生しました',
+                _l10n.fileViewerErrorTitle,
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 8),
@@ -134,7 +136,7 @@ class _FileInfoViewerScreenState extends State<FileInfoViewerScreen> {
     }
 
     if (_file == null) {
-      return const Center(child: Text('ファイルが見つかりません'));
+      return Center(child: Text(_l10n.fileViewerFileNotFound));
     }
 
     return SingleChildScrollView(
@@ -162,18 +164,25 @@ class _FileInfoViewerScreenState extends State<FileInfoViewerScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'ファイル情報',
+              _l10n.fileViewerInfoTitle,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
             ),
             const SizedBox(height: 16),
-            _buildInfoRow('ファイル名', _fileName),
-            _buildInfoRow('パス', widget.filePath),
-            _buildInfoRow('拡張子', _extension.isNotEmpty ? _extension : '（なし）'),
-            _buildInfoRow('サイズ', _formatFileSize(contentBytes)),
-            _buildInfoRow('行数', lineCount.toString()),
-            _buildInfoRow('文字数', _file!.content.length.toString()),
+            _buildInfoRow(_l10n.fileViewerInfoNameLabel, _fileName),
+            _buildInfoRow(_l10n.fileViewerInfoPathLabel, widget.filePath),
+            _buildInfoRow(
+              _l10n.fileViewerInfoExtensionLabel,
+              _extension.isNotEmpty ? _extension : _l10n.fileViewerNoExtension,
+            ),
+            _buildInfoRow(
+                _l10n.fileViewerInfoSizeLabel, _formatFileSize(contentBytes)),
+            _buildInfoRow(_l10n.fileViewerInfoLinesLabel, lineCount.toString()),
+            _buildInfoRow(
+              _l10n.fileViewerInfoCharactersLabel,
+              _file!.content.length.toString(),
+            ),
           ],
         ),
       ),
@@ -187,7 +196,7 @@ class _FileInfoViewerScreenState extends State<FileInfoViewerScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 80,
+            width: 104,
             child: Text(
               label,
               style: const TextStyle(
@@ -223,7 +232,7 @@ class _FileInfoViewerScreenState extends State<FileInfoViewerScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'プレビュー',
+              _l10n.fileViewerPreviewTitle,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -240,7 +249,7 @@ class _FileInfoViewerScreenState extends State<FileInfoViewerScreen> {
                 ),
               ),
               child: SelectableText(
-                preview.isEmpty ? '（内容なし）' : preview,
+                preview.isEmpty ? _l10n.sessionDetailNoContent : preview,
                 style: const TextStyle(
                   fontSize: 13,
                   fontFamily: 'monospace',
@@ -253,7 +262,7 @@ class _FileInfoViewerScreenState extends State<FileInfoViewerScreen> {
               Padding(
                 padding: const EdgeInsets.only(top: 8),
                 child: Text(
-                  '※ 最初の$maxPreviewLength文字のみ表示',
+                  _l10n.fileViewerPreviewTruncatedNote(maxPreviewLength),
                   style: const TextStyle(
                     fontSize: 12,
                     color: AppTheme.lightTextSecondary,

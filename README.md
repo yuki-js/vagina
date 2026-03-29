@@ -287,6 +287,9 @@ A: プラットフォーム固有の権限設定が必要です。`AndroidManife
 ### コマンド
 
 ```bash
+# ローカライズ生成（ARB 更新時）
+fvm flutter gen-l10n
+
 # 静的解析
 fvm flutter analyze
 
@@ -309,10 +312,11 @@ fvm flutter run -d chrome      # Web
 ### 開発ワークフロー
 
 1. **機能開発**: `lib/` 配下の適切なディレクトリに実装
-2. **テスト作成**: `test/` 配下に対応するテストファイルを作成
-3. **静的解析**: `flutter analyze` でエラーがないことを確認
-4. **フォーマット**: `dart format .` でコード整形
-5. **テスト実行**: `flutter test` で全テストが通ることを確認
+2. **ローカライズ更新**: `lib/l10n/*.arb` を変更した場合は `fvm flutter gen-l10n` を実行
+3. **テスト作成**: `test/` 配下に対応するテストファイルを作成
+4. **静的解析**: `flutter analyze` でエラーがないことを確認
+5. **フォーマット**: `dart format .` でコード整形
+6. **テスト実行**: `flutter test` で全テストが通ることを確認
 
 ### トラブルシューティング
 

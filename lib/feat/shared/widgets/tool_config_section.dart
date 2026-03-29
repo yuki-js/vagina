@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/feat/home/tools/tool_icon_mapper.dart';
+import 'package:vagina/l10n/app_localizations.dart';
 import 'package:vagina/services/tool_registry.dart';
 import 'package:vagina/models/tool_metadata.dart';
 
@@ -123,8 +124,26 @@ class _ToolConfigSectionState extends State<ToolConfigSection> {
     });
   }
 
+  String _categoryLabel(AppLocalizations l10n, ToolCategory category) {
+    switch (category) {
+      case ToolCategory.system:
+        return l10n.speedDialToolCategorySystem;
+      case ToolCategory.calculation:
+        return l10n.speedDialToolCategoryCalculation;
+      case ToolCategory.filesystem:
+        return l10n.speedDialToolCategoryFilesystem;
+      case ToolCategory.document:
+        return l10n.speedDialToolCategoryDocument;
+      case ToolCategory.mcp:
+        return l10n.speedDialToolCategoryMcp;
+      case ToolCategory.custom:
+        return l10n.speedDialToolCategoryCustom;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final toolRegistry = ToolRegistry();
     final toolList = toolRegistry.registeredToolMeta;
 
@@ -164,10 +183,11 @@ class _ToolConfigSectionState extends State<ToolConfigSection> {
               OutlinedButton.icon(
                 onPressed: () => _enableAll(toolList),
                 icon: const Icon(Icons.check_box, size: 16),
-                label: const Text('すべて選択'),
+                label: Text(l10n.speedDialToolConfigSelectAll),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppTheme.primaryColor,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   side: BorderSide.none,
                   visualDensity: VisualDensity.compact,
                 ),
@@ -176,10 +196,11 @@ class _ToolConfigSectionState extends State<ToolConfigSection> {
               OutlinedButton.icon(
                 onPressed: () => _disableAll(toolList),
                 icon: const Icon(Icons.check_box_outline_blank, size: 16),
-                label: const Text('すべて解除'),
+                label: Text(l10n.speedDialToolConfigClearAll),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppTheme.lightTextSecondary,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   side: BorderSide.none,
                   visualDensity: VisualDensity.compact,
                 ),
@@ -203,10 +224,10 @@ class _ToolConfigSectionState extends State<ToolConfigSection> {
                 final index = entry.key;
                 final category = entry.value;
                 final isSelected = _selectedTabIndex == index;
-                
+
                 // 各タブにキーを設定
                 _tabKeys.putIfAbsent(index, () => GlobalKey());
-                
+
                 return GestureDetector(
                   onTap: () {
                     setState(() {
@@ -234,7 +255,7 @@ class _ToolConfigSectionState extends State<ToolConfigSection> {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          category.displayName,
+                          _categoryLabel(l10n, category),
                           style: TextStyle(
                             fontWeight: FontWeight.w600,
                             color: isSelected

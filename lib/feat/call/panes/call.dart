@@ -5,6 +5,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:vagina/core/config/app_config.dart';
 import 'package:vagina/core/theme/app_theme.dart';
+import 'package:vagina/l10n/app_localizations.dart';
 import 'package:vagina/feat/call/models/voice_agent_api_config.dart';
 import 'package:vagina/feat/call/services/call_service.dart';
 import 'package:vagina/feat/call/services/realtime/realtime_provider_extensions.dart';
@@ -136,10 +137,11 @@ class _CallPaneState extends State<CallPane> {
   }
 
   Widget _buildSpeakerControl(bool isSpeakerMuted) {
+    final l10n = AppLocalizations.of(context);
     return Expanded(
       child: _ControlButton(
         icon: isSpeakerMuted ? Icons.volume_off : Icons.volume_up,
-        label: 'スピーカー',
+        label: l10n.callPaneSpeaker,
         onTap: _handleSpeakerToggle,
         isActive: isSpeakerMuted,
         activeColor: AppTheme.warningColor,
@@ -148,10 +150,11 @@ class _CallPaneState extends State<CallPane> {
   }
 
   Widget _buildMuteControl(bool isMuted) {
+    final l10n = AppLocalizations.of(context);
     return Expanded(
       child: _ControlButton(
         icon: isMuted ? Icons.mic_off : Icons.mic,
-        label: '消音',
+        label: l10n.callPaneMute,
         onTap: _handleMuteToggle,
         isActive: isMuted,
         activeColor: AppTheme.errorColor,
@@ -160,10 +163,11 @@ class _CallPaneState extends State<CallPane> {
   }
 
   Widget _buildInterruptControl() {
+    final l10n = AppLocalizations.of(context);
     return Expanded(
       child: _ControlButton(
         icon: Icons.front_hand,
-        label: '割込み',
+        label: l10n.callPaneInterrupt,
         onTap: _handleInterrupt,
       ),
     );
@@ -274,9 +278,10 @@ class _CallPaneState extends State<CallPane> {
   }
 
   void _showSettingsSheet() {
+    final l10n = AppLocalizations.of(context);
     showGeneralDialog<void>(
       context: context,
-      barrierLabel: '設定',
+      barrierLabel: l10n.callPaneSettingsTooltip,
       barrierDismissible: true,
       barrierColor: Colors.black.withValues(alpha: 0.2),
       transitionDuration: const Duration(milliseconds: 320),
@@ -321,6 +326,8 @@ class _CallPaneState extends State<CallPane> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return StreamBuilder<bool>(
       stream: _muteStateStream,
       initialData: _currentIsMuted,
@@ -441,7 +448,7 @@ class _CallPaneState extends State<CallPane> {
                                       Expanded(
                                         child: _ControlButton(
                                           icon: Icons.chat_bubble_outline,
-                                          label: 'チャット',
+                                          label: l10n.callPaneChat,
                                           onTap: widget.onChatPressed,
                                         ),
                                       ),
@@ -449,7 +456,7 @@ class _CallPaneState extends State<CallPane> {
                                       Expanded(
                                         child: _ControlButton(
                                           icon: Icons.note_alt_outlined,
-                                          label: 'ノートパッド',
+                                          label: l10n.callPaneNotepad,
                                           onTap: widget.onNotepadPressed,
                                         ),
                                       ),
@@ -470,6 +477,7 @@ class _CallPaneState extends State<CallPane> {
                                       width: 72,
                                       child: FloatingActionButton(
                                         heroTag: 'call_fab',
+                                        tooltip: l10n.callPaneEndCallTooltip,
                                         onPressed: _handleEndCall,
                                         backgroundColor: AppTheme.errorColor,
                                         shape: const CircleBorder(),
@@ -574,6 +582,8 @@ class _CallHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
       child: Row(
@@ -581,7 +591,7 @@ class _CallHeader extends StatelessWidget {
         children: [
           _CallHeaderIcon(
             icon: Icons.settings,
-            tooltip: '設定',
+            tooltip: l10n.callPaneSettingsTooltip,
             onPressed: onSettingsPressed,
           ),
         ],
@@ -699,6 +709,7 @@ class _PttHoldButtonState extends State<_PttHoldButton> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final backgroundColor = _isPressed
         ? AppTheme.primaryColor.withValues(alpha: 0.22)
         : Colors.white.withValues(alpha: 0.04);
@@ -754,7 +765,9 @@ class _PttHoldButtonState extends State<_PttHoldButton> {
               const SizedBox(width: 12),
               Flexible(
                 child: Text(
-                  _isPressed ? '離して終了' : '押して話す',
+                  _isPressed
+                      ? l10n.callPanePttReleaseToFinish
+                      : l10n.callPanePttPressToTalk,
                   style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w700,
@@ -818,6 +831,8 @@ class _CallSettingsSheetState extends State<_CallSettingsSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return SafeArea(
       child: Center(
         child: SingleChildScrollView(
@@ -839,10 +854,10 @@ class _CallSettingsSheetState extends State<_CallSettingsSheet> {
                 children: [
                   Row(
                     children: [
-                      const Expanded(
+                      Expanded(
                         child: Text(
-                          '通話設定',
-                          style: TextStyle(
+                          l10n.callSettingsTitle,
+                          style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w600,
                             color: AppTheme.textPrimary,
@@ -851,6 +866,7 @@ class _CallSettingsSheetState extends State<_CallSettingsSheet> {
                       ),
                       IconButton(
                         onPressed: () => Navigator.of(context).pop(),
+                        tooltip: l10n.callActionClose,
                         icon: const Icon(
                           Icons.close,
                           color: AppTheme.textSecondary,
@@ -860,12 +876,12 @@ class _CallSettingsSheetState extends State<_CallSettingsSheet> {
                   ),
                   const SizedBox(height: 16),
                   _SettingsSection(
-                    title: '通話モード',
+                    title: l10n.callSettingsModeTitle,
                     child: Row(
                       children: [
                         Expanded(
                           child: _SettingsOptionButton(
-                            label: 'ハンズフリー',
+                            label: l10n.callSettingsModeHandsFree,
                             isSelected: _talkMode == _TalkMode.hf,
                             onTap: () => _handleTalkModeChanged(_TalkMode.hf),
                           ),
@@ -873,7 +889,7 @@ class _CallSettingsSheetState extends State<_CallSettingsSheet> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: _SettingsOptionButton(
-                            label: '押して話す',
+                            label: l10n.callSettingsModePushToTalk,
                             isSelected: _talkMode == _TalkMode.ptt,
                             onTap: () => _handleTalkModeChanged(_TalkMode.ptt),
                           ),
@@ -884,12 +900,12 @@ class _CallSettingsSheetState extends State<_CallSettingsSheet> {
                   if (widget.showNoiseReductionSettings) ...[
                     const SizedBox(height: 16),
                     _SettingsSection(
-                      title: 'ノイズ抑制',
+                      title: l10n.callSettingsNoiseReductionTitle,
                       child: Row(
                         children: [
                           Expanded(
                             child: _SettingsOptionButton(
-                              label: 'オフ',
+                              label: l10n.callSettingsNoiseReductionOff,
                               isSelected: _noiseReductionMode ==
                                   _NoiseReductionMode.off,
                               onTap: () => _handleNoiseReductionModeChanged(
@@ -900,7 +916,7 @@ class _CallSettingsSheetState extends State<_CallSettingsSheet> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: _SettingsOptionButton(
-                              label: '近距離',
+                              label: l10n.callSettingsNoiseReductionNearField,
                               isSelected: _noiseReductionMode ==
                                   _NoiseReductionMode.nearField,
                               onTap: () => _handleNoiseReductionModeChanged(
@@ -911,7 +927,7 @@ class _CallSettingsSheetState extends State<_CallSettingsSheet> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: _SettingsOptionButton(
-                              label: '遠距離',
+                              label: l10n.callSettingsNoiseReductionFarField,
                               isSelected: _noiseReductionMode ==
                                   _NoiseReductionMode.farField,
                               onTap: () => _handleNoiseReductionModeChanged(

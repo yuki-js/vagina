@@ -1,0 +1,1501 @@
+{
+  "@@locale": "en",
+  "appTitle": "{appName}",
+  "@appTitle": {
+    "description": "Application title used by MaterialApp during bootstrap.",
+    "placeholders": {
+      "appName": {
+        "type": "String",
+        "description": "Non-translatable application brand token injected from AppConfig.appName."
+      }
+    }
+  },
+  "homeTabSpeedDial": "Speed Dial",
+  "@homeTabSpeedDial": {
+    "description": "Bottom navigation label for the speed dial tab on the home screen."
+  },
+  "homeTabSessions": "Sessions",
+  "@homeTabSessions": {
+    "description": "Bottom navigation label for the sessions tab on the home screen."
+  },
+  "homeTabAgents": "Agents",
+  "@homeTabAgents": {
+    "description": "Bottom navigation label for the agents tab on the home screen."
+  },
+  "homeTabMore": "More",
+  "@homeTabMore": {
+    "description": "Bottom navigation label for the more tab on the home screen."
+  },
+  "welcomeTitle": "Welcome to {appName}!",
+  "@welcomeTitle": {
+    "description": "First rotating welcome message shown in OOBE. Keeps the brand token injected centrally.",
+    "placeholders": {
+      "appName": {
+        "type": "String",
+        "description": "Non-translatable application brand token injected from AppConfig.appName."
+      }
+    }
+  },
+  "welcomeHeroMessageThoughts": "Set your thoughts free with your voice",
+  "@welcomeHeroMessageThoughts": {
+    "description": "Rotating hero copy on the OOBE welcome screen highlighting voice-first thinking."
+  },
+  "welcomeHeroMessageRealtimeAi": "Live AI conversation",
+  "@welcomeHeroMessageRealtimeAi": {
+    "description": "Rotating hero copy on the OOBE welcome screen highlighting real-time AI conversation."
+  },
+  "welcomeHeroMessageCreativePartner": "Your creative partner",
+  "@welcomeHeroMessageCreativePartner": {
+    "description": "Rotating hero copy on the OOBE welcome screen describing the app as a creative partner."
+  },
+  "welcomeHeroMessageSubtitle": "Voice AGI Notepad Agent",
+  "@welcomeHeroMessageSubtitle": {
+    "description": "Rotating hero copy on the OOBE welcome screen using the app's product-style subtitle."
+  },
+  "welcomeTapToBegin": "Tap to begin",
+  "@welcomeTapToBegin": {
+    "description": "Hint text on the OOBE welcome screen prompting the user to continue by tapping."
+  },
+  "welcomeFeatureRealtimeConversation": "Live conversation",
+  "@welcomeFeatureRealtimeConversation": {
+    "description": "Feature chip label on the OOBE welcome screen for real-time conversation."
+  },
+  "welcomeFeatureThoughtOrganization": "Organize thoughts",
+  "@welcomeFeatureThoughtOrganization": {
+    "description": "Feature chip label on the OOBE welcome screen for thought organization."
+  },
+  "welcomeFeatureVoiceNotes": "Voice notes",
+  "@welcomeFeatureVoiceNotes": {
+    "description": "Feature chip label on the OOBE welcome screen for voice note capture."
+  },
+  "welcomeFeatureAiSupport": "AI support",
+  "@welcomeFeatureAiSupport": {
+    "description": "Feature chip label on the OOBE welcome screen for AI assistance."
+  },
+  "welcomePoweredByAokiApp": "Powered by AokiApp",
+  "@welcomePoweredByAokiApp": {
+    "description": "Small footer attribution shown on the OOBE welcome screen."
+  },
+  "permissionsIntro": "To get the most out of {appName},\nsome permissions are required.",
+  "@permissionsIntro": {
+    "description": "Intro copy on the OOBE permissions screen explaining that app permissions help the branded app function fully.",
+    "placeholders": {
+      "appName": {
+        "type": "String",
+        "description": "Non-translatable application brand token injected from AppConfig.appName."
+      }
+    }
+  },
+  "permissionsScreenTitle": "Permissions",
+  "@permissionsScreenTitle": {
+    "description": "Main heading on the OOBE permissions screen."
+  },
+  "permissionsMicrophoneTitle": "Microphone",
+  "@permissionsMicrophoneTitle": {
+    "description": "Permission card title for microphone access on the OOBE permissions screen."
+  },
+  "permissionsMicrophoneDescription": "Needed for voice conversations",
+  "@permissionsMicrophoneDescription": {
+    "description": "Permission card description explaining why microphone access is needed during OOBE."
+  },
+  "permissionsStorageTitle": "Storage",
+  "@permissionsStorageTitle": {
+    "description": "Permission card title for storage access on the OOBE permissions screen."
+  },
+  "permissionsStorageDescription": "Saves conversation history and notes",
+  "@permissionsStorageDescription": {
+    "description": "Permission card description explaining why storage access is useful during OOBE."
+  },
+  "permissionsGranted": "{permissionName} access granted",
+  "@permissionsGranted": {
+    "description": "Snackbar message shown after a permission is granted from the OOBE permissions screen.",
+    "placeholders": {
+      "permissionName": {
+        "type": "String",
+        "description": "Localized display name of the permission that was granted."
+      }
+    }
+  },
+  "permissionsRequestFailed": "Permission request failed: {error}",
+  "@permissionsRequestFailed": {
+    "description": "Snackbar message shown when requesting a permission fails on the OOBE permissions screen.",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "Platform or plugin error message describing why the permission request failed."
+      }
+    }
+  },
+  "permissionsSettingsDialogTitle": "{permissionName} access is required",
+  "@permissionsSettingsDialogTitle": {
+    "description": "Dialog title shown when a permission has been permanently denied and must be enabled in system settings.",
+    "placeholders": {
+      "permissionName": {
+        "type": "String",
+        "description": "Localized display name of the permission that must be enabled in system settings."
+      }
+    }
+  },
+  "permissionsSettingsDialogBody": "{permissionName} access has been turned off. Enable it in Settings to continue.",
+  "@permissionsSettingsDialogBody": {
+    "description": "Dialog body shown when a permission has been permanently denied and the user needs to open system settings.",
+    "placeholders": {
+      "permissionName": {
+        "type": "String",
+        "description": "Localized display name of the permission that must be enabled in system settings."
+      }
+    }
+  },
+  "permissionsDialogCancel": "Cancel",
+  "@permissionsDialogCancel": {
+    "description": "Cancel action on the OOBE permissions settings dialog."
+  },
+  "permissionsOpenSettings": "Open Settings",
+  "@permissionsOpenSettings": {
+    "description": "Primary action on the OOBE permissions settings dialog that opens the system settings screen."
+  },
+  "permissionsContinue": "Continue",
+  "@permissionsContinue": {
+    "description": "Primary CTA on the OOBE permissions screen."
+  },
+  "permissionsRequiredHint": "Allow the required permissions to continue",
+  "@permissionsRequiredHint": {
+    "description": "Hint shown below the disabled continue button until required permissions are granted."
+  },
+  "permissionsConfigureLater": "Set up later",
+  "@permissionsConfigureLater": {
+    "description": "Secondary action on the OOBE permissions screen that skips immediate configuration."
+  },
+  "permissionsRequiredBadge": "Required",
+  "@permissionsRequiredBadge": {
+    "description": "Badge label shown on required permission cards during OOBE."
+  },
+  "permissionsAllow": "Allow",
+  "@permissionsAllow": {
+    "description": "Button label on permission cards during OOBE that starts the permission request."
+  },
+  "diveInReady": "You're all set to start using {appName}.",
+  "@diveInReady": {
+    "description": "Completion message on the final OOBE screen stating the branded app is ready to use.",
+    "placeholders": {
+      "appName": {
+        "type": "String",
+        "description": "Non-translatable application brand token injected from AppConfig.appName."
+      }
+    }
+  },
+  "diveInTitle": "All set!",
+  "@diveInTitle": {
+    "description": "Large celebratory heading on the final OOBE screen."
+  },
+  "diveInFeatureOrganizeThoughts": "Organize thoughts by voice",
+  "@diveInFeatureOrganizeThoughts": {
+    "description": "Feature point on the final OOBE screen about organizing thoughts through voice interaction."
+  },
+  "diveInFeatureNaturalAiConversation": "Talk naturally with AI",
+  "@diveInFeatureNaturalAiConversation": {
+    "description": "Feature point on the final OOBE screen about natural conversation with AI."
+  },
+  "diveInFeatureCaptureIdeas": "Capture ideas instantly",
+  "@diveInFeatureCaptureIdeas": {
+    "description": "Feature point on the final OOBE screen about quickly recording ideas."
+  },
+  "diveInStart": "Start",
+  "@diveInStart": {
+    "description": "Small label inside the final OOBE floating action button that begins using the app."
+  },
+  "oobeAuthenticationTitle": "Sign in\nto get started",
+  "@oobeAuthenticationTitle": {
+    "description": "Main heading on the OOBE authentication screen inviting the user to sign in before continuing setup. Preserve the newline."
+  },
+  "oobeAuthenticationProviderButton": "Sign in with {providerName}",
+  "@oobeAuthenticationProviderButton": {
+    "description": "Label for an authentication provider button on the OOBE authentication screen.",
+    "placeholders": {
+      "providerName": {
+        "type": "String",
+        "description": "External authentication provider brand name such as Google, GitHub, X (Twitter), or Apple. Keep the provider brand untranslated if required by brand rules."
+      }
+    }
+  },
+  "oobeAuthenticationProviderComingSoon": "{providerName} sign-in is coming soon",
+  "@oobeAuthenticationProviderComingSoon": {
+    "description": "Snackbar message shown when the user taps an authentication provider whose backend flow is not implemented yet on the OOBE authentication screen.",
+    "placeholders": {
+      "providerName": {
+        "type": "String",
+        "description": "External authentication provider brand name such as Google, GitHub, X (Twitter), or Apple. Keep the provider brand untranslated if required by brand rules."
+      }
+    }
+  },
+  "oobeAuthenticationOr": "or",
+  "@oobeAuthenticationOr": {
+    "description": "Divider label between third-party sign-in buttons and manual setup on the OOBE authentication screen."
+  },
+  "oobeAuthenticationManualSetup": "Set up manually",
+  "@oobeAuthenticationManualSetup": {
+    "description": "Secondary button label on the OOBE authentication screen that takes the user to manual Azure OpenAI configuration instead of provider sign-in."
+  },
+  "oobeAuthenticationTermsNotice": "By continuing, you agree to the Terms of Service and Privacy Policy.",
+  "@oobeAuthenticationTermsNotice": {
+    "description": "Small legal notice near the bottom of the OOBE authentication screen."
+  },
+  "oobeManualSetupTitle": "Azure OpenAI setup",
+  "@oobeManualSetupTitle": {
+    "description": "Main heading on the OOBE manual setup screen for entering Azure OpenAI Realtime API credentials."
+  },
+  "oobeManualSetupSubtitle": "Enter your Azure OpenAI Realtime API connection details.",
+  "@oobeManualSetupSubtitle": {
+    "description": "Introductory text on the OOBE manual setup screen explaining that the user should enter Azure OpenAI Realtime API connection information."
+  },
+  "settingsLanguageSectionTitle": "Language",
+  "@settingsLanguageSectionTitle": {
+    "description": "Section header in settings for the language selector card."
+  },
+  "settingsLanguageLabel": "App language",
+  "@settingsLanguageLabel": {
+    "description": "Label shown above the settings language dropdown."
+  },
+  "settingsLanguageOptionSystemDefault": "System default",
+  "@settingsLanguageOptionSystemDefault": {
+    "description": "Dropdown option that clears the locale override and follows the system locale."
+  },
+  "settingsLanguageOptionJapanese": "Japanese",
+  "@settingsLanguageOptionJapanese": {
+    "description": "Dropdown option label for the Japanese app locale."
+  },
+  "settingsLanguageOptionEnglish": "English",
+  "@settingsLanguageOptionEnglish": {
+    "description": "Dropdown option label for the English app locale."
+  },
+  "settingsScreenTitle": "Settings",
+  "@settingsScreenTitle": {
+    "description": "App bar title for the settings screen."
+  },
+  "settingsAzureConfigSectionTitle": "Azure OpenAI",
+  "@settingsAzureConfigSectionTitle": {
+    "description": "Section header for the Azure OpenAI configuration card on the settings screen."
+  },
+  "settingsSetupSectionTitle": "Setup",
+  "@settingsSetupSectionTitle": {
+    "description": "Section header for the setup card on the settings screen."
+  },
+  "settingsAzureLoadFailed": "Failed to load settings",
+  "@settingsAzureLoadFailed": {
+    "description": "Snackbar shown when the saved Azure settings cannot be loaded."
+  },
+  "settingsAzureRealtimeUrlRequired": "Enter the Realtime URL",
+  "@settingsAzureRealtimeUrlRequired": {
+    "description": "Validation message shown when the Azure Realtime URL field is empty."
+  },
+  "settingsAzureRealtimeUrlInvalid": "The Realtime URL format is invalid",
+  "@settingsAzureRealtimeUrlInvalid": {
+    "description": "Validation message shown when the Azure Realtime URL cannot be parsed."
+  },
+  "settingsAzureApiKeyRequired": "Enter the API key",
+  "@settingsAzureApiKeyRequired": {
+    "description": "Validation message shown when the Azure API key field is empty."
+  },
+  "settingsAzureSaveSuccess": "Settings saved",
+  "@settingsAzureSaveSuccess": {
+    "description": "Snackbar shown after the Azure settings are saved successfully."
+  },
+  "settingsAzureSaveFailed": "Failed to save settings: {error}",
+  "@settingsAzureSaveFailed": {
+    "description": "Snackbar shown when saving the Azure settings fails.",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "Error details from the failed save operation."
+      }
+    }
+  },
+  "settingsAzureConnectionTestSuccess": "Connection test succeeded",
+  "@settingsAzureConnectionTestSuccess": {
+    "description": "Snackbar shown when the Azure Realtime connection test succeeds."
+  },
+  "settingsAzureConnectionTestFailed": "Connection test failed: {error}",
+  "@settingsAzureConnectionTestFailed": {
+    "description": "Snackbar shown when the Azure Realtime connection test fails.",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "Error details from the failed connection test."
+      }
+    }
+  },
+  "settingsAzureClearDialogTitle": "Clear settings?",
+  "@settingsAzureClearDialogTitle": {
+    "description": "Confirmation dialog title before deleting the saved Azure settings."
+  },
+  "settingsAzureClearDialogBody": "Delete all saved API settings?",
+  "@settingsAzureClearDialogBody": {
+    "description": "Confirmation dialog body before deleting the saved Azure settings."
+  },
+  "settingsCommonCancel": "Cancel",
+  "@settingsCommonCancel": {
+    "description": "Cancel action used in the settings screen confirmation dialog."
+  },
+  "settingsCommonDelete": "Delete",
+  "@settingsCommonDelete": {
+    "description": "Destructive delete action used in the settings screen confirmation dialog."
+  },
+  "settingsAzureClearSuccess": "Settings cleared",
+  "@settingsAzureClearSuccess": {
+    "description": "Snackbar shown after the saved Azure settings are cleared."
+  },
+  "settingsAzureClearFailed": "Failed to clear settings: {error}",
+  "@settingsAzureClearFailed": {
+    "description": "Snackbar shown when clearing the saved Azure settings fails.",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "Error details from the failed clear operation."
+      }
+    }
+  },
+  "settingsAzureRealtimeUrlLabel": "Azure OpenAI Realtime URL",
+  "@settingsAzureRealtimeUrlLabel": {
+    "description": "Field label above the Azure OpenAI Realtime URL input on the settings screen."
+  },
+  "settingsAzureRealtimeUrlHint": "https://<resource>.openai.azure.com/openai/realtime?api-version=2024-10-01-preview&deployment=gpt-4o-realtime",
+  "@settingsAzureRealtimeUrlHint": {
+    "description": "Placeholder text inside the Azure OpenAI Realtime URL input. Keep the URL pattern intact."
+  },
+  "settingsAzureRealtimeUrlExample": "Example: https://your-resource.openai.azure.com/openai/realtime?api-version=2024-10-01-preview&deployment=gpt-realtime",
+  "@settingsAzureRealtimeUrlExample": {
+    "description": "Helper text below the Azure Realtime URL field showing an example endpoint. Keep the URL pattern intact."
+  },
+  "settingsAzureApiKeyLabel": "API key",
+  "@settingsAzureApiKeyLabel": {
+    "description": "Field label above the Azure API key input on the settings screen."
+  },
+  "settingsAzureApiKeyHint": "Enter the API key",
+  "@settingsAzureApiKeyHint": {
+    "description": "Placeholder text inside the Azure API key input."
+  },
+  "settingsCommonSave": "Save",
+  "@settingsCommonSave": {
+    "description": "Primary save button label used on the settings screen."
+  },
+  "settingsAzureTestConnectionButton": "Test connection",
+  "@settingsAzureTestConnectionButton": {
+    "description": "Button label that runs the Azure Realtime connection test."
+  },
+  "settingsCommonClear": "Clear",
+  "@settingsCommonClear": {
+    "description": "Button label that clears the saved Azure settings."
+  },
+  "settingsAzureCredentialsStorageNote": "Credentials are stored securely on this device.",
+  "@settingsAzureCredentialsStorageNote": {
+    "description": "Small note below the Azure settings buttons explaining where credentials are stored."
+  },
+  "settingsSetupRestartOobeTitle": "Run initial setup again",
+  "@settingsSetupRestartOobeTitle": {
+    "description": "Title of the setup list tile that restarts the onboarding flow from the welcome screen."
+  },
+  "settingsSetupRestartOobeSubtitle": "Restart initial setup from the welcome screen",
+  "@settingsSetupRestartOobeSubtitle": {
+    "description": "Subtitle of the setup list tile that explains onboarding will restart from the welcome screen."
+  },
+  "speedDialTabLoadError": "Error: {error}",
+  "@speedDialTabLoadError": {
+    "description": "Error text shown in the speed dial tab when the saved speed dial list fails to load.",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "Error details from the failed speed dial load operation."
+      }
+    }
+  },
+  "speedDialTabSubtitle": "Quickly call your favorite characters",
+  "@speedDialTabSubtitle": {
+    "description": "Short description shown under the Speed Dial heading on the speed dial tab."
+  },
+  "speedDialTabEmptyTitle": "No speed dials yet",
+  "@speedDialTabEmptyTitle": {
+    "description": "Empty-state title shown on the speed dial tab when no speed dial entries exist."
+  },
+  "speedDialTabEmptyBody": "Use the + button in the top right to add one",
+  "@speedDialTabEmptyBody": {
+    "description": "Empty-state helper text on the speed dial tab explaining how to add a speed dial entry."
+  },
+  "speedDialConfigAddTitle": "Add speed dial",
+  "@speedDialConfigAddTitle": {
+    "description": "App bar title on the speed dial configuration screen when creating a new speed dial."
+  },
+  "speedDialConfigEditTitle": "Edit speed dial",
+  "@speedDialConfigEditTitle": {
+    "description": "App bar title on the speed dial configuration screen when editing an existing speed dial."
+  },
+  "speedDialConfigAddAction": "Add",
+  "@speedDialConfigAddAction": {
+    "description": "Primary action button label on the speed dial configuration screen when creating a new speed dial."
+  },
+  "speedDialConfigNameRequired": "Enter a name",
+  "@speedDialConfigNameRequired": {
+    "description": "Validation message shown when the speed dial name field is empty."
+  },
+  "speedDialConfigSystemPromptRequired": "Enter the system prompt",
+  "@speedDialConfigSystemPromptRequired": {
+    "description": "Validation message shown when the speed dial system prompt field is empty."
+  },
+  "speedDialConfigAdded": "Speed dial added",
+  "@speedDialConfigAdded": {
+    "description": "Snackbar shown after a new speed dial is saved successfully."
+  },
+  "speedDialConfigUpdated": "Speed dial updated",
+  "@speedDialConfigUpdated": {
+    "description": "Snackbar shown after an existing speed dial is updated successfully."
+  },
+  "speedDialConfigDeleted": "Speed dial deleted",
+  "@speedDialConfigDeleted": {
+    "description": "Snackbar shown after a speed dial is deleted successfully."
+  },
+  "speedDialConfigDefaultDeleteBlocked": "The default speed dial cannot be deleted",
+  "@speedDialConfigDefaultDeleteBlocked": {
+    "description": "Snackbar shown when the user tries to delete the protected default speed dial."
+  },
+  "speedDialConfigDeleteConfirmTitle": "Delete speed dial",
+  "@speedDialConfigDeleteConfirmTitle": {
+    "description": "Confirmation dialog title shown before deleting a speed dial."
+  },
+  "speedDialConfigDeleteConfirmBody": "Delete \"{name}\"?",
+  "@speedDialConfigDeleteConfirmBody": {
+    "description": "Confirmation dialog body shown before deleting a speed dial. The placeholder is the speed dial name.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "description": "Display name of the speed dial being deleted."
+      }
+    }
+  },
+  "speedDialConfigIconLabel": "Icon",
+  "@speedDialConfigIconLabel": {
+    "description": "Section label for the icon or emoji selector on the speed dial configuration screen."
+  },
+  "speedDialConfigIconTapToChange": "Tap to change",
+  "@speedDialConfigIconTapToChange": {
+    "description": "Hint shown below the selected emoji on the speed dial configuration screen."
+  },
+  "speedDialConfigNameLabel": "Name",
+  "@speedDialConfigNameLabel": {
+    "description": "Field label for the speed dial name input."
+  },
+  "speedDialConfigNameHint": "Example: Assistant",
+  "@speedDialConfigNameHint": {
+    "description": "Placeholder text inside the speed dial name input."
+  },
+  "speedDialConfigDefaultNameLocked": "The default speed dial name cannot be changed",
+  "@speedDialConfigDefaultNameLocked": {
+    "description": "Helper text shown when editing the protected default speed dial whose name cannot be changed."
+  },
+  "speedDialConfigVoiceLabel": "Voice",
+  "@speedDialConfigVoiceLabel": {
+    "description": "Field label for the voice selection dropdown on the speed dial configuration screen."
+  },
+  "speedDialConfigSystemPromptLabel": "System prompt",
+  "@speedDialConfigSystemPromptLabel": {
+    "description": "Field label for the system prompt input on the speed dial configuration screen."
+  },
+  "speedDialConfigSystemPromptDescription": "Set the character's behavior and personality",
+  "@speedDialConfigSystemPromptDescription": {
+    "description": "Helper text above the system prompt field explaining what the prompt controls for a speed dial persona."
+  },
+  "speedDialConfigSystemPromptHint": "Example: You are a kind assistant",
+  "@speedDialConfigSystemPromptHint": {
+    "description": "Placeholder text inside the system prompt field on the speed dial configuration screen."
+  },
+  "speedDialConfigToolsLabel": "Tool settings",
+  "@speedDialConfigToolsLabel": {
+    "description": "Section label above the tool configuration widget on the speed dial configuration screen."
+  },
+  "speedDialEmojiPickerTitle": "Choose an icon",
+  "@speedDialEmojiPickerTitle": {
+    "description": "Header title inside the emoji picker dialog used by the speed dial configuration flow."
+  },
+  "speedDialToolConfigSelectAll": "Select all",
+  "@speedDialToolConfigSelectAll": {
+    "description": "Button label in the shared tool configuration widget that enables all tools for the current speed dial."
+  },
+  "speedDialToolConfigClearAll": "Clear all",
+  "@speedDialToolConfigClearAll": {
+    "description": "Button label in the shared tool configuration widget that disables all tools for the current speed dial."
+  },
+  "speedDialToolCategorySystem": "System",
+  "@speedDialToolCategorySystem": {
+    "description": "Category tab label for system tools in the speed dial tool configuration widget."
+  },
+  "speedDialToolCategoryCalculation": "Calculation",
+  "@speedDialToolCategoryCalculation": {
+    "description": "Category tab label for calculation tools in the speed dial tool configuration widget."
+  },
+  "speedDialToolCategoryFilesystem": "Files",
+  "@speedDialToolCategoryFilesystem": {
+    "description": "Category tab label for filesystem tools in the speed dial tool configuration widget."
+  },
+  "speedDialToolCategoryDocument": "Documents",
+  "@speedDialToolCategoryDocument": {
+    "description": "Category tab label for document tools in the speed dial tool configuration widget."
+  },
+  "speedDialToolCategoryMcp": "MCP",
+  "@speedDialToolCategoryMcp": {
+    "description": "Category tab label for MCP tools in the speed dial tool configuration widget."
+  },
+  "speedDialToolCategoryCustom": "Custom",
+  "@speedDialToolCategoryCustom": {
+    "description": "Category tab label for custom tools in the speed dial tool configuration widget."
+  },
+  "textAgentsLoadError": "Error: {error}",
+  "@textAgentsLoadError": {
+    "description": "Error text shown on text agent list surfaces when loading agents fails.",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "Error details from the failed text agent load operation."
+      }
+    }
+  },
+  "textAgentsSearchHint": "Search agents...",
+  "@textAgentsSearchHint": {
+    "description": "Placeholder text in the search field on the agents tab for text agents."
+  },
+  "textAgentsListEmptyTitle": "No agents yet",
+  "@textAgentsListEmptyTitle": {
+    "description": "Empty-state title on the agents tab when no text agents exist."
+  },
+  "textAgentsListEmptyBody": "Use the + button in the top right to add one",
+  "@textAgentsListEmptyBody": {
+    "description": "Empty-state helper text on the agents tab explaining how to add the first text agent."
+  },
+  "textAgentsSearchEmptyTitle": "No search results",
+  "@textAgentsSearchEmptyTitle": {
+    "description": "Message shown on the agents tab when the text agent search returns no matches."
+  },
+  "textAgentsProviderHostedPrefix": "Hosted",
+  "@textAgentsProviderHostedPrefix": {
+    "description": "Short prefix shown before a hosted text agent model identifier in provider summary labels."
+  },
+  "textAgentsProviderUnknown": "Unknown",
+  "@textAgentsProviderUnknown": {
+    "description": "Fallback provider label shown when a text agent provider type cannot be determined."
+  },
+  "textAgentsProviderLabelOpenAi": "OpenAI",
+  "@textAgentsProviderLabelOpenAi": {
+    "description": "Provider name label shown for the OpenAI text agent provider in dropdowns and summaries."
+  },
+  "textAgentsProviderLabelAzure": "Azure OpenAI",
+  "@textAgentsProviderLabelAzure": {
+    "description": "Provider name label shown for the Azure OpenAI text agent provider in dropdowns and summaries."
+  },
+  "textAgentsProviderLabelLiteLlm": "LiteLLM Proxy",
+  "@textAgentsProviderLabelLiteLlm": {
+    "description": "Provider name label shown for the LiteLLM text agent provider in dropdowns and summaries."
+  },
+  "textAgentsProviderLabelCustom": "Custom endpoint",
+  "@textAgentsProviderLabelCustom": {
+    "description": "Provider name label shown for the custom OpenAI-compatible text agent provider in dropdowns and summaries."
+  },
+  "textAgentsFieldRequired": "Enter {fieldName}",
+  "@textAgentsFieldRequired": {
+    "description": "Validation message shown on the text agent form when a required field is empty.",
+    "placeholders": {
+      "fieldName": {
+        "type": "String",
+        "description": "Localized field name for the missing required text agent form input."
+      }
+    }
+  },
+  "textAgentsSaveCreated": "Agent created",
+  "@textAgentsSaveCreated": {
+    "description": "Snackbar shown after a new text agent is saved successfully."
+  },
+  "textAgentsSaveUpdated": "Agent updated",
+  "@textAgentsSaveUpdated": {
+    "description": "Snackbar shown after an existing text agent is updated successfully."
+  },
+  "textAgentsSaveFailed": "Failed to save: {error}",
+  "@textAgentsSaveFailed": {
+    "description": "Snackbar shown when saving a text agent fails.",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "Error details from the failed text agent save operation."
+      }
+    }
+  },
+  "textAgentsDeleteDialogTitle": "Delete agent",
+  "@textAgentsDeleteDialogTitle": {
+    "description": "Confirmation dialog title shown before deleting a text agent."
+  },
+  "textAgentsDeleteDialogBody": "Delete \"{name}\"?",
+  "@textAgentsDeleteDialogBody": {
+    "description": "Confirmation dialog body shown before deleting a text agent. The placeholder is the agent name.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "description": "Display name of the text agent being deleted."
+      }
+    }
+  },
+  "textAgentsDeleteSuccess": "Agent deleted",
+  "@textAgentsDeleteSuccess": {
+    "description": "Snackbar shown after deleting a text agent successfully."
+  },
+  "textAgentsDeleteFailed": "Failed to delete: {error}",
+  "@textAgentsDeleteFailed": {
+    "description": "Snackbar shown when deleting a text agent fails.",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "Error details from the failed text agent delete operation."
+      }
+    }
+  },
+  "textAgentsCreateTitle": "Add agent",
+  "@textAgentsCreateTitle": {
+    "description": "App bar title on the text agent form screen when creating a new text agent."
+  },
+  "textAgentsEditTitle": "Edit agent",
+  "@textAgentsEditTitle": {
+    "description": "App bar title on the text agent form screen when editing an existing text agent."
+  },
+  "textAgentsSectionBasicInfo": "Basic information",
+  "@textAgentsSectionBasicInfo": {
+    "description": "Section header for the basic information card on the text agent form screen."
+  },
+  "textAgentsFieldAgentName": "Agent name",
+  "@textAgentsFieldAgentName": {
+    "description": "Field label for the text agent name input on the text agent form screen."
+  },
+  "textAgentsFieldNameHint": "Example: Research assistant",
+  "@textAgentsFieldNameHint": {
+    "description": "Placeholder text inside the text agent name input on the text agent form screen."
+  },
+  "textAgentsFieldDescriptionOptional": "Description (optional)",
+  "@textAgentsFieldDescriptionOptional": {
+    "description": "Field label for the optional description input on the text agent form screen."
+  },
+  "textAgentsFieldDescriptionHint": "Example: An agent that provides detailed analysis and summaries",
+  "@textAgentsFieldDescriptionHint": {
+    "description": "Placeholder text inside the optional description input on the text agent form screen."
+  },
+  "textAgentsFieldSystemPromptOptional": "System prompt (optional)",
+  "@textAgentsFieldSystemPromptOptional": {
+    "description": "Field label for the optional system prompt input on the text agent form screen."
+  },
+  "textAgentsFieldSystemPromptHint": "Example: You are a helpful research assistant...",
+  "@textAgentsFieldSystemPromptHint": {
+    "description": "Placeholder text inside the optional system prompt input on the text agent form screen. Keep the assistant-style example natural."
+  },
+  "textAgentsSectionSettings": "Settings",
+  "@textAgentsSectionSettings": {
+    "description": "Section header for the provider and API settings card on the text agent form screen."
+  },
+  "textAgentsFieldProvider": "Provider",
+  "@textAgentsFieldProvider": {
+    "description": "Field label for the provider dropdown on the text agent form screen."
+  },
+  "textAgentsProviderHelpOpenAi": "OpenAI's official API. Uses api.openai.com.",
+  "@textAgentsProviderHelpOpenAi": {
+    "description": "Helper text shown on the text agent form when the OpenAI provider is selected."
+  },
+  "textAgentsProviderHelpAzure": "Azure OpenAI Service. Enter either a base URL such as https://{resource}.openai.azure.com or a full Chat Completions URL.",
+  "@textAgentsProviderHelpAzure": {
+    "description": "Helper text shown on the text agent form when the Azure OpenAI provider is selected. Keep the URL pattern intact and explain that either a base URL or a full Chat Completions URL is accepted."
+  },
+  "textAgentsProviderHelpLiteLlm": "LiteLLM proxy service. Enter a local or remote proxy URL.",
+  "@textAgentsProviderHelpLiteLlm": {
+    "description": "Helper text shown on the text agent form when the LiteLLM provider is selected."
+  },
+  "textAgentsProviderHelpCustom": "OpenAI-compatible custom endpoint. Enter a full URL.",
+  "@textAgentsProviderHelpCustom": {
+    "description": "Helper text shown on the text agent form when the custom provider is selected."
+  },
+  "textAgentsFieldApiKey": "API key",
+  "@textAgentsFieldApiKey": {
+    "description": "Field label for the API key input on the text agent form screen."
+  },
+  "textAgentsFieldApiKeyHint": "Enter the provider API key",
+  "@textAgentsFieldApiKeyHint": {
+    "description": "Placeholder text inside the API key input on the text agent form screen."
+  },
+  "textAgentsSectionToolSettings": "Tool settings",
+  "@textAgentsSectionToolSettings": {
+    "description": "Section header above the shared tool configuration widget on the text agent form screen."
+  },
+  "textAgentsActionCreate": "Create",
+  "@textAgentsActionCreate": {
+    "description": "Primary button label on the text agent form screen when creating a new text agent."
+  },
+  "textAgentsFieldModel": "Model",
+  "@textAgentsFieldModel": {
+    "description": "Field label for the model input used by the OpenAI provider on the text agent form screen."
+  },
+  "textAgentsFieldEndpoint": "Endpoint",
+  "@textAgentsFieldEndpoint": {
+    "description": "Field label for the endpoint input used by the Azure provider on the text agent form screen."
+  },
+  "textAgentsFieldProxyUrl": "Proxy URL",
+  "@textAgentsFieldProxyUrl": {
+    "description": "Field label for the proxy URL input used by the LiteLLM provider on the text agent form screen."
+  },
+  "textAgentsFieldEndpointUrl": "Endpoint URL",
+  "@textAgentsFieldEndpointUrl": {
+    "description": "Field label for the endpoint URL input used by the custom provider on the text agent form screen."
+  },
+  "textAgentsEmptyViewTitle": "No text agents yet",
+  "@textAgentsEmptyViewTitle": {
+    "description": "Standalone empty-state title in the reusable empty text agents view widget."
+  },
+  "textAgentsEmptyViewBody": "Create a text agent to unlock advanced AI features",
+  "@textAgentsEmptyViewBody": {
+    "description": "Standalone empty-state helper text in the reusable empty text agents view widget."
+  },
+  "textAgentsEmptyViewCreateAction": "Create your first agent",
+  "@textAgentsEmptyViewCreateAction": {
+    "description": "Primary button label in the reusable empty text agents view widget."
+  },
+  "textAgentsSelectionDialogTitle": "Select agent",
+  "@textAgentsSelectionDialogTitle": {
+    "description": "Dialog title for the text agent selection dialog."
+  },
+  "textAgentsSelectionDialogEmptyTitle": "No agents available",
+  "@textAgentsSelectionDialogEmptyTitle": {
+    "description": "Empty-state title shown inside the text agent selection dialog when no agents exist."
+  },
+  "textAgentsSelectionDialogError": "Error: {error}",
+  "@textAgentsSelectionDialogError": {
+    "description": "Error text shown inside the text agent selection dialog when loading agents or the selected agent fails.",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "Error details from the failed text agent selection dialog load operation."
+      }
+    }
+  },
+  "textAgentsSelectedBadge": "Selected",
+  "@textAgentsSelectedBadge": {
+    "description": "Small badge label shown on text agent cards and list tiles for the currently selected text agent."
+  },
+  "textAgentsProviderUrlRequired": "Enter a URL",
+  "@textAgentsProviderUrlRequired": {
+    "description": "Validation message shown when a provider URL field is empty in text agent provider parsing logic."
+  },
+  "textAgentsProviderUrlInvalid": "Enter a valid URL",
+  "@textAgentsProviderUrlInvalid": {
+    "description": "Validation message shown when a provider URL cannot be parsed for a text agent."
+  },
+  "textAgentsProviderUrlHttpHttpsOnly": "Enter an HTTP or HTTPS URL",
+  "@textAgentsProviderUrlHttpHttpsOnly": {
+    "description": "Validation message shown when a provider URL uses an unsupported scheme for a text agent."
+  },
+  "textAgentsProviderAzureUrlWarning": "This may not be a valid Azure OpenAI URL",
+  "@textAgentsProviderAzureUrlWarning": {
+    "description": "Validation warning shown when an Azure provider URL for a text agent does not resemble an Azure OpenAI host."
+  },
+  "callConnectionFailedTitle": "Unable to connect",
+  "@callConnectionFailedTitle": {
+    "description": "Title of the blocking dialog shown when the call screen fails to establish the realtime call connection."
+  },
+  "callActionClose": "Close",
+  "@callActionClose": {
+    "description": "Generic close action used on call-related dialogs, sheets, and headers."
+  },
+  "callPaneSpeaker": "Speaker",
+  "@callPaneSpeaker": {
+    "description": "Label for the call pane control that toggles speaker playback mute."
+  },
+  "callPaneMute": "Mute",
+  "@callPaneMute": {
+    "description": "Label for the call pane control that toggles the microphone mute state."
+  },
+  "callPaneInterrupt": "Interrupt",
+  "@callPaneInterrupt": {
+    "description": "Label for the call pane control that interrupts the assistant's current output."
+  },
+  "callPaneSettingsTooltip": "Settings",
+  "@callPaneSettingsTooltip": {
+    "description": "Tooltip and accessibility label for the button that opens call settings."
+  },
+  "callPaneChat": "Chat",
+  "@callPaneChat": {
+    "description": "Label for the call pane navigation button that opens the chat pane."
+  },
+  "callPaneNotepad": "Notepad",
+  "@callPaneNotepad": {
+    "description": "Label for the call pane navigation button that opens the notepad pane."
+  },
+  "callPaneEndCallTooltip": "End call",
+  "@callPaneEndCallTooltip": {
+    "description": "Tooltip and accessibility label for the floating action button that ends the current call."
+  },
+  "callPanePttReleaseToFinish": "Release to finish",
+  "@callPanePttReleaseToFinish": {
+    "description": "Label on the push-to-talk hold button while it is being pressed. Releasing ends the user's speaking turn."
+  },
+  "callPanePttPressToTalk": "Press to talk",
+  "@callPanePttPressToTalk": {
+    "description": "Idle label on the push-to-talk hold button in the call pane."
+  },
+  "callSettingsTitle": "Call settings",
+  "@callSettingsTitle": {
+    "description": "Title of the modal sheet that contains call-specific settings such as talk mode and noise reduction."
+  },
+  "callSettingsModeTitle": "Talk mode",
+  "@callSettingsModeTitle": {
+    "description": "Section title for selecting the talk mode in the call settings sheet."
+  },
+  "callSettingsModeHandsFree": "Hands-free",
+  "@callSettingsModeHandsFree": {
+    "description": "Option label for the hands-free talk mode in the call settings sheet."
+  },
+  "callSettingsModePushToTalk": "Push to talk",
+  "@callSettingsModePushToTalk": {
+    "description": "Option label for the push-to-talk mode in the call settings sheet."
+  },
+  "callSettingsNoiseReductionTitle": "Noise reduction",
+  "@callSettingsNoiseReductionTitle": {
+    "description": "Section title for selecting input noise reduction behavior in the call settings sheet."
+  },
+  "callSettingsNoiseReductionOff": "Off",
+  "@callSettingsNoiseReductionOff": {
+    "description": "Option label that disables input noise reduction in the call settings sheet."
+  },
+  "callSettingsNoiseReductionNearField": "Near field",
+  "@callSettingsNoiseReductionNearField": {
+    "description": "Option label for near-field input noise reduction in the call settings sheet, intended for nearby speech."
+  },
+  "callSettingsNoiseReductionFarField": "Far field",
+  "@callSettingsNoiseReductionFarField": {
+    "description": "Option label for far-field input noise reduction in the call settings sheet, intended for more distant speech."
+  },
+  "callChatTitle": "Chat",
+  "@callChatTitle": {
+    "description": "Header title for the call chat pane."
+  },
+  "callChatBackToCall": "Call",
+  "@callChatBackToCall": {
+    "description": "Back-navigation label in the chat pane header that returns to the main call pane."
+  },
+  "callChatEmptyTitle": "No conversation yet",
+  "@callChatEmptyTitle": {
+    "description": "Empty-state title shown in the call chat pane before any messages or tool calls appear."
+  },
+  "callChatEmptyMessage": "Conversation history will appear here",
+  "@callChatEmptyMessage": {
+    "description": "Empty-state helper text shown in the call chat pane before any messages or tool calls appear."
+  },
+  "callChatInputHintEnabled": "Type a message",
+  "@callChatInputHintEnabled": {
+    "description": "Placeholder text in the chat input field while the call is active and text input is allowed."
+  },
+  "callChatInputHintDisabled": "You can type only during an active call",
+  "@callChatInputHintDisabled": {
+    "description": "Placeholder text in the disabled chat input field when the call is not active."
+  },
+  "callChatImageDetail": "Detail: {detail}",
+  "@callChatImageDetail": {
+    "description": "Supplementary label shown under an image attachment inside the chat pane, indicating the provider-supplied image detail level.",
+    "placeholders": {
+      "detail": {
+        "type": "String",
+        "description": "Provider-supplied image detail value such as low, high, or auto."
+      }
+    }
+  },
+  "callChatToolFallbackName": "Tool call",
+  "@callChatToolFallbackName": {
+    "description": "Fallback title shown for a tool call in chat when the tool name is unavailable."
+  },
+  "callChatToolArgumentsStreaming": "Streaming...",
+  "@callChatToolArgumentsStreaming": {
+    "description": "Placeholder text shown in tool details while the model is still streaming tool call arguments."
+  },
+  "callChatToolArgumentsNone": "No arguments",
+  "@callChatToolArgumentsNone": {
+    "description": "Placeholder text shown in tool details when a tool call completed or failed without any arguments."
+  },
+  "callChatToolArgumentsCancelled": "Cancelled before arguments were completed",
+  "@callChatToolArgumentsCancelled": {
+    "description": "Placeholder text shown in tool details when a tool call was cancelled before its arguments finished streaming."
+  },
+  "callChatToolStatusGeneratingArguments": "Generating arguments...",
+  "@callChatToolStatusGeneratingArguments": {
+    "description": "Status text for a tool call while the model is still generating or streaming arguments."
+  },
+  "callChatToolStatusExecuting": "Executing...",
+  "@callChatToolStatusExecuting": {
+    "description": "Status text for a tool call after argument generation has finished and the tool is currently running."
+  },
+  "callChatToolStatusCompleted": "Completed",
+  "@callChatToolStatusCompleted": {
+    "description": "Status text for a successfully completed tool call in the chat pane."
+  },
+  "callChatToolStatusError": "Error",
+  "@callChatToolStatusError": {
+    "description": "Status text for a tool call that ended in error in the chat pane."
+  },
+  "callChatToolStatusCancelled": "Cancelled",
+  "@callChatToolStatusCancelled": {
+    "description": "Status text for a tool call that was cancelled in the chat pane."
+  },
+  "callChatToolNotFound": "Tool call not found",
+  "@callChatToolNotFound": {
+    "description": "Fallback error text shown in the tool details bottom sheet if the referenced tool call item can no longer be found."
+  },
+  "callChatToolArgumentsSectionTitle": "Arguments",
+  "@callChatToolArgumentsSectionTitle": {
+    "description": "Section title in the tool details sheet above the tool call arguments block."
+  },
+  "callChatToolErrorSectionTitle": "Error",
+  "@callChatToolErrorSectionTitle": {
+    "description": "Section title in the tool details sheet above the tool error output block."
+  },
+  "callChatToolResultSectionTitle": "Result",
+  "@callChatToolResultSectionTitle": {
+    "description": "Section title in the tool details sheet above the successful tool output block."
+  },
+  "callChatScrollToBottom": "Back to bottom",
+  "@callChatScrollToBottom": {
+    "description": "Label on the floating button that scrolls the chat list back to the latest messages."
+  },
+  "callNotepadLoadFailed": "Failed to load notepad",
+  "@callNotepadLoadFailed": {
+    "description": "Error message shown in the call notepad pane when active note content cannot be loaded."
+  },
+  "callNotepadSaveFailed": "Failed to save note",
+  "@callNotepadSaveFailed": {
+    "description": "Snackbar error shown when saving the currently edited call note fails."
+  },
+  "callNotepadCloseFailed": "Failed to close note",
+  "@callNotepadCloseFailed": {
+    "description": "Snackbar error shown when closing a note tab in the call notepad pane fails."
+  },
+  "callNotepadTitle": "Notepad",
+  "@callNotepadTitle": {
+    "description": "Header title for the call notepad pane."
+  },
+  "callNotepadBackToCall": "Call",
+  "@callNotepadBackToCall": {
+    "description": "Back-navigation label in the notepad pane header that returns to the main call pane."
+  },
+  "callNotepadLoadingTitle": "Loading notepad",
+  "@callNotepadLoadingTitle": {
+    "description": "Loading-state title shown while the call notepad pane is waiting for active notes."
+  },
+  "callNotepadLoadingMessage": "Please wait a moment",
+  "@callNotepadLoadingMessage": {
+    "description": "Loading-state helper text shown while the call notepad pane is waiting for active notes."
+  },
+  "callNotepadRetryMessage": "Please try again in a moment",
+  "@callNotepadRetryMessage": {
+    "description": "Helper text shown under a notepad load error, suggesting the user retry later."
+  },
+  "callNotepadNoOpenNotesTitle": "No open notes",
+  "@callNotepadNoOpenNotesTitle": {
+    "description": "Empty-state title shown in the call notepad pane when there are no active note tabs."
+  },
+  "callNotepadNoOpenNotesMessage": "Open note contents will appear here",
+  "@callNotepadNoOpenNotesMessage": {
+    "description": "Empty-state helper text shown in the call notepad pane when there are no active note tabs."
+  },
+  "callNotepadActionSave": "Save",
+  "@callNotepadActionSave": {
+    "description": "Tooltip for the notepad header action button that saves the current note when leaving edit mode."
+  },
+  "callNotepadActionEdit": "Edit",
+  "@callNotepadActionEdit": {
+    "description": "Tooltip for the notepad header action button that enters edit mode for the current note."
+  },
+  "callNotepadTabEmptyTitle": "This tab is empty",
+  "@callNotepadTabEmptyTitle": {
+    "description": "Empty-state title shown in the call notepad content area when the current note tab has no content."
+  },
+  "callNotepadTabEmptyMessage": "Contents of {title} will appear here",
+  "@callNotepadTabEmptyMessage": {
+    "description": "Empty-state helper text shown in the call notepad content area when the current note tab has no content.",
+    "placeholders": {
+      "title": {
+        "type": "String",
+        "description": "Title of the currently selected note tab."
+      }
+    }
+  },
+  "callNotepadSpreadsheetParseError": "Parse error: {error}",
+  "@callNotepadSpreadsheetParseError": {
+    "description": "Error banner text shown when spreadsheet-like notepad content cannot be parsed and the raw content is shown instead.",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "Technical parsing error message for the spreadsheet content."
+      }
+    }
+  },
+  "callNotepadSpreadsheetEmptyTable": "Empty table",
+  "@callNotepadSpreadsheetEmptyTable": {
+    "description": "Fallback message shown when a spreadsheet-like note contains no rows or columns to display."
+  },
+  "sessionDetailTitle": "Session details",
+  "@sessionDetailTitle": {
+    "description": "App bar title for the historical session detail screen."
+  },
+  "sessionDetailMissing": "Session not found",
+  "@sessionDetailMissing": {
+    "description": "Fallback text shown when the requested session record cannot be loaded for the session detail screen."
+  },
+  "sessionDetailTabInfo": "Info",
+  "@sessionDetailTabInfo": {
+    "description": "Segmented tab label for the info/details section on the session detail screen."
+  },
+  "sessionDetailBasicInformation": "Basic information",
+  "@sessionDetailBasicInformation": {
+    "description": "Section header for core metadata about a historical session."
+  },
+  "sessionDetailStartTime": "Start time",
+  "@sessionDetailStartTime": {
+    "description": "Label for the historical session start timestamp."
+  },
+  "sessionDetailEndTime": "End time",
+  "@sessionDetailEndTime": {
+    "description": "Label for the historical session end timestamp."
+  },
+  "sessionDetailCallDuration": "Call duration",
+  "@sessionDetailCallDuration": {
+    "description": "Label for the total duration of a historical session."
+  },
+  "sessionDetailDurationValue": "{minutes}m {seconds}s",
+  "@sessionDetailDurationValue": {
+    "description": "Formatted duration value for a historical session using minutes and seconds.",
+    "placeholders": {
+      "minutes": {
+        "type": "int",
+        "description": "Whole minutes portion of the session duration."
+      },
+      "seconds": {
+        "type": "int",
+        "description": "Remaining seconds portion of the session duration after minutes are removed."
+      }
+    }
+  },
+  "sessionDetailMessageCount": "Messages",
+  "@sessionDetailMessageCount": {
+    "description": "Label for the number of chat messages saved in a historical session."
+  },
+  "sessionDetailMessageCountValue": "{count}",
+  "@sessionDetailMessageCountValue": {
+    "description": "Numeric value shown for the number of chat messages in a historical session.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "description": "Number of chat messages in the session."
+      }
+    }
+  },
+  "sessionDetailNotepadCountValue": "{count}",
+  "@sessionDetailNotepadCountValue": {
+    "description": "Numeric value shown for the number of notepad documents captured in a historical session.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "description": "Number of historical notepad tabs/documents in the session."
+      }
+    }
+  },
+  "sessionDetailEndReason": "End reason",
+  "@sessionDetailEndReason": {
+    "description": "Label above explanatory text describing why a historical session ended."
+  },
+  "sessionDetailSpeedDialSettings": "Speed dial settings",
+  "@sessionDetailSpeedDialSettings": {
+    "description": "Section header for the speed dial configuration snapshot associated with a historical session."
+  },
+  "sessionDetailId": "ID",
+  "@sessionDetailId": {
+    "description": "Generic identifier label shown for the deleted speed dial ID in session details."
+  },
+  "sessionDetailSpeedDialDeleted": "This speed dial may have been deleted.",
+  "@sessionDetailSpeedDialDeleted": {
+    "description": "Explanatory note shown when a non-default speed dial referenced by a historical session no longer exists."
+  },
+  "sessionDetailDefaultSpeedDialMissing": "Error: Default speed dial not found",
+  "@sessionDetailDefaultSpeedDialMissing": {
+    "description": "Error text shown when the default speed dial snapshot cannot be resolved for a historical session."
+  },
+  "sessionDetailConversationSummary": "Conversation summary",
+  "@sessionDetailConversationSummary": {
+    "description": "Section header for the lightweight generated summary of a historical session conversation."
+  },
+  "sessionDetailSummaryNone": "No conversation history",
+  "@sessionDetailSummaryNone": {
+    "description": "Summary and empty-state text shown when a historical session contains no saved chat messages."
+  },
+  "sessionDetailSummaryShort": "Short conversation session ({count} messages)",
+  "@sessionDetailSummaryShort": {
+    "description": "Generated summary text for a historical session with only a few messages.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "description": "Number of messages in the short historical session."
+      }
+    }
+  },
+  "sessionDetailSummaryMedium": "Medium-length conversation session ({count} messages)",
+  "@sessionDetailSummaryMedium": {
+    "description": "Generated summary text for a historical session with a moderate number of messages.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "description": "Number of messages in the medium historical session."
+      }
+    }
+  },
+  "sessionDetailSummaryLong": "Long conversation session ({count} messages)",
+  "@sessionDetailSummaryLong": {
+    "description": "Generated summary text for a historical session with many messages.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "description": "Number of messages in the long historical session."
+      }
+    }
+  },
+  "sessionDetailSummaryDocumentsCreated": "{count} documents were created",
+  "@sessionDetailSummaryDocumentsCreated": {
+    "description": "Second-line summary text appended when historical session notes/documents were created.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "description": "Number of historical notepad documents created during the session."
+      }
+    }
+  },
+  "sessionDetailHistoricalNotepadEmpty": "Notepad is empty",
+  "@sessionDetailHistoricalNotepadEmpty": {
+    "description": "Empty-state text shown on the historical notepad tab when the session has no saved note tabs."
+  },
+  "sessionDetailHistoricalNotepadCopyTooltip": "Copy",
+  "@sessionDetailHistoricalNotepadCopyTooltip": {
+    "description": "Tooltip for the copy button on a historical notepad card."
+  },
+  "sessionDetailHistoricalNotepadCopied": "Copied contents of \"{title}\"",
+  "@sessionDetailHistoricalNotepadCopied": {
+    "description": "Snackbar text shown after copying the contents of a historical notepad tab.",
+    "placeholders": {
+      "title": {
+        "type": "String",
+        "description": "Title of the historical notepad tab whose content was copied."
+      }
+    }
+  },
+  "sessionDetailNoContent": "(No content)",
+  "@sessionDetailNoContent": {
+    "description": "Placeholder text shown when a historical note exists but its content body is empty."
+  },
+  "fileBrowserRootTitle": "Files",
+  "@fileBrowserRootTitle": {
+    "description": "App bar title for the root level of the virtual file browser."
+  },
+  "fileBrowserSelectedCount": "{count} selected",
+  "@fileBrowserSelectedCount": {
+    "description": "App bar title shown in the file browser when selection mode is active.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "description": "Number of currently selected file browser items."
+      }
+    }
+  },
+  "fileBrowserRenameAction": "Rename",
+  "@fileBrowserRenameAction": {
+    "description": "Menu item, dialog title, and confirmation action for renaming a selected file or folder in the file browser."
+  },
+  "fileBrowserRenameNewNameLabel": "New name",
+  "@fileBrowserRenameNewNameLabel": {
+    "description": "Input label in the rename dialog for the replacement file or folder name."
+  },
+  "fileBrowserRenameSuccess": "Renamed {oldName} to {newName}",
+  "@fileBrowserRenameSuccess": {
+    "description": "Snackbar shown after a file browser item is renamed successfully.",
+    "placeholders": {
+      "oldName": {
+        "type": "String",
+        "description": "Previous display name of the file or folder that was renamed."
+      },
+      "newName": {
+        "type": "String",
+        "description": "New display name of the file or folder after the rename operation."
+      }
+    }
+  },
+  "fileBrowserRenameFailed": "Failed to rename: {error}",
+  "@fileBrowserRenameFailed": {
+    "description": "Snackbar shown when renaming a selected file browser item fails.",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "Error details returned by the failed rename operation."
+      }
+    }
+  },
+  "fileBrowserActionDetails": "Details",
+  "@fileBrowserActionDetails": {
+    "description": "Selection-mode menu item in the file browser that opens the file information viewer for the selected item."
+  },
+  "fileBrowserSelectAll": "Select all",
+  "@fileBrowserSelectAll": {
+    "description": "Selection-mode menu item in the file browser that selects every visible item in the current directory."
+  },
+  "fileBrowserInvertSelection": "Invert selection",
+  "@fileBrowserInvertSelection": {
+    "description": "Selection-mode menu item in the file browser that flips which visible items are selected."
+  },
+  "fileBrowserDeleteConfirmTitle": "Delete selected items?",
+  "@fileBrowserDeleteConfirmTitle": {
+    "description": "Destructive confirmation dialog title shown before deleting selected file browser items."
+  },
+  "fileBrowserDeleteConfirmBody": "Delete {count} item(s)?",
+  "@fileBrowserDeleteConfirmBody": {
+    "description": "Destructive confirmation dialog body shown before deleting selected file browser items.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "description": "Number of selected file browser items that will be deleted."
+      }
+    }
+  },
+  "fileBrowserDeleteSuccess": "Deleted {count} item(s)",
+  "@fileBrowserDeleteSuccess": {
+    "description": "Snackbar shown after selected file browser items are deleted successfully.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "description": "Number of file browser items deleted successfully."
+      }
+    }
+  },
+  "fileBrowserDeleteFailed": "Failed to delete: {error}",
+  "@fileBrowserDeleteFailed": {
+    "description": "Snackbar shown when deleting selected file browser items fails.",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "Error details returned by the failed delete operation."
+      }
+    }
+  },
+  "fileBrowserLoadError": "Error: {error}",
+  "@fileBrowserLoadError": {
+    "description": "Inline error text shown in the file browser body when loading a directory fails.",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "Error details returned by the failed directory load operation."
+      }
+    }
+  },
+  "fileBrowserEmptyTitle": "No files yet",
+  "@fileBrowserEmptyTitle": {
+    "description": "Empty-state title shown when the current file browser directory has no entries."
+  },
+  "fileBrowserEmptyMessage": "Files created during a call will appear here",
+  "@fileBrowserEmptyMessage": {
+    "description": "Empty-state helper text shown when the current file browser directory has no entries."
+  },
+  "fileViewerFileNotFound": "File not found",
+  "@fileViewerFileNotFound": {
+    "description": "Message shown in file viewers when the requested file path does not exist."
+  },
+  "fileViewerErrorTitle": "Something went wrong",
+  "@fileViewerErrorTitle": {
+    "description": "Generic error-state title shown in file info, text viewer, and table viewer screens."
+  },
+  "fileViewerSaveSuccess": "Saved",
+  "@fileViewerSaveSuccess": {
+    "description": "Snackbar shown after saving a text file or table file successfully from its viewer screen."
+  },
+  "fileViewerSaveFailed": "Failed to save: {error}",
+  "@fileViewerSaveFailed": {
+    "description": "Snackbar shown when saving a text file or table file from its viewer screen fails.",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "Error details returned by the failed viewer save operation."
+      }
+    }
+  },
+  "fileViewerInfoTitle": "File information",
+  "@fileViewerInfoTitle": {
+    "description": "Section title on the file information viewer screen above the metadata card."
+  },
+  "fileViewerInfoNameLabel": "Name",
+  "@fileViewerInfoNameLabel": {
+    "description": "Metadata label for the file name on the file information viewer screen."
+  },
+  "fileViewerInfoPathLabel": "Path",
+  "@fileViewerInfoPathLabel": {
+    "description": "Metadata label for the full file path on the file information viewer screen."
+  },
+  "fileViewerInfoExtensionLabel": "Extension",
+  "@fileViewerInfoExtensionLabel": {
+    "description": "Metadata label for the filename extension on the file information viewer screen."
+  },
+  "fileViewerNoExtension": "(none)",
+  "@fileViewerNoExtension": {
+    "description": "Fallback metadata value shown when a file has no extension on the file information viewer screen."
+  },
+  "fileViewerInfoSizeLabel": "Size",
+  "@fileViewerInfoSizeLabel": {
+    "description": "Metadata label for the file size on the file information viewer screen."
+  },
+  "fileViewerInfoLinesLabel": "Lines",
+  "@fileViewerInfoLinesLabel": {
+    "description": "Metadata label for the line count on the file information viewer screen."
+  },
+  "fileViewerInfoCharactersLabel": "Characters",
+  "@fileViewerInfoCharactersLabel": {
+    "description": "Metadata label for the character count on the file information viewer screen."
+  },
+  "fileViewerPreviewTitle": "Preview",
+  "@fileViewerPreviewTitle": {
+    "description": "Section title above the content preview on the file information viewer screen."
+  },
+  "fileViewerPreviewTruncatedNote": "Showing only the first {maxChars} characters",
+  "@fileViewerPreviewTruncatedNote": {
+    "description": "Helper note below the file preview when the content is longer than the preview limit.",
+    "placeholders": {
+      "maxChars": {
+        "type": "int",
+        "description": "Maximum number of characters included in the file preview."
+      }
+    }
+  },
+  "fileTableParseError": "Parse error: {error}",
+  "@fileTableParseError": {
+    "description": "Error-state message shown when a table-format file cannot be parsed in the table viewer. Keeps the product term Parse error in English for consistency.",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "Error details returned by the failed table parse operation."
+      }
+    }
+  },
+  "fileTableNoData": "No table data",
+  "@fileTableNoData": {
+    "description": "Fallback message shown in the table viewer when no parsed table data is available to display."
+  },
+  "sessionDetailFileTypeCsvTable": "CSV table",
+  "@sessionDetailFileTypeCsvTable": {
+    "description": "File type badge for a historical notepad tab containing a .v2d.csv structured table."
+  },
+  "sessionDetailFileTypeJsonTable": "JSON table",
+  "@sessionDetailFileTypeJsonTable": {
+    "description": "File type badge for a historical notepad tab containing a .v2d.json structured table."
+  },
+  "sessionDetailFileTypeJsonlTable": "JSONL table",
+  "@sessionDetailFileTypeJsonlTable": {
+    "description": "File type badge for a historical notepad tab containing a .v2d.jsonl structured table."
+  },
+  "sessionDetailFileTypeMarkdown": "Markdown",
+  "@sessionDetailFileTypeMarkdown": {
+    "description": "File type badge for a markdown historical notepad tab."
+  },
+  "sessionDetailFileTypeHtml": "HTML",
+  "@sessionDetailFileTypeHtml": {
+    "description": "File type badge for an HTML historical notepad tab."
+  },
+  "sessionDetailFileTypeText": "Text",
+  "@sessionDetailFileTypeText": {
+    "description": "File type badge for a plain text historical notepad tab."
+  },
+  "sessionDetailFileTypeCsv": "CSV",
+  "@sessionDetailFileTypeCsv": {
+    "description": "File type badge for a CSV historical notepad tab outside the structured .v2d table format."
+  },
+  "sessionDetailFileTypeJson": "JSON",
+  "@sessionDetailFileTypeJson": {
+    "description": "File type badge for a JSON historical notepad tab outside the structured .v2d table format."
+  },
+  "sessionDetailFileTypeJsonl": "JSONL",
+  "@sessionDetailFileTypeJsonl": {
+    "description": "File type badge for a JSONL historical notepad tab outside the structured .v2d table format."
+  },
+  "sessionDetailFileTypeFile": "File",
+  "@sessionDetailFileTypeFile": {
+    "description": "Fallback file type badge for a historical notepad tab whose extension does not match a known label."
+  },
+  "homeMoreFeatureWazaMachine": "Waza Machine",
+  "@homeMoreFeatureWazaMachine": {
+    "description": "Label for the placeholder feature tile on the home screen's More tab represented by a storefront icon. Keep the product-style term Waza Machine."
+  },
+  "homeMoreFeatureComingSoon": "{featureName} - Coming soon",
+  "@homeMoreFeatureComingSoon": {
+    "description": "Snackbar shown when the user taps a More-tab feature tile that is not implemented yet.",
+    "placeholders": {
+      "featureName": {
+        "type": "String",
+        "description": "Localized name of the feature tile the user tapped, such as Waza Machine."
+      }
+    }
+  },
+  "homeSessionsDeleteConfirmTitle": "Delete sessions?",
+  "@homeSessionsDeleteConfirmTitle": {
+    "description": "Confirmation dialog title shown before deleting selected session history entries from the home Sessions tab."
+  },
+  "homeSessionsDeleteConfirmBody": "{count, plural, =1 {Delete the selected session?} other {Delete the selected # sessions?}}",
+  "@homeSessionsDeleteConfirmBody": {
+    "description": "Confirmation dialog body shown before deleting selected session history entries from the home Sessions tab.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "description": "Number of selected sessions that will be deleted."
+      }
+    }
+  },
+  "homeSessionsDeleteSuccess": "{count, plural, =1 {Deleted 1 session} other {Deleted # sessions}}",
+  "@homeSessionsDeleteSuccess": {
+    "description": "Snackbar shown after selected session history entries are deleted successfully from the home Sessions tab.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "description": "Number of sessions deleted successfully."
+      }
+    }
+  },
+  "homeSessionsLoadError": "Error: {error}",
+  "@homeSessionsLoadError": {
+    "description": "Inline error text shown in the home Sessions tab when loading the session list fails.",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "Error details returned by the failed session list load."
+      }
+    }
+  },
+  "homeSessionsSelectedCount": "{count, plural, =1 {1 selected} other {# selected}}",
+  "@homeSessionsSelectedCount": {
+    "description": "Selection-mode status text at the top of the home Sessions tab showing how many historical sessions are currently selected.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "description": "Number of currently selected sessions in the home Sessions tab."
+      }
+    }
+  },
+  "homeSessionsSelectAll": "Select all",
+  "@homeSessionsSelectAll": {
+    "description": "Selection-mode action on the home Sessions tab that selects every visible historical session."
+  },
+  "homeSessionsInvertSelection": "Invert selection",
+  "@homeSessionsInvertSelection": {
+    "description": "Selection-mode action on the home Sessions tab that flips which historical sessions are selected."
+  },
+  "homeSessionsEmptyTitle": "No session history",
+  "@homeSessionsEmptyTitle": {
+    "description": "Empty-state title shown on the home Sessions tab when there are no saved historical sessions yet."
+  },
+  "homeSessionsEmptyMessage": "You can start a call from the phone button",
+  "@homeSessionsEmptyMessage": {
+    "description": "Empty-state helper text on the home Sessions tab explaining that the central phone button starts a new call and will create session history."
+  }
+}
