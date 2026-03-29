@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:vagina/core/theme/app_theme.dart';
+import 'package:vagina/l10n/app_localizations.dart';
 
 /// Authentication provider configuration
 class AuthProvider {
@@ -57,10 +58,12 @@ class AuthenticationScreen extends StatelessWidget {
   ];
 
   void _handleProviderTap(BuildContext context, AuthProvider provider) {
+    final l10n = AppLocalizations.of(context);
+
     // TODO: Implement actual authentication when backend is ready
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('${provider.name}認証は準備中です'),
+        content: Text(l10n.oobeAuthenticationProviderComingSoon(provider.name)),
         backgroundColor: AppTheme.warningColor,
       ),
     );
@@ -68,6 +71,8 @@ class AuthenticationScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return SafeArea(
       child: Stack(
         children: [
@@ -81,8 +86,8 @@ class AuthenticationScreen extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     // Title
-                    const Text(
-                      'ログインして\nはじめましょう',
+                    Text(
+                      l10n.oobeAuthenticationTitle,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 28,
@@ -117,7 +122,7 @@ class AuthenticationScreen extends StatelessWidget {
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           child: Text(
-                            'または',
+                            l10n.oobeAuthenticationOr,
                             style: TextStyle(
                               color: Colors.white.withValues(alpha: 0.6),
                               fontSize: 14,
@@ -152,9 +157,9 @@ class AuthenticationScreen extends StatelessWidget {
                             ),
                           ),
                         ),
-                        child: const Text(
-                          '自分で設定する',
-                          style: TextStyle(
+                        child: Text(
+                          l10n.oobeAuthenticationManualSetup,
+                          style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                           ),
@@ -166,7 +171,7 @@ class AuthenticationScreen extends StatelessWidget {
 
                     // Terms and privacy notice
                     Text(
-                      '続行することで、利用規約とプライバシーポリシーに同意したものとみなされます',
+                      l10n.oobeAuthenticationTermsNotice,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 12,
@@ -194,13 +199,15 @@ class AuthenticationScreen extends StatelessWidget {
   }
 
   Widget _buildProviderButton(BuildContext context, AuthProvider provider) {
+    final l10n = AppLocalizations.of(context);
+
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton.icon(
         onPressed: () => _handleProviderTap(context, provider),
         icon: Icon(provider.icon, size: 24),
         label: Text(
-          '${provider.name}でログイン',
+          l10n.oobeAuthenticationProviderButton(provider.name),
           style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,

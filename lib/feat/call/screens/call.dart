@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:vagina/core/widgets/adaptive_tri_column_layout.dart';
+import 'package:vagina/l10n/app_localizations.dart';
 import 'package:vagina/feat/call/models/text_agent_info.dart';
 import 'package:vagina/feat/call/models/voice_agent_api_config.dart';
 import 'package:vagina/feat/call/models/voice_agent_info.dart';
@@ -77,6 +78,7 @@ class _CallScreenState extends State<CallScreen> {
       }
     } catch (e) {
       if (!mounted) return;
+      final l10n = AppLocalizations.of(context);
 
       // エラーダイアログを表示
       await showDialog(
@@ -88,12 +90,12 @@ class _CallScreenState extends State<CallScreen> {
             size: 48,
             color: Theme.of(context).colorScheme.error,
           ),
-          title: const Text('接続できません'),
+          title: Text(l10n.callConnectionFailedTitle),
           content: Text(e.toString()),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('閉じる'),
+              child: Text(l10n.callActionClose),
             ),
           ],
         ),

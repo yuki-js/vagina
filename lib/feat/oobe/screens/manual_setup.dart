@@ -5,6 +5,7 @@ import 'package:vagina/core/state/repository_providers.dart';
 import 'package:vagina/utils/realtime_connection_test.dart';
 import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/utils/url_utils.dart';
+import 'package:vagina/l10n/app_localizations.dart';
 
 /// Third OOBE screen - Manual AI API configuration
 class ManualSetupScreen extends ConsumerStatefulWidget {
@@ -54,7 +55,9 @@ class _ManualSetupScreenState extends ConsumerState<ManualSetupScreen> {
         _apiKeyController.text = apiKey;
       }
     } catch (e) {
-      _showSnackBar('設定の読み込みに失敗しました', isError: true);
+      if (!mounted) return;
+      final l10n = AppLocalizations.of(context);
+      _showSnackBar(l10n.settingsAzureLoadFailed, isError: true);
     }
   }
 
@@ -70,20 +73,22 @@ class _ManualSetupScreenState extends ConsumerState<ManualSetupScreen> {
   }
 
   Future<void> _saveAndContinue() async {
+    final l10n = AppLocalizations.of(context);
+
     if (_realtimeUrlController.text.trim().isEmpty) {
-      _showSnackBar('Realtime URLを入力してください', isError: true);
+      _showSnackBar(l10n.settingsAzureRealtimeUrlRequired, isError: true);
       return;
     }
 
     final parsed =
         UrlUtils.parseAzureRealtimeUrl(_realtimeUrlController.text.trim());
     if (parsed == null) {
-      _showSnackBar('Realtime URLの形式が正しくありません', isError: true);
+      _showSnackBar(l10n.settingsAzureRealtimeUrlInvalid, isError: true);
       return;
     }
 
     if (_apiKeyController.text.trim().isEmpty) {
-      _showSnackBar('APIキーを入力してください', isError: true);
+      _showSnackBar(l10n.settingsAzureApiKeyRequired, isError: true);
       return;
     }
 
@@ -105,7 +110,10 @@ class _ManualSetupScreenState extends ConsumerState<ManualSetupScreen> {
         widget.onContinue();
       }
     } catch (e) {
-      _showSnackBar('接続に失敗しました: $e', isError: true);
+      _showSnackBar(
+        l10n.settingsAzureConnectionTestFailed(e.toString()),
+        isError: true,
+      );
     } finally {
       if (mounted) {
         setState(() => _isSaving = false);
@@ -115,6 +123,8 @@ class _ManualSetupScreenState extends ConsumerState<ManualSetupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return SafeArea(
       child: Stack(
         children: [
@@ -128,8 +138,8 @@ class _ManualSetupScreenState extends ConsumerState<ManualSetupScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Title
-                    const Text(
-                      'AI設定',
+                    Text(
+                      l10n.oobeManualSetupTitle,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 28,
@@ -140,7 +150,7 @@ class _ManualSetupScreenState extends ConsumerState<ManualSetupScreen> {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'Azure OpenAI Realtime APIの接続情報を入力してください',
+                      l10n.oobeManualSetupSubtitle,
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.white.withValues(alpha: 0.7),
@@ -151,7 +161,7 @@ class _ManualSetupScreenState extends ConsumerState<ManualSetupScreen> {
 
                     // Realtime URL field
                     Text(
-                      'Realtime URL',
+                      l10n.settingsAzureRealtimeUrlLabel,
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -163,7 +173,7 @@ class _ManualSetupScreenState extends ConsumerState<ManualSetupScreen> {
                       controller: _realtimeUrlController,
                       style: const TextStyle(color: Colors.white),
                       decoration: InputDecoration(
-                        hintText: 'https://your-resource.openai.azure.com/...',
+                        hintText: l10n.settingsAzureRealtimeUrlHint,
                         hintStyle: TextStyle(
                           color: Colors.white.withValues(alpha: 0.3),
                         ),
@@ -197,7 +207,7 @@ class _ManualSetupScreenState extends ConsumerState<ManualSetupScreen> {
 
                     // API Key field
                     Text(
-                      'APIキー',
+                      l10n.settingsAzureApiKeyLabel,
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -210,7 +220,7 @@ class _ManualSetupScreenState extends ConsumerState<ManualSetupScreen> {
                       obscureText: !_isApiKeyVisible,
                       style: const TextStyle(color: Colors.white),
                       decoration: InputDecoration(
-                        hintText: 'APIキーを入力',
+                        hintText: l10n.settingsAzureApiKeyHint,
                         hintStyle: TextStyle(
                           color: Colors.white.withValues(alpha: 0.3),
                         ),
@@ -274,9 +284,9 @@ class _ManualSetupScreenState extends ConsumerState<ManualSetupScreen> {
                                   color: Colors.white,
                                 ),
                               )
-                            : const Text(
-                                '続ける',
-                                style: TextStyle(
+                            : Text(
+                                l10n.permissionsContinue,
+                                style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -288,7 +298,7 @@ class _ManualSetupScreenState extends ConsumerState<ManualSetupScreen> {
 
                     // Security notice
                     Text(
-                      '認証情報はデバイス上に安全に保存されます。',
+                      l10n.settingsAzureCredentialsStorageNote,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 12,

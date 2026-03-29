@@ -59,6 +59,10 @@ app.*.map.json
 *.freezed.dart
 *.mocks.dart
 
+# Flutter l10n generated files
+lib/l10n/app_localizations.dart
+lib/l10n/app_localizations_*.dart
+
 # IDE
 .metadata
 vagina.iml

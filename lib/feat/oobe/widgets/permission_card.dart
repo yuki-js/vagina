@@ -22,11 +22,15 @@ class PermissionItem {
 class PermissionCard extends StatelessWidget {
   final PermissionItem permission;
   final VoidCallback onRequest;
+  final String requiredLabel;
+  final String requestLabel;
 
   const PermissionCard({
     super.key,
     required this.permission,
     required this.onRequest,
+    required this.requiredLabel,
+    required this.requestLabel,
   });
 
   @override
@@ -93,7 +97,7 @@ class PermissionCard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
-                          '必須',
+                          requiredLabel,
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
@@ -136,9 +140,9 @@ class PermissionCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              child: const Text(
-                '許可',
-                style: TextStyle(
+              child: Text(
+                requestLabel,
+                style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                 ),

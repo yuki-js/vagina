@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:vagina/feat/filebrowser/screens/file_browser.dart';
+import 'package:vagina/l10n/app_localizations.dart';
 
 /// Features grid tab
 class MoreTab extends StatelessWidget {
@@ -7,6 +8,8 @@ class MoreTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 800),
@@ -19,7 +22,7 @@ class MoreTab extends StatelessWidget {
           children: [
             _FeaturePlaceholder(
               icon: Icons.folder,
-              label: 'ファイル',
+              label: l10n.fileBrowserRootTitle,
               color: Colors.amber,
               onTap: () {
                 Navigator.of(context).push(
@@ -31,7 +34,7 @@ class MoreTab extends StatelessWidget {
             ),
             _FeaturePlaceholder(
               icon: Icons.storefront,
-              label: 'わざマシン',
+              label: l10n.homeMoreFeatureWazaMachine,
               color: Colors.blue,
             ),
           ],
@@ -56,6 +59,8 @@ class _FeaturePlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Column(
       children: [
         Card(
@@ -68,7 +73,7 @@ class _FeaturePlaceholder extends StatelessWidget {
                 () {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('$label - Coming Soon'),
+                      content: Text(l10n.homeMoreFeatureComingSoon(label)),
                       duration: const Duration(seconds: 1),
                     ),
                   );

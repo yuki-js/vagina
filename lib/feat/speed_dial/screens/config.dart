@@ -5,6 +5,7 @@ import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/feat/shared/widgets/tool_config_section.dart';
 import 'package:vagina/feat/speed_dial/state/speed_dial_providers.dart';
 import 'package:vagina/feat/speed_dial/widgets/emoji_picker.dart';
+import 'package:vagina/l10n/app_localizations.dart';
 import 'package:vagina/models/speed_dial.dart';
 
 /// Speed dial configuration screen
@@ -82,16 +83,18 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
   }
 
   Future<void> _saveConfiguration() async {
+    final l10n = AppLocalizations.of(context);
+
     if (_nameController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('名前を入力してください')),
+        SnackBar(content: Text(l10n.speedDialConfigNameRequired)),
       );
       return;
     }
 
     if (_instructionsController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('システムプロンプトを入力してください')),
+        SnackBar(content: Text(l10n.speedDialConfigSystemPromptRequired)),
       );
       return;
     }
@@ -120,8 +123,11 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content:
-              Text(_isNewSpeedDial ? 'スピードダイヤルを追加しました' : 'スピードダイヤルを更新しました'),
+          content: Text(
+            _isNewSpeedDial
+                ? l10n.speedDialConfigAdded
+                : l10n.speedDialConfigUpdated,
+          ),
           duration: const Duration(seconds: 2),
         ),
       );
@@ -130,12 +136,14 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
   }
 
   Future<void> _deleteSpeedDial() async {
+    final l10n = AppLocalizations.of(context);
+
     if (_isNewSpeedDial) return;
 
     // Prevent deletion of default speed dial
     if (widget.speedDial!.id == SpeedDial.defaultId) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('デフォルトのスピードダイヤルは削除できません')),
+        SnackBar(content: Text(l10n.speedDialConfigDefaultDeleteBlocked)),
       );
       return;
     }
@@ -143,19 +151,21 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('削除確認'),
-        content: const Text('このスピードダイヤルを削除しますか?'),
+        title: Text(l10n.speedDialConfigDeleteConfirmTitle),
+        content: Text(
+          l10n.speedDialConfigDeleteConfirmBody(widget.speedDial!.name),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('キャンセル'),
+            child: Text(l10n.settingsCommonCancel),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
             style: TextButton.styleFrom(
               foregroundColor: AppTheme.errorColor,
             ),
-            child: const Text('削除'),
+            child: Text(l10n.settingsCommonDelete),
           ),
         ],
       ),
@@ -167,7 +177,7 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('削除しました')),
+          SnackBar(content: Text(l10n.speedDialConfigDeleted)),
         );
         Navigator.of(context).pop();
       }
@@ -176,10 +186,16 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text(_isNewSpeedDial ? 'スピードダイヤルを追加' : 'スピードダイヤルを編集'),
+        title: Text(
+          _isNewSpeedDial
+              ? l10n.speedDialConfigAddTitle
+              : l10n.speedDialConfigEditTitle,
+        ),
         backgroundColor: Colors.white,
         foregroundColor: AppTheme.lightTextPrimary,
         elevation: 0,
@@ -222,8 +238,8 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'アイコン',
-                        style: TextStyle(
+                        l10n.speedDialConfigIconLabel,
+                        style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                           color: AppTheme.lightTextSecondary,
@@ -239,8 +255,8 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
                       const SizedBox(height: 8),
                       Center(
                         child: Text(
-                          'タップして変更',
-                          style: TextStyle(
+                          l10n.speedDialConfigIconTapToChange,
+                          style: const TextStyle(
                             fontSize: 12,
                             color: AppTheme.lightTextSecondary,
                           ),
@@ -260,8 +276,8 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '名前',
-                      style: TextStyle(
+                      l10n.speedDialConfigNameLabel,
+                      style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                         color: AppTheme.lightTextSecondary,
@@ -275,7 +291,7 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
                               SpeedDial
                                   .defaultId, // Disable for default speed dial
                       decoration: InputDecoration(
-                        hintText: '例: アシスタント',
+                        hintText: l10n.speedDialConfigNameHint,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -283,7 +299,7 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
                         fillColor: Colors.grey[50],
                         helperText: (!_isNewSpeedDial &&
                                 widget.speedDial!.id == SpeedDial.defaultId)
-                            ? 'デフォルトのスピードダイヤルは名前を変更できません'
+                            ? l10n.speedDialConfigDefaultNameLocked
                             : null,
                       ),
                       style: const TextStyle(color: AppTheme.lightTextPrimary),
@@ -301,8 +317,8 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '音声選択',
-                      style: TextStyle(
+                      l10n.speedDialConfigVoiceLabel,
+                      style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                         color: AppTheme.lightTextSecondary,
@@ -345,8 +361,8 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'システムプロンプト',
-                      style: TextStyle(
+                      l10n.speedDialConfigSystemPromptLabel,
+                      style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                         color: AppTheme.lightTextSecondary,
@@ -354,8 +370,8 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'キャラクターの振る舞いや性格を設定',
-                      style: TextStyle(
+                      l10n.speedDialConfigSystemPromptDescription,
+                      style: const TextStyle(
                         fontSize: 12,
                         color: AppTheme.lightTextSecondary,
                       ),
@@ -364,7 +380,7 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
                     TextField(
                       controller: _instructionsController,
                       decoration: InputDecoration(
-                        hintText: '例: あなたは親切なアシスタントです',
+                        hintText: l10n.speedDialConfigSystemPromptHint,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -387,8 +403,8 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'ツール設定',
-                      style: TextStyle(
+                      l10n.speedDialConfigToolsLabel,
+                      style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                         color: AppTheme.lightTextSecondary,
@@ -420,7 +436,9 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
                 ),
               ),
               child: Text(
-                _isNewSpeedDial ? '追加' : '保存',
+                _isNewSpeedDial
+                    ? l10n.speedDialConfigAddAction
+                    : l10n.settingsCommonSave,
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,

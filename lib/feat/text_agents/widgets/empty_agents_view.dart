@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:vagina/core/theme/app_theme.dart';
+import 'package:vagina/l10n/app_localizations.dart';
 
 /// Widget displayed when no text agents exist
 class EmptyAgentsView extends StatelessWidget {
@@ -12,6 +13,8 @@ class EmptyAgentsView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -22,9 +25,9 @@ class EmptyAgentsView extends StatelessWidget {
             color: AppTheme.lightTextSecondary.withValues(alpha: 0.3),
           ),
           const SizedBox(height: 24),
-          const Text(
-            'テキストエージェントがありません',
-            style: TextStyle(
+          Text(
+            l10n.textAgentsEmptyViewTitle,
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
               color: AppTheme.lightTextPrimary,
@@ -32,7 +35,7 @@ class EmptyAgentsView extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            'テキストエージェントを作成して\n高度なAI機能を利用できます',
+            l10n.textAgentsEmptyViewBody,
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 14,
@@ -43,7 +46,7 @@ class EmptyAgentsView extends StatelessWidget {
           ElevatedButton.icon(
             onPressed: onCreateAgent,
             icon: const Icon(Icons.add),
-            label: const Text('最初のエージェントを作成'),
+            label: Text(l10n.textAgentsEmptyViewCreateAction),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.primaryColor,
               foregroundColor: Colors.white,

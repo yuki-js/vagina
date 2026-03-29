@@ -5,6 +5,7 @@ import 'package:vagina/feat/call/models/text_agent_api_config.dart';
 import 'package:vagina/feat/call/models/text_agent_info.dart';
 import 'package:vagina/feat/text_agents/state/text_agent_providers.dart';
 import 'package:vagina/feat/text_agents/screens/agent_form_screen.dart';
+import 'package:vagina/l10n/app_localizations.dart';
 
 /// Agents tab - Text agent management with phone book interface
 class AgentsTab extends ConsumerStatefulWidget {
@@ -26,12 +27,13 @@ class _AgentsTabState extends ConsumerState<AgentsTab> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final agentsAsync = ref.watch(textAgentsProvider);
 
     return agentsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stack) => Center(
-        child: Text('エラー: $error'),
+        child: Text(l10n.textAgentsLoadError(error.toString())),
       ),
       data: (agents) {
         if (agents.isEmpty) {
@@ -64,6 +66,8 @@ class _AgentsTabState extends ConsumerState<AgentsTab> {
   }
 
   Widget _buildSearchBar() {
+    final l10n = AppLocalizations.of(context);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: TextField(
@@ -74,7 +78,7 @@ class _AgentsTabState extends ConsumerState<AgentsTab> {
           });
         },
         decoration: InputDecoration(
-          hintText: 'エージェントを検索...',
+          hintText: l10n.textAgentsSearchHint,
           hintStyle: TextStyle(
             color: AppTheme.lightTextSecondary,
             fontSize: 16,
@@ -194,6 +198,8 @@ class _AgentsTabState extends ConsumerState<AgentsTab> {
   }
 
   Widget _buildEmptyState(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -205,7 +211,7 @@ class _AgentsTabState extends ConsumerState<AgentsTab> {
           ),
           const SizedBox(height: 24),
           Text(
-            'エージェントがありません',
+            l10n.textAgentsListEmptyTitle,
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
@@ -214,7 +220,7 @@ class _AgentsTabState extends ConsumerState<AgentsTab> {
           ),
           const SizedBox(height: 8),
           Text(
-            '右上の + ボタンで追加できます',
+            l10n.textAgentsListEmptyBody,
             style: TextStyle(
               fontSize: 14,
               color: AppTheme.lightTextSecondary,
@@ -226,6 +232,8 @@ class _AgentsTabState extends ConsumerState<AgentsTab> {
   }
 
   Widget _buildNoResultsState() {
+    final l10n = AppLocalizations.of(context);
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -237,7 +245,7 @@ class _AgentsTabState extends ConsumerState<AgentsTab> {
           ),
           const SizedBox(height: 16),
           Text(
-            '検索結果がありません',
+            l10n.textAgentsSearchEmptyTitle,
             style: TextStyle(
               fontSize: 16,
               color: AppTheme.lightTextSecondary,
@@ -249,13 +257,29 @@ class _AgentsTabState extends ConsumerState<AgentsTab> {
   }
 
   String _getProviderDisplayString(TextAgentInfo agent) {
+    final l10n = AppLocalizations.of(context);
     final apiConfig = agent.apiConfig;
     if (apiConfig is SelfhostedTextAgentApiConfig) {
-      return '${apiConfig.provider}: ${apiConfig.model}';
+      return '${_getProviderLabel(apiConfig.provider, l10n)}: ${apiConfig.model}';
     } else if (apiConfig is HostedTextAgentApiConfig) {
-      return 'Hosted: ${apiConfig.modelId}';
+      return '${l10n.textAgentsProviderHostedPrefix}: ${apiConfig.modelId}';
     }
-    return 'Unknown';
+    return l10n.textAgentsProviderUnknown;
+  }
+
+  String _getProviderLabel(String providerValue, AppLocalizations l10n) {
+    switch (providerValue) {
+      case 'openai':
+        return l10n.textAgentsProviderLabelOpenAi;
+      case 'azure':
+        return l10n.textAgentsProviderLabelAzure;
+      case 'litellm':
+        return l10n.textAgentsProviderLabelLiteLlm;
+      case 'custom':
+        return l10n.textAgentsProviderLabelCustom;
+      default:
+        return providerValue;
+    }
   }
 
   Future<void> _editAgent(

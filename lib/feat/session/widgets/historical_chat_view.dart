@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:vagina/core/theme/app_theme.dart';
 import 'package:intl/intl.dart';
+import 'package:vagina/l10n/app_localizations.dart';
 
 /// Read-only chat history viewer for session detail screen
 class HistoricalChatView extends StatelessWidget {
@@ -14,6 +15,8 @@ class HistoricalChatView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     if (chatMessages.isEmpty) {
       return Container(
         color: AppTheme.lightBackgroundStart,
@@ -28,7 +31,7 @@ class HistoricalChatView extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               Text(
-                '会話履歴がありません',
+                l10n.sessionDetailSummaryNone,
                 style: TextStyle(
                   fontSize: 16,
                   color: AppTheme.lightTextSecondary,
@@ -140,7 +143,7 @@ class HistoricalChatView extends StatelessWidget {
                       Padding(
                         padding: const EdgeInsets.only(top: 4, left: 8, right: 8),
                         child: Text(
-                          DateFormat('HH:mm:ss').format(timestamp),
+                          DateFormat.Hms(l10n.localeName).format(timestamp),
                           style: TextStyle(
                             fontSize: 11,
                             color: AppTheme.lightTextSecondary
@@ -172,6 +175,8 @@ class _ToolCallItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -190,7 +195,8 @@ class _ToolCallItem extends StatelessWidget {
                   runSpacing: 8,
                   children: toolCalls.map((toolCall) {
                     return _ToolBadge(
-                      name: toolCall['name'] as String? ?? 'unknown',
+                      name: toolCall['name'] as String? ??
+                          l10n.callChatToolFallbackName,
                       status: toolCall['status'] as String? ?? 'completed',
                       onTap: () => _showToolDetails(context, toolCall),
                     );
@@ -200,7 +206,7 @@ class _ToolCallItem extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(top: 4, left: 8),
                   child: Text(
-                    DateFormat('HH:mm:ss').format(timestamp),
+                    DateFormat.Hms(l10n.localeName).format(timestamp),
                     style: TextStyle(
                       fontSize: 11,
                       color: AppTheme.lightTextSecondary
@@ -306,7 +312,8 @@ class _ToolDetailsSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final name = toolCall['name'] as String? ?? 'unknown';
+    final l10n = AppLocalizations.of(context);
+    final name = toolCall['name'] as String? ?? l10n.callChatToolFallbackName;
     final status = toolCall['status'] as String? ?? 'completed';
     final arguments = toolCall['arguments'] as String?;
     final result = toolCall['result'] as String?;
@@ -331,12 +338,12 @@ class _ToolDetailsSheet extends StatelessWidget {
     };
 
     final statusText = switch (status) {
-      'generating' => 'Generating arguments...',
-      'executing' => 'Executing...',
-      'completed' => 'Completed',
-      'error' => 'Error',
-      'cancelled' => 'Cancelled',
-      _ => 'Completed',
+      'generating' => l10n.callChatToolStatusGeneratingArguments,
+      'executing' => l10n.callChatToolStatusExecuting,
+      'completed' => l10n.callChatToolStatusCompleted,
+      'error' => l10n.callChatToolStatusError,
+      'cancelled' => l10n.callChatToolStatusCancelled,
+      _ => l10n.callChatToolStatusCompleted,
     };
 
     return ConstrainedBox(
@@ -420,11 +427,15 @@ class _ToolDetailsSheet extends StatelessWidget {
                   const SizedBox(height: 12),
                   // Arguments section
                   _DetailSection(
-                    title: '引数',
+                    title: l10n.callChatToolArgumentsSectionTitle,
                     child: _CodeBlock(
                       text: arguments?.isNotEmpty ?? false
                           ? arguments!
-                          : 'No arguments',
+                          : status == 'cancelled'
+                              ? l10n.callChatToolArgumentsCancelled
+                              : status == 'generating'
+                                  ? l10n.callChatToolArgumentsStreaming
+                                  : l10n.callChatToolArgumentsNone,
                       isPlaceholder: arguments?.isEmpty ?? true,
                     ),
                   ),
@@ -432,7 +443,9 @@ class _ToolDetailsSheet extends StatelessWidget {
                   if (result != null || errorMessage != null) ...[
                     const SizedBox(height: 12),
                     _DetailSection(
-                      title: isError ? 'エラー' : '結果',
+                      title: isError
+                          ? l10n.callChatToolErrorSectionTitle
+                          : l10n.callChatToolResultSectionTitle,
                       child: _CodeBlock(
                         text: errorMessage ?? result ?? '',
                         isError: isError,

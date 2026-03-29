@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/feat/call/models/text_agent_api_config.dart';
 import 'package:vagina/feat/call/models/text_agent_info.dart';
+import 'package:vagina/l10n/app_localizations.dart';
 
 /// List tile widget for displaying a text agent in compact view
 class AgentListTile extends StatelessWidget {
@@ -22,6 +23,8 @@ class AgentListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Card(
       elevation: isSelected ? 2 : 0,
       margin: const EdgeInsets.only(bottom: 8),
@@ -92,9 +95,9 @@ class AgentListTile extends StatelessWidget {
                               color: AppTheme.primaryColor,
                               borderRadius: BorderRadius.circular(4),
                             ),
-                            child: const Text(
-                              '選択中',
-                              style: TextStyle(
+                            child: Text(
+                              l10n.textAgentsSelectedBadge,
+                              style: const TextStyle(
                                 fontSize: 10,
                                 color: Colors.white,
                                 fontWeight: FontWeight.w600,
@@ -110,7 +113,7 @@ class AgentListTile extends StatelessWidget {
                           child: Text(
                             agent.description.isNotEmpty
                                 ? agent.description
-                                : _getProviderDisplayString(agent),
+                                : _getProviderDisplayString(context, agent),
                             style: TextStyle(
                               fontSize: 12,
                               color: AppTheme.lightTextSecondary,
@@ -146,13 +149,29 @@ class AgentListTile extends StatelessWidget {
     );
   }
 
-  String _getProviderDisplayString(TextAgentInfo agent) {
+  String _getProviderDisplayString(BuildContext context, TextAgentInfo agent) {
+    final l10n = AppLocalizations.of(context);
     final apiConfig = agent.apiConfig;
     if (apiConfig is SelfhostedTextAgentApiConfig) {
-      return '${apiConfig.provider}: ${apiConfig.model}';
+      return '${_getProviderLabel(apiConfig.provider, l10n)}: ${apiConfig.model}';
     } else if (apiConfig is HostedTextAgentApiConfig) {
-      return 'Hosted: ${apiConfig.modelId}';
+      return '${l10n.textAgentsProviderHostedPrefix}: ${apiConfig.modelId}';
     }
-    return 'Unknown';
+    return l10n.textAgentsProviderUnknown;
+  }
+
+  String _getProviderLabel(String providerValue, AppLocalizations l10n) {
+    switch (providerValue) {
+      case 'openai':
+        return l10n.textAgentsProviderLabelOpenAi;
+      case 'azure':
+        return l10n.textAgentsProviderLabelAzure;
+      case 'litellm':
+        return l10n.textAgentsProviderLabelLiteLlm;
+      case 'custom':
+        return l10n.textAgentsProviderLabelCustom;
+      default:
+        return providerValue;
+    }
   }
 }

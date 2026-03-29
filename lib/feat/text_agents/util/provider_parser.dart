@@ -1,4 +1,5 @@
 import 'package:vagina/feat/text_agents/model/text_agent_provider.dart';
+import 'package:vagina/l10n/app_localizations.dart';
 
 /// Utility class for parsing and validating LLM provider URLs
 class ProviderParser {
@@ -28,25 +29,31 @@ class ProviderParser {
   /// Validate URL format for a given provider
   ///
   /// Returns error message if invalid, null if valid
-  static String? validateUrl(String url, TextAgentProvider provider) {
+  static String? validateUrl(
+    String url,
+    TextAgentProvider provider, [
+    AppLocalizations? l10n,
+  ]) {
     if (url.trim().isEmpty) {
-      return 'URLを入力してください';
+      return l10n?.textAgentsProviderUrlRequired ?? 'URLを入力してください';
     }
 
     final uri = Uri.tryParse(url.trim());
     if (uri == null || !uri.hasScheme || uri.host.isEmpty) {
-      return '有効なURLを入力してください';
+      return l10n?.textAgentsProviderUrlInvalid ?? '有効なURLを入力してください';
     }
 
     // Allow http for localhost/development, https for production
     if (uri.scheme != 'https' && uri.scheme != 'http') {
-      return 'HTTP/HTTPSのURLを入力してください';
+      return l10n?.textAgentsProviderUrlHttpHttpsOnly ??
+          'HTTP/HTTPSのURLを入力してください';
     }
 
     // For Azure, check basic Azure URL pattern
     if (provider == TextAgentProvider.azure) {
       if (!uri.host.contains('openai') || !uri.host.contains('azure')) {
-        return 'Azure OpenAIのURLが正しくない可能性があります';
+        return l10n?.textAgentsProviderAzureUrlWarning ??
+            'Azure OpenAIのURLが正しくない可能性があります';
       }
     }
 
@@ -98,16 +105,23 @@ class ProviderParser {
   }
 
   /// Get help text for a provider
-  static String getProviderHelpText(TextAgentProvider provider) {
+  static String getProviderHelpText(
+    TextAgentProvider provider, [
+    AppLocalizations? l10n,
+  ]) {
     switch (provider) {
       case TextAgentProvider.openai:
-        return 'OpenAIの公式API。api.openai.comを使用します。';
+        return l10n?.textAgentsProviderHelpOpenAi ??
+            'OpenAIの公式API。api.openai.comを使用します。';
       case TextAgentProvider.azure:
-        return 'Azure OpenAI Service。ベースURL（https://{resource}.openai.azure.com）または完成済みのChat Completions URLを指定します。';
+        return l10n?.textAgentsProviderHelpAzure('{resource}') ??
+            'Azure OpenAI Service。ベースURL（https://{resource}.openai.azure.com）または完成済みのChat Completions URLを指定します。';
       case TextAgentProvider.litellm:
-        return 'LiteLLMプロキシサービス。ローカルまたはリモートのプロキシURLを指定します。';
+        return l10n?.textAgentsProviderHelpLiteLlm ??
+            'LiteLLMプロキシサービス。ローカルまたはリモートのプロキシURLを指定します。';
       case TextAgentProvider.custom:
-        return 'OpenAI互換のカスタムエンドポイント。完全なURLを指定します。';
+        return l10n?.textAgentsProviderHelpCustom ??
+            'OpenAI互換のカスタムエンドポイント。完全なURLを指定します。';
     }
   }
 

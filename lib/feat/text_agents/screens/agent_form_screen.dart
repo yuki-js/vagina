@@ -9,6 +9,7 @@ import 'package:vagina/feat/text_agents/model/text_agent_config.dart';
 import 'package:vagina/feat/text_agents/model/text_agent_provider.dart';
 import 'package:vagina/feat/text_agents/state/text_agent_providers.dart';
 import 'package:vagina/feat/text_agents/util/provider_parser.dart';
+import 'package:vagina/l10n/app_localizations.dart';
 
 /// Screen for creating or editing a text agent with simplified multi-provider support
 ///
@@ -61,7 +62,7 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
       _nameController = TextEditingController(text: agent.name);
       _descriptionController = TextEditingController(text: agent.description);
       _promptController = TextEditingController(text: agent.prompt);
-      
+
       final apiConfig = agent.apiConfig;
       if (apiConfig is SelfhostedTextAgentApiConfig) {
         _apiKeyController = TextEditingController(text: apiConfig.apiKey);
@@ -73,7 +74,7 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
         _apiEndpointController = TextEditingController();
         _provider = TextAgentProvider.azure;
       }
-      
+
       _enabledTools = Map<String, bool>.from(agent.enabledTools);
     }
   }
@@ -90,14 +91,16 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
 
   String? _validateRequired(String? value, String fieldName) {
     if (value == null || value.trim().isEmpty) {
-      return '$fieldNameを入力してください';
+      return AppLocalizations.of(context).textAgentsFieldRequired(fieldName);
     }
     return null;
   }
 
   String? _validateEndpoint(String? value) {
+    final l10n = AppLocalizations.of(context);
+
     if (value == null || value.trim().isEmpty) {
-      return 'エンドポイント/モデルを入力してください';
+      return l10n.textAgentsFieldRequired(_getEndpointFieldName());
     }
 
     // For OpenAI, just check it's not empty (it's a model name)
@@ -106,7 +109,7 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
     }
 
     // For other providers, validate as URL
-    return ProviderParser.validateUrl(value.trim(), _provider);
+    return ProviderParser.validateUrl(value.trim(), _provider, l10n);
   }
 
   Future<void> _saveAgent() async {
@@ -121,7 +124,7 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
     try {
       final endpoint = _apiEndpointController.text.trim();
       final modelIdentifier = _extractModelIdentifier(_provider, endpoint);
-      
+
       final apiConfig = SelfhostedTextAgentApiConfig(
         provider: _provider.value,
         baseUrl: endpoint,
@@ -144,10 +147,13 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
 
       if (mounted) {
         ref.invalidate(textAgentsProvider);
+        final l10n = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              _isNewAgent ? 'エージェントを作成しました' : 'エージェントを更新しました',
+              _isNewAgent
+                  ? l10n.textAgentsSaveCreated
+                  : l10n.textAgentsSaveUpdated,
             ),
             duration: const Duration(seconds: 2),
           ),
@@ -156,9 +162,10 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
       }
     } catch (e) {
       if (mounted) {
+        final l10n = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('保存に失敗しました: $e'),
+            content: Text(l10n.textAgentsSaveFailed(e.toString())),
             backgroundColor: AppTheme.errorColor,
           ),
         );
@@ -177,23 +184,26 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
 
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('エージェントを削除'),
-        content: Text('「${widget.agent!.name}」を削除してもよろしいですか？'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('キャンセル'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(
-              foregroundColor: AppTheme.errorColor,
+      builder: (context) {
+        final l10n = AppLocalizations.of(context);
+        return AlertDialog(
+          title: Text(l10n.textAgentsDeleteDialogTitle),
+          content: Text(l10n.textAgentsDeleteDialogBody(widget.agent!.name)),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(l10n.settingsCommonCancel),
             ),
-            child: const Text('削除'),
-          ),
-        ],
-      ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: TextButton.styleFrom(
+                foregroundColor: AppTheme.errorColor,
+              ),
+              child: Text(l10n.settingsCommonDelete),
+            ),
+          ],
+        );
+      },
     );
 
     if (confirmed == true && mounted) {
@@ -203,19 +213,21 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
         ref.invalidate(textAgentsProvider);
 
         if (mounted) {
+          final l10n = AppLocalizations.of(context);
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('エージェントを削除しました'),
-              duration: Duration(seconds: 2),
+            SnackBar(
+              content: Text(l10n.textAgentsDeleteSuccess),
+              duration: const Duration(seconds: 2),
             ),
           );
           Navigator.of(context).pop();
         }
       } catch (e) {
         if (mounted) {
+          final l10n = AppLocalizations.of(context);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('削除に失敗しました: $e'),
+              content: Text(l10n.textAgentsDeleteFailed(e.toString())),
               backgroundColor: AppTheme.errorColor,
             ),
           );
@@ -243,10 +255,14 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text(_isNewAgent ? 'エージェントを追加' : 'エージェントを編集'),
+        title: Text(
+          _isNewAgent ? l10n.textAgentsCreateTitle : l10n.textAgentsEditTitle,
+        ),
         backgroundColor: Colors.white,
         foregroundColor: AppTheme.lightTextPrimary,
         elevation: 0,
@@ -270,7 +286,7 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
             IconButton(
               icon: const Icon(Icons.save),
               onPressed: _saveAgent,
-              tooltip: '保存',
+              tooltip: l10n.settingsCommonSave,
             ),
         ],
       ),
@@ -291,7 +307,7 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
             padding: const EdgeInsets.all(16),
             children: [
               // Basic Information Section
-              _buildSectionHeader('基本情報'),
+              _buildSectionHeader(l10n.textAgentsSectionBasicInfo),
               const SizedBox(height: 12),
               _buildCard(
                 child: Column(
@@ -299,23 +315,24 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
                     TextFormField(
                       controller: _nameController,
                       decoration: InputDecoration(
-                        labelText: 'エージェント名 *',
-                        hintText: '例: リサーチアシスタント',
+                        labelText: '${l10n.textAgentsFieldAgentName} *',
+                        hintText: l10n.textAgentsFieldNameHint,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
                         filled: true,
                         fillColor: Colors.grey[50],
                       ),
-                      validator: (value) => _validateRequired(value, 'エージェント名'),
+                      validator: (value) => _validateRequired(
+                          value, l10n.textAgentsFieldAgentName),
                       textInputAction: TextInputAction.next,
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _descriptionController,
                       decoration: InputDecoration(
-                        labelText: '説明 (オプション)',
-                        hintText: '例: 詳細な分析とサマリーを提供するエージェント',
+                        labelText: l10n.textAgentsFieldDescriptionOptional,
+                        hintText: l10n.textAgentsFieldDescriptionHint,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -329,8 +346,8 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
                     TextFormField(
                       controller: _promptController,
                       decoration: InputDecoration(
-                        labelText: 'System Prompt (オプション)',
-                        hintText: '例: You are a helpful research assistant...',
+                        labelText: l10n.textAgentsFieldSystemPromptOptional,
+                        hintText: l10n.textAgentsFieldSystemPromptHint,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -346,7 +363,7 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
               const SizedBox(height: 24),
 
               // Provider Configuration Section
-              _buildSectionHeader('設定'),
+              _buildSectionHeader(l10n.textAgentsSectionSettings),
               const SizedBox(height: 12),
               _buildCard(
                 child: Column(
@@ -355,7 +372,7 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
                     DropdownButtonFormField<TextAgentProvider>(
                       initialValue: _provider,
                       decoration: InputDecoration(
-                        labelText: 'プロバイダー *',
+                        labelText: '${l10n.textAgentsFieldProvider} *',
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -366,7 +383,7 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
                       items: TextAgentProvider.values.map((provider) {
                         return DropdownMenuItem(
                           value: provider,
-                          child: Text(provider.displayName),
+                          child: Text(_getProviderLabel(provider)),
                         );
                       }).toList(),
                       onChanged: (value) {
@@ -399,7 +416,8 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              ProviderParser.getProviderHelpText(_provider),
+                              ProviderParser.getProviderHelpText(
+                                  _provider, l10n),
                               style: TextStyle(
                                 fontSize: 12,
                                 color: AppTheme.primaryColor,
@@ -438,8 +456,8 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
                     TextFormField(
                       controller: _apiKeyController,
                       decoration: InputDecoration(
-                        labelText: 'APIキー *',
-                        hintText: 'プロバイダーのAPIキーを入力',
+                        labelText: '${l10n.textAgentsFieldApiKey} *',
+                        hintText: l10n.textAgentsFieldApiKeyHint,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -447,7 +465,8 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
                         fillColor: Colors.grey[50],
                         prefixIcon: const Icon(Icons.key),
                       ),
-                      validator: (value) => _validateRequired(value, 'APIキー'),
+                      validator: (value) =>
+                          _validateRequired(value, l10n.textAgentsFieldApiKey),
                       obscureText: true,
                       textInputAction: TextInputAction.done,
                     ),
@@ -457,7 +476,7 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
               const SizedBox(height: 24),
 
               // Tool Configuration Section
-              _buildSectionHeader('ツール設定'),
+              _buildSectionHeader(l10n.textAgentsSectionToolSettings),
               const SizedBox(height: 12),
               ToolConfigSection(
                 enabledTools: _enabledTools,
@@ -492,7 +511,9 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
                         ),
                       )
                     : Text(
-                        _isNewAgent ? '作成' : '保存',
+                        _isNewAgent
+                            ? l10n.textAgentsActionCreate
+                            : l10n.settingsCommonSave,
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -510,13 +531,39 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
   String _getEndpointLabel() {
     switch (_provider) {
       case TextAgentProvider.openai:
-        return 'モデル *';
+        return '${AppLocalizations.of(context).textAgentsFieldModel} *';
       case TextAgentProvider.azure:
-        return 'エンドポイント *';
+        return '${AppLocalizations.of(context).textAgentsFieldEndpoint} *';
       case TextAgentProvider.litellm:
-        return 'プロキシURL *';
+        return '${AppLocalizations.of(context).textAgentsFieldProxyUrl} *';
       case TextAgentProvider.custom:
-        return 'エンドポイントURL *';
+        return '${AppLocalizations.of(context).textAgentsFieldEndpointUrl} *';
+    }
+  }
+
+  String _getEndpointFieldName() {
+    switch (_provider) {
+      case TextAgentProvider.openai:
+        return AppLocalizations.of(context).textAgentsFieldModel;
+      case TextAgentProvider.azure:
+        return AppLocalizations.of(context).textAgentsFieldEndpoint;
+      case TextAgentProvider.litellm:
+        return AppLocalizations.of(context).textAgentsFieldProxyUrl;
+      case TextAgentProvider.custom:
+        return AppLocalizations.of(context).textAgentsFieldEndpointUrl;
+    }
+  }
+
+  String _getProviderLabel(TextAgentProvider provider) {
+    switch (provider) {
+      case TextAgentProvider.openai:
+        return AppLocalizations.of(context).textAgentsProviderLabelOpenAi;
+      case TextAgentProvider.azure:
+        return AppLocalizations.of(context).textAgentsProviderLabelAzure;
+      case TextAgentProvider.litellm:
+        return AppLocalizations.of(context).textAgentsProviderLabelLiteLlm;
+      case TextAgentProvider.custom:
+        return AppLocalizations.of(context).textAgentsProviderLabelCustom;
     }
   }
 

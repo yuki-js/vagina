@@ -1,0 +1,1501 @@
+{
+  "@@locale": "ja",
+  "appTitle": "{appName}",
+  "@appTitle": {
+    "description": "Application title used by MaterialApp during bootstrap.",
+    "placeholders": {
+      "appName": {
+        "type": "String",
+        "description": "AppConfig.appName から注入される非翻訳のブランドトークン。"
+      }
+    }
+  },
+  "homeTabSpeedDial": "スピードダイヤル",
+  "@homeTabSpeedDial": {
+    "description": "ホーム画面のスピードダイヤルタブに表示するボトムナビゲーションラベル。"
+  },
+  "homeTabSessions": "セッション",
+  "@homeTabSessions": {
+    "description": "ホーム画面のセッションタブに表示するボトムナビゲーションラベル。"
+  },
+  "homeTabAgents": "エージェント",
+  "@homeTabAgents": {
+    "description": "ホーム画面のエージェントタブに表示するボトムナビゲーションラベル。"
+  },
+  "homeTabMore": "もっと",
+  "@homeTabMore": {
+    "description": "ホーム画面のその他タブに表示するボトムナビゲーションラベル。"
+  },
+  "welcomeTitle": "{appName}へようこそ！",
+  "@welcomeTitle": {
+    "description": "OOBE の最初の回転メッセージ。ブランド名は中央設定から注入する。",
+    "placeholders": {
+      "appName": {
+        "type": "String",
+        "description": "AppConfig.appName から注入される非翻訳のブランドトークン。"
+      }
+    }
+  },
+  "welcomeHeroMessageThoughts": "声で、思考を解き放つ",
+  "@welcomeHeroMessageThoughts": {
+    "description": "OOBE ウェルカム画面の回転ヒーローコピー。音声起点の思考体験を表現する。"
+  },
+  "welcomeHeroMessageRealtimeAi": "リアルタイムAI会話",
+  "@welcomeHeroMessageRealtimeAi": {
+    "description": "OOBE ウェルカム画面の回転ヒーローコピー。リアルタイム AI 会話を訴求する。"
+  },
+  "welcomeHeroMessageCreativePartner": "あなたの創造性パートナー",
+  "@welcomeHeroMessageCreativePartner": {
+    "description": "OOBE ウェルカム画面の回転ヒーローコピー。創造性を支える相棒として表現する。"
+  },
+  "welcomeHeroMessageSubtitle": "Voice AGI Notepad Agent",
+  "@welcomeHeroMessageSubtitle": {
+    "description": "OOBE ウェルカム画面の回転ヒーローコピー。プロダクトトーン上あえて英語のサブタイトルを維持する。"
+  },
+  "welcomeTapToBegin": "タップしてはじめる",
+  "@welcomeTapToBegin": {
+    "description": "OOBE ウェルカム画面でタップ操作を促すヒント文。"
+  },
+  "welcomeFeatureRealtimeConversation": "リアルタイム会話",
+  "@welcomeFeatureRealtimeConversation": {
+    "description": "OOBE ウェルカム画面の機能チップ。リアルタイム会話を表す。"
+  },
+  "welcomeFeatureThoughtOrganization": "思考整理",
+  "@welcomeFeatureThoughtOrganization": {
+    "description": "OOBE ウェルカム画面の機能チップ。思考整理を表す。"
+  },
+  "welcomeFeatureVoiceNotes": "音声メモ",
+  "@welcomeFeatureVoiceNotes": {
+    "description": "OOBE ウェルカム画面の機能チップ。音声メモ機能を表す。"
+  },
+  "welcomeFeatureAiSupport": "AI支援",
+  "@welcomeFeatureAiSupport": {
+    "description": "OOBE ウェルカム画面の機能チップ。AI による支援を表す。"
+  },
+  "welcomePoweredByAokiApp": "AokiApp 提供",
+  "@welcomePoweredByAokiApp": {
+    "description": "OOBE ウェルカム画面の小さなフッター表記。"
+  },
+  "permissionsIntro": "{appName}を最大限に活用するために、\nいくつかの権限が必要です",
+  "@permissionsIntro": {
+    "description": "OOBE 権限画面の導入文。アプリ名を固定リテラルではなく注入で受け取る。",
+    "placeholders": {
+      "appName": {
+        "type": "String",
+        "description": "AppConfig.appName から注入される非翻訳のブランドトークン。"
+      }
+    }
+  },
+  "permissionsScreenTitle": "権限の設定",
+  "@permissionsScreenTitle": {
+    "description": "OOBE 権限画面のメイン見出し。"
+  },
+  "permissionsMicrophoneTitle": "マイク",
+  "@permissionsMicrophoneTitle": {
+    "description": "OOBE 権限画面でマイク権限カードに表示するタイトル。"
+  },
+  "permissionsMicrophoneDescription": "音声での会話に必要です",
+  "@permissionsMicrophoneDescription": {
+    "description": "OOBE 権限画面でマイク権限の必要性を説明する文。"
+  },
+  "permissionsStorageTitle": "ストレージ",
+  "@permissionsStorageTitle": {
+    "description": "OOBE 権限画面でストレージ権限カードに表示するタイトル。"
+  },
+  "permissionsStorageDescription": "会話履歴やメモを保存します",
+  "@permissionsStorageDescription": {
+    "description": "OOBE 権限画面でストレージ権限の用途を説明する文。"
+  },
+  "permissionsGranted": "{permissionName}の権限を許可しました",
+  "@permissionsGranted": {
+    "description": "OOBE 権限画面で権限付与後に表示するスナックバー文。",
+    "placeholders": {
+      "permissionName": {
+        "type": "String",
+        "description": "許可された権限のローカライズ済み表示名。"
+      }
+    }
+  },
+  "permissionsRequestFailed": "権限のリクエストに失敗しました: {error}",
+  "@permissionsRequestFailed": {
+    "description": "OOBE 権限画面で権限要求に失敗した際に表示するスナックバー文。",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "権限要求に失敗した理由を示すプラットフォームまたはプラグイン由来のエラー文字列。"
+      }
+    }
+  },
+  "permissionsSettingsDialogTitle": "{permissionName}の権限が必要です",
+  "@permissionsSettingsDialogTitle": {
+    "description": "権限が恒久的に拒否され、システム設定で有効化が必要な場合のダイアログタイトル。",
+    "placeholders": {
+      "permissionName": {
+        "type": "String",
+        "description": "システム設定で有効化が必要な権限のローカライズ済み表示名。"
+      }
+    }
+  },
+  "permissionsSettingsDialogBody": "{permissionName}の権限がオフになっています。設定から有効にしてください。",
+  "@permissionsSettingsDialogBody": {
+    "description": "権限が恒久的に拒否され、システム設定で有効化が必要な場合のダイアログ本文。",
+    "placeholders": {
+      "permissionName": {
+        "type": "String",
+        "description": "システム設定で有効化が必要な権限のローカライズ済み表示名。"
+      }
+    }
+  },
+  "permissionsDialogCancel": "キャンセル",
+  "@permissionsDialogCancel": {
+    "description": "OOBE 権限ダイアログのキャンセル操作。"
+  },
+  "permissionsOpenSettings": "設定を開く",
+  "@permissionsOpenSettings": {
+    "description": "OOBE 権限ダイアログでシステム設定を開く主操作。"
+  },
+  "permissionsContinue": "続ける",
+  "@permissionsContinue": {
+    "description": "OOBE 権限画面の主 CTA。"
+  },
+  "permissionsRequiredHint": "※必須の権限を許可してください",
+  "@permissionsRequiredHint": {
+    "description": "必須権限が未許可の間、続行ボタンの下に表示するヒント文。"
+  },
+  "permissionsConfigureLater": "あとで設定する",
+  "@permissionsConfigureLater": {
+    "description": "OOBE 権限画面で今すぐ設定をスキップする副操作。"
+  },
+  "permissionsRequiredBadge": "必須",
+  "@permissionsRequiredBadge": {
+    "description": "OOBE の必須権限カードに表示するバッジラベル。"
+  },
+  "permissionsAllow": "許可",
+  "@permissionsAllow": {
+    "description": "OOBE の権限カードで権限要求を開始するボタンラベル。"
+  },
+  "diveInReady": "これで、{appName}を使い始める\n準備が整いました",
+  "@diveInReady": {
+    "description": "OOBE 最終画面の完了メッセージ。アプリ名を固定リテラルではなく注入で受け取る。",
+    "placeholders": {
+      "appName": {
+        "type": "String",
+        "description": "AppConfig.appName から注入される非翻訳のブランドトークン。"
+      }
+    }
+  },
+  "diveInTitle": "準備完了！",
+  "@diveInTitle": {
+    "description": "OOBE 最終画面の大きな完了見出し。"
+  },
+  "diveInFeatureOrganizeThoughts": "声で思考を整理",
+  "@diveInFeatureOrganizeThoughts": {
+    "description": "OOBE 最終画面の機能ポイント。音声で思考を整理できることを伝える。"
+  },
+  "diveInFeatureNaturalAiConversation": "AIと自然な会話",
+  "@diveInFeatureNaturalAiConversation": {
+    "description": "OOBE 最終画面の機能ポイント。AI と自然に会話できることを伝える。"
+  },
+  "diveInFeatureCaptureIdeas": "アイデアをすぐに記録",
+  "@diveInFeatureCaptureIdeas": {
+    "description": "OOBE 最終画面の機能ポイント。思いつきをすばやく残せることを伝える。"
+  },
+  "diveInStart": "はじめる",
+  "@diveInStart": {
+    "description": "OOBE 最終画面の開始用 FAB 内に表示する短いラベル。"
+  },
+  "oobeAuthenticationTitle": "ログインして\nはじめましょう",
+  "@oobeAuthenticationTitle": {
+    "description": "OOBE 認証画面のメイン見出し。サインインしてセットアップを続けることを促す。改行は維持する。"
+  },
+  "oobeAuthenticationProviderButton": "{providerName}でログイン",
+  "@oobeAuthenticationProviderButton": {
+    "description": "OOBE 認証画面の外部認証プロバイダーボタンラベル。",
+    "placeholders": {
+      "providerName": {
+        "type": "String",
+        "description": "Google、GitHub、X (Twitter)、Apple などの外部認証プロバイダー名。ブランド表記の都合がある場合は翻訳しない。"
+      }
+    }
+  },
+  "oobeAuthenticationProviderComingSoon": "{providerName}認証は準備中です",
+  "@oobeAuthenticationProviderComingSoon": {
+    "description": "OOBE 認証画面で、まだバックエンド実装がない認証プロバイダーをタップしたときに表示するスナックバー文言。",
+    "placeholders": {
+      "providerName": {
+        "type": "String",
+        "description": "Google、GitHub、X (Twitter)、Apple などの外部認証プロバイダー名。ブランド表記の都合がある場合は翻訳しない。"
+      }
+    }
+  },
+  "oobeAuthenticationOr": "または",
+  "@oobeAuthenticationOr": {
+    "description": "OOBE 認証画面で外部ログインボタン群と手動設定ボタンの間に表示する区切りラベル。"
+  },
+  "oobeAuthenticationManualSetup": "自分で設定する",
+  "@oobeAuthenticationManualSetup": {
+    "description": "OOBE 認証画面で、外部ログインではなく Azure OpenAI の手動設定へ進む副ボタンラベル。"
+  },
+  "oobeAuthenticationTermsNotice": "続行することで、利用規約とプライバシーポリシーに同意したものとみなされます",
+  "@oobeAuthenticationTermsNotice": {
+    "description": "OOBE 認証画面の下部に表示する小さな法的同意文。"
+  },
+  "oobeManualSetupTitle": "Azure OpenAIの設定",
+  "@oobeManualSetupTitle": {
+    "description": "Azure OpenAI Realtime API の認証情報を入力する OOBE 手動設定画面のメイン見出し。"
+  },
+  "oobeManualSetupSubtitle": "Azure OpenAI Realtime APIの接続情報を入力してください",
+  "@oobeManualSetupSubtitle": {
+    "description": "OOBE 手動設定画面で、Azure OpenAI Realtime API の接続情報入力を案内する導入文。"
+  },
+  "settingsLanguageSectionTitle": "言語",
+  "@settingsLanguageSectionTitle": {
+    "description": "設定画面で言語選択カードをまとめるセクション見出し。"
+  },
+  "settingsLanguageLabel": "アプリの言語",
+  "@settingsLanguageLabel": {
+    "description": "設定画面の言語選択ドロップダウンの上に表示するラベル。"
+  },
+  "settingsLanguageOptionSystemDefault": "システムの設定に従う",
+  "@settingsLanguageOptionSystemDefault": {
+    "description": "言語オーバーライドを解除してシステム言語に追従する選択肢。"
+  },
+  "settingsLanguageOptionJapanese": "日本語",
+  "@settingsLanguageOptionJapanese": {
+    "description": "日本語ロケールを選ぶための選択肢。"
+  },
+  "settingsLanguageOptionEnglish": "English",
+  "@settingsLanguageOptionEnglish": {
+    "description": "英語ロケールを選ぶための選択肢。"
+  },
+  "settingsScreenTitle": "設定",
+  "@settingsScreenTitle": {
+    "description": "設定画面のアプリバータイトル。"
+  },
+  "settingsAzureConfigSectionTitle": "Azure OpenAI 設定",
+  "@settingsAzureConfigSectionTitle": {
+    "description": "設定画面で Azure OpenAI 設定カードをまとめるセクション見出し。"
+  },
+  "settingsSetupSectionTitle": "セットアップ",
+  "@settingsSetupSectionTitle": {
+    "description": "設定画面でセットアップ関連カードをまとめるセクション見出し。"
+  },
+  "settingsAzureLoadFailed": "設定の読み込みに失敗しました",
+  "@settingsAzureLoadFailed": {
+    "description": "保存済みの Azure 設定を読み込めなかったときに表示するスナックバー文言。"
+  },
+  "settingsAzureRealtimeUrlRequired": "Realtime URLを入力してください",
+  "@settingsAzureRealtimeUrlRequired": {
+    "description": "Azure Realtime URL 入力欄が空のときに表示するバリデーション文言。"
+  },
+  "settingsAzureRealtimeUrlInvalid": "Realtime URLの形式が正しくありません",
+  "@settingsAzureRealtimeUrlInvalid": {
+    "description": "Azure Realtime URL を解析できないときに表示するバリデーション文言。"
+  },
+  "settingsAzureApiKeyRequired": "APIキーを入力してください",
+  "@settingsAzureApiKeyRequired": {
+    "description": "Azure API キー入力欄が空のときに表示するバリデーション文言。"
+  },
+  "settingsAzureSaveSuccess": "設定を保存しました",
+  "@settingsAzureSaveSuccess": {
+    "description": "Azure 設定の保存に成功したあとに表示するスナックバー文言。"
+  },
+  "settingsAzureSaveFailed": "保存に失敗しました: {error}",
+  "@settingsAzureSaveFailed": {
+    "description": "Azure 設定の保存に失敗したときに表示するスナックバー文言。",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "保存失敗の詳細を示すエラー文字列。"
+      }
+    }
+  },
+  "settingsAzureConnectionTestSuccess": "接続テスト成功",
+  "@settingsAzureConnectionTestSuccess": {
+    "description": "Azure Realtime 接続テストが成功したときに表示するスナックバー文言。"
+  },
+  "settingsAzureConnectionTestFailed": "接続テスト失敗: {error}",
+  "@settingsAzureConnectionTestFailed": {
+    "description": "Azure Realtime 接続テストが失敗したときに表示するスナックバー文言。",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "接続テスト失敗の詳細を示すエラー文字列。"
+      }
+    }
+  },
+  "settingsAzureClearDialogTitle": "設定をクリア?",
+  "@settingsAzureClearDialogTitle": {
+    "description": "保存済みの Azure 設定を削除する前に表示する確認ダイアログのタイトル。"
+  },
+  "settingsAzureClearDialogBody": "保存済みのAPI設定をすべて削除しますか？",
+  "@settingsAzureClearDialogBody": {
+    "description": "保存済みの Azure 設定を削除する前に表示する確認ダイアログの本文。"
+  },
+  "settingsCommonCancel": "キャンセル",
+  "@settingsCommonCancel": {
+    "description": "設定画面の確認ダイアログで使うキャンセル操作ラベル。"
+  },
+  "settingsCommonDelete": "削除",
+  "@settingsCommonDelete": {
+    "description": "設定画面の確認ダイアログで使う削除操作ラベル。"
+  },
+  "settingsAzureClearSuccess": "設定をクリアしました",
+  "@settingsAzureClearSuccess": {
+    "description": "保存済みの Azure 設定をクリアしたあとに表示するスナックバー文言。"
+  },
+  "settingsAzureClearFailed": "設定のクリアに失敗しました: {error}",
+  "@settingsAzureClearFailed": {
+    "description": "保存済みの Azure 設定のクリアに失敗したときに表示するスナックバー文言。",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "クリア失敗の詳細を示すエラー文字列。"
+      }
+    }
+  },
+  "settingsAzureRealtimeUrlLabel": "Azure OpenAI Realtime URL",
+  "@settingsAzureRealtimeUrlLabel": {
+    "description": "設定画面の Azure OpenAI Realtime URL 入力欄の上に表示するラベル。"
+  },
+  "settingsAzureRealtimeUrlHint": "https://<resource>.openai.azure.com/openai/realtime?api-version=2024-10-01-preview&deployment=gpt-4o-realtime",
+  "@settingsAzureRealtimeUrlHint": {
+    "description": "Azure OpenAI Realtime URL 入力欄のプレースホルダー。URL パターンは維持すること。"
+  },
+  "settingsAzureRealtimeUrlExample": "例: https://your-resource.openai.azure.com/openai/realtime?api-version=2024-10-01-preview&deployment=gpt-realtime",
+  "@settingsAzureRealtimeUrlExample": {
+    "description": "Azure Realtime URL 欄の下に表示する補助テキスト。URL パターンは維持すること。"
+  },
+  "settingsAzureApiKeyLabel": "APIキー",
+  "@settingsAzureApiKeyLabel": {
+    "description": "設定画面の Azure API キー入力欄の上に表示するラベル。"
+  },
+  "settingsAzureApiKeyHint": "APIキーを入力",
+  "@settingsAzureApiKeyHint": {
+    "description": "Azure API キー入力欄のプレースホルダー。"
+  },
+  "settingsCommonSave": "保存",
+  "@settingsCommonSave": {
+    "description": "設定画面で使う主要な保存ボタンのラベル。"
+  },
+  "settingsAzureTestConnectionButton": "接続テスト",
+  "@settingsAzureTestConnectionButton": {
+    "description": "Azure Realtime の接続テストを実行するボタンのラベル。"
+  },
+  "settingsCommonClear": "クリア",
+  "@settingsCommonClear": {
+    "description": "保存済みの Azure 設定をクリアするボタンのラベル。"
+  },
+  "settingsAzureCredentialsStorageNote": "認証情報はデバイス上に安全に保存されます。",
+  "@settingsAzureCredentialsStorageNote": {
+    "description": "Azure 設定ボタンの下に表示する、認証情報の保存先に関する補足文。"
+  },
+  "settingsSetupRestartOobeTitle": "初期設定をやり直す",
+  "@settingsSetupRestartOobeTitle": {
+    "description": "ウェルカム画面からオンボーディングを再開するセットアップ項目のタイトル。"
+  },
+  "settingsSetupRestartOobeSubtitle": "ウェルカム画面から初期設定を再実行",
+  "@settingsSetupRestartOobeSubtitle": {
+    "description": "ウェルカム画面からオンボーディングを再開することを説明するセットアップ項目の補足文。"
+  },
+  "speedDialTabLoadError": "エラー: {error}",
+  "@speedDialTabLoadError": {
+    "description": "保存済みのスピードダイヤル一覧の読み込みに失敗したとき、スピードダイヤルタブに表示するエラー文言。",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "スピードダイヤル一覧の読み込み失敗時の詳細エラー文字列。"
+      }
+    }
+  },
+  "speedDialTabSubtitle": "お気に入りのキャラクターに素早く発信",
+  "@speedDialTabSubtitle": {
+    "description": "スピードダイヤルタブの見出し下に表示する短い説明文。"
+  },
+  "speedDialTabEmptyTitle": "スピードダイヤルがまだありません",
+  "@speedDialTabEmptyTitle": {
+    "description": "スピードダイヤルが未登録のときに表示する空状態のタイトル。"
+  },
+  "speedDialTabEmptyBody": "右上の + ボタンで追加できます",
+  "@speedDialTabEmptyBody": {
+    "description": "スピードダイヤルの追加方法を案内する空状態の補足文。"
+  },
+  "speedDialConfigAddTitle": "スピードダイヤルを追加",
+  "@speedDialConfigAddTitle": {
+    "description": "新しいスピードダイヤルを作成するときの設定画面アプリバータイトル。"
+  },
+  "speedDialConfigEditTitle": "スピードダイヤルを編集",
+  "@speedDialConfigEditTitle": {
+    "description": "既存のスピードダイヤルを編集するときの設定画面アプリバータイトル。"
+  },
+  "speedDialConfigAddAction": "追加",
+  "@speedDialConfigAddAction": {
+    "description": "新しいスピードダイヤルを作成するときの主操作ボタンラベル。"
+  },
+  "speedDialConfigNameRequired": "名前を入力してください",
+  "@speedDialConfigNameRequired": {
+    "description": "スピードダイヤル名が未入力のときに表示するバリデーション文言。"
+  },
+  "speedDialConfigSystemPromptRequired": "システムプロンプトを入力してください",
+  "@speedDialConfigSystemPromptRequired": {
+    "description": "システムプロンプトが未入力のときに表示するバリデーション文言。"
+  },
+  "speedDialConfigAdded": "スピードダイヤルを追加しました",
+  "@speedDialConfigAdded": {
+    "description": "新しいスピードダイヤルの保存に成功したあとに表示するスナックバー文言。"
+  },
+  "speedDialConfigUpdated": "スピードダイヤルを更新しました",
+  "@speedDialConfigUpdated": {
+    "description": "既存のスピードダイヤルの更新に成功したあとに表示するスナックバー文言。"
+  },
+  "speedDialConfigDeleted": "スピードダイヤルを削除しました",
+  "@speedDialConfigDeleted": {
+    "description": "スピードダイヤルの削除に成功したあとに表示するスナックバー文言。"
+  },
+  "speedDialConfigDefaultDeleteBlocked": "デフォルトのスピードダイヤルは削除できません",
+  "@speedDialConfigDefaultDeleteBlocked": {
+    "description": "保護されたデフォルトのスピードダイヤルを削除しようとしたときに表示するスナックバー文言。"
+  },
+  "speedDialConfigDeleteConfirmTitle": "スピードダイヤルを削除",
+  "@speedDialConfigDeleteConfirmTitle": {
+    "description": "スピードダイヤル削除前に表示する確認ダイアログのタイトル。"
+  },
+  "speedDialConfigDeleteConfirmBody": "「{name}」を削除しますか？",
+  "@speedDialConfigDeleteConfirmBody": {
+    "description": "スピードダイヤル削除前に表示する確認ダイアログ本文。プレースホルダーにはスピードダイヤル名が入る。",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "description": "削除対象のスピードダイヤル表示名。"
+      }
+    }
+  },
+  "speedDialConfigIconLabel": "アイコン",
+  "@speedDialConfigIconLabel": {
+    "description": "スピードダイヤル設定画面のアイコン・絵文字選択セクション見出し。"
+  },
+  "speedDialConfigIconTapToChange": "タップして変更",
+  "@speedDialConfigIconTapToChange": {
+    "description": "選択中の絵文字の下に表示する変更案内テキスト。"
+  },
+  "speedDialConfigNameLabel": "名前",
+  "@speedDialConfigNameLabel": {
+    "description": "スピードダイヤル名入力欄のラベル。"
+  },
+  "speedDialConfigNameHint": "例: アシスタント",
+  "@speedDialConfigNameHint": {
+    "description": "スピードダイヤル名入力欄のプレースホルダー。"
+  },
+  "speedDialConfigDefaultNameLocked": "デフォルトのスピードダイヤルは名前を変更できません",
+  "@speedDialConfigDefaultNameLocked": {
+    "description": "保護されたデフォルトのスピードダイヤル名を変更できないことを示す補助文。"
+  },
+  "speedDialConfigVoiceLabel": "音声選択",
+  "@speedDialConfigVoiceLabel": {
+    "description": "スピードダイヤル設定画面の音声選択ドロップダウンラベル。"
+  },
+  "speedDialConfigSystemPromptLabel": "システムプロンプト",
+  "@speedDialConfigSystemPromptLabel": {
+    "description": "スピードダイヤル設定画面のシステムプロンプト入力欄ラベル。"
+  },
+  "speedDialConfigSystemPromptDescription": "キャラクターの振る舞いや性格を設定",
+  "@speedDialConfigSystemPromptDescription": {
+    "description": "システムプロンプトがキャラクターの振る舞いや性格を決めることを説明する補助文。"
+  },
+  "speedDialConfigSystemPromptHint": "例: あなたは親切なアシスタントです",
+  "@speedDialConfigSystemPromptHint": {
+    "description": "スピードダイヤル設定画面のシステムプロンプト入力欄プレースホルダー。"
+  },
+  "speedDialConfigToolsLabel": "ツール設定",
+  "@speedDialConfigToolsLabel": {
+    "description": "スピードダイヤル設定画面のツール設定セクション見出し。"
+  },
+  "speedDialEmojiPickerTitle": "アイコンを選択",
+  "@speedDialEmojiPickerTitle": {
+    "description": "スピードダイヤル設定フローで使う絵文字ピッカーのヘッダータイトル。"
+  },
+  "speedDialToolConfigSelectAll": "すべて選択",
+  "@speedDialToolConfigSelectAll": {
+    "description": "共有ツール設定ウィジェットで全ツールを有効にするボタンラベル。"
+  },
+  "speedDialToolConfigClearAll": "すべて解除",
+  "@speedDialToolConfigClearAll": {
+    "description": "共有ツール設定ウィジェットで全ツールを無効にするボタンラベル。"
+  },
+  "speedDialToolCategorySystem": "システム",
+  "@speedDialToolCategorySystem": {
+    "description": "スピードダイヤルのツール設定ウィジェットに表示するシステム系ツールカテゴリタブラベル。"
+  },
+  "speedDialToolCategoryCalculation": "計算",
+  "@speedDialToolCategoryCalculation": {
+    "description": "スピードダイヤルのツール設定ウィジェットに表示する計算系ツールカテゴリタブラベル。"
+  },
+  "speedDialToolCategoryFilesystem": "ファイル",
+  "@speedDialToolCategoryFilesystem": {
+    "description": "スピードダイヤルのツール設定ウィジェットに表示するファイル系ツールカテゴリタブラベル。"
+  },
+  "speedDialToolCategoryDocument": "ドキュメント",
+  "@speedDialToolCategoryDocument": {
+    "description": "スピードダイヤルのツール設定ウィジェットに表示するドキュメント系ツールカテゴリタブラベル。"
+  },
+  "speedDialToolCategoryMcp": "MCP",
+  "@speedDialToolCategoryMcp": {
+    "description": "スピードダイヤルのツール設定ウィジェットに表示する MCP ツールカテゴリタブラベル。"
+  },
+  "speedDialToolCategoryCustom": "カスタム",
+  "@speedDialToolCategoryCustom": {
+    "description": "スピードダイヤルのツール設定ウィジェットに表示するカスタムツールカテゴリタブラベル。"
+  },
+  "textAgentsLoadError": "エラー: {error}",
+  "@textAgentsLoadError": {
+    "description": "テキストエージェント一覧の読み込みに失敗したとき、関連画面に表示するエラー文言。",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "テキストエージェント読み込み失敗時の詳細エラー文字列。"
+      }
+    }
+  },
+  "textAgentsSearchHint": "エージェントを検索...",
+  "@textAgentsSearchHint": {
+    "description": "エージェントタブのテキストエージェント検索欄に表示するプレースホルダー。"
+  },
+  "textAgentsListEmptyTitle": "エージェントがありません",
+  "@textAgentsListEmptyTitle": {
+    "description": "テキストエージェントが未登録のとき、エージェントタブに表示する空状態タイトル。"
+  },
+  "textAgentsListEmptyBody": "右上の + ボタンで追加できます",
+  "@textAgentsListEmptyBody": {
+    "description": "最初のテキストエージェントの追加方法を案内する、エージェントタブの補足文。"
+  },
+  "textAgentsSearchEmptyTitle": "検索結果がありません",
+  "@textAgentsSearchEmptyTitle": {
+    "description": "テキストエージェント検索に一致する結果がないとき、エージェントタブに表示するメッセージ。"
+  },
+  "textAgentsProviderHostedPrefix": "Hosted",
+  "@textAgentsProviderHostedPrefix": {
+    "description": "ホスト型テキストエージェントのモデル識別子の前に付ける短い接頭辞。プロダクト表記として英語の Hosted を維持する。"
+  },
+  "textAgentsProviderUnknown": "不明",
+  "@textAgentsProviderUnknown": {
+    "description": "テキストエージェントのプロバイダー種別を特定できないときに表示するフォールバックラベル。"
+  },
+  "textAgentsProviderLabelOpenAi": "OpenAI",
+  "@textAgentsProviderLabelOpenAi": {
+    "description": "OpenAI テキストエージェントプロバイダーをドロップダウンや概要表示で示すラベル。ブランド名として OpenAI 表記を維持する。"
+  },
+  "textAgentsProviderLabelAzure": "Azure OpenAI",
+  "@textAgentsProviderLabelAzure": {
+    "description": "Azure OpenAI テキストエージェントプロバイダーをドロップダウンや概要表示で示すラベル。ブランド名として Azure OpenAI 表記を維持する。"
+  },
+  "textAgentsProviderLabelLiteLlm": "LiteLLM Proxy",
+  "@textAgentsProviderLabelLiteLlm": {
+    "description": "LiteLLM テキストエージェントプロバイダーをドロップダウンや概要表示で示すラベル。プロダクト表記として LiteLLM Proxy を維持する。"
+  },
+  "textAgentsProviderLabelCustom": "カスタムエンドポイント",
+  "@textAgentsProviderLabelCustom": {
+    "description": "Custom テキストエージェントプロバイダーをドロップダウンや概要表示で示すラベル。OpenAI 互換の任意エンドポイントを意味する。"
+  },
+  "textAgentsFieldRequired": "{fieldName}を入力してください",
+  "@textAgentsFieldRequired": {
+    "description": "テキストエージェント作成・編集フォームの必須入力が空のときに表示するバリデーション文言。",
+    "placeholders": {
+      "fieldName": {
+        "type": "String",
+        "description": "未入力だったテキストエージェントフォーム項目のローカライズ済みフィールド名。"
+      }
+    }
+  },
+  "textAgentsSaveCreated": "エージェントを作成しました",
+  "@textAgentsSaveCreated": {
+    "description": "新しいテキストエージェントの保存に成功したあとに表示するスナックバー文言。"
+  },
+  "textAgentsSaveUpdated": "エージェントを更新しました",
+  "@textAgentsSaveUpdated": {
+    "description": "既存のテキストエージェントの更新に成功したあとに表示するスナックバー文言。"
+  },
+  "textAgentsSaveFailed": "保存に失敗しました: {error}",
+  "@textAgentsSaveFailed": {
+    "description": "テキストエージェントの保存に失敗したときに表示するスナックバー文言。",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "テキストエージェント保存失敗時の詳細エラー文字列。"
+      }
+    }
+  },
+  "textAgentsDeleteDialogTitle": "エージェントを削除",
+  "@textAgentsDeleteDialogTitle": {
+    "description": "テキストエージェント削除前に表示する確認ダイアログのタイトル。"
+  },
+  "textAgentsDeleteDialogBody": "「{name}」を削除してもよろしいですか？",
+  "@textAgentsDeleteDialogBody": {
+    "description": "テキストエージェント削除前に表示する確認ダイアログ本文。プレースホルダーにはエージェント名が入る。",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "description": "削除対象のテキストエージェント表示名。"
+      }
+    }
+  },
+  "textAgentsDeleteSuccess": "エージェントを削除しました",
+  "@textAgentsDeleteSuccess": {
+    "description": "テキストエージェントの削除に成功したあとに表示するスナックバー文言。"
+  },
+  "textAgentsDeleteFailed": "削除に失敗しました: {error}",
+  "@textAgentsDeleteFailed": {
+    "description": "テキストエージェントの削除に失敗したときに表示するスナックバー文言。",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "テキストエージェント削除失敗時の詳細エラー文字列。"
+      }
+    }
+  },
+  "textAgentsCreateTitle": "エージェントを追加",
+  "@textAgentsCreateTitle": {
+    "description": "新しいテキストエージェントを作成するときのフォーム画面アプリバータイトル。"
+  },
+  "textAgentsEditTitle": "エージェントを編集",
+  "@textAgentsEditTitle": {
+    "description": "既存のテキストエージェントを編集するときのフォーム画面アプリバータイトル。"
+  },
+  "textAgentsSectionBasicInfo": "基本情報",
+  "@textAgentsSectionBasicInfo": {
+    "description": "テキストエージェントフォームの基本情報カード見出し。"
+  },
+  "textAgentsFieldAgentName": "エージェント名",
+  "@textAgentsFieldAgentName": {
+    "description": "テキストエージェントフォームの名前入力欄ラベル。"
+  },
+  "textAgentsFieldNameHint": "例: リサーチアシスタント",
+  "@textAgentsFieldNameHint": {
+    "description": "テキストエージェントフォームの名前入力欄プレースホルダー。"
+  },
+  "textAgentsFieldDescriptionOptional": "説明 (オプション)",
+  "@textAgentsFieldDescriptionOptional": {
+    "description": "テキストエージェントフォームの任意説明入力欄ラベル。"
+  },
+  "textAgentsFieldDescriptionHint": "例: 詳細な分析とサマリーを提供するエージェント",
+  "@textAgentsFieldDescriptionHint": {
+    "description": "テキストエージェントフォームの任意説明入力欄プレースホルダー。"
+  },
+  "textAgentsFieldSystemPromptOptional": "System Prompt (オプション)",
+  "@textAgentsFieldSystemPromptOptional": {
+    "description": "テキストエージェントフォームの任意システムプロンプト入力欄ラベル。プロダクト用語として System Prompt 表記を維持する。"
+  },
+  "textAgentsFieldSystemPromptHint": "例: You are a helpful research assistant...",
+  "@textAgentsFieldSystemPromptHint": {
+    "description": "テキストエージェントフォームの任意システムプロンプト入力欄プレースホルダー。アシスタント指示の自然な英語例を維持する。"
+  },
+  "textAgentsSectionSettings": "設定",
+  "@textAgentsSectionSettings": {
+    "description": "テキストエージェントフォームのプロバイダー・API設定カード見出し。"
+  },
+  "textAgentsFieldProvider": "プロバイダー",
+  "@textAgentsFieldProvider": {
+    "description": "テキストエージェントフォームのプロバイダードロップダウンラベル。"
+  },
+  "textAgentsProviderHelpOpenAi": "OpenAIの公式API。api.openai.comを使用します。",
+  "@textAgentsProviderHelpOpenAi": {
+    "description": "OpenAI プロバイダー選択時にテキストエージェントフォームへ表示する補助説明。"
+  },
+  "textAgentsProviderHelpAzure": "Azure OpenAI Service。ベースURL（https://{resource}.openai.azure.com）または完成済みのChat Completions URLを指定します。",
+  "@textAgentsProviderHelpAzure": {
+    "description": "Azure OpenAI プロバイダー選択時にテキストエージェントフォームへ表示する補助説明。URL パターンは維持し、ベースURLまたは完全な Chat Completions URL を受け付けることを説明する。"
+  },
+  "textAgentsProviderHelpLiteLlm": "LiteLLMプロキシサービス。ローカルまたはリモートのプロキシURLを指定します。",
+  "@textAgentsProviderHelpLiteLlm": {
+    "description": "LiteLLM プロバイダー選択時にテキストエージェントフォームへ表示する補助説明。"
+  },
+  "textAgentsProviderHelpCustom": "OpenAI互換のカスタムエンドポイント。完全なURLを指定します。",
+  "@textAgentsProviderHelpCustom": {
+    "description": "Custom プロバイダー選択時にテキストエージェントフォームへ表示する補助説明。"
+  },
+  "textAgentsFieldApiKey": "APIキー",
+  "@textAgentsFieldApiKey": {
+    "description": "テキストエージェントフォームの API キー入力欄ラベル。"
+  },
+  "textAgentsFieldApiKeyHint": "プロバイダーのAPIキーを入力",
+  "@textAgentsFieldApiKeyHint": {
+    "description": "テキストエージェントフォームの API キー入力欄プレースホルダー。"
+  },
+  "textAgentsSectionToolSettings": "ツール設定",
+  "@textAgentsSectionToolSettings": {
+    "description": "テキストエージェントフォームの共有ツール設定ウィジェット見出し。"
+  },
+  "textAgentsActionCreate": "作成",
+  "@textAgentsActionCreate": {
+    "description": "新しいテキストエージェントを作成するときの主ボタンラベル。"
+  },
+  "textAgentsFieldModel": "モデル",
+  "@textAgentsFieldModel": {
+    "description": "OpenAI プロバイダー用のモデル入力欄ラベル。"
+  },
+  "textAgentsFieldEndpoint": "エンドポイント",
+  "@textAgentsFieldEndpoint": {
+    "description": "Azure プロバイダー用のエンドポイント入力欄ラベル。"
+  },
+  "textAgentsFieldProxyUrl": "プロキシURL",
+  "@textAgentsFieldProxyUrl": {
+    "description": "LiteLLM プロバイダー用のプロキシ URL 入力欄ラベル。"
+  },
+  "textAgentsFieldEndpointUrl": "エンドポイントURL",
+  "@textAgentsFieldEndpointUrl": {
+    "description": "Custom プロバイダー用のエンドポイント URL 入力欄ラベル。"
+  },
+  "textAgentsEmptyViewTitle": "テキストエージェントがありません",
+  "@textAgentsEmptyViewTitle": {
+    "description": "再利用可能な空状態ウィジェットに表示する、テキストエージェント未登録時のタイトル。"
+  },
+  "textAgentsEmptyViewBody": "テキストエージェントを作成して\n高度なAI機能を利用できます",
+  "@textAgentsEmptyViewBody": {
+    "description": "再利用可能な空状態ウィジェットに表示する、テキストエージェント作成を促す補足文。改行はデザイン意図として維持する。"
+  },
+  "textAgentsEmptyViewCreateAction": "最初のエージェントを作成",
+  "@textAgentsEmptyViewCreateAction": {
+    "description": "再利用可能な空状態ウィジェットの主ボタンラベル。"
+  },
+  "textAgentsSelectionDialogTitle": "エージェントを選択",
+  "@textAgentsSelectionDialogTitle": {
+    "description": "テキストエージェント選択ダイアログのタイトル。"
+  },
+  "textAgentsSelectionDialogEmptyTitle": "エージェントがありません",
+  "@textAgentsSelectionDialogEmptyTitle": {
+    "description": "テキストエージェント選択ダイアログ内で、選択可能なエージェントがないときに表示する空状態タイトル。"
+  },
+  "textAgentsSelectionDialogError": "エラー: {error}",
+  "@textAgentsSelectionDialogError": {
+    "description": "テキストエージェント選択ダイアログでエージェント一覧や選択状態の読み込みに失敗したときに表示するエラー文言。",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "テキストエージェント選択ダイアログ読み込み失敗時の詳細エラー文字列。"
+      }
+    }
+  },
+  "textAgentsSelectedBadge": "選択中",
+  "@textAgentsSelectedBadge": {
+    "description": "現在選択中のテキストエージェントを示す小さなバッジラベル。カードとリスト項目の両方で使用する。"
+  },
+  "textAgentsProviderUrlRequired": "URLを入力してください",
+  "@textAgentsProviderUrlRequired": {
+    "description": "テキストエージェントのプロバイダー URL が空のときに表示するバリデーション文言。"
+  },
+  "textAgentsProviderUrlInvalid": "有効なURLを入力してください",
+  "@textAgentsProviderUrlInvalid": {
+    "description": "テキストエージェントのプロバイダー URL を解析できないときに表示するバリデーション文言。"
+  },
+  "textAgentsProviderUrlHttpHttpsOnly": "HTTP/HTTPSのURLを入力してください",
+  "@textAgentsProviderUrlHttpHttpsOnly": {
+    "description": "テキストエージェントのプロバイダー URL が未対応スキームのときに表示するバリデーション文言。"
+  },
+  "textAgentsProviderAzureUrlWarning": "Azure OpenAIのURLが正しくない可能性があります",
+  "@textAgentsProviderAzureUrlWarning": {
+    "description": "Azure 用のテキストエージェント URL が Azure OpenAI のホストらしく見えないときに表示するバリデーション警告。"
+  },
+  "callConnectionFailedTitle": "接続できません",
+  "@callConnectionFailedTitle": {
+    "description": "通話画面でリアルタイム通話接続の確立に失敗したときに表示するブロッキングダイアログのタイトル。"
+  },
+  "callActionClose": "閉じる",
+  "@callActionClose": {
+    "description": "通話関連のダイアログ・シート・ヘッダーで使う汎用の閉じるアクション。"
+  },
+  "callPaneSpeaker": "スピーカー",
+  "@callPaneSpeaker": {
+    "description": "通話ペインでスピーカー再生のミュート切り替えを行う操作ラベル。"
+  },
+  "callPaneMute": "消音",
+  "@callPaneMute": {
+    "description": "通話ペインでマイクのミュート状態を切り替える操作ラベル。"
+  },
+  "callPaneInterrupt": "割込み",
+  "@callPaneInterrupt": {
+    "description": "アシスタントの現在の出力を中断する通話ペインの操作ラベル。"
+  },
+  "callPaneSettingsTooltip": "設定",
+  "@callPaneSettingsTooltip": {
+    "description": "通話設定を開くボタンのツールチップ兼アクセシビリティラベル。"
+  },
+  "callPaneChat": "チャット",
+  "@callPaneChat": {
+    "description": "チャットペインを開く通話ペインのナビゲーションボタンラベル。"
+  },
+  "callPaneNotepad": "ノートパッド",
+  "@callPaneNotepad": {
+    "description": "ノートパッドペインを開く通話ペインのナビゲーションボタンラベル。"
+  },
+  "callPaneEndCallTooltip": "通話を終了",
+  "@callPaneEndCallTooltip": {
+    "description": "現在の通話を終了するフローティングアクションボタンのツールチップ兼アクセシビリティラベル。"
+  },
+  "callPanePttReleaseToFinish": "離して終了",
+  "@callPanePttReleaseToFinish": {
+    "description": "プッシュトゥトークのホールドボタンを押している間に表示するラベル。離すとユーザーの発話ターンが終了する。"
+  },
+  "callPanePttPressToTalk": "押して話す",
+  "@callPanePttPressToTalk": {
+    "description": "通話ペインのプッシュトゥトーク用ホールドボタンが待機中のときに表示するラベル。"
+  },
+  "callSettingsTitle": "通話設定",
+  "@callSettingsTitle": {
+    "description": "通話モードやノイズ抑制などの通話専用設定を含むモーダルシートのタイトル。"
+  },
+  "callSettingsModeTitle": "通話モード",
+  "@callSettingsModeTitle": {
+    "description": "通話設定シートで通話モードを選択するセクションタイトル。"
+  },
+  "callSettingsModeHandsFree": "ハンズフリー",
+  "@callSettingsModeHandsFree": {
+    "description": "通話設定シートにあるハンズフリー通話モードの選択肢ラベル。"
+  },
+  "callSettingsModePushToTalk": "押して話す",
+  "@callSettingsModePushToTalk": {
+    "description": "通話設定シートにあるプッシュトゥトークモードの選択肢ラベル。"
+  },
+  "callSettingsNoiseReductionTitle": "ノイズ抑制",
+  "@callSettingsNoiseReductionTitle": {
+    "description": "通話設定シートで入力ノイズ抑制の動作を選択するセクションタイトル。"
+  },
+  "callSettingsNoiseReductionOff": "オフ",
+  "@callSettingsNoiseReductionOff": {
+    "description": "通話設定シートで入力ノイズ抑制を無効にする選択肢ラベル。"
+  },
+  "callSettingsNoiseReductionNearField": "近距離",
+  "@callSettingsNoiseReductionNearField": {
+    "description": "近くの話者向けの近距離ノイズ抑制を表す通話設定シートの選択肢ラベル。"
+  },
+  "callSettingsNoiseReductionFarField": "遠距離",
+  "@callSettingsNoiseReductionFarField": {
+    "description": "離れた話者向けの遠距離ノイズ抑制を表す通話設定シートの選択肢ラベル。"
+  },
+  "callChatTitle": "チャット",
+  "@callChatTitle": {
+    "description": "通話中チャットペインのヘッダータイトル。"
+  },
+  "callChatBackToCall": "通話画面",
+  "@callChatBackToCall": {
+    "description": "チャットペインのヘッダーでメインの通話ペインへ戻るバックナビゲーションラベル。"
+  },
+  "callChatEmptyTitle": "まだ会話がありません",
+  "@callChatEmptyTitle": {
+    "description": "メッセージやツール呼び出しがまだないときに通話中チャットペインに表示する空状態タイトル。"
+  },
+  "callChatEmptyMessage": "ここに会話履歴が表示されます",
+  "@callChatEmptyMessage": {
+    "description": "メッセージやツール呼び出しがまだないときに通話中チャットペインに表示する空状態の補足文。"
+  },
+  "callChatInputHintEnabled": "メッセージを入力",
+  "@callChatInputHintEnabled": {
+    "description": "通話が有効でテキスト入力できるときにチャット入力欄へ表示するプレースホルダー。"
+  },
+  "callChatInputHintDisabled": "通話中でないと入力できません",
+  "@callChatInputHintDisabled": {
+    "description": "通話がアクティブでないためチャット入力欄が無効になっているときのプレースホルダー。"
+  },
+  "callChatImageDetail": "detail: {detail}",
+  "@callChatImageDetail": {
+    "description": "チャットペイン内の画像添付の下に表示する補足ラベル。プロバイダーから渡される画像 detail 値を示す。製品用語として detail は英字で維持する。",
+    "placeholders": {
+      "detail": {
+        "type": "String",
+        "description": "low・high・auto など、プロバイダーから渡される画像 detail 値。"
+      }
+    }
+  },
+  "callChatToolFallbackName": "ツール呼び出し",
+  "@callChatToolFallbackName": {
+    "description": "ツール名を取得できないときにチャット上のツール呼び出しへ表示するフォールバックタイトル。"
+  },
+  "callChatToolArgumentsStreaming": "ストリーミング中...",
+  "@callChatToolArgumentsStreaming": {
+    "description": "モデルがツール呼び出しの引数をまだストリーミング中のときにツール詳細へ表示するプレースホルダー文。"
+  },
+  "callChatToolArgumentsNone": "引数はありません",
+  "@callChatToolArgumentsNone": {
+    "description": "ツール呼び出しが引数なしで完了または失敗したときにツール詳細へ表示するプレースホルダー文。"
+  },
+  "callChatToolArgumentsCancelled": "引数の生成が完了する前にキャンセルされました",
+  "@callChatToolArgumentsCancelled": {
+    "description": "ツール呼び出しが引数ストリーミング完了前にキャンセルされたときにツール詳細へ表示するプレースホルダー文。"
+  },
+  "callChatToolStatusGeneratingArguments": "引数を生成中...",
+  "@callChatToolStatusGeneratingArguments": {
+    "description": "モデルがまだ引数を生成・ストリーミングしている途中のツール呼び出しに表示するステータス文。"
+  },
+  "callChatToolStatusExecuting": "実行中...",
+  "@callChatToolStatusExecuting": {
+    "description": "引数生成が完了し、ツールが現在実行中のときに表示するステータス文。"
+  },
+  "callChatToolStatusCompleted": "完了",
+  "@callChatToolStatusCompleted": {
+    "description": "チャットペインで成功完了したツール呼び出しに表示するステータス文。"
+  },
+  "callChatToolStatusError": "エラー",
+  "@callChatToolStatusError": {
+    "description": "チャットペインでエラー終了したツール呼び出しに表示するステータス文。"
+  },
+  "callChatToolStatusCancelled": "キャンセル済み",
+  "@callChatToolStatusCancelled": {
+    "description": "チャットペインでキャンセルされたツール呼び出しに表示するステータス文。"
+  },
+  "callChatToolNotFound": "ツール呼び出しが見つかりません",
+  "@callChatToolNotFound": {
+    "description": "参照対象のツール呼び出し項目が見つからなくなったときにツール詳細ボトムシートで表示するフォールバックエラー文。"
+  },
+  "callChatToolArgumentsSectionTitle": "引数",
+  "@callChatToolArgumentsSectionTitle": {
+    "description": "ツール詳細シートでツール呼び出し引数ブロックの上に表示するセクションタイトル。"
+  },
+  "callChatToolErrorSectionTitle": "エラー",
+  "@callChatToolErrorSectionTitle": {
+    "description": "ツール詳細シートでツールエラー出力ブロックの上に表示するセクションタイトル。"
+  },
+  "callChatToolResultSectionTitle": "結果",
+  "@callChatToolResultSectionTitle": {
+    "description": "ツール詳細シートで成功したツール出力ブロックの上に表示するセクションタイトル。"
+  },
+  "callChatScrollToBottom": "下に戻る",
+  "@callChatScrollToBottom": {
+    "description": "チャット一覧を最新メッセージ位置までスクロールし直すフローティングボタンのラベル。"
+  },
+  "callNotepadLoadFailed": "ノートパッドの読み込みに失敗しました",
+  "@callNotepadLoadFailed": {
+    "description": "アクティブなノート内容を読み込めないときに通話中ノートパッドペインへ表示するエラー文。"
+  },
+  "callNotepadSaveFailed": "ノートの保存に失敗しました",
+  "@callNotepadSaveFailed": {
+    "description": "現在編集中の通話ノートの保存に失敗したときに表示するスナックバーエラー。"
+  },
+  "callNotepadCloseFailed": "ノートを閉じられませんでした",
+  "@callNotepadCloseFailed": {
+    "description": "通話中ノートパッドペインでノートタブを閉じる処理に失敗したときに表示するスナックバーエラー。"
+  },
+  "callNotepadTitle": "ノートパッド",
+  "@callNotepadTitle": {
+    "description": "通話中ノートパッドペインのヘッダータイトル。"
+  },
+  "callNotepadBackToCall": "通話画面",
+  "@callNotepadBackToCall": {
+    "description": "ノートパッドペインのヘッダーでメインの通話ペインへ戻るバックナビゲーションラベル。"
+  },
+  "callNotepadLoadingTitle": "ノートパッドを読み込み中です",
+  "@callNotepadLoadingTitle": {
+    "description": "通話中ノートパッドペインがアクティブノートを待っている間に表示するローディングタイトル。"
+  },
+  "callNotepadLoadingMessage": "しばらくお待ちください",
+  "@callNotepadLoadingMessage": {
+    "description": "通話中ノートパッドペインがアクティブノートを待っている間に表示するローディング補足文。"
+  },
+  "callNotepadRetryMessage": "時間を置いて再度お試しください",
+  "@callNotepadRetryMessage": {
+    "description": "ノートパッド読み込みエラーの下に表示し、後でもう一度試すよう促す補足文。"
+  },
+  "callNotepadNoOpenNotesTitle": "開いているノートパッドがありません",
+  "@callNotepadNoOpenNotesTitle": {
+    "description": "アクティブなノートタブがないときに通話中ノートパッドペインへ表示する空状態タイトル。"
+  },
+  "callNotepadNoOpenNotesMessage": "ここに開いているノートの内容が表示されます",
+  "@callNotepadNoOpenNotesMessage": {
+    "description": "アクティブなノートタブがないときに通話中ノートパッドペインへ表示する空状態の補足文。"
+  },
+  "callNotepadActionSave": "保存",
+  "@callNotepadActionSave": {
+    "description": "現在のノートを編集モード終了時に保存するヘッダーアクションボタンのツールチップ。"
+  },
+  "callNotepadActionEdit": "編集",
+  "@callNotepadActionEdit": {
+    "description": "現在のノートを編集モードに切り替えるヘッダーアクションボタンのツールチップ。"
+  },
+  "callNotepadTabEmptyTitle": "このタブはまだ空です",
+  "@callNotepadTabEmptyTitle": {
+    "description": "現在のノートタブに内容がないとき、通話中ノートパッドのコンテンツ領域へ表示する空状態タイトル。"
+  },
+  "callNotepadTabEmptyMessage": "ここに {title} の内容が表示されます",
+  "@callNotepadTabEmptyMessage": {
+    "description": "現在のノートタブに内容がないとき、通話中ノートパッドのコンテンツ領域へ表示する空状態の補足文。",
+    "placeholders": {
+      "title": {
+        "type": "String",
+        "description": "現在選択されているノートタブのタイトル。"
+      }
+    }
+  },
+  "callNotepadSpreadsheetParseError": "Parse error: {error}",
+  "@callNotepadSpreadsheetParseError": {
+    "description": "スプレッドシート系ノートの解析に失敗し、生データ表示へフォールバックしたときのエラーバナー文。製品用語として Parse error は英字で維持する。",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "スプレッドシート内容の技術的な解析エラー文。"
+      }
+    }
+  },
+  "callNotepadSpreadsheetEmptyTable": "Empty table",
+  "@callNotepadSpreadsheetEmptyTable": {
+    "description": "表示する行や列がないスプレッドシート系ノートに対して表示するフォールバック文。製品用語として Empty table は英字で維持する。"
+  },
+  "sessionDetailTitle": "セッション詳細",
+  "@sessionDetailTitle": {
+    "description": "過去セッション詳細画面のアプリバータイトル。"
+  },
+  "sessionDetailMissing": "セッションが見つかりません",
+  "@sessionDetailMissing": {
+    "description": "対象のセッション記録を読み込めないときにセッション詳細画面で表示するフォールバック文。"
+  },
+  "sessionDetailTabInfo": "詳細",
+  "@sessionDetailTabInfo": {
+    "description": "セッション詳細画面の情報セグメントを表すタブラベル。"
+  },
+  "sessionDetailBasicInformation": "基本情報",
+  "@sessionDetailBasicInformation": {
+    "description": "過去セッションの主要メタデータをまとめるセクション見出し。"
+  },
+  "sessionDetailStartTime": "開始時刻",
+  "@sessionDetailStartTime": {
+    "description": "過去セッションの開始日時ラベル。"
+  },
+  "sessionDetailEndTime": "終了時刻",
+  "@sessionDetailEndTime": {
+    "description": "過去セッションの終了日時ラベル。"
+  },
+  "sessionDetailCallDuration": "通話時間",
+  "@sessionDetailCallDuration": {
+    "description": "過去セッション全体の経過時間ラベル。"
+  },
+  "sessionDetailDurationValue": "{minutes}分 {seconds}秒",
+  "@sessionDetailDurationValue": {
+    "description": "過去セッションの通話時間を分と秒で表す書式。",
+    "placeholders": {
+      "minutes": {
+        "type": "int",
+        "description": "セッション通話時間の分部分。"
+      },
+      "seconds": {
+        "type": "int",
+        "description": "分を除いた残り秒数。"
+      }
+    }
+  },
+  "sessionDetailMessageCount": "メッセージ数",
+  "@sessionDetailMessageCount": {
+    "description": "過去セッションに保存されたチャットメッセージ件数ラベル。"
+  },
+  "sessionDetailMessageCountValue": "{count}",
+  "@sessionDetailMessageCountValue": {
+    "description": "過去セッションのチャットメッセージ件数として表示する数値。",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "description": "セッション内のチャットメッセージ件数。"
+      }
+    }
+  },
+  "sessionDetailNotepadCountValue": "{count}",
+  "@sessionDetailNotepadCountValue": {
+    "description": "過去セッションに保存されたノートドキュメント数として表示する数値。",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "description": "セッション内の履歴ノートタブ数。"
+      }
+    }
+  },
+  "sessionDetailEndReason": "終了理由",
+  "@sessionDetailEndReason": {
+    "description": "過去セッションが終了した理由の説明文の上に表示するラベル。"
+  },
+  "sessionDetailSpeedDialSettings": "スピードダイヤル設定",
+  "@sessionDetailSpeedDialSettings": {
+    "description": "過去セッションに紐づくスピードダイヤル設定スナップショットのセクション見出し。"
+  },
+  "sessionDetailId": "ID",
+  "@sessionDetailId": {
+    "description": "削除済みスピードダイヤル ID を表示するための識別子ラベル。"
+  },
+  "sessionDetailSpeedDialDeleted": "※スピードダイヤルが削除された可能性があります",
+  "@sessionDetailSpeedDialDeleted": {
+    "description": "過去セッションが参照する非デフォルトのスピードダイヤルが既に存在しないときに表示する補足文。"
+  },
+  "sessionDetailDefaultSpeedDialMissing": "エラー: デフォルトスピードダイヤルが見つかりません",
+  "@sessionDetailDefaultSpeedDialMissing": {
+    "description": "過去セッションでデフォルトスピードダイヤルを解決できないときに表示するエラー文。"
+  },
+  "sessionDetailConversationSummary": "会話サマリー",
+  "@sessionDetailConversationSummary": {
+    "description": "過去セッション会話の簡易サマリーを表示するセクション見出し。"
+  },
+  "sessionDetailSummaryNone": "会話履歴がありません",
+  "@sessionDetailSummaryNone": {
+    "description": "過去セッションに保存済みチャットメッセージがないときのサマリー兼空状態テキスト。"
+  },
+  "sessionDetailSummaryShort": "短い会話セッション（{count}件のメッセージ）",
+  "@sessionDetailSummaryShort": {
+    "description": "メッセージ数が少ない過去セッションに対する自動サマリー文。",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "description": "短いセッション内のメッセージ件数。"
+      }
+    }
+  },
+  "sessionDetailSummaryMedium": "中程度の会話セッション（{count}件のメッセージ）",
+  "@sessionDetailSummaryMedium": {
+    "description": "中程度のメッセージ数を持つ過去セッションに対する自動サマリー文。",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "description": "中程度セッション内のメッセージ件数。"
+      }
+    }
+  },
+  "sessionDetailSummaryLong": "長い会話セッション（{count}件のメッセージ）",
+  "@sessionDetailSummaryLong": {
+    "description": "メッセージ数が多い過去セッションに対する自動サマリー文。",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "description": "長いセッション内のメッセージ件数。"
+      }
+    }
+  },
+  "sessionDetailSummaryDocumentsCreated": "{count}件のドキュメントが作成されました",
+  "@sessionDetailSummaryDocumentsCreated": {
+    "description": "過去セッション中にノートドキュメントが作成された場合に要約の2行目として追記する文。",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "description": "セッション中に作成された履歴ノートドキュメント数。"
+      }
+    }
+  },
+  "sessionDetailHistoricalNotepadEmpty": "ノートパッドは空です",
+  "@sessionDetailHistoricalNotepadEmpty": {
+    "description": "過去セッションに保存済みノートタブがないときに履歴ノートタブで表示する空状態文。"
+  },
+  "sessionDetailHistoricalNotepadCopyTooltip": "コピー",
+  "@sessionDetailHistoricalNotepadCopyTooltip": {
+    "description": "履歴ノートカードのコピーボタンに表示するツールチップ。"
+  },
+  "sessionDetailHistoricalNotepadCopied": "「{title}」の内容をコピーしました",
+  "@sessionDetailHistoricalNotepadCopied": {
+    "description": "履歴ノートタブの内容をコピーしたあとに表示するスナックバー文。",
+    "placeholders": {
+      "title": {
+        "type": "String",
+        "description": "コピー対象だった履歴ノートタブのタイトル。"
+      }
+    }
+  },
+  "sessionDetailNoContent": "（内容なし）",
+  "@sessionDetailNoContent": {
+    "description": "履歴ノートのタブ自体は存在するが本文が空のときに表示するプレースホルダー文。"
+  },
+  "fileBrowserRootTitle": "ファイル",
+  "@fileBrowserRootTitle": {
+    "description": "仮想ファイルブラウザーのルート階層でアプリバーに表示するタイトル。"
+  },
+  "fileBrowserSelectedCount": "{count}件選択中",
+  "@fileBrowserSelectedCount": {
+    "description": "ファイルブラウザーで選択モード中にアプリバーへ表示するタイトル。",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "description": "現在選択されているファイルブラウザー項目数。"
+      }
+    }
+  },
+  "fileBrowserRenameAction": "名前変更",
+  "@fileBrowserRenameAction": {
+    "description": "ファイルブラウザーで選択したファイルまたはフォルダーをリネームするためのメニュー項目、ダイアログタイトル、確定操作ラベル。"
+  },
+  "fileBrowserRenameNewNameLabel": "新しい名前",
+  "@fileBrowserRenameNewNameLabel": {
+    "description": "名前変更ダイアログの入力欄に表示するラベル。"
+  },
+  "fileBrowserRenameSuccess": "{oldName} を {newName} に変更しました",
+  "@fileBrowserRenameSuccess": {
+    "description": "ファイルブラウザー項目の名前変更に成功したあとに表示するスナックバー文言。",
+    "placeholders": {
+      "oldName": {
+        "type": "String",
+        "description": "変更前のファイルまたはフォルダーの表示名。"
+      },
+      "newName": {
+        "type": "String",
+        "description": "変更後のファイルまたはフォルダーの表示名。"
+      }
+    }
+  },
+  "fileBrowserRenameFailed": "名前変更に失敗しました: {error}",
+  "@fileBrowserRenameFailed": {
+    "description": "ファイルブラウザー項目の名前変更に失敗したときに表示するスナックバー文言。",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "失敗した名前変更処理から返されたエラー詳細。"
+      }
+    }
+  },
+  "fileBrowserActionDetails": "詳細",
+  "@fileBrowserActionDetails": {
+    "description": "ファイルブラウザーの選択モードメニューで、選択中項目の情報ビューアーを開く操作ラベル。"
+  },
+  "fileBrowserSelectAll": "すべて選択",
+  "@fileBrowserSelectAll": {
+    "description": "ファイルブラウザーの選択モードメニューで、現在のディレクトリに表示中の項目をすべて選択する操作ラベル。"
+  },
+  "fileBrowserInvertSelection": "選択を反転",
+  "@fileBrowserInvertSelection": {
+    "description": "ファイルブラウザーの選択モードメニューで、現在の選択状態を反転する操作ラベル。"
+  },
+  "fileBrowserDeleteConfirmTitle": "選択した項目を削除しますか？",
+  "@fileBrowserDeleteConfirmTitle": {
+    "description": "ファイルブラウザーで選択した項目を削除する前に表示する破壊的確認ダイアログのタイトル。"
+  },
+  "fileBrowserDeleteConfirmBody": "{count}件のアイテムを削除しますか？",
+  "@fileBrowserDeleteConfirmBody": {
+    "description": "ファイルブラウザーで選択した項目を削除する前に表示する破壊的確認ダイアログの本文。",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "description": "削除対象となる選択済みファイルブラウザー項目数。"
+      }
+    }
+  },
+  "fileBrowserDeleteSuccess": "{count}件のアイテムを削除しました",
+  "@fileBrowserDeleteSuccess": {
+    "description": "選択したファイルブラウザー項目の削除に成功したあとに表示するスナックバー文言。",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "description": "正常に削除されたファイルブラウザー項目数。"
+      }
+    }
+  },
+  "fileBrowserDeleteFailed": "削除に失敗しました: {error}",
+  "@fileBrowserDeleteFailed": {
+    "description": "選択したファイルブラウザー項目の削除に失敗したときに表示するスナックバー文言。",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "失敗した削除処理から返されたエラー詳細。"
+      }
+    }
+  },
+  "fileBrowserLoadError": "エラー: {error}",
+  "@fileBrowserLoadError": {
+    "description": "ディレクトリの読み込みに失敗したとき、ファイルブラウザー本文内に表示するインラインエラー文言。",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "失敗したディレクトリ読み込み処理から返されたエラー詳細。"
+      }
+    }
+  },
+  "fileBrowserEmptyTitle": "ファイルがありません",
+  "@fileBrowserEmptyTitle": {
+    "description": "現在のファイルブラウザーディレクトリに項目がないときに表示する空状態タイトル。"
+  },
+  "fileBrowserEmptyMessage": "通話中に作成されたファイルがここに表示されます",
+  "@fileBrowserEmptyMessage": {
+    "description": "現在のファイルブラウザーディレクトリに項目がないときに表示する空状態の補足文。"
+  },
+  "fileViewerFileNotFound": "ファイルが見つかりません",
+  "@fileViewerFileNotFound": {
+    "description": "ファイル情報ビューアー、テキストビューアー、テーブルビューアーで要求されたファイルパスが存在しないときに表示する文言。"
+  },
+  "fileViewerErrorTitle": "エラーが発生しました",
+  "@fileViewerErrorTitle": {
+    "description": "ファイル情報ビューアー、テキストビューアー、テーブルビューアーで共通して使う汎用エラー状態タイトル。"
+  },
+  "fileViewerSaveSuccess": "保存しました",
+  "@fileViewerSaveSuccess": {
+    "description": "テキストファイルまたはテーブルファイルをビューアー画面から保存したあとに表示するスナックバー文言。"
+  },
+  "fileViewerSaveFailed": "保存に失敗しました: {error}",
+  "@fileViewerSaveFailed": {
+    "description": "テキストファイルまたはテーブルファイルをビューアー画面から保存できなかったときに表示するスナックバー文言。",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "失敗したビューアー保存処理から返されたエラー詳細。"
+      }
+    }
+  },
+  "fileViewerInfoTitle": "ファイル情報",
+  "@fileViewerInfoTitle": {
+    "description": "ファイル情報ビューアー画面でメタデータカードの上に表示するセクションタイトル。"
+  },
+  "fileViewerInfoNameLabel": "ファイル名",
+  "@fileViewerInfoNameLabel": {
+    "description": "ファイル情報ビューアー画面でファイル名を示すメタデータラベル。"
+  },
+  "fileViewerInfoPathLabel": "パス",
+  "@fileViewerInfoPathLabel": {
+    "description": "ファイル情報ビューアー画面で完全なファイルパスを示すメタデータラベル。"
+  },
+  "fileViewerInfoExtensionLabel": "拡張子",
+  "@fileViewerInfoExtensionLabel": {
+    "description": "ファイル情報ビューアー画面で拡張子を示すメタデータラベル。"
+  },
+  "fileViewerNoExtension": "（なし）",
+  "@fileViewerNoExtension": {
+    "description": "ファイル情報ビューアー画面で拡張子がないファイルに対して表示する代替値。"
+  },
+  "fileViewerInfoSizeLabel": "サイズ",
+  "@fileViewerInfoSizeLabel": {
+    "description": "ファイル情報ビューアー画面でファイルサイズを示すメタデータラベル。"
+  },
+  "fileViewerInfoLinesLabel": "行数",
+  "@fileViewerInfoLinesLabel": {
+    "description": "ファイル情報ビューアー画面で行数を示すメタデータラベル。"
+  },
+  "fileViewerInfoCharactersLabel": "文字数",
+  "@fileViewerInfoCharactersLabel": {
+    "description": "ファイル情報ビューアー画面で文字数を示すメタデータラベル。"
+  },
+  "fileViewerPreviewTitle": "プレビュー",
+  "@fileViewerPreviewTitle": {
+    "description": "ファイル情報ビューアー画面で内容プレビューの上に表示するセクションタイトル。"
+  },
+  "fileViewerPreviewTruncatedNote": "※ 最初の{maxChars}文字のみ表示",
+  "@fileViewerPreviewTruncatedNote": {
+    "description": "プレビュー上限より長いファイル内容を途中まで表示しているときに、下部へ添える補足文。",
+    "placeholders": {
+      "maxChars": {
+        "type": "int",
+        "description": "プレビューに含める最大文字数。"
+      }
+    }
+  },
+  "fileTableParseError": "Parse error: {error}",
+  "@fileTableParseError": {
+    "description": "テーブルビューアーで表形式ファイルの解析に失敗したときに表示するエラー文言。製品用語として Parse error は英字のまま維持する。",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "失敗したテーブル解析処理から返されたエラー詳細。"
+      }
+    }
+  },
+  "fileTableNoData": "テーブルデータがありません",
+  "@fileTableNoData": {
+    "description": "テーブルビューアーで表示可能な解析済みデータが存在しないときに表示する代替文。"
+  },
+  "sessionDetailFileTypeCsvTable": "CSV表",
+  "@sessionDetailFileTypeCsvTable": {
+    "description": ".v2d.csv 形式の構造化テーブルを示す履歴ノートのファイル種別バッジ。"
+  },
+  "sessionDetailFileTypeJsonTable": "JSON表",
+  "@sessionDetailFileTypeJsonTable": {
+    "description": ".v2d.json 形式の構造化テーブルを示す履歴ノートのファイル種別バッジ。"
+  },
+  "sessionDetailFileTypeJsonlTable": "JSONL表",
+  "@sessionDetailFileTypeJsonlTable": {
+    "description": ".v2d.jsonl 形式の構造化テーブルを示す履歴ノートのファイル種別バッジ。"
+  },
+  "sessionDetailFileTypeMarkdown": "Markdown",
+  "@sessionDetailFileTypeMarkdown": {
+    "description": "Markdown の履歴ノートに表示するファイル種別バッジ。"
+  },
+  "sessionDetailFileTypeHtml": "HTML",
+  "@sessionDetailFileTypeHtml": {
+    "description": "HTML の履歴ノートに表示するファイル種別バッジ。"
+  },
+  "sessionDetailFileTypeText": "Text",
+  "@sessionDetailFileTypeText": {
+    "description": "プレーンテキストの履歴ノートに表示するファイル種別バッジ。英字の Text 表記を維持する。"
+  },
+  "sessionDetailFileTypeCsv": "CSV",
+  "@sessionDetailFileTypeCsv": {
+    "description": "構造化 .v2d 形式ではない通常の CSV 履歴ノートに表示するファイル種別バッジ。"
+  },
+  "sessionDetailFileTypeJson": "JSON",
+  "@sessionDetailFileTypeJson": {
+    "description": "構造化 .v2d 形式ではない通常の JSON 履歴ノートに表示するファイル種別バッジ。"
+  },
+  "sessionDetailFileTypeJsonl": "JSONL",
+  "@sessionDetailFileTypeJsonl": {
+    "description": "構造化 .v2d 形式ではない通常の JSONL 履歴ノートに表示するファイル種別バッジ。"
+  },
+  "sessionDetailFileTypeFile": "File",
+  "@sessionDetailFileTypeFile": {
+    "description": "既知の拡張子に一致しない履歴ノートに表示するフォールバックのファイル種別バッジ。製品用語として File は英字で維持する。"
+  },
+  "homeMoreFeatureWazaMachine": "わざマシン",
+  "@homeMoreFeatureWazaMachine": {
+    "description": "ホーム画面のもっとタブにある、ストアフロントアイコン付きのプレースホルダー機能タイルのラベル。製品風の用語として『わざマシン』を維持する。"
+  },
+  "homeMoreFeatureComingSoon": "{featureName} - 準備中",
+  "@homeMoreFeatureComingSoon": {
+    "description": "もっとタブで未実装の機能タイルをタップしたときに表示するスナックバー文言。",
+    "placeholders": {
+      "featureName": {
+        "type": "String",
+        "description": "ユーザーがタップした機能タイルのローカライズ済み表示名。たとえば『わざマシン』。"
+      }
+    }
+  },
+  "homeSessionsDeleteConfirmTitle": "セッションを削除しますか？",
+  "@homeSessionsDeleteConfirmTitle": {
+    "description": "ホーム画面のセッションタブで、選択したセッション履歴を削除する前に表示する確認ダイアログのタイトル。"
+  },
+  "homeSessionsDeleteConfirmBody": "{count, plural, =1 {選択したセッションを削除しますか？} other {選択した#件のセッションを削除しますか？}}",
+  "@homeSessionsDeleteConfirmBody": {
+    "description": "ホーム画面のセッションタブで、選択したセッション履歴を削除する前に表示する確認ダイアログの本文。",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "description": "削除対象となる選択済みセッション数。"
+      }
+    }
+  },
+  "homeSessionsDeleteSuccess": "{count, plural, =1 {1件のセッションを削除しました} other {#件のセッションを削除しました}}",
+  "@homeSessionsDeleteSuccess": {
+    "description": "ホーム画面のセッションタブで、選択したセッション履歴の削除に成功したあとに表示するスナックバー文言。",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "description": "正常に削除されたセッション数。"
+      }
+    }
+  },
+  "homeSessionsLoadError": "エラー: {error}",
+  "@homeSessionsLoadError": {
+    "description": "ホーム画面のセッションタブで、セッション一覧の読み込みに失敗したときに表示するインラインエラー文言。",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "セッション一覧の読み込み失敗時に返されたエラー詳細。"
+      }
+    }
+  },
+  "homeSessionsSelectedCount": "{count, plural, =1 {1件選択中} other {#件選択中}}",
+  "@homeSessionsSelectedCount": {
+    "description": "ホーム画面のセッションタブで、選択モード中に現在選択されている履歴セッション数を表示するステータステキスト。",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "description": "ホーム画面のセッションタブで現在選択されているセッション数。"
+      }
+    }
+  },
+  "homeSessionsSelectAll": "全選択",
+  "@homeSessionsSelectAll": {
+    "description": "ホーム画面のセッションタブの選択モードで、表示中の履歴セッションをすべて選択する操作ラベル。"
+  },
+  "homeSessionsInvertSelection": "反転",
+  "@homeSessionsInvertSelection": {
+    "description": "ホーム画面のセッションタブの選択モードで、履歴セッションの選択状態を反転する操作ラベル。"
+  },
+  "homeSessionsEmptyTitle": "通話履歴がありません",
+  "@homeSessionsEmptyTitle": {
+    "description": "保存済みの履歴セッションがまだ存在しないときに、ホーム画面のセッションタブへ表示する空状態タイトル。"
+  },
+  "homeSessionsEmptyMessage": "電話ボタンから通話を開始できます",
+  "@homeSessionsEmptyMessage": {
+    "description": "ホーム画面のセッションタブの空状態で、中央の電話ボタンから新しい通話を開始すると履歴が作成されることを案内する補足文。"
+  }
+}

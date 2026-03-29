@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:vagina/feat/oobe/screens/oobe_flow.dart';
 import 'package:vagina/feat/settings/widgets/settings_card.dart';
 import 'package:vagina/core/theme/app_theme.dart';
+import 'package:vagina/l10n/app_localizations.dart';
 
 /// セットアップセクション - OOBEの再開始など
 class SetupSection extends StatelessWidget {
@@ -10,6 +11,8 @@ class SetupSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return SettingsCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -17,12 +20,12 @@ class SetupSection extends StatelessWidget {
           ListTile(
             leading:
                 const Icon(Icons.refresh, color: AppTheme.lightTextSecondary),
-            title: const Text(
-              '初期設定をやり直す',
-              style: TextStyle(color: AppTheme.lightTextPrimary),
+            title: Text(
+              l10n.settingsSetupRestartOobeTitle,
+              style: const TextStyle(color: AppTheme.lightTextPrimary),
             ),
             subtitle: Text(
-              'ウェルカム画面から初期設定を再実行',
+              l10n.settingsSetupRestartOobeSubtitle,
               style: TextStyle(
                 color: AppTheme.lightTextSecondary.withValues(alpha: 0.7),
                 fontSize: 12,

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:vagina/core/theme/app_theme.dart';
+import 'package:vagina/l10n/app_localizations.dart';
 import 'package:vagina/models/virtual_file.dart';
 import 'package:vagina/models/tabular_data.dart';
 import 'package:vagina/repositories/repository_factory.dart';
@@ -39,6 +40,7 @@ class _TableViewerScreenState extends State<TableViewerScreen> {
 
   String get _fileName => widget.filePath.split('/').last;
   String get _extension => normalizedExtensionFromPath(widget.filePath);
+  AppLocalizations get _l10n => AppLocalizations.of(context);
 
   @override
   void initState() {
@@ -59,7 +61,7 @@ class _TableViewerScreenState extends State<TableViewerScreen> {
 
       if (file == null) {
         setState(() {
-          _error = 'ファイルが見つかりません';
+          _error = _l10n.fileViewerFileNotFound;
           _isLoading = false;
         });
         return;
@@ -71,7 +73,7 @@ class _TableViewerScreenState extends State<TableViewerScreen> {
         tableData = TabularData.parse(file.content, _extension);
       } catch (e) {
         setState(() {
-          _error = 'テーブルデータの解析に失敗しました: $e';
+          _error = _l10n.fileTableParseError(e.toString());
           _isLoading = false;
         });
         return;
@@ -135,17 +137,17 @@ class _TableViewerScreenState extends State<TableViewerScreen> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('保存しました'),
+        SnackBar(
+          content: Text(_l10n.fileViewerSaveSuccess),
           backgroundColor: AppTheme.successColor,
-          duration: Duration(seconds: 2),
+          duration: const Duration(seconds: 2),
         ),
       );
     } catch (e) {
       if (!mounted) return;
       setState(() => _isSaving = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('保存に失敗しました: $e')),
+        SnackBar(content: Text(_l10n.fileViewerSaveFailed(e.toString()))),
       );
     }
   }
@@ -177,7 +179,9 @@ class _TableViewerScreenState extends State<TableViewerScreen> {
             IconButton(
               icon: Icon(_isEditing ? Icons.check : Icons.edit),
               onPressed: _toggleEdit,
-              tooltip: _isEditing ? '完了' : '編集',
+              tooltip: _isEditing
+                  ? _l10n.callNotepadActionSave
+                  : _l10n.callNotepadActionEdit,
             ),
           if (_isSaving)
             const Padding(
@@ -219,7 +223,7 @@ class _TableViewerScreenState extends State<TableViewerScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                'エラーが発生しました',
+                _l10n.fileViewerErrorTitle,
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 8),
@@ -235,14 +239,17 @@ class _TableViewerScreenState extends State<TableViewerScreen> {
     }
 
     if (_tableData == null) {
-      return const Center(child: Text('テーブルデータがありません'));
+      return Center(child: Text(_l10n.fileTableNoData));
     }
 
     if (_tableData!.columns.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
-          'Empty table',
-          style: TextStyle(fontSize: 14, color: AppTheme.lightTextSecondary),
+          _l10n.callNotepadSpreadsheetEmptyTable,
+          style: const TextStyle(
+            fontSize: 14,
+            color: AppTheme.lightTextSecondary,
+          ),
         ),
       );
     }

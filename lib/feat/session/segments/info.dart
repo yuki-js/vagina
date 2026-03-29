@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:vagina/core/state/repository_providers.dart';
 import 'package:vagina/models/call_session.dart';
 import 'package:vagina/models/speed_dial.dart';
 import 'package:vagina/core/theme/app_theme.dart';
-import 'package:vagina/utils/duration_formatter.dart';
+import 'package:vagina/l10n/app_localizations.dart';
 
 /// Session detail segment - info/details view.
 class SessionDetailInfoSegment extends ConsumerWidget {
@@ -17,6 +18,8 @@ class SessionDetailInfoSegment extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+
     return FutureBuilder<SpeedDial?>(
       future: _loadSpeedDial(ref),
       builder: (context, snapshot) {
@@ -28,45 +31,55 @@ class SessionDetailInfoSegment extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // 基本情報セクション
-              _buildSectionHeader('基本情報'),
+              _buildSectionHeader(l10n.sessionDetailBasicInformation),
               const SizedBox(height: 8),
               _buildInfoCard([
                 _buildInfoRow(
-                    '開始時刻',
-                    DurationFormatter.formatJapaneseDateTime(
-                        session.startTime)),
+                  l10n.sessionDetailStartTime,
+                  _formatDateTime(context, session.startTime),
+                ),
                 if (session.endTime != null)
                   _buildInfoRow(
-                    '終了時刻',
-                    DurationFormatter.formatJapaneseDateTime(session.endTime!),
+                    l10n.sessionDetailEndTime,
+                    _formatDateTime(context, session.endTime!),
                   ),
-                _buildInfoRow('通話時間',
-                    DurationFormatter.formatCallDuration(session.duration)),
-                _buildInfoRow('メッセージ数', '${session.chatMessages.length}件'),
-                _buildInfoRow('ノートパッド', '${session.notepadTabs?.length ?? 0}件'),
+                _buildInfoRow(
+                  l10n.sessionDetailCallDuration,
+                  _formatDuration(context, session.duration),
+                ),
+                _buildInfoRow(
+                  l10n.sessionDetailMessageCount,
+                  l10n.sessionDetailMessageCountValue(session.chatMessages.length),
+                ),
+                _buildInfoRow(
+                  l10n.callPaneNotepad,
+                  l10n.sessionDetailNotepadCountValue(
+                    session.notepadTabs?.length ?? 0,
+                  ),
+                ),
                 if (session.endContext != null &&
                     session.endContext!.isNotEmpty) ...[
                   const Divider(height: 16),
-                  _buildEndContextRow(session.endContext!),
+                  _buildEndContextRow(context, session.endContext!),
                 ],
               ]),
 
               const SizedBox(height: 24),
 
               // スピードダイヤル情報セクション
-              _buildSectionHeader('スピードダイヤル設定'),
+              _buildSectionHeader(l10n.sessionDetailSpeedDialSettings),
               const SizedBox(height: 8),
               if (speedDial != null)
-                _buildSpeedDialCard(speedDial)
+                _buildSpeedDialCard(context, speedDial)
               else if (session.speedDialId != SpeedDial.defaultId)
                 // Non-default SpeedDial was deleted
                 _buildInfoCard([
-                  _buildInfoRow('ID', session.speedDialId),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 8),
+                  _buildInfoRow(l10n.sessionDetailId, session.speedDialId),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
                     child: Text(
-                      '※スピードダイヤルが削除された可能性があります',
-                      style: TextStyle(
+                      l10n.sessionDetailSpeedDialDeleted,
+                      style: const TextStyle(
                         fontSize: 12,
                         color: Colors.orange,
                         fontStyle: FontStyle.italic,
@@ -77,11 +90,11 @@ class SessionDetailInfoSegment extends ConsumerWidget {
               else
                 // Default SpeedDial should always exist - show error if it doesn't
                 _buildInfoCard([
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 8),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
                     child: Text(
-                      'エラー: デフォルトスピードダイヤルが見つかりません',
-                      style: TextStyle(
+                      l10n.sessionDetailDefaultSpeedDialMissing,
+                      style: const TextStyle(
                         fontSize: 12,
                         color: Colors.red,
                         fontStyle: FontStyle.italic,
@@ -93,9 +106,9 @@ class SessionDetailInfoSegment extends ConsumerWidget {
               const SizedBox(height: 24),
 
               // サマリーセクション（チャット内容の概要）
-              _buildSectionHeader('会話サマリー'),
+              _buildSectionHeader(l10n.sessionDetailConversationSummary),
               const SizedBox(height: 8),
-              _buildSummaryCard(session),
+              _buildSummaryCard(context, session),
             ],
           ),
         );
@@ -163,7 +176,7 @@ class SessionDetailInfoSegment extends ConsumerWidget {
     );
   }
 
-  Widget _buildEndContextRow(String endContext) {
+  Widget _buildEndContextRow(BuildContext context, String endContext) {
     return Padding(
       padding: const EdgeInsets.only(top: 8),
       child: Column(
@@ -178,7 +191,7 @@ class SessionDetailInfoSegment extends ConsumerWidget {
               ),
               const SizedBox(width: 4),
               Text(
-                '終了理由',
+                AppLocalizations.of(context).sessionDetailEndReason,
                 style: TextStyle(
                   fontSize: 14,
                   color: AppTheme.lightTextSecondary,
@@ -212,7 +225,7 @@ class SessionDetailInfoSegment extends ConsumerWidget {
     );
   }
 
-  Widget _buildSpeedDialCard(SpeedDial speedDial) {
+  Widget _buildSpeedDialCard(BuildContext context, SpeedDial speedDial) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -248,10 +261,11 @@ class SessionDetailInfoSegment extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 8),
-          _buildInfoRow('音声', speedDial.voice),
+          _buildInfoRow(AppLocalizations.of(context).speedDialConfigVoiceLabel,
+              speedDial.voice),
           const SizedBox(height: 8),
           Text(
-            'システムプロンプト:',
+            '${AppLocalizations.of(context).speedDialConfigSystemPromptLabel}:',
             style: TextStyle(
               fontSize: 12,
               color: AppTheme.lightTextSecondary,
@@ -281,24 +295,24 @@ class SessionDetailInfoSegment extends ConsumerWidget {
     );
   }
 
-  Widget _buildSummaryCard(CallSession session) {
-    // チャットメッセージから簡単なサマリーを生成
+  Widget _buildSummaryCard(BuildContext context, CallSession session) {
+    final l10n = AppLocalizations.of(context);
     final messageCount = session.chatMessages.length;
-    final hasNotepad = (session.notepadTabs?.length ?? 0) > 0;
+    final notepadCount = session.notepadTabs?.length ?? 0;
 
     String summary;
     if (messageCount == 0) {
-      summary = '会話履歴がありません';
+      summary = l10n.sessionDetailSummaryNone;
     } else if (messageCount < 5) {
-      summary = '短い会話セッション（$messageCount件のメッセージ）';
+      summary = l10n.sessionDetailSummaryShort(messageCount);
     } else if (messageCount < 20) {
-      summary = '中程度の会話セッション（$messageCount件のメッセージ）';
+      summary = l10n.sessionDetailSummaryMedium(messageCount);
     } else {
-      summary = '長い会話セッション（$messageCount件のメッセージ）';
+      summary = l10n.sessionDetailSummaryLong(messageCount);
     }
 
-    if (hasNotepad) {
-      summary += '\n${session.notepadTabs!.length}件のドキュメントが作成されました';
+    if (notepadCount > 0) {
+      summary += '\n${l10n.sessionDetailSummaryDocumentsCreated(notepadCount)}';
     }
 
     return Container(
@@ -320,5 +334,17 @@ class SessionDetailInfoSegment extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  String _formatDateTime(BuildContext context, DateTime value) {
+    final locale = AppLocalizations.of(context).localeName;
+    return DateFormat.yMd(locale).add_Hms().format(value);
+  }
+
+  String _formatDuration(BuildContext context, int seconds) {
+    final l10n = AppLocalizations.of(context);
+    final minutes = seconds ~/ 60;
+    final remainingSeconds = seconds % 60;
+    return l10n.sessionDetailDurationValue(minutes, remainingSeconds);
   }
 }

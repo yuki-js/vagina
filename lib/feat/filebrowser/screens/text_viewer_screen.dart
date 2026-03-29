@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:vagina/core/theme/app_theme.dart';
+import 'package:vagina/l10n/app_localizations.dart';
 import 'package:vagina/models/virtual_file.dart';
 import 'package:vagina/repositories/repository_factory.dart';
 import 'package:vagina/services/virtual_filesystem_service.dart';
@@ -31,6 +32,7 @@ class _TextViewerScreenState extends State<TextViewerScreen> {
   late final TextEditingController _controller;
 
   String get _fileName => widget.filePath.split('/').last;
+  AppLocalizations get _l10n => AppLocalizations.of(context);
 
   @override
   void initState() {
@@ -58,7 +60,7 @@ class _TextViewerScreenState extends State<TextViewerScreen> {
 
       if (file == null) {
         setState(() {
-          _error = 'ファイルが見つかりません';
+          _error = _l10n.fileViewerFileNotFound;
           _isLoading = false;
         });
         return;
@@ -112,17 +114,17 @@ class _TextViewerScreenState extends State<TextViewerScreen> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('保存しました'),
+        SnackBar(
+          content: Text(_l10n.fileViewerSaveSuccess),
           backgroundColor: AppTheme.successColor,
-          duration: Duration(seconds: 2),
+          duration: const Duration(seconds: 2),
         ),
       );
     } catch (e) {
       if (!mounted) return;
       setState(() => _isSaving = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('保存に失敗しました: $e')),
+        SnackBar(content: Text(_l10n.fileViewerSaveFailed(e.toString()))),
       );
     }
   }
@@ -154,7 +156,9 @@ class _TextViewerScreenState extends State<TextViewerScreen> {
             IconButton(
               icon: Icon(_isEditing ? Icons.check : Icons.edit),
               onPressed: _toggleEdit,
-              tooltip: _isEditing ? '完了' : '編集',
+              tooltip: _isEditing
+                  ? _l10n.callNotepadActionSave
+                  : _l10n.callNotepadActionEdit,
             ),
           if (_isSaving)
             const Padding(
@@ -196,7 +200,7 @@ class _TextViewerScreenState extends State<TextViewerScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                'エラーが発生しました',
+                _l10n.fileViewerErrorTitle,
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 8),
@@ -212,7 +216,7 @@ class _TextViewerScreenState extends State<TextViewerScreen> {
     }
 
     if (_file == null) {
-      return const Center(child: Text('ファイルが見つかりません'));
+      return Center(child: Text(_l10n.fileViewerFileNotFound));
     }
 
     if (_isEditing) {
@@ -232,7 +236,9 @@ class _TextViewerScreenState extends State<TextViewerScreen> {
       return SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: MarkdownBody(
-          data: _file!.content.isEmpty ? '_（内容なし）_' : _file!.content,
+          data: _file!.content.isEmpty
+              ? '_${_l10n.sessionDetailNoContent}_'
+              : _file!.content,
           selectable: true,
           styleSheet: MarkdownStyleSheet(
             p: const TextStyle(
@@ -280,7 +286,7 @@ class _TextViewerScreenState extends State<TextViewerScreen> {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: SelectableText(
-        _file!.content.isEmpty ? '（内容なし）' : _file!.content,
+        _file!.content.isEmpty ? _l10n.sessionDetailNoContent : _file!.content,
         style: const TextStyle(
           fontSize: 15,
           height: 1.6,
