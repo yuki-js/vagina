@@ -12,7 +12,7 @@ import 'package:vagina/feat/call/services/subservice.dart';
 import 'package:vagina/feat/call/services/tool_runner.dart';
 import 'package:vagina/services/tools_runtime/tool_definition.dart';
 
-/// Session-scoped text-agent domain service for a single CallV2 session.
+/// Session-scoped text-agent domain service for a single CallService session.
 ///
 /// Owns the text agent registry, thread management, and query execution.
 /// Delegates HTTP transport to provider-specific [TextAgentTransport] implementations.

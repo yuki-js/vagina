@@ -11,8 +11,8 @@ import 'package:logging/logging.dart';
 abstract base class SubService {
   /// Logger instance automatically named after the concrete service type.
   ///
-  /// Example: RecorderService will have logger name 'CallV2.RecorderService'.
-  late final Logger logger = Logger('CallV2.$runtimeType');
+  /// Example: RecorderService will have logger name 'CallService.RecorderService'.
+  late final Logger logger = Logger('CallService.$runtimeType');
 
   bool _started = false;
   bool _disposed = false;

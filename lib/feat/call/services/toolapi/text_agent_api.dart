@@ -2,7 +2,7 @@ import 'package:vagina/feat/call/models/text_agent_api_config.dart';
 import 'package:vagina/feat/call/services/text_agent_service.dart';
 import 'package:vagina/services/tools_runtime/apis/text_agent_api.dart';
 
-/// Session-scoped text-agent adapter for CallV2.
+/// Session-scoped text-agent adapter for CallService.
 ///
 /// Implements [TextAgentApi] by delegating to [TextAgentService].
 /// This adapter provides a simple delegation layer between tool-facing API

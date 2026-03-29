@@ -1,4 +1,4 @@
-/// Provider-agnostic thread model for a single CallV2 text-agent session.
+/// Provider-agnostic thread model for a single CallService text-agent session.
 ///
 /// This is intentionally a domain model, not a direct Chat Completions payload.
 /// It keeps the conversation as typed items so transport-specific serialization

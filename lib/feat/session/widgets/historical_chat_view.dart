@@ -74,9 +74,8 @@ class HistoricalChatView extends StatelessWidget {
           // Tool call item - display as badge only
           if (toolCalls != null && toolCalls.isNotEmpty) {
             return _ToolCallItem(
-              toolCalls: toolCalls
-                  .map((tc) => tc as Map<String, dynamic>)
-                  .toList(),
+              toolCalls:
+                  toolCalls.map((tc) => tc as Map<String, dynamic>).toList(),
               timestamp: timestamp,
             );
           }
@@ -138,7 +137,8 @@ class HistoricalChatView extends StatelessWidget {
                       ),
                       // Timestamp below bubble
                       Padding(
-                        padding: const EdgeInsets.only(top: 4, left: 8, right: 8),
+                        padding:
+                            const EdgeInsets.only(top: 4, left: 8, right: 8),
                         child: Text(
                           DateFormat('HH:mm:ss').format(timestamp),
                           style: TextStyle(
@@ -203,8 +203,7 @@ class _ToolCallItem extends StatelessWidget {
                     DateFormat('HH:mm:ss').format(timestamp),
                     style: TextStyle(
                       fontSize: 11,
-                      color: AppTheme.lightTextSecondary
-                          .withValues(alpha: 0.6),
+                      color: AppTheme.lightTextSecondary.withValues(alpha: 0.6),
                     ),
                   ),
                 ),
@@ -229,7 +228,7 @@ class _ToolCallItem extends StatelessWidget {
   }
 }
 
-/// Tool badge widget matching CallV2 design
+/// Tool badge widget matching CallService design
 class _ToolBadge extends StatelessWidget {
   final String name;
   final String status;
