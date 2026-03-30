@@ -47,6 +47,7 @@ dependencies:
   async: ^2.13.0
   logging: ^1.3.0
   intl: ^0.20.2
+  url_launcher: ^6.3.1
 
 dev_dependencies:
   flutter_test:
@@ -67,6 +68,7 @@ flutter:
   assets:
     - assets/fonts/
     - assets/audio/
+    - assets/announcements/
   fonts:
     - family: NotoSansJP
       fonts:

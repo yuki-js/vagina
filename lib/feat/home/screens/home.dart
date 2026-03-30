@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vagina/core/config/app_config.dart';
+import 'package:vagina/core/state/repository_providers.dart';
 import 'package:vagina/core/theme/app_theme.dart';
+import 'package:vagina/feat/announcement/services/announcement_service.dart';
+import 'package:vagina/feat/announcement/widgets/home_announcement_host.dart';
 import 'package:vagina/feat/home/tabs/agents.dart';
 import 'package:vagina/feat/home/tabs/more.dart';
 import 'package:vagina/feat/home/tabs/sessions.dart';
@@ -24,6 +27,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _currentTabIndex = 0;
 
   late final PageController _pageController;
+  late final AnnouncementService _announcementService;
 
   List<_TabInfo> _buildTabs(AppLocalizations l10n) {
     return [
@@ -64,10 +68,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: _currentTabIndex);
+    _announcementService = AnnouncementService(
+      preferencesRepository: ref.read(preferencesRepositoryProvider),
+    );
   }
 
   @override
   void dispose() {
+    _announcementService.dispose();
     _pageController.dispose();
     super.dispose();
   }
@@ -179,6 +187,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
           ),
+          const HomeAnnouncementHostPlaceholder(),
           // Tab content (swipeable)
           Expanded(
             child: Container(
@@ -263,6 +272,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
+  }
+}
+
+class HomeAnnouncementHostPlaceholder extends StatelessWidget {
+  const HomeAnnouncementHostPlaceholder({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final state = context.findAncestorStateOfType<_HomeScreenState>();
+    final service = state?._announcementService;
+    if (service == null) {
+      return const SizedBox.shrink();
+    }
+
+    return HomeAnnouncementHost(service: service);
   }
 }
 
