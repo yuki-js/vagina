@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 /// Application configuration
 ///
 /// Contains all application-wide configuration constants.
@@ -17,6 +19,72 @@ class AppConfig {
 
   /// Application subtitle/tagline
   static const String appSubtitle = 'Voice AGI Notepad Agent';
+
+  /// Remote JSON endpoint for app announcements.
+  ///
+  /// Configure with either an absolute URL or a Flutter Web-served relative
+  /// path:
+  /// `flutter run --dart-define=ANNOUNCEMENT_JSON_URL=https://example.com/announcements.json`
+  /// `flutter run -d chrome --dart-define=ANNOUNCEMENT_JSON_URL=assets/announcements/dev.json`
+  ///
+  /// When no explicit override is provided, Flutter Web debug builds fall back
+  /// to the local dev fixture for announcement previewing.
+  static const String announcementJsonUrl =
+      String.fromEnvironment('ANNOUNCEMENT_JSON_URL', defaultValue: '');
+
+  /// Default asset path for local announcement preview fixtures.
+  static const String devAnnouncementJsonAssetPath =
+      'assets/announcements/dev.json';
+
+  /// Parsed announcement endpoint URI, or `null` when not configured.
+  static Uri? get announcementJsonUri {
+    return resolveAnnouncementJsonUri(
+      resolveAnnouncementJsonUrl(
+        announcementJsonUrl,
+        isWeb: kIsWeb,
+        isDebugMode: kDebugMode,
+      ),
+    );
+  }
+
+  /// Resolves the configured announcement endpoint string.
+  ///
+  /// Explicit environment overrides always win. Otherwise, Flutter Web debug
+  /// builds default to the local dev fixture.
+  static String resolveAnnouncementJsonUrl(
+    String rawUrl, {
+    required bool isWeb,
+    required bool isDebugMode,
+  }) {
+    final trimmedUrl = rawUrl.trim();
+    if (trimmedUrl.isNotEmpty) {
+      return trimmedUrl;
+    }
+
+    if (isWeb && isDebugMode) {
+      return devAnnouncementJsonAssetPath;
+    }
+
+    return '';
+  }
+
+  /// Resolves an announcement endpoint into a fetchable URI.
+  ///
+  /// Relative paths are resolved against `Uri.base`, which allows Flutter Web
+  /// dev builds to fetch announcement fixtures served from local assets.
+  static Uri? resolveAnnouncementJsonUri(String rawUrl) {
+    final trimmedUrl = rawUrl.trim();
+    if (trimmedUrl.isEmpty) {
+      return null;
+    }
+
+    final parsedUri = Uri.parse(trimmedUrl);
+    if (parsedUri.hasScheme || parsedUri.host.isNotEmpty) {
+      return parsedUri;
+    }
+
+    return Uri.base.resolveUri(parsedUri);
+  }
 
   /// Azure OpenAI API version
   static const String azureApiVersion = '2024-10-01-preview';

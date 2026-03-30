@@ -309,6 +309,17 @@ fvm flutter run -d windows     # Windows
 fvm flutter run -d chrome      # Web
 ```
 
+### お知らせのローカルプレビュー（Web）
+
+ローカルでお知らせUIを確認する場合は、[`lib/core/config/app_config.dart`](lib/core/config/app_config.dart) の `ANNOUNCEMENT_JSON_URL` に [`assets/announcements/dev.json`](assets/announcements/dev.json) を指定して起動します。
+
+```bash
+fvm flutter run -d chrome \
+  --dart-define=ANNOUNCEMENT_JSON_URL=assets/announcements/dev.json
+```
+
+Flutter Web の開発サーバーでは、この相対パスは `http://localhost:<port>/assets/announcements/dev.json` として配信されます。
+
 ### 開発ワークフロー
 
 1. **機能開発**: `lib/` 配下の適切なディレクトリに実装

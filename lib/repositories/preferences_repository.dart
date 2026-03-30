@@ -8,6 +8,8 @@ import 'package:vagina/interfaces/key_value_store.dart';
 class PreferencesRepository {
   static const String _keyFirstLaunch = 'first_launch_completed';
   static const String _keyPreferredLocaleCode = 'preferred_locale_code';
+  static const String _keyDismissedAnnouncementTopicIds =
+      'dismissed_announcement_topic_ids';
   static const Set<String> _supportedLocaleCodes = {'ja', 'en'};
 
   final KeyValueStore _store;
@@ -55,6 +57,72 @@ class PreferencesRepository {
     }
 
     await _store.set(_keyPreferredLocaleCode, localeCode);
+  }
+
+  /// Returns the persisted dismissed announcement topic ids.
+  Future<Set<String>> getDismissedAnnouncementTopicIds() async {
+    final dismissedTopicIds =
+        await _store.get(_keyDismissedAnnouncementTopicIds);
+    if (dismissedTopicIds is! List) {
+      return <String>{};
+    }
+
+    return dismissedTopicIds.whereType<String>().toSet();
+  }
+
+  /// Persists the full set of dismissed announcement topic ids.
+  Future<void> setDismissedAnnouncementTopicIds(
+      Iterable<String> topicIds) async {
+    final normalizedTopicIds = topicIds
+        .map((topicId) => topicId.trim())
+        .where((topicId) => topicId.isNotEmpty)
+        .toSet()
+        .toList()
+      ..sort();
+
+    if (normalizedTopicIds.isEmpty) {
+      await _store.delete(_keyDismissedAnnouncementTopicIds);
+      return;
+    }
+
+    await _store.set(_keyDismissedAnnouncementTopicIds, normalizedTopicIds);
+  }
+
+  /// Adds a dismissed announcement topic id.
+  Future<void> addDismissedAnnouncementTopicId(String topicId) async {
+    final normalizedTopicId = topicId.trim();
+    if (normalizedTopicId.isEmpty) {
+      return;
+    }
+
+    final dismissedTopicIds = await getDismissedAnnouncementTopicIds();
+    final wasAdded = dismissedTopicIds.add(normalizedTopicId);
+    if (!wasAdded) {
+      return;
+    }
+
+    await setDismissedAnnouncementTopicIds(dismissedTopicIds);
+  }
+
+  /// Removes a dismissed announcement topic id.
+  Future<void> removeDismissedAnnouncementTopicId(String topicId) async {
+    final normalizedTopicId = topicId.trim();
+    if (normalizedTopicId.isEmpty) {
+      return;
+    }
+
+    final dismissedTopicIds = await getDismissedAnnouncementTopicIds();
+    final wasRemoved = dismissedTopicIds.remove(normalizedTopicId);
+    if (!wasRemoved) {
+      return;
+    }
+
+    await setDismissedAnnouncementTopicIds(dismissedTopicIds);
+  }
+
+  /// Clears all dismissed announcement topic ids.
+  Future<void> clearDismissedAnnouncementTopicIds() async {
+    await _store.delete(_keyDismissedAnnouncementTopicIds);
   }
 
   /// Reset first launch flag (for testing)

@@ -1,0 +1,267 @@
+{
+  "topics": [
+    {
+      "id": "dev-dialog-release-freeze",
+      "type": "dialog",
+      "startDate": "2025-01-01T00:00:00Z",
+      "endDate": "2030-12-31T23:59:59Z",
+      "priority": 320,
+      "title": "Preview queue A: release freeze reminder",
+      "message": "Highest-priority dialog preview. Close this with a temporary dismiss to confirm the next eligible dialog appears immediately while this one remains eligible on a future evaluation.",
+      "buttons": [
+        {
+          "label": "Open release checklist",
+          "isPrimary": true,
+          "isNegative": false,
+          "action": {
+            "actionType": "openLink",
+            "linkUrl": "https://docs.flutter.dev/deployment/web"
+          }
+        },
+        {
+          "label": "Remind me again",
+          "isPrimary": false,
+          "isNegative": true,
+          "action": {
+            "actionType": "dismissTopic",
+            "showAgain": true
+          }
+        }
+      ],
+      "image": {
+        "imageUrl": "icons/Icon-maskable-192.png",
+        "altText": "Dialog preview A artwork"
+      },
+      "dismissingAction": {
+        "actionType": "dismissTopic",
+        "showAgain": true
+      }
+    },
+    {
+      "id": "dev-dialog-support-playbook",
+      "type": "dialog",
+      "startDate": "2025-01-01T00:00:00Z",
+      "endDate": "2030-12-31T23:59:59Z",
+      "priority": 220,
+      "title": "Preview queue B: support playbook update",
+      "message": "Second dialog in the queue. It should surface after queue A is closed and stay dismissed permanently when the operator chooses the negative action.",
+      "buttons": [
+        {
+          "label": "Open support doc",
+          "isPrimary": true,
+          "isNegative": false,
+          "action": {
+            "actionType": "openLink",
+            "linkUrl": "https://docs.flutter.dev/ui/layout"
+          }
+        },
+        {
+          "label": "Dismiss permanently",
+          "isPrimary": false,
+          "isNegative": true,
+          "action": {
+            "actionType": "dismissTopic"
+          }
+        }
+      ],
+      "image": {
+        "imageUrl": "icons/Icon-192.png",
+        "altText": "Dialog preview B artwork"
+      },
+      "dismissingAction": {
+        "actionType": "dismissTopic"
+      }
+    },
+    {
+      "id": "dev-dialog-feedback-prompt",
+      "type": "dialog",
+      "startDate": "2025-01-01T00:00:00Z",
+      "endDate": "2030-12-31T23:59:59Z",
+      "priority": 120,
+      "title": "Preview queue C: feedback follow-up",
+      "message": "Third dialog in the queue with a lower priority gap, making it easy to verify deterministic ordering after the first two dialogs are consumed.",
+      "buttons": [
+        {
+          "label": "Read preview notes",
+          "isPrimary": true,
+          "isNegative": false,
+          "action": {
+            "actionType": "openLink",
+            "linkUrl": "https://docs.flutter.dev/testing/integration-tests"
+          }
+        },
+        {
+          "label": "Close",
+          "isPrimary": false,
+          "isNegative": true,
+          "action": {
+            "actionType": "dismissTopic"
+          }
+        }
+      ],
+      "image": {
+        "imageUrl": "icons/Icon-maskable-512.png",
+        "altText": "Dialog preview C artwork"
+      },
+      "dismissingAction": {
+        "actionType": "dismissTopic"
+      }
+    },
+    {
+      "id": "dev-modal-incident-summary",
+      "type": "modal",
+      "startDate": "2025-01-01T00:00:00Z",
+      "endDate": "2030-12-31T23:59:59Z",
+      "priority": 310,
+      "image": {
+        "imageUrl": "icons/Icon-512.png",
+        "altText": "Modal preview A artwork"
+      },
+      "action": {
+        "actionType": "openLink",
+        "linkUrl": "https://docs.flutter.dev/tools/devtools/overview"
+      },
+      "dismissingAction": {
+        "actionType": "dismissTopic",
+        "showAgain": true
+      }
+    },
+    {
+      "id": "dev-modal-beta-signup",
+      "type": "modal",
+      "startDate": "2025-01-01T00:00:00Z",
+      "endDate": "2030-12-31T23:59:59Z",
+      "priority": 210,
+      "image": {
+        "imageUrl": "icons/Icon-maskable-512.png",
+        "altText": "Modal preview B artwork"
+      },
+      "action": {
+        "actionType": "openLink",
+        "linkUrl": "https://flutter.dev"
+      },
+      "dismissingAction": {
+        "actionType": "dismissTopic"
+      }
+    },
+    {
+      "id": "dev-modal-office-hours",
+      "type": "modal",
+      "startDate": "2025-01-01T00:00:00Z",
+      "endDate": "2030-12-31T23:59:59Z",
+      "priority": 110,
+      "image": {
+        "imageUrl": "icons/Icon-192.png",
+        "altText": "Modal preview C artwork"
+      },
+      "action": {
+        "actionType": "openLink",
+        "linkUrl": "https://docs.flutter.dev/resources/inside-flutter"
+      },
+      "dismissingAction": {
+        "actionType": "dismissTopic"
+      }
+    },
+    {
+      "id": "dev-banner-release-train",
+      "type": "banner",
+      "startDate": "2025-01-01T00:00:00Z",
+      "endDate": "2030-12-31T23:59:59Z",
+      "priority": 92,
+      "image": {
+        "imageUrl": "favicon.png",
+        "altText": "Banner preview A artwork"
+      },
+      "action": {
+        "actionType": "openLink",
+        "linkUrl": "https://docs.flutter.dev/tools/hot-reload"
+      },
+      "dismissingAction": {
+        "actionType": "dismissTopic"
+      }
+    },
+    {
+      "id": "dev-banner-ops-watch",
+      "type": "banner",
+      "startDate": "2025-01-01T00:00:00Z",
+      "endDate": "2030-12-31T23:59:59Z",
+      "priority": 82,
+      "image": {
+        "imageUrl": "icons/Icon-maskable-192.png",
+        "altText": "Banner preview B artwork"
+      },
+      "action": {
+        "actionType": "openLink",
+        "linkUrl": "https://docs.flutter.dev/perf/rendering-performance"
+      },
+      "dismissingAction": {
+        "actionType": "dismissTopic",
+        "showAgain": true
+      }
+    },
+    {
+      "id": "dev-banner-template-refresh",
+      "type": "banner",
+      "startDate": "2025-01-01T00:00:00Z",
+      "endDate": "2030-12-31T23:59:59Z",
+      "priority": 72,
+      "image": {
+        "imageUrl": "icons/Icon-192.png",
+        "altText": "Banner preview C artwork"
+      },
+      "action": {
+        "actionType": "openLink",
+        "linkUrl": "https://docs.flutter.dev/ui"
+      },
+      "dismissingAction": {
+        "actionType": "dismissTopic"
+      }
+    },
+    {
+      "id": "dev-marquee-build-health",
+      "type": "marquee",
+      "startDate": "2025-01-01T00:00:00Z",
+      "endDate": "2030-12-31T23:59:59Z",
+      "priority": 91,
+      "textContent": "Marquee preview A: nightly web build health remains green. Temporarily dismiss this item to confirm the rotation advances to the next eligible marquee while this topic can appear again later.",
+      "action": {
+        "actionType": "openLink",
+        "linkUrl": "https://docs.flutter.dev/platform-integration/web"
+      },
+      "dismissingAction": {
+        "actionType": "dismissTopic",
+        "showAgain": true
+      }
+    },
+    {
+      "id": "dev-marquee-devtools",
+      "type": "marquee",
+      "startDate": "2025-01-01T00:00:00Z",
+      "endDate": "2030-12-31T23:59:59Z",
+      "priority": 81,
+      "textContent": "Marquee preview B: DevTools profiling notes are ready for QA review. This lower-priority item should rotate after marquee A and can be permanently dismissed.",
+      "action": {
+        "actionType": "openLink",
+        "linkUrl": "https://docs.flutter.dev/tools/devtools/performance"
+      },
+      "dismissingAction": {
+        "actionType": "dismissTopic"
+      }
+    },
+    {
+      "id": "dev-marquee-release-candidate",
+      "type": "marquee",
+      "startDate": "2025-01-01T00:00:00Z",
+      "endDate": "2030-12-31T23:59:59Z",
+      "priority": 71,
+      "textContent": "Marquee preview C: release candidate rehearsal is scheduled after the first two marquee items, giving the rotation a clearly ordered third stop.",
+      "action": {
+        "actionType": "openLink",
+        "linkUrl": "https://docs.flutter.dev/testing"
+      },
+      "dismissingAction": {
+        "actionType": "dismissTopic"
+      }
+    }
+  ]
+}
