@@ -29,7 +29,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   late final PageController _pageController;
   late final AnnouncementService _announcementService;
 
-  List<_TabInfo> _buildTabs(AppLocalizations l10n) {
+  List<_TabInfo> _buildTabs() {
+    final l10n = AppLocalizations.of(context);
     return [
       _TabInfo(
         icon: Icons.star,
@@ -88,8 +89,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Future<void> _handleAddButton() async {
     // Context-sensitive add button based on current tab
-    final l10n = AppLocalizations.of(context);
-    final tab = _buildTabs(l10n)[_currentTabIndex];
+    final tab = _buildTabs()[_currentTabIndex];
     if (!tab.canAdd) return;
 
     switch (_currentTabIndex) {
@@ -129,7 +129,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final tabs = _buildTabs(l10n);
+    final tabs = _buildTabs();
     final currentTab = tabs[_currentTabIndex];
 
     return Scaffold(
