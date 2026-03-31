@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vagina/core/state/repository_providers.dart';
+import 'package:vagina/feat/announcement/services/announcement_service.dart';
 import 'package:vagina/feat/home/screens/home.dart';
 import 'package:vagina/feat/oobe/screens/authentication.dart';
 import 'package:vagina/feat/oobe/screens/dive_in.dart';
@@ -19,6 +20,21 @@ class OobeFlowScreen extends ConsumerStatefulWidget {
 
 class _OobeFlowScreenState extends ConsumerState<OobeFlowScreen> {
   int _currentPageIndex = 0;
+  late final AnnouncementService _announcementService;
+
+  @override
+  void initState() {
+    super.initState();
+    _announcementService = AnnouncementService(
+      preferencesRepository: ref.read(preferencesRepositoryProvider),
+    );
+  }
+
+  @override
+  void dispose() {
+    _announcementService.dispose();
+    super.dispose();
+  }
 
   void _goToNextPage() {
     setState(() {
@@ -103,6 +119,7 @@ class _OobeFlowScreenState extends ConsumerState<OobeFlowScreen> {
       case 1:
         return AuthenticationScreen(
           key: const ValueKey('auth'),
+          announcementService: _announcementService,
           onManualSetup: _goToNextPage,
           onBack: _goToPreviousPage,
         );

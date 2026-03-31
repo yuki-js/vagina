@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:vagina/core/theme/app_theme.dart';
+import 'package:vagina/feat/announcement/services/announcement_service.dart';
+import 'package:vagina/feat/announcement/widgets/home_announcement_host.dart';
 import 'package:vagina/l10n/app_localizations.dart';
 
 /// Authentication provider configuration
@@ -19,11 +21,13 @@ class AuthProvider {
 
 /// Second OOBE screen - Authentication options
 class AuthenticationScreen extends StatelessWidget {
+  final AnnouncementService announcementService;
   final VoidCallback onManualSetup;
   final VoidCallback onBack;
 
   const AuthenticationScreen({
     super.key,
+    required this.announcementService,
     required this.onManualSetup,
     required this.onBack,
   });
@@ -97,7 +101,16 @@ class AuthenticationScreen extends StatelessWidget {
                       ),
                     ),
 
-                    const SizedBox(height: 48),
+                    const SizedBox(height: 24),
+
+                    SizedBox(
+                      width: double.infinity,
+                      child: HomeAnnouncementHost(
+                        service: announcementService,
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
 
                     // Authentication provider buttons
                     ..._providers.map((provider) => Padding(

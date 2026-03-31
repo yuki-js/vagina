@@ -16,7 +16,7 @@ class AnnouncementMarquee extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final backgroundColor = theme.colorScheme.primary.withValues(alpha: 0.08);
+    final backgroundColor = Color.fromARGB(255, 202, 199, 255);
     final content = Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       child: Row(
