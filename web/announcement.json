@@ -1,0 +1,49 @@
+{
+  "topics": [
+    {
+      "id": "auth-login-not-implemented-dialog",
+      "type": "dialog",
+      "startDate": "2026-04-01T09:00:00Z",
+      "endDate": "2030-12-31T23:59:59Z",
+      "priority": 300,
+      "title": "ログイン機能が間に合っていません",
+      "message": "4/1を迎える前にログイン機能を完成させることができませんでした…… LLMのレートリミットが復活したら実装再開します。",
+      "buttons": [
+        {
+          "label": "ふざけんな",
+          "isPrimary": true,
+          "isNegative": false,
+          "action": {
+            "actionType": "dismissTopic",
+            "showAgain": true
+          }
+        },
+        {
+          "label": "おまちしてます",
+          "isPrimary": false,
+          "isNegative": false,
+          "action": {
+            "actionType": "dismissTopic",
+            "showAgain": true
+          }
+        }
+      ],
+      "dismissingAction": {
+        "actionType": "dismissTopic",
+        "showAgain": true
+      }
+    },
+    {
+      "id": "auth-login-not-implemented-marquee",
+      "type": "marquee",
+      "startDate": "2026-04-01T09:00:00Z",
+      "endDate": "2030-12-31T23:59:59Z",
+      "priority": 200,
+      "textContent": "ログイン機能工事中。はやく完成させたい……",
+      "dismissingAction": {
+        "actionType": "dismissTopic",
+        "showAgain": true
+      }
+    }
+  ]
+}
