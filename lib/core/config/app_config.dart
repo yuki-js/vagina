@@ -29,8 +29,9 @@ class AppConfig {
   ///
   /// When no explicit override is provided, Flutter Web debug builds fall back
   /// to the local dev fixture for announcement previewing.
-  static const String announcementJsonUrl =
-      String.fromEnvironment('ANNOUNCEMENT_JSON_URL', defaultValue: '');
+  static const String announcementJsonUrl = String.fromEnvironment(
+      'ANNOUNCEMENT_JSON_URL',
+      defaultValue: 'https://vagina.app/announcement.json');
 
   /// Default asset path for local announcement preview fixtures.
   static const String devAnnouncementJsonAssetPath =
