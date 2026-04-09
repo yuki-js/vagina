@@ -38,7 +38,7 @@ dependencies:
   device_info_plus: ^12.3.0
   flutter_markdown: ^0.7.7+1
   share_plus: ^12.0.1
-  wakelock_plus: ^1.4.0
+  wakelock_plus: ^1.5.1
 
   # Window management
   window_manager: ^0.5.1
