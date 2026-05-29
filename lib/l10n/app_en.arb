@@ -894,6 +894,58 @@
   "@callSettingsNoiseReductionFarField": {
     "description": "Option label for far-field input noise reduction in the call settings sheet, intended for more distant speech."
   },
+  "callSettingsAdvancedTitle": "Advanced settings",
+  "@callSettingsAdvancedTitle": {
+    "description": "Section title for advanced mock controls in the call settings sheet."
+  },
+  "callSettingsAdvancedMockDescription": "Mock UI only. Controls are intentionally not wired yet.",
+  "@callSettingsAdvancedMockDescription": {
+    "description": "Helper text explaining that the advanced settings controls in the call settings sheet are mock-only and non-interactive."
+  },
+  "callSettingsReasoningEffortTitle": "Reasoning effort",
+  "@callSettingsReasoningEffortTitle": {
+    "description": "Subsection title for the advanced reasoning effort control in the call settings sheet."
+  },
+  "callSettingsReasoningEffortHint": "Please turn off reasoning for non-reasoning models",
+  "@callSettingsReasoningEffortHint": {
+    "description": "思考モデルのときに使える上級者設定。思考モデルでないならばエラーでこけます"
+  },
+  "callSettingsReasoningEffortOff": "Off",
+  "@callSettingsReasoningEffortOff": {
+    "description": "Label for the off position in the reasoning effort mock control."
+  },
+  "callSettingsReasoningEffortMinimal": "Minimal",
+  "@callSettingsReasoningEffortMinimal": {
+    "description": "Label for the minimal position in the reasoning effort mock control."
+  },
+  "callSettingsReasoningEffortLow": "Low",
+  "@callSettingsReasoningEffortLow": {
+    "description": "Label for the low position in the reasoning effort mock control."
+  },
+  "callSettingsReasoningEffortMedium": "Medium",
+  "@callSettingsReasoningEffortMedium": {
+    "description": "Label for the medium position in the reasoning effort mock control."
+  },
+  "callSettingsReasoningEffortHigh": "High",
+  "@callSettingsReasoningEffortHigh": {
+    "description": "Label for the high position in the reasoning effort mock control."
+  },
+  "callSettingsReasoningEffortXhigh": "ExtraHigh",
+  "@callSettingsReasoningEffortXhigh": {
+    "description": "Label for the x-high position in the reasoning effort mock control."
+  },
+  "callSettingsToolChoiceTitle": "Tool choice",
+  "@callSettingsToolChoiceTitle": {
+    "description": "Subsection title for the advanced tool choice control in the call settings sheet."
+  },
+  "callSettingsToolChoiceRequired": "Require tool calls",
+  "@callSettingsToolChoiceRequired": {
+    "description": "Checkbox label for enabling required tool_choice mode in the call settings sheet."
+  },
+  "callSettingsToolChoiceHint": "If no tools are configured, tool choice is effectively none.",
+  "@callSettingsToolChoiceHint": {
+    "description": "Helper text for the advanced tool choice mock control explaining the behavior when no tools are configured."
+  },
   "callChatTitle": "Chat",
   "@callChatTitle": {
     "description": "Header title for the call chat pane."

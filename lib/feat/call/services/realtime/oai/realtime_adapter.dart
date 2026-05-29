@@ -57,6 +57,8 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
   List<ToolDefinition> _tools = const <ToolDefinition>[];
   _OaiInputAudioNoiseReductionSelection _inputAudioNoiseReductionSelection =
       _OaiInputAudioNoiseReductionSelection.nearField;
+  String? _reasoningEffort;
+  bool _toolChoiceRequired = false;
   String? _sessionVoice;
   String? _sessionInstructions;
   String _transcriptionModel = 'gpt-4o-mini-transcribe';
@@ -411,9 +413,10 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
           );
     _sessionVoice = voice;
     _sessionInstructions = instructions;
-    _transcriptionModel = selfHosted.transcriptionModel?.trim().isNotEmpty == true
-        ? selfHosted.transcriptionModel!.trim()
-        : 'gpt-4o-mini-transcribe';
+    _transcriptionModel =
+        selfHosted.transcriptionModel?.trim().isNotEmpty == true
+            ? selfHosted.transcriptionModel!.trim()
+            : 'gpt-4o-mini-transcribe';
 
     await _client.connect(_toOaiConnectConfig(selfHosted));
     await _client.updateSession(_buildSessionConfig());
@@ -566,27 +569,62 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
     Map<String, dynamic> payload,
   ) async {
     _ensureNotDisposed();
-    if (extensionType !=
-        RealtimeProviderExtensions.inputNoiseReductionSelection) {
-      return false;
+
+    switch (extensionType) {
+      case RealtimeProviderExtensions.inputNoiseReductionSelection:
+        final selection = _OaiInputAudioNoiseReductionSelection.fromPayload(
+          payload[RealtimeProviderExtensions.selectionKey],
+        );
+        if (selection == null) {
+          throw ArgumentError.value(
+            payload[RealtimeProviderExtensions.selectionKey],
+            RealtimeProviderExtensions.selectionKey,
+            'Unsupported input noise reduction selection.',
+          );
+        }
+
+        if (_inputAudioNoiseReductionSelection == selection) {
+          return true;
+        }
+
+        _inputAudioNoiseReductionSelection = selection;
+        break;
+      case RealtimeProviderExtensions.reasoningEffortSelection:
+        final selection = payload[RealtimeProviderExtensions.selectionKey];
+        if (selection != null && selection is! String) {
+          throw ArgumentError.value(
+            selection,
+            RealtimeProviderExtensions.selectionKey,
+            'Reasoning effort selection must be a string or null.',
+          );
+        }
+
+        if (_reasoningEffort == selection) {
+          return true;
+        }
+
+        _reasoningEffort = selection;
+        break;
+      case RealtimeProviderExtensions.toolChoiceRequired:
+        final required = payload[RealtimeProviderExtensions.requiredKey];
+        if (required is! bool) {
+          throw ArgumentError.value(
+            required,
+            RealtimeProviderExtensions.requiredKey,
+            'Tool choice required flag must be a bool.',
+          );
+        }
+
+        if (_toolChoiceRequired == required) {
+          return true;
+        }
+
+        _toolChoiceRequired = required;
+        break;
+      default:
+        return false;
     }
 
-    final selection = _OaiInputAudioNoiseReductionSelection.fromPayload(
-      payload[RealtimeProviderExtensions.selectionKey],
-    );
-    if (selection == null) {
-      throw ArgumentError.value(
-        payload[RealtimeProviderExtensions.selectionKey],
-        RealtimeProviderExtensions.selectionKey,
-        'Unsupported input noise reduction selection.',
-      );
-    }
-
-    if (_inputAudioNoiseReductionSelection == selection) {
-      return true;
-    }
-
-    _inputAudioNoiseReductionSelection = selection;
     if (!isConnected) {
       return true;
     }
@@ -1014,18 +1052,17 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
           if (_sessionVoice != null) 'voice': _sessionVoice,
         },
       },
-      'reasoning': {
-        'effort':
-            "high", // todo: make it modifiabel. Also, it should be lazy-updated because a very few model supports this parameter, and it may cause issues if sent at the beginning of the session.
-      },
+      if (_reasoningEffort != null)
+        'reasoning': {
+          'effort': _reasoningEffort,
+        },
       if (_sessionInstructions != null)
         'instructions':
             _sessionInstructions, // todo: make it dynamically updatable like tools.
       'output_modalities': ['audio'],
       'tools': _tools.map((tool) => tool.toRealtimeJson()).toList(),
-      'tool_choice': _tools.isEmpty
-          ? 'none'
-          : 'auto', // todo: make it modifiable from panel like noise reduction.
+      'tool_choice':
+          _tools.isEmpty ? 'none' : (_toolChoiceRequired ? 'required' : 'auto'),
       // 'parallel_tool_calls':
       //     true, // todo: make it modifiable since a very few model supports this parameter.
     };

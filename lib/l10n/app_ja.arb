@@ -894,6 +894,58 @@
   "@callSettingsNoiseReductionFarField": {
     "description": "離れた話者向けの遠距離ノイズ抑制を表す通話設定シートの選択肢ラベル。"
   },
+  "callSettingsAdvancedTitle": "上級者設定",
+  "@callSettingsAdvancedTitle": {
+    "description": "通話設定シート内の上級者向けモックコントロールのセクションタイトル。"
+  },
+  "callSettingsAdvancedMockDescription": "モック UI のみです。コントロールはまだ接続していません。",
+  "@callSettingsAdvancedMockDescription": {
+    "description": "通話設定シート内の上級者設定コントロールがモック表示のみで非インタラクティブであることを示す補足文。"
+  },
+  "callSettingsReasoningEffortTitle": "Reasoning effort",
+  "@callSettingsReasoningEffortTitle": {
+    "description": "通話設定シート内の reasoning effort モックコントロールの小見出し。"
+  },
+  "callSettingsReasoningEffortHint": "思考モデルでない場合、オフにしてください。",
+  "@callSettingsReasoningEffortHint": {
+    "description": "思考モデルのときに使える上級者設定。思考モデルでないならばエラーでこけます",
+  },
+  "callSettingsReasoningEffortOff": "オフ",
+  "@callSettingsReasoningEffortOff": {
+    "description": "reasoning effort モックコントロールのオフ位置ラベル。"
+  },
+  "callSettingsReasoningEffortMinimal": "最小",
+  "@callSettingsReasoningEffortMinimal": {
+    "description": "reasoning effort モックコントロールの minimal 位置ラベル。"
+  },
+  "callSettingsReasoningEffortLow": "低",
+  "@callSettingsReasoningEffortLow": {
+    "description": "reasoning effort モックコントロールの low 位置ラベル。"
+  },
+  "callSettingsReasoningEffortMedium": "中",
+  "@callSettingsReasoningEffortMedium": {
+    "description": "reasoning effort モックコントロールの medium 位置ラベル。"
+  },
+  "callSettingsReasoningEffortHigh": "高",
+  "@callSettingsReasoningEffortHigh": {
+    "description": "reasoning effort モックコントロールの high 位置ラベル。"
+  },
+  "callSettingsReasoningEffortXhigh": "最高",
+  "@callSettingsReasoningEffortXhigh": {
+    "description": "reasoning effort モックコントロールの xhigh 位置ラベル。"
+  },
+  "callSettingsToolChoiceTitle": "ツール呼び出し",
+  "@callSettingsToolChoiceTitle": {
+    "description": "通話設定シート内の tool choice モックコントロールの小見出し。"
+  },
+  "callSettingsToolChoiceRequired": "ツール呼び出しを必須にする",
+  "@callSettingsToolChoiceRequired": {
+    "description": "通話設定シート内で required tool_choice モードを有効にするチェックボックスラベル。"
+  },
+  "callSettingsToolChoiceHint": "ツールがない場合、tool_choice は実質的に none になります。",
+  "@callSettingsToolChoiceHint": {
+    "description": "ツールが未設定の場合の挙動を説明する tool choice モックコントロールの補足文。"
+  },
   "callChatTitle": "チャット",
   "@callChatTitle": {
     "description": "通話中チャットペインのヘッダータイトル。"

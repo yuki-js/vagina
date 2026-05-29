@@ -5,6 +5,10 @@
 abstract final class RealtimeProviderExtensions {
   static const String inputNoiseReductionSelection =
       'session.input_noise_reduction_selection';
+  static const String reasoningEffortSelection =
+      'session.reasoning_effort_selection';
+  static const String toolChoiceRequired = 'session.tool_choice_required';
 
   static const String selectionKey = 'selection';
+  static const String requiredKey = 'required';
 }

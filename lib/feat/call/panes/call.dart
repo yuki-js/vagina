@@ -16,6 +16,8 @@ enum _TalkMode { ptt, hf }
 
 enum _NoiseReductionMode { off, nearField, farField }
 
+enum _ReasoningEffortMock { off, minimal, low, medium, high, xhigh }
+
 class CallPane extends StatefulWidget {
   final SpeedDial speedDial;
   final CallService callService;
@@ -39,6 +41,8 @@ class CallPane extends StatefulWidget {
 class _CallPaneState extends State<CallPane> {
   _TalkMode _talkMode = _TalkMode.hf;
   _NoiseReductionMode _noiseReductionMode = _NoiseReductionMode.nearField;
+  _ReasoningEffortMock _reasoningEffort = _ReasoningEffortMock.high;
+  bool _toolChoiceRequired = false;
 
   CallService? get _activeCallService {
     final callService = widget.callService;
@@ -214,6 +218,49 @@ class _CallPaneState extends State<CallPane> {
     );
   }
 
+  void _handleReasoningEffortChanged(_ReasoningEffortMock value) {
+    if (_reasoningEffort == value) {
+      return;
+    }
+
+    setState(() {
+      _reasoningEffort = value;
+    });
+
+    final selection = switch (value) {
+      _ReasoningEffortMock.off => null,
+      _ => value.name,
+    };
+
+    unawaited(
+      widget.callService.applyRealtimeProviderExtension(
+        RealtimeProviderExtensions.reasoningEffortSelection,
+        <String, dynamic>{
+          RealtimeProviderExtensions.selectionKey: selection,
+        },
+      ),
+    );
+  }
+
+  void _handleToolChoiceRequiredChanged(bool value) {
+    if (_toolChoiceRequired == value) {
+      return;
+    }
+
+    setState(() {
+      _toolChoiceRequired = value;
+    });
+
+    unawaited(
+      widget.callService.applyRealtimeProviderExtension(
+        RealtimeProviderExtensions.toolChoiceRequired,
+        <String, dynamic>{
+          RealtimeProviderExtensions.requiredKey: value,
+        },
+      ),
+    );
+  }
+
   void _handlePttPressStart() {
     final callService = _activeCallService;
     if (callService == null) {
@@ -287,9 +334,13 @@ class _CallPaneState extends State<CallPane> {
           child: _CallSettingsSheet(
             initialTalkMode: _talkMode,
             initialNoiseReductionMode: _noiseReductionMode,
+            initialReasoningEffort: _reasoningEffort,
+            initialToolChoiceRequired: _toolChoiceRequired,
             showNoiseReductionSettings: _showsNoiseReductionSettings,
             onTalkModeChanged: _handleTalkModeChanged,
             onNoiseReductionModeChanged: _handleNoiseReductionModeChanged,
+            onReasoningEffortChanged: _handleReasoningEffortChanged,
+            onToolChoiceRequiredChanged: _handleToolChoiceRequiredChanged,
           ),
         );
       },
@@ -785,16 +836,24 @@ class _PttHoldButtonState extends State<_PttHoldButton> {
 class _CallSettingsSheet extends StatefulWidget {
   final _TalkMode initialTalkMode;
   final _NoiseReductionMode initialNoiseReductionMode;
+  final _ReasoningEffortMock initialReasoningEffort;
+  final bool initialToolChoiceRequired;
   final bool showNoiseReductionSettings;
   final ValueChanged<_TalkMode> onTalkModeChanged;
   final ValueChanged<_NoiseReductionMode> onNoiseReductionModeChanged;
+  final ValueChanged<_ReasoningEffortMock> onReasoningEffortChanged;
+  final ValueChanged<bool> onToolChoiceRequiredChanged;
 
   const _CallSettingsSheet({
     required this.initialTalkMode,
     required this.initialNoiseReductionMode,
+    required this.initialReasoningEffort,
+    required this.initialToolChoiceRequired,
     required this.showNoiseReductionSettings,
     required this.onTalkModeChanged,
     required this.onNoiseReductionModeChanged,
+    required this.onReasoningEffortChanged,
+    required this.onToolChoiceRequiredChanged,
   });
 
   @override
@@ -804,12 +863,16 @@ class _CallSettingsSheet extends StatefulWidget {
 class _CallSettingsSheetState extends State<_CallSettingsSheet> {
   late _TalkMode _talkMode;
   late _NoiseReductionMode _noiseReductionMode;
+  late _ReasoningEffortMock _mockReasoningEffort;
+  late bool _mockForceToolChoice;
 
   @override
   void initState() {
     super.initState();
     _talkMode = widget.initialTalkMode;
     _noiseReductionMode = widget.initialNoiseReductionMode;
+    _mockReasoningEffort = widget.initialReasoningEffort;
+    _mockForceToolChoice = widget.initialToolChoiceRequired;
   }
 
   void _handleTalkModeChanged(_TalkMode value) {
@@ -826,9 +889,41 @@ class _CallSettingsSheetState extends State<_CallSettingsSheet> {
     widget.onNoiseReductionModeChanged(value);
   }
 
+  void _handleReasoningEffortChanged(_ReasoningEffortMock value) {
+    setState(() {
+      _mockReasoningEffort = value;
+    });
+    widget.onReasoningEffortChanged(value);
+  }
+
+  void _handleToolChoiceRequiredChanged(bool value) {
+    setState(() {
+      _mockForceToolChoice = value;
+    });
+    widget.onToolChoiceRequiredChanged(value);
+  }
+
+  String _reasoningEffortLabel(
+    AppLocalizations l10n,
+    _ReasoningEffortMock value,
+  ) {
+    return switch (value) {
+      _ReasoningEffortMock.off => l10n.callSettingsReasoningEffortOff,
+      _ReasoningEffortMock.minimal => l10n.callSettingsReasoningEffortMinimal,
+      _ReasoningEffortMock.low => l10n.callSettingsReasoningEffortLow,
+      _ReasoningEffortMock.medium => l10n.callSettingsReasoningEffortMedium,
+      _ReasoningEffortMock.high => l10n.callSettingsReasoningEffortHigh,
+      _ReasoningEffortMock.xhigh => l10n.callSettingsReasoningEffortXhigh,
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final reasoningEffortValues = _ReasoningEffortMock.values;
+    final reasoningEffortLabels = reasoningEffortValues
+        .map((value) => _reasoningEffortLabel(l10n, value))
+        .toList(growable: false);
 
     return SafeArea(
       child: Center(
@@ -836,107 +931,155 @@ class _CallSettingsSheetState extends State<_CallSettingsSheet> {
           padding: const EdgeInsets.all(16),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 520),
-            child: Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: AppTheme.surfaceColor,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: AppTheme.textSecondary.withValues(alpha: 0.12),
-                ),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          l10n.callSettingsTitle,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                            color: AppTheme.textPrimary,
-                          ),
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        tooltip: l10n.callActionClose,
-                        icon: const Icon(
-                          Icons.close,
-                          color: AppTheme.textSecondary,
-                        ),
-                      ),
-                    ],
+            child: Material(
+              color: AppTheme.surfaceColor,
+              borderRadius: BorderRadius.circular(16),
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: AppTheme.textSecondary.withValues(alpha: 0.12),
                   ),
-                  const SizedBox(height: 16),
-                  _SettingsSection(
-                    title: l10n.callSettingsModeTitle,
-                    child: Row(
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
                       children: [
                         Expanded(
-                          child: _SettingsOptionButton(
-                            label: l10n.callSettingsModeHandsFree,
-                            isSelected: _talkMode == _TalkMode.hf,
-                            onTap: () => _handleTalkModeChanged(_TalkMode.hf),
+                          child: Text(
+                            l10n.callSettingsTitle,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.textPrimary,
+                            ),
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _SettingsOptionButton(
-                            label: l10n.callSettingsModePushToTalk,
-                            isSelected: _talkMode == _TalkMode.ptt,
-                            onTap: () => _handleTalkModeChanged(_TalkMode.ptt),
+                        IconButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          tooltip: l10n.callActionClose,
+                          icon: const Icon(
+                            Icons.close,
+                            color: AppTheme.textSecondary,
                           ),
                         ),
                       ],
                     ),
-                  ),
-                  if (widget.showNoiseReductionSettings) ...[
                     const SizedBox(height: 16),
                     _SettingsSection(
-                      title: l10n.callSettingsNoiseReductionTitle,
+                      title: l10n.callSettingsModeTitle,
                       child: Row(
                         children: [
                           Expanded(
                             child: _SettingsOptionButton(
-                              label: l10n.callSettingsNoiseReductionOff,
-                              isSelected: _noiseReductionMode ==
+                              label: l10n.callSettingsModeHandsFree,
+                              isSelected: _talkMode == _TalkMode.hf,
+                              onTap: () => _handleTalkModeChanged(_TalkMode.hf),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _SettingsOptionButton(
+                              label: l10n.callSettingsModePushToTalk,
+                              isSelected: _talkMode == _TalkMode.ptt,
+                              onTap: () =>
+                                  _handleTalkModeChanged(_TalkMode.ptt),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (widget.showNoiseReductionSettings) ...[
+                      const SizedBox(height: 16),
+                      _SettingsSection(
+                        title: l10n.callSettingsNoiseReductionTitle,
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: _SettingsOptionButton(
+                                label: l10n.callSettingsNoiseReductionOff,
+                                isSelected: _noiseReductionMode ==
+                                    _NoiseReductionMode.off,
+                                onTap: () => _handleNoiseReductionModeChanged(
                                   _NoiseReductionMode.off,
-                              onTap: () => _handleNoiseReductionModeChanged(
-                                _NoiseReductionMode.off,
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _SettingsOptionButton(
-                              label: l10n.callSettingsNoiseReductionNearField,
-                              isSelected: _noiseReductionMode ==
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _SettingsOptionButton(
+                                label: l10n.callSettingsNoiseReductionNearField,
+                                isSelected: _noiseReductionMode ==
+                                    _NoiseReductionMode.nearField,
+                                onTap: () => _handleNoiseReductionModeChanged(
                                   _NoiseReductionMode.nearField,
-                              onTap: () => _handleNoiseReductionModeChanged(
-                                _NoiseReductionMode.nearField,
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _SettingsOptionButton(
-                              label: l10n.callSettingsNoiseReductionFarField,
-                              isSelected: _noiseReductionMode ==
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _SettingsOptionButton(
+                                label: l10n.callSettingsNoiseReductionFarField,
+                                isSelected: _noiseReductionMode ==
+                                    _NoiseReductionMode.farField,
+                                onTap: () => _handleNoiseReductionModeChanged(
                                   _NoiseReductionMode.farField,
-                              onTap: () => _handleNoiseReductionModeChanged(
-                                _NoiseReductionMode.farField,
+                                ),
                               ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 16),
+                    _SettingsSection(
+                      title: l10n.callSettingsAdvancedTitle,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _SettingsSubsection(
+                            title: l10n.callSettingsReasoningEffortTitle,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _MockSettingsSlider(
+                                  selectedIndex: _mockReasoningEffort.index,
+                                  labels: reasoningEffortLabels,
+                                  onChanged: (index) =>
+                                      _handleReasoningEffortChanged(
+                                    reasoningEffortValues[index],
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  l10n.callSettingsReasoningEffortHint,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: AppTheme.textSecondary.withValues(
+                                      alpha: 0.9,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          _SettingsSubsection(
+                            title: l10n.callSettingsToolChoiceTitle,
+                            child: _MockCheckboxTile(
+                              label: l10n.callSettingsToolChoiceRequired,
+                              value: _mockForceToolChoice,
+                              onChanged: _handleToolChoiceRequiredChanged,
                             ),
                           ),
                         ],
                       ),
                     ),
                   ],
-                ],
+                ),
               ),
             ),
           ),
@@ -975,10 +1118,144 @@ class _SettingsSection extends StatelessWidget {
   }
 }
 
+class _SettingsSubsection extends StatelessWidget {
+  final String title;
+  final Widget child;
+
+  const _SettingsSubsection({
+    required this.title,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: AppTheme.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        child,
+      ],
+    );
+  }
+}
+
+class _MockSettingsSlider extends StatelessWidget {
+  final int selectedIndex;
+  final List<String> labels;
+  final ValueChanged<int> onChanged;
+
+  const _MockSettingsSlider({
+    required this.selectedIndex,
+    required this.labels,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SliderTheme(
+          data: SliderTheme.of(context).copyWith(
+            trackHeight: 4,
+            overlayShape: SliderComponentShape.noOverlay,
+            activeTrackColor: AppTheme.primaryColor,
+            inactiveTrackColor: AppTheme.textSecondary.withValues(alpha: 0.18),
+            thumbColor: AppTheme.primaryColor,
+            activeTickMarkColor: AppTheme.primaryColor.withValues(alpha: 0.9),
+            inactiveTickMarkColor: AppTheme.textSecondary.withValues(
+              alpha: 0.28,
+            ),
+          ),
+          child: Slider(
+            value: selectedIndex.toDouble(),
+            min: 0,
+            max: (labels.length - 1).toDouble(),
+            divisions: labels.length - 1,
+            onChanged: (value) => onChanged(value.round()),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            for (var index = 0; index < labels.length; index++)
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 2),
+                  child: Text(
+                    labels[index],
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: index == selectedIndex
+                          ? FontWeight.w700
+                          : FontWeight.w500,
+                      color: index == selectedIndex
+                          ? AppTheme.textPrimary
+                          : AppTheme.textSecondary,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _MockCheckboxTile extends StatelessWidget {
+  final String label;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  const _MockCheckboxTile({
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Checkbox(
+          value: value,
+          onChanged: (nextValue) => onChanged(nextValue ?? false),
+          activeColor: AppTheme.primaryColor,
+          checkColor: AppTheme.surfaceColor,
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.textPrimary,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _SettingsOptionButton extends StatelessWidget {
   final String label;
   final bool isSelected;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   const _SettingsOptionButton({
     required this.label,
