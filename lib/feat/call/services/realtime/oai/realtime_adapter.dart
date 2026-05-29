@@ -998,7 +998,7 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
             _inputAudioNoiseReductionSelection,
           ),
           'transcription': {
-            'model': 'gpt-4o-mini-transcribe',
+            'model': 'gpt-4o-mini-transcribe', // todo: make it modifiable
           },
           'turn_detection': _buildTurnDetectionConfig(_audioTurnMode),
         },
@@ -1011,7 +1011,8 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
         },
       },
       'reasoning': {
-        'effort': "high", // todo: make it modifiabel
+        'effort':
+            "high", // todo: make it modifiabel. Also, it should be lazy-updated because a very few model supports this parameter, and it may cause issues if sent at the beginning of the session.
       },
       if (_sessionInstructions != null) 'instructions': _sessionInstructions,
       'output_modalities': ['audio'],

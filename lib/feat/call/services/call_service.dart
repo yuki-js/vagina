@@ -340,7 +340,6 @@ class CallService {
     await Future.wait<void>([
       _feedbackService.start(),
       _vfs.start(),
-      _realtimeService.start(),
       _recorderService.start(),
       _playbackService.start(),
       _notepadService.start(),
@@ -360,6 +359,8 @@ class CallService {
           ? RealtimeAudioTurnMode.manual
           : RealtimeAudioTurnMode.voiceActivity,
     );
+
+    await _realtimeService.start();
     await _recorderService.startRecordingSession();
     await _realtimeService.bindAudioInput(_recorderService.audioStream);
     await _playbackService
