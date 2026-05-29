@@ -12,8 +12,6 @@ abstract class ConfigRepository {
   Future<TextAgentInfo?> getTextAgentById(String id);
   Future<void> saveTextAgent(TextAgentInfo agent);
   Future<void> deleteTextAgent(String id);
-  Future<String?> getSelectedTextAgentId();
-  Future<void> setSelectedTextAgentId(String? id);
 
   /// Clear all configuration
   Future<void> clearAll();

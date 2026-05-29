@@ -11,7 +11,6 @@ class JsonConfigRepository implements ConfigRepository {
   // Config keys
   static const _voiceAgentApiConfigKey = 'voice_agent_api_config';
   static const _textAgentsKey = 'text_agents';
-  static const _selectedTextAgentIdKey = 'selected_text_agent_id';
 
   final KeyValueStore _store;
   final LogService _logService;
@@ -118,30 +117,7 @@ class JsonConfigRepository implements ConfigRepository {
     final agentsJson = agents.map((a) => a.toJson()).toList();
     await _store.set(_textAgentsKey, agentsJson);
 
-    // Clear selection if the deleted agent was selected
-    final selectedId = await getSelectedTextAgentId();
-    if (selectedId == id) {
-      await setSelectedTextAgentId(null);
-    }
-
     _logService.info(_tag, 'Text agent deleted: $id');
-  }
-
-  @override
-  Future<String?> getSelectedTextAgentId() async {
-    final data = await _store.get(_selectedTextAgentIdKey);
-    return data as String?;
-  }
-
-  @override
-  Future<void> setSelectedTextAgentId(String? id) async {
-    if (id == null) {
-      await _store.delete(_selectedTextAgentIdKey);
-      _logService.debug(_tag, 'Selected text agent ID cleared');
-    } else {
-      await _store.set(_selectedTextAgentIdKey, id);
-      _logService.debug(_tag, 'Selected text agent ID set: $id');
-    }
   }
 
   // General

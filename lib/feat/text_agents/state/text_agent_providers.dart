@@ -6,8 +6,3 @@ final textAgentsProvider = FutureProvider<List<TextAgentInfo>>((ref) async {
   final repo = ref.watch(configRepositoryProvider);
   return repo.getAllTextAgents();
 });
-
-final selectedTextAgentIdProvider = FutureProvider<String?>((ref) async {
-  final repo = ref.watch(configRepositoryProvider);
-  return repo.getSelectedTextAgentId();
-});

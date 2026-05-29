@@ -16,7 +16,7 @@ enum _TalkMode { ptt, hf }
 
 enum _NoiseReductionMode { off, nearField, farField }
 
-enum _ReasoningEffortMock { off, minimal, low, medium, high, xhigh }
+enum _ReasoningEffortLevel { off, minimal, low, medium, high, xhigh }
 
 class CallPane extends StatefulWidget {
   final SpeedDial speedDial;
@@ -41,7 +41,7 @@ class CallPane extends StatefulWidget {
 class _CallPaneState extends State<CallPane> {
   _TalkMode _talkMode = _TalkMode.hf;
   _NoiseReductionMode _noiseReductionMode = _NoiseReductionMode.nearField;
-  _ReasoningEffortMock _reasoningEffort = _ReasoningEffortMock.high;
+  _ReasoningEffortLevel _reasoningEffort = _ReasoningEffortLevel.high;
   bool _toolChoiceRequired = false;
 
   CallService? get _activeCallService {
@@ -218,7 +218,7 @@ class _CallPaneState extends State<CallPane> {
     );
   }
 
-  void _handleReasoningEffortChanged(_ReasoningEffortMock value) {
+  void _handleReasoningEffortChanged(_ReasoningEffortLevel value) {
     if (_reasoningEffort == value) {
       return;
     }
@@ -228,7 +228,7 @@ class _CallPaneState extends State<CallPane> {
     });
 
     final selection = switch (value) {
-      _ReasoningEffortMock.off => null,
+      _ReasoningEffortLevel.off => null,
       _ => value.name,
     };
 
@@ -836,12 +836,12 @@ class _PttHoldButtonState extends State<_PttHoldButton> {
 class _CallSettingsSheet extends StatefulWidget {
   final _TalkMode initialTalkMode;
   final _NoiseReductionMode initialNoiseReductionMode;
-  final _ReasoningEffortMock initialReasoningEffort;
+  final _ReasoningEffortLevel initialReasoningEffort;
   final bool initialToolChoiceRequired;
   final bool showNoiseReductionSettings;
   final ValueChanged<_TalkMode> onTalkModeChanged;
   final ValueChanged<_NoiseReductionMode> onNoiseReductionModeChanged;
-  final ValueChanged<_ReasoningEffortMock> onReasoningEffortChanged;
+  final ValueChanged<_ReasoningEffortLevel> onReasoningEffortChanged;
   final ValueChanged<bool> onToolChoiceRequiredChanged;
 
   const _CallSettingsSheet({
@@ -863,16 +863,16 @@ class _CallSettingsSheet extends StatefulWidget {
 class _CallSettingsSheetState extends State<_CallSettingsSheet> {
   late _TalkMode _talkMode;
   late _NoiseReductionMode _noiseReductionMode;
-  late _ReasoningEffortMock _mockReasoningEffort;
-  late bool _mockForceToolChoice;
+  late _ReasoningEffortLevel _selectedReasoningEffort;
+  late bool _toolChoiceRequired;
 
   @override
   void initState() {
     super.initState();
     _talkMode = widget.initialTalkMode;
     _noiseReductionMode = widget.initialNoiseReductionMode;
-    _mockReasoningEffort = widget.initialReasoningEffort;
-    _mockForceToolChoice = widget.initialToolChoiceRequired;
+    _selectedReasoningEffort = widget.initialReasoningEffort;
+    _toolChoiceRequired = widget.initialToolChoiceRequired;
   }
 
   void _handleTalkModeChanged(_TalkMode value) {
@@ -889,38 +889,38 @@ class _CallSettingsSheetState extends State<_CallSettingsSheet> {
     widget.onNoiseReductionModeChanged(value);
   }
 
-  void _handleReasoningEffortChanged(_ReasoningEffortMock value) {
+  void _handleReasoningEffortChanged(_ReasoningEffortLevel value) {
     setState(() {
-      _mockReasoningEffort = value;
+      _selectedReasoningEffort = value;
     });
     widget.onReasoningEffortChanged(value);
   }
 
   void _handleToolChoiceRequiredChanged(bool value) {
     setState(() {
-      _mockForceToolChoice = value;
+      _toolChoiceRequired = value;
     });
     widget.onToolChoiceRequiredChanged(value);
   }
 
   String _reasoningEffortLabel(
     AppLocalizations l10n,
-    _ReasoningEffortMock value,
+    _ReasoningEffortLevel value,
   ) {
     return switch (value) {
-      _ReasoningEffortMock.off => l10n.callSettingsReasoningEffortOff,
-      _ReasoningEffortMock.minimal => l10n.callSettingsReasoningEffortMinimal,
-      _ReasoningEffortMock.low => l10n.callSettingsReasoningEffortLow,
-      _ReasoningEffortMock.medium => l10n.callSettingsReasoningEffortMedium,
-      _ReasoningEffortMock.high => l10n.callSettingsReasoningEffortHigh,
-      _ReasoningEffortMock.xhigh => l10n.callSettingsReasoningEffortXhigh,
+      _ReasoningEffortLevel.off => l10n.callSettingsReasoningEffortOff,
+      _ReasoningEffortLevel.minimal => l10n.callSettingsReasoningEffortMinimal,
+      _ReasoningEffortLevel.low => l10n.callSettingsReasoningEffortLow,
+      _ReasoningEffortLevel.medium => l10n.callSettingsReasoningEffortMedium,
+      _ReasoningEffortLevel.high => l10n.callSettingsReasoningEffortHigh,
+      _ReasoningEffortLevel.xhigh => l10n.callSettingsReasoningEffortXhigh,
     };
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final reasoningEffortValues = _ReasoningEffortMock.values;
+    final reasoningEffortValues = _ReasoningEffortLevel.values;
     final reasoningEffortLabels = reasoningEffortValues
         .map((value) => _reasoningEffortLabel(l10n, value))
         .toList(growable: false);
@@ -1045,8 +1045,8 @@ class _CallSettingsSheetState extends State<_CallSettingsSheet> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                _MockSettingsSlider(
-                                  selectedIndex: _mockReasoningEffort.index,
+                                _SettingsSlider(
+                                  selectedIndex: _selectedReasoningEffort.index,
                                   labels: reasoningEffortLabels,
                                   onChanged: (index) =>
                                       _handleReasoningEffortChanged(
@@ -1069,9 +1069,9 @@ class _CallSettingsSheetState extends State<_CallSettingsSheet> {
                           const SizedBox(height: 16),
                           _SettingsSubsection(
                             title: l10n.callSettingsToolChoiceTitle,
-                            child: _MockCheckboxTile(
+                            child: _SettingsCheckboxTile(
                               label: l10n.callSettingsToolChoiceRequired,
-                              value: _mockForceToolChoice,
+                              value: _toolChoiceRequired,
                               onChanged: _handleToolChoiceRequiredChanged,
                             ),
                           ),
@@ -1147,12 +1147,12 @@ class _SettingsSubsection extends StatelessWidget {
   }
 }
 
-class _MockSettingsSlider extends StatelessWidget {
+class _SettingsSlider extends StatelessWidget {
   final int selectedIndex;
   final List<String> labels;
   final ValueChanged<int> onChanged;
 
-  const _MockSettingsSlider({
+  const _SettingsSlider({
     required this.selectedIndex,
     required this.labels,
     required this.onChanged,
@@ -1215,12 +1215,12 @@ class _MockSettingsSlider extends StatelessWidget {
   }
 }
 
-class _MockCheckboxTile extends StatelessWidget {
+class _SettingsCheckboxTile extends StatelessWidget {
   final String label;
   final bool value;
   final ValueChanged<bool> onChanged;
 
-  const _MockCheckboxTile({
+  const _SettingsCheckboxTile({
     required this.label,
     required this.value,
     required this.onChanged,
