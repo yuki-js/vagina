@@ -1,8 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:vagina/services/log_service.dart';
-import 'package:vagina/utils/url_utils.dart';
+import 'package:flutter/foundation.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import 'realtime_connect_config.dart';
@@ -13,13 +12,11 @@ import 'websocket_channel_connector.dart';
 typedef OaiRealtimeSocketConnector = Future<WebSocketChannel> Function(
   Uri uri, {
   Map<String, dynamic>? headers,
+  List<String>? protocols,
 });
 
 final class WebSocketOaiRealtimeTransport implements OaiRealtimeTransport {
-  static const _tag = 'OaiRealtimeTransport';
-
   final OaiRealtimeSocketConnector _connector;
-
   final Duration _initialReconnectDelay;
   final int _maxInitialReconnectAttempts;
 
@@ -29,7 +26,7 @@ final class WebSocketOaiRealtimeTransport implements OaiRealtimeTransport {
       StreamController<OaiRealtimeConnectionState>.broadcast();
 
   WebSocketChannel? _channel;
-  StreamSubscription? _subscription;
+  StreamSubscription<dynamic>? _subscription;
   OaiRealtimeConnectionState _lastState =
       const OaiRealtimeConnectionState.idle();
   bool _disposed = false;
@@ -72,9 +69,11 @@ final class WebSocketOaiRealtimeTransport implements OaiRealtimeTransport {
       );
 
       try {
-        final safeUrl = UrlUtils.redactSensitiveParams(target.uri.toString());
-
-        _channel = await _connector(target.uri, headers: target.headers);
+        _channel = await _connector(
+          target.uri,
+          headers: target.headers,
+          protocols: target.protocols,
+        );
         _subscription = _channel!.stream.listen(
           _handleFrame,
           onError: _handleStreamError,
@@ -85,7 +84,6 @@ final class WebSocketOaiRealtimeTransport implements OaiRealtimeTransport {
         return;
       } catch (error) {
         lastError = error;
-
         await _safeTearDownChannel();
         if (attempt < _maxInitialReconnectAttempts) {
           await Future<void>.delayed(_initialReconnectDelay);
@@ -93,12 +91,14 @@ final class WebSocketOaiRealtimeTransport implements OaiRealtimeTransport {
       }
     }
 
-    _emitState(OaiRealtimeConnectionState.failed(
-      attempt: _maxInitialReconnectAttempts,
-      message:
-          'Failed to connect after $_maxInitialReconnectAttempts attempts.',
-      error: lastError,
-    ));
+    _emitState(
+      OaiRealtimeConnectionState.failed(
+        attempt: _maxInitialReconnectAttempts,
+        message:
+            'Failed to connect after $_maxInitialReconnectAttempts attempts.',
+        error: lastError,
+      ),
+    );
     throw lastError ?? StateError('Failed to connect realtime transport.');
   }
 
@@ -109,8 +109,6 @@ final class WebSocketOaiRealtimeTransport implements OaiRealtimeTransport {
     if (channel == null || !isConnected) {
       throw StateError('Cannot send realtime payload while disconnected.');
     }
-
-    final type = payload['type'] as String? ?? 'unknown';
 
     channel.sink.add(jsonEncode(payload));
   }
@@ -149,10 +147,7 @@ final class WebSocketOaiRealtimeTransport implements OaiRealtimeTransport {
           'Realtime transport received a non-object JSON payload.',
         );
       }
-      final message = Map<String, dynamic>.from(decoded);
-      final type = message['type'] as String? ?? 'unknown';
-
-      _inboundController.add(message);
+      _inboundController.add(Map<String, dynamic>.from(decoded));
     } catch (error) {
       _handleStreamError(
         OaiRealtimeConnectionError(
@@ -165,20 +160,24 @@ final class WebSocketOaiRealtimeTransport implements OaiRealtimeTransport {
   }
 
   void _handleStreamError(Object error, [StackTrace? stackTrace]) {
-    _emitState(OaiRealtimeConnectionState.failed(
-      attempt: _lastState.attempt,
-      message: 'Realtime transport stream failed.',
-      error: error,
-    ));
+    _emitState(
+      OaiRealtimeConnectionState.failed(
+        attempt: _lastState.attempt,
+        message: 'Realtime transport stream failed.',
+        error: error,
+      ),
+    );
   }
 
   void _handleStreamDone() {
     if (_disposed) {
       return;
     }
-    _emitState(const OaiRealtimeConnectionState.disconnected(
-      message: 'Realtime socket closed.',
-    ));
+    _emitState(
+      const OaiRealtimeConnectionState.disconnected(
+        message: 'Realtime socket closed.',
+      ),
+    );
   }
 
   Future<void> _safeTearDownChannel() async {
@@ -195,70 +194,60 @@ final class WebSocketOaiRealtimeTransport implements OaiRealtimeTransport {
   }
 
   _OaiRealtimeTransportTarget _buildTarget(OaiRealtimeConnectConfig config) {
-    return switch (config) {
-      OpenAiRealtimeConnectConfig() => _buildOpenAiTarget(config),
-      AzureOpenAiRealtimeConnectConfig() => _buildAzureTarget(config),
-    };
+    final baseUri = resolveRealtimeEndpoint(
+      config.baseUri,
+      epFragment: config.epFragment,
+    );
+    return _OaiRealtimeTransportTarget(
+      uri: baseUri,
+      headers: _buildHeaders(config),
+      protocols: _buildProtocols(config),
+    );
   }
 
-  _OaiRealtimeTransportTarget _buildOpenAiTarget(
-    OpenAiRealtimeConnectConfig config,
-  ) {
-    final baseUri =
-        config.baseUri ?? Uri.parse('https://api.openai.com/v1/realtime');
-    final wsUri = _normalizeWebSocketUri(baseUri).replace(
-      queryParameters: {
-        ...baseUri.queryParameters,
-        'model': config.model,
-      },
-    );
+  Map<String, dynamic> _buildHeaders(OaiRealtimeConnectConfig config) {
+    if (kIsWeb) {
+      return const <String, dynamic>{};
+    }
 
     final headers = <String, dynamic>{
-      'Authorization': 'Bearer ${config.apiKey}',
-      'OpenAI-Beta': 'realtime=v1',
-      if (config.organization != null)
-        'OpenAI-Organization': config.organization,
-      if (config.project != null) 'OpenAI-Project': config.project,
+      ...config.extraHeaders,
     };
 
-    return _OaiRealtimeTransportTarget(uri: wsUri, headers: headers);
+    final token = config.bearerToken?.trim();
+    if (token != null && token.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $token';
+    }
+
+    return headers;
   }
 
-  _OaiRealtimeTransportTarget _buildAzureTarget(
-    AzureOpenAiRealtimeConnectConfig config,
-  ) {
-    final wsUri = _normalizeWebSocketUri(config.endpoint).replace(
-      path: _joinUriPath(config.endpoint.path, '/openai/realtime'),
-      queryParameters: {
-        ...config.endpoint.queryParameters,
-        'api-version': config.apiVersion,
-        'deployment': config.deployment,
-        'api-key': config.apiKey,
-      },
-    );
-
-    return _OaiRealtimeTransportTarget(uri: wsUri, headers: const {});
-  }
-
-  Uri _normalizeWebSocketUri(Uri uri) {
-    if (uri.scheme == 'ws' || uri.scheme == 'wss') {
-      return uri;
+  List<String>? _buildProtocols(OaiRealtimeConnectConfig config) {
+    if (!kIsWeb) {
+      return null;
     }
-    if (uri.scheme == 'https') {
-      return uri.replace(scheme: 'wss');
-    }
-    if (uri.scheme == 'http') {
-      return uri.replace(scheme: 'ws');
-    }
-    return uri;
-  }
 
-  String _joinUriPath(String basePath, String suffix) {
-    final normalizedBase = basePath.endsWith('/')
-        ? basePath.substring(0, basePath.length - 1)
-        : basePath;
-    final normalizedSuffix = suffix.startsWith('/') ? suffix : '/$suffix';
-    return '$normalizedBase$normalizedSuffix';
+    final token = config.bearerToken?.trim();
+    if (token == null || token.isEmpty) {
+      return null;
+    }
+
+    final protocols = <String>[
+      'realtime',
+      'openai-insecure-api-key.$token',
+    ];
+
+    final organization = config.extraHeaders['OpenAI-Organization']?.trim();
+    if (organization != null && organization.isNotEmpty) {
+      protocols.add('openai-organization.$organization');
+    }
+
+    final project = config.extraHeaders['OpenAI-Project']?.trim();
+    if (project != null && project.isNotEmpty) {
+      protocols.add('openai-project.$project');
+    }
+
+    return protocols;
   }
 
   void _emitState(OaiRealtimeConnectionState state) {
@@ -278,9 +267,11 @@ final class WebSocketOaiRealtimeTransport implements OaiRealtimeTransport {
 final class _OaiRealtimeTransportTarget {
   final Uri uri;
   final Map<String, dynamic> headers;
+  final List<String>? protocols;
 
   const _OaiRealtimeTransportTarget({
     required this.uri,
     required this.headers,
+    required this.protocols,
   });
 }

@@ -209,9 +209,6 @@ final class RealtimeService extends SubService {
     return switch (apiConfig) {
       SelfhostedVoiceAgentApiConfig(
         providerType: VoiceAgentProviderType.openai
-      ) ||
-      SelfhostedVoiceAgentApiConfig(
-        providerType: VoiceAgentProviderType.azureOpenAi
       ) =>
         OaiRealtimeAdapter(),
       HostedVoiceAgentApiConfig() => throw UnsupportedError(
@@ -228,6 +225,4 @@ final class RealtimeService extends SubService {
         ),
     };
   }
-
-  // _isOpenAiFamily and _isGemini removed; providerType enum is now used.
 }

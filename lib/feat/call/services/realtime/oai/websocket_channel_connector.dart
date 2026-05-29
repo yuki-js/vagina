@@ -6,6 +6,11 @@ import 'websocket_channel_connector_io.dart'
 Future<WebSocketChannel> connectOaiWebSocketChannel(
   Uri uri, {
   Map<String, dynamic>? headers,
+  List<String>? protocols,
 }) {
-  return connectOaiWebSocketChannelImpl(uri, headers: headers);
+  return connectOaiWebSocketChannelImpl(
+    uri,
+    headers: headers,
+    protocols: protocols,
+  );
 }

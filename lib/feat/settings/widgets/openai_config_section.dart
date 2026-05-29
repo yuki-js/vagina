@@ -4,19 +4,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vagina/core/state/repository_providers.dart';
 import 'package:vagina/utils/realtime_connection_test.dart';
 import 'package:vagina/core/theme/app_theme.dart';
-import 'package:vagina/utils/url_utils.dart';
 import 'package:vagina/l10n/app_localizations.dart';
 import 'settings_card.dart';
 
-/// Azure OpenAI configuration section widget
-class AzureConfigSection extends ConsumerStatefulWidget {
-  const AzureConfigSection({super.key});
+/// OpenAI realtime configuration section widget.
+class OpenAiConfigSection extends ConsumerStatefulWidget {
+  const OpenAiConfigSection({super.key});
 
   @override
-  ConsumerState<AzureConfigSection> createState() => _AzureConfigSectionState();
+  ConsumerState<OpenAiConfigSection> createState() => _OpenAiConfigSectionState();
 }
 
-class _AzureConfigSectionState extends ConsumerState<AzureConfigSection> {
+class _OpenAiConfigSectionState extends ConsumerState<OpenAiConfigSection> {
   final _realtimeUrlController = TextEditingController();
   final _apiKeyController = TextEditingController();
   bool _isApiKeyVisible = false;
@@ -79,6 +78,11 @@ class _AzureConfigSectionState extends ConsumerState<AzureConfigSection> {
     );
   }
 
+  bool _hasValidRealtimeBaseUri(String value) {
+    final uri = Uri.tryParse(value);
+    return uri != null && uri.scheme.isNotEmpty && uri.host.isNotEmpty;
+  }
+
   Future<void> _saveSettings() async {
     final l10n = AppLocalizations.of(context);
 
@@ -87,9 +91,7 @@ class _AzureConfigSectionState extends ConsumerState<AzureConfigSection> {
       return;
     }
 
-    final parsed =
-        UrlUtils.parseAzureRealtimeUrl(_realtimeUrlController.text.trim());
-    if (parsed == null) {
+    if (!_hasValidRealtimeBaseUri(_realtimeUrlController.text.trim())) {
       _showSnackBar(l10n.settingsAzureRealtimeUrlInvalid, isError: true);
       return;
     }
@@ -127,9 +129,7 @@ class _AzureConfigSectionState extends ConsumerState<AzureConfigSection> {
       return;
     }
 
-    final parsed =
-        UrlUtils.parseAzureRealtimeUrl(_realtimeUrlController.text.trim());
-    if (parsed == null) {
+    if (!_hasValidRealtimeBaseUri(_realtimeUrlController.text.trim())) {
       _showSnackBar(l10n.settingsAzureRealtimeUrlInvalid, isError: true);
       return;
     }

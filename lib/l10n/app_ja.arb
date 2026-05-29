@@ -234,19 +234,19 @@
   },
   "oobeAuthenticationManualSetup": "自分で設定する",
   "@oobeAuthenticationManualSetup": {
-    "description": "OOBE 認証画面で、外部ログインではなく Azure OpenAI の手動設定へ進む副ボタンラベル。"
+    "description": "OOBE 認証画面で、外部ログインではなく OpenAI の手動設定へ進む副ボタンラベル。"
   },
   "oobeAuthenticationTermsNotice": "続行することで、利用規約とプライバシーポリシーに同意したものとみなされます",
   "@oobeAuthenticationTermsNotice": {
     "description": "OOBE 認証画面の下部に表示する小さな法的同意文。"
   },
-  "oobeManualSetupTitle": "Azure OpenAIの設定",
+  "oobeManualSetupTitle": "OpenAIの設定",
   "@oobeManualSetupTitle": {
-    "description": "Azure OpenAI Realtime API の認証情報を入力する OOBE 手動設定画面のメイン見出し。"
+    "description": "OpenAI Realtime API の認証情報を入力する OOBE 手動設定画面のメイン見出し。"
   },
-  "oobeManualSetupSubtitle": "Azure OpenAI Realtime APIの接続情報を入力してください",
+  "oobeManualSetupSubtitle": "OpenAI Realtime APIの接続情報を入力してください",
   "@oobeManualSetupSubtitle": {
-    "description": "OOBE 手動設定画面で、Azure OpenAI Realtime API の接続情報入力を案内する導入文。"
+    "description": "OOBE 手動設定画面で、OpenAI Realtime API の接続情報入力を案内する導入文。"
   },
   "settingsLanguageSectionTitle": "言語",
   "@settingsLanguageSectionTitle": {
@@ -272,9 +272,9 @@
   "@settingsScreenTitle": {
     "description": "設定画面のアプリバータイトル。"
   },
-  "settingsAzureConfigSectionTitle": "Azure OpenAI 設定",
+  "settingsAzureConfigSectionTitle": "OpenAI 設定",
   "@settingsAzureConfigSectionTitle": {
-    "description": "設定画面で Azure OpenAI 設定カードをまとめるセクション見出し。"
+    "description": "設定画面で OpenAI 設定カードをまとめるセクション見出し。"
   },
   "settingsSetupSectionTitle": "セットアップ",
   "@settingsSetupSectionTitle": {
@@ -282,27 +282,27 @@
   },
   "settingsAzureLoadFailed": "設定の読み込みに失敗しました",
   "@settingsAzureLoadFailed": {
-    "description": "保存済みの Azure 設定を読み込めなかったときに表示するスナックバー文言。"
+    "description": "保存済みの OpenAI 設定を読み込めなかったときに表示するスナックバー文言。"
   },
   "settingsAzureRealtimeUrlRequired": "Realtime URLを入力してください",
   "@settingsAzureRealtimeUrlRequired": {
-    "description": "Azure Realtime URL 入力欄が空のときに表示するバリデーション文言。"
+    "description": "OpenAI Realtime URL 入力欄が空のときに表示するバリデーション文言。"
   },
   "settingsAzureRealtimeUrlInvalid": "Realtime URLの形式が正しくありません",
   "@settingsAzureRealtimeUrlInvalid": {
-    "description": "Azure Realtime URL を解析できないときに表示するバリデーション文言。"
+    "description": "OpenAI Realtime URL を解析できないときに表示するバリデーション文言。"
   },
   "settingsAzureApiKeyRequired": "APIキーを入力してください",
   "@settingsAzureApiKeyRequired": {
-    "description": "Azure API キー入力欄が空のときに表示するバリデーション文言。"
+    "description": "OpenAI API キー入力欄が空のときに表示するバリデーション文言。"
   },
   "settingsAzureSaveSuccess": "設定を保存しました",
   "@settingsAzureSaveSuccess": {
-    "description": "Azure 設定の保存に成功したあとに表示するスナックバー文言。"
+    "description": "OpenAI 設定の保存に成功したあとに表示するスナックバー文言。"
   },
   "settingsAzureSaveFailed": "保存に失敗しました: {error}",
   "@settingsAzureSaveFailed": {
-    "description": "Azure 設定の保存に失敗したときに表示するスナックバー文言。",
+    "description": "OpenAI 設定の保存に失敗したときに表示するスナックバー文言。",
     "placeholders": {
       "error": {
         "type": "String",
@@ -312,11 +312,11 @@
   },
   "settingsAzureConnectionTestSuccess": "接続テスト成功",
   "@settingsAzureConnectionTestSuccess": {
-    "description": "Azure Realtime 接続テストが成功したときに表示するスナックバー文言。"
+    "description": "OpenAI Realtime 接続テストが成功したときに表示するスナックバー文言。"
   },
   "settingsAzureConnectionTestFailed": "接続テスト失敗: {error}",
   "@settingsAzureConnectionTestFailed": {
-    "description": "Azure Realtime 接続テストが失敗したときに表示するスナックバー文言。",
+    "description": "OpenAI Realtime 接続テストが失敗したときに表示するスナックバー文言。",
     "placeholders": {
       "error": {
         "type": "String",
@@ -326,11 +326,11 @@
   },
   "settingsAzureClearDialogTitle": "設定をクリア?",
   "@settingsAzureClearDialogTitle": {
-    "description": "保存済みの Azure 設定を削除する前に表示する確認ダイアログのタイトル。"
+    "description": "保存済みの OpenAI 設定を削除する前に表示する確認ダイアログのタイトル。"
   },
   "settingsAzureClearDialogBody": "保存済みのAPI設定をすべて削除しますか？",
   "@settingsAzureClearDialogBody": {
-    "description": "保存済みの Azure 設定を削除する前に表示する確認ダイアログの本文。"
+    "description": "保存済みの OpenAI 設定を削除する前に表示する確認ダイアログの本文。"
   },
   "settingsCommonCancel": "キャンセル",
   "@settingsCommonCancel": {
@@ -342,11 +342,11 @@
   },
   "settingsAzureClearSuccess": "設定をクリアしました",
   "@settingsAzureClearSuccess": {
-    "description": "保存済みの Azure 設定をクリアしたあとに表示するスナックバー文言。"
+    "description": "保存済みの OpenAI 設定をクリアしたあとに表示するスナックバー文言。"
   },
   "settingsAzureClearFailed": "設定のクリアに失敗しました: {error}",
   "@settingsAzureClearFailed": {
-    "description": "保存済みの Azure 設定のクリアに失敗したときに表示するスナックバー文言。",
+    "description": "保存済みの OpenAI 設定のクリアに失敗したときに表示するスナックバー文言。",
     "placeholders": {
       "error": {
         "type": "String",
@@ -354,25 +354,25 @@
       }
     }
   },
-  "settingsAzureRealtimeUrlLabel": "Azure OpenAI Realtime URL",
+  "settingsAzureRealtimeUrlLabel": "OpenAI Realtime URL",
   "@settingsAzureRealtimeUrlLabel": {
-    "description": "設定画面の Azure OpenAI Realtime URL 入力欄の上に表示するラベル。"
+    "description": "設定画面の OpenAI Realtime URL 入力欄の上に表示するラベル。"
   },
-  "settingsAzureRealtimeUrlHint": "https://<resource>.openai.azure.com/openai/realtime?api-version=2024-10-01-preview&deployment=gpt-4o-realtime",
+  "settingsAzureRealtimeUrlHint": "https://api.openai.com/v1/realtime?model=gpt-realtime-2",
   "@settingsAzureRealtimeUrlHint": {
-    "description": "Azure OpenAI Realtime URL 入力欄のプレースホルダー。URL パターンは維持すること。"
+    "description": "OpenAI Realtime URL 入力欄のプレースホルダー。URL パターンは維持すること。"
   },
-  "settingsAzureRealtimeUrlExample": "例: https://your-resource.openai.azure.com/openai/realtime?api-version=2024-10-01-preview&deployment=gpt-realtime",
+  "settingsAzureRealtimeUrlExample": "例: https://api.openai.com/v1/realtime?model=gpt-realtime-2",
   "@settingsAzureRealtimeUrlExample": {
-    "description": "Azure Realtime URL 欄の下に表示する補助テキスト。URL パターンは維持すること。"
+    "description": "OpenAI Realtime URL 欄の下に表示する補助テキスト。URL パターンは維持すること。"
   },
   "settingsAzureApiKeyLabel": "APIキー",
   "@settingsAzureApiKeyLabel": {
-    "description": "設定画面の Azure API キー入力欄の上に表示するラベル。"
+    "description": "設定画面の OpenAI API キー入力欄の上に表示するラベル。"
   },
   "settingsAzureApiKeyHint": "APIキーを入力",
   "@settingsAzureApiKeyHint": {
-    "description": "Azure API キー入力欄のプレースホルダー。"
+    "description": "OpenAI API キー入力欄のプレースホルダー。"
   },
   "settingsCommonSave": "保存",
   "@settingsCommonSave": {
@@ -380,15 +380,15 @@
   },
   "settingsAzureTestConnectionButton": "接続テスト",
   "@settingsAzureTestConnectionButton": {
-    "description": "Azure Realtime の接続テストを実行するボタンのラベル。"
+    "description": "OpenAI Realtime の接続テストを実行するボタンのラベル。"
   },
   "settingsCommonClear": "クリア",
   "@settingsCommonClear": {
-    "description": "保存済みの Azure 設定をクリアするボタンのラベル。"
+    "description": "保存済みの OpenAI 設定をクリアするボタンのラベル。"
   },
   "settingsAzureCredentialsStorageNote": "認証情報はデバイス上に安全に保存されます。",
   "@settingsAzureCredentialsStorageNote": {
-    "description": "Azure 設定ボタンの下に表示する、認証情報の保存先に関する補足文。"
+    "description": "OpenAI 設定ボタンの下に表示する、認証情報の保存先に関する補足文。"
   },
   "settingsSetupRestartOobeTitle": "初期設定をやり直す",
   "@settingsSetupRestartOobeTitle": {

@@ -98,7 +98,7 @@ class ConfigurationError extends AppError {
 
   @override
   String toUserMessage() {
-    if (code == 'missing_api_key') return 'Azure OpenAI設定を先に行ってください';
+    if (code == 'missing_api_key') return 'OpenAI設定を先に行ってください';
     if (code == 'invalid_config') return '設定が正しくありません';
     return '設定エラー: $message';
   }

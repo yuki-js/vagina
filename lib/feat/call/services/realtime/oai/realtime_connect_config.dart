@@ -1,51 +1,48 @@
-/// Provider-specific connection configuration for the OpenAI Realtime binding.
+/// Opaque connection configuration for the OpenAI Realtime protocol family.
 ///
-/// This module lives under `realtime/oai` because it only understands the
-/// OpenAI Realtime protocol family, including Azure OpenAI's compatible
-/// transport shape.
-sealed class OaiRealtimeConnectConfig {
-  const OaiRealtimeConnectConfig();
+/// The [baseUri] is treated as completely opaque. The transport never inspects
+/// its contents. The [epFragment] is appended to the base path, and the scheme
+/// is upgraded to `ws`/`wss` if needed.
+final class OaiRealtimeConnectConfig {
+  /// The opaque base URI provided by the caller.
+  final Uri baseUri;
 
-  OaiRealtimeProvider get provider;
-}
+  /// The endpoint fragment appended to the base URI path.
+  final String epFragment;
 
-enum OaiRealtimeProvider {
-  openAi,
-  azureOpenAi,
-}
+  /// Bearer token for the `Authorization` header.
+  final String? bearerToken;
 
-final class OpenAiRealtimeConnectConfig extends OaiRealtimeConnectConfig {
-  final String apiKey;
-  final String model;
-  final Uri? baseUri;
-  final String? organization;
-  final String? project;
+  /// Additional headers to include during the WebSocket handshake.
+  final Map<String, String> extraHeaders;
 
-  const OpenAiRealtimeConnectConfig({
-    required this.apiKey,
-    required this.model,
-    this.baseUri,
-    this.organization,
-    this.project,
+  const OaiRealtimeConnectConfig({
+    required this.baseUri,
+    this.epFragment = '/realtime',
+    this.bearerToken,
+    this.extraHeaders = const <String, String>{},
   });
-
-  @override
-  OaiRealtimeProvider get provider => OaiRealtimeProvider.openAi;
 }
 
-final class AzureOpenAiRealtimeConnectConfig extends OaiRealtimeConnectConfig {
-  final String apiKey;
-  final Uri endpoint;
-  final String deployment;
-  final String apiVersion;
+/// Resolves a WebSocket endpoint URL from an opaque base URI and endpoint
+/// fragment.
+Uri resolveRealtimeEndpoint(
+  Uri baseUri, {
+  String epFragment = '/realtime',
+}) {
+  final basePath = baseUri.path.endsWith('/')
+      ? baseUri.path.substring(0, baseUri.path.length - 1)
+      : baseUri.path;
+  final fragment = epFragment.startsWith('/') ? epFragment : '/$epFragment';
 
-  const AzureOpenAiRealtimeConnectConfig({
-    required this.apiKey,
-    required this.endpoint,
-    required this.deployment,
-    this.apiVersion = '2025-04-01-preview',
-  });
+  final scheme = switch (baseUri.scheme) {
+    'http' => 'ws',
+    'https' => 'wss',
+    final value => value,
+  };
 
-  @override
-  OaiRealtimeProvider get provider => OaiRealtimeProvider.azureOpenAi;
+  return baseUri.replace(
+    scheme: scheme,
+    path: '$basePath$fragment',
+  );
 }

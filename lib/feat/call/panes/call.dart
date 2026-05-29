@@ -79,10 +79,7 @@ class _CallPaneState extends State<CallPane> {
 
   bool get _showsNoiseReductionSettings {
     final voiceAgent = widget.callService.configuredVoiceAgent;
-    final apiConfig = voiceAgent?.apiConfig;
-    return apiConfig is SelfhostedVoiceAgentApiConfig &&
-        (apiConfig.providerType == VoiceAgentProviderType.openai ||
-            apiConfig.providerType == VoiceAgentProviderType.azureOpenAi);
+    return voiceAgent?.apiConfig is SelfhostedVoiceAgentApiConfig;
   }
 
   List<Widget> _buildPrimaryControls({

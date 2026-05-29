@@ -19,7 +19,7 @@ class JsonConfigRepository implements ConfigRepository {
   JsonConfigRepository(this._store, {LogService? logService})
       : _logService = logService ?? LogService();
 
-  // Azure OpenAI Configuration
+  // OpenAI realtime configuration
 
   @override
   Future<void> saveApiKey(String apiKey) async {
@@ -62,7 +62,7 @@ class JsonConfigRepository implements ConfigRepository {
   }
 
   @override
-  Future<bool> hasAzureConfig() async {
+  Future<bool> hasRealtimeConfig() async {
     final hasKey = await hasApiKey();
     final url = await getRealtimeUrl();
     return hasKey && url != null && url.isNotEmpty;

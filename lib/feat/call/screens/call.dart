@@ -14,7 +14,6 @@ import 'package:vagina/feat/call/widgets/call_screen_shell.dart';
 import 'package:vagina/models/speed_dial.dart';
 import 'package:vagina/repositories/repository_factory.dart';
 import 'package:vagina/tools/tools.dart';
-import 'package:vagina/utils/url_utils.dart';
 
 /// Temporary layout scaffold for the call rework.
 class CallScreen extends StatefulWidget {
@@ -159,9 +158,6 @@ Future<VoiceAgentInfo> _buildVoiceAgent(SpeedDial speedDial) async {
   final configRepository = RepositoryFactory.config;
   final realtimeUrl = await configRepository.getRealtimeUrl();
   final apiKey = await configRepository.getApiKey();
-  final parsedRealtimeUrl =
-      realtimeUrl == null ? null : UrlUtils.parseAzureRealtimeUrl(realtimeUrl);
-
   return VoiceAgentInfo(
     id: speedDial.id,
     name: speedDial.name,
@@ -174,16 +170,9 @@ Future<VoiceAgentInfo> _buildVoiceAgent(SpeedDial speedDial) async {
         .where((toolKey) => speedDial.enabledTools[toolKey] ?? true)
         .toList(growable: false),
     apiConfig: SelfhostedVoiceAgentApiConfig(
-      providerType: VoiceAgentProviderType.azureOpenAi,
-      baseUrl: parsedRealtimeUrl?['endpoint'] ?? '',
+      providerType: VoiceAgentProviderType.openai,
+      baseUrl: realtimeUrl ?? '',
       apiKey: apiKey ?? '',
-      model: parsedRealtimeUrl?['deployment'] ?? 'gpt-4o-realtime-preview',
-      params: <String, Object?>{
-        if (parsedRealtimeUrl?['deployment'] case final deployment?)
-          'deployment': deployment,
-        if (parsedRealtimeUrl?['apiVersion'] case final apiVersion?)
-          'apiVersion': apiVersion,
-      },
     ),
   );
 }

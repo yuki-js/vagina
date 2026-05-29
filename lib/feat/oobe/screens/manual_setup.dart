@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vagina/core/state/repository_providers.dart';
 import 'package:vagina/utils/realtime_connection_test.dart';
 import 'package:vagina/core/theme/app_theme.dart';
-import 'package:vagina/utils/url_utils.dart';
 import 'package:vagina/l10n/app_localizations.dart';
 
 /// Third OOBE screen - Manual AI API configuration
@@ -72,6 +71,11 @@ class _ManualSetupScreenState extends ConsumerState<ManualSetupScreen> {
     );
   }
 
+  bool _hasValidRealtimeBaseUri(String value) {
+    final uri = Uri.tryParse(value);
+    return uri != null && uri.scheme.isNotEmpty && uri.host.isNotEmpty;
+  }
+
   Future<void> _saveAndContinue() async {
     final l10n = AppLocalizations.of(context);
 
@@ -80,9 +84,7 @@ class _ManualSetupScreenState extends ConsumerState<ManualSetupScreen> {
       return;
     }
 
-    final parsed =
-        UrlUtils.parseAzureRealtimeUrl(_realtimeUrlController.text.trim());
-    if (parsed == null) {
+    if (!_hasValidRealtimeBaseUri(_realtimeUrlController.text.trim())) {
       _showSnackBar(l10n.settingsAzureRealtimeUrlInvalid, isError: true);
       return;
     }

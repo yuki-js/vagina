@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vagina/core/state/repository_providers.dart';
-import 'package:vagina/feat/settings/widgets/azure_config_section.dart';
+import 'package:vagina/feat/settings/widgets/openai_config_section.dart';
 import 'package:vagina/feat/settings/widgets/setup_section.dart';
 import 'package:vagina/feat/settings/widgets/settings_card.dart';
 import 'package:vagina/l10n/app_localizations.dart';
@@ -31,10 +31,10 @@ class SettingsScreen extends StatelessWidget {
                 const _LanguageSelectorCard(),
                 const SizedBox(height: 24),
 
-                // Azure OpenAI Configuration Section
+                // OpenAI configuration section
                 SectionHeader(title: l10n.settingsAzureConfigSectionTitle),
                 const SizedBox(height: 12),
-                const AzureConfigSection(),
+                const OpenAiConfigSection(),
                 const SizedBox(height: 24),
 
                 // Setup Section

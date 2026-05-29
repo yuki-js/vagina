@@ -4,9 +4,11 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 Future<WebSocketChannel> connectOaiWebSocketChannelImpl(
   Uri uri, {
   Map<String, dynamic>? headers,
+  List<String>? protocols,
 }) async {
   return IOWebSocketChannel.connect(
     uri,
     headers: headers,
+    protocols: protocols,
   );
 }

@@ -2,7 +2,6 @@
 
 export 'duration_formatter.dart';
 export 'audio_utils.dart';
-export 'url_utils.dart';
 export 'platform_compat.dart';
 export 'error_handler.dart';
 

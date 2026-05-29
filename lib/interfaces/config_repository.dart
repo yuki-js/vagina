@@ -2,7 +2,7 @@ import 'package:vagina/feat/call/models/text_agent_info.dart';
 
 /// Repository for managing application configuration
 abstract class ConfigRepository {
-  /// Azure OpenAI Configuration
+  /// OpenAI realtime configuration
   Future<void> saveApiKey(String apiKey);
   Future<String?> getApiKey();
   Future<void> deleteApiKey();
@@ -11,7 +11,7 @@ abstract class ConfigRepository {
   Future<void> saveRealtimeUrl(String url);
   Future<String?> getRealtimeUrl();
   Future<void> deleteRealtimeUrl();
-  Future<bool> hasAzureConfig();
+  Future<bool> hasRealtimeConfig();
 
   /// Text Agent Configuration
   Future<List<TextAgentInfo>> getAllTextAgents();

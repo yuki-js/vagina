@@ -27,7 +27,7 @@ enum _OaiInputAudioNoiseReductionSelection { off, nearField, farField;
   }
 }
 
-/// OpenAI / Azure OpenAI implementation of [RealtimeAdapter].
+/// OpenAI Realtime protocol family implementation of [RealtimeAdapter].
 ///
 /// Owns all protocol-specific defaults (audio format, VAD, transcription model).
 /// The caller only provides voice + instructions at connect time.
@@ -1019,25 +1019,35 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
   OaiRealtimeConnectConfig _toOaiConnectConfig(
     SelfhostedVoiceAgentApiConfig config,
   ) {
-    return switch (config.providerType) {
-      VoiceAgentProviderType.openai => OpenAiRealtimeConnectConfig(
-          apiKey: config.apiKey,
-          model: config.model,
-          baseUri: config.baseUrl.isEmpty ? null : Uri.parse(config.baseUrl),
-          organization: config.params['organization'] as String?,
-          project: config.params['project'] as String?,
-        ),
-      VoiceAgentProviderType.azureOpenAi => AzureOpenAiRealtimeConnectConfig(
-          apiKey: config.apiKey,
-          endpoint: Uri.parse(config.baseUrl),
-          deployment: (config.params['deployment'] as String?) ?? config.model,
-          apiVersion:
-              (config.params['apiVersion'] as String?) ?? '2025-04-01-preview',
-        ),
-      _ => throw UnsupportedError(
-          'OaiRealtimeAdapter does not support provider: ${config.providerType.name}',
-        ),
+    final baseUrl = config.baseUrl.trim();
+    if (baseUrl.isEmpty) {
+      throw ArgumentError(
+        'SelfhostedVoiceAgentApiConfig.baseUrl must not be empty.',
+      );
+    }
+
+    final epFragment = switch (config.params['epFragment']) {
+      String value when value.trim().isNotEmpty => value.trim(),
+      _ => '/realtime',
     };
+
+    final extraHeaders = <String, String>{};
+    final extraHeadersParam = config.params['extraHeaders'];
+    if (extraHeadersParam is Map) {
+      for (final entry in extraHeadersParam.entries) {
+        final key = entry.key;
+        final value = entry.value;
+        if (key is String && value is String) {
+          extraHeaders[key] = value;
+        }
+      }
+    }
+    return OaiRealtimeConnectConfig(
+      baseUri: Uri.parse(baseUrl),
+      epFragment: epFragment,
+      bearerToken: config.apiKey,
+      extraHeaders: Map<String, String>.unmodifiable(extraHeaders),
+    );
   }
 
   // ---------------------------------------------------------------------------

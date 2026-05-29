@@ -1,48 +1,33 @@
 import 'dart:async';
+
 import 'package:vagina/feat/call/services/realtime/oai/realtime_binding.dart';
 import 'package:vagina/feat/call/services/realtime/oai/realtime_connect_config.dart';
 import 'package:vagina/feat/call/services/realtime/oai/realtime_connection_state.dart';
-import 'package:vagina/utils/url_utils.dart';
 
-/// Test Azure OpenAI Realtime API connectivity.
+/// Test Realtime API connectivity.
 ///
-/// This is a lightweight helper for connection validation in settings/OOBE screens.
-/// For actual call sessions, use CallService with proper configuration.
+/// This is a lightweight helper for connection validation in settings/OOBE
+/// screens. For actual call sessions, use CallService with proper
+/// configuration.
 Future<void> testRealtimeConnection(
   String realtimeUrl,
-  String apiKey,
+  String bearerToken,
 ) async {
-  final parsed = UrlUtils.parseAzureRealtimeUrl(realtimeUrl);
-  if (parsed == null) {
-    throw Exception('Invalid Realtime URL format');
+  final baseUri = Uri.parse(realtimeUrl);
+  if (baseUri.scheme.isEmpty || baseUri.host.isEmpty) {
+    throw Exception('Invalid Realtime base URI');
   }
 
   final client = OaiRealtimeClient();
-  
+  StreamSubscription<OaiRealtimeConnectionState>? sub;
+
   try {
-    // Parse URL components
-    final uri = Uri.parse(realtimeUrl);
-    final endpoint = Uri(
-      scheme: uri.scheme,
-      host: uri.host,
-      port: uri.port,
-    );
-    
-    final deployment = (parsed['deployment'] ?? 'gpt-4o-realtime') as String;
-    final apiVersion = (parsed['apiVersion'] ?? '2024-10-01-preview') as String;
-
-    // Create connection config
-    final config = AzureOpenAiRealtimeConnectConfig(
-      apiKey: apiKey,
-      endpoint: endpoint,
-      deployment: deployment,
-      apiVersion: apiVersion,
+    final config = OaiRealtimeConnectConfig(
+      baseUri: baseUri,
+      bearerToken: bearerToken,
     );
 
-    // Connect and wait for connection state
     final completer = Completer<void>();
-    StreamSubscription<OaiRealtimeConnectionState>? sub;
-    
     sub = client.connectionStates.listen((state) {
       if (state.phase == OaiRealtimeConnectionPhase.connected) {
         if (!completer.isCompleted) {
@@ -57,10 +42,8 @@ Future<void> testRealtimeConnection(
       }
     });
 
-    // Initiate connection
     await client.connect(config);
 
-    // Wait for connection or timeout
     await completer.future.timeout(
       const Duration(seconds: 10),
       onTimeout: () {
@@ -68,17 +51,17 @@ Future<void> testRealtimeConnection(
       },
     );
 
-    // Clean up
     await sub.cancel();
+    sub = null;
     await client.disconnect();
     await client.dispose();
-  } catch (e) {
-    // Ensure cleanup
+  } catch (error) {
     try {
+      await sub?.cancel();
       await client.disconnect();
       await client.dispose();
     } catch (_) {
-      // Ignore cleanup errors
+      // Ignore cleanup errors.
     }
     rethrow;
   }

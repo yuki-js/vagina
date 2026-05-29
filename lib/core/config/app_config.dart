@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 /// Application configuration
 ///
 /// Contains all application-wide configuration constants.
-/// Audio-related constants should be kept in sync with Azure OpenAI
+/// Audio-related constants should be kept in sync with OpenAI
 /// Realtime API requirements (24kHz, 16-bit, mono PCM).
 class AppConfig {
   const AppConfig._();
@@ -87,9 +87,6 @@ class AppConfig {
     return Uri.base.resolveUri(parsedUri);
   }
 
-  /// Azure OpenAI API version
-  static const String azureApiVersion = '2024-10-01-preview';
-
   /// Default assistant voice
   static const String defaultVoice = 'alloy';
 
@@ -97,13 +94,13 @@ class AppConfig {
   // Audio Configuration
   // ==========================================================================
 
-  /// Audio sample rate (Hz) - Azure OpenAI Realtime API uses 24kHz
+  /// Audio sample rate (Hz) - OpenAI Realtime API uses 24kHz
   static const int sampleRate = 24000;
 
-  /// Audio channels - Azure OpenAI Realtime API uses mono
+  /// Audio channels - OpenAI Realtime API uses mono
   static const int channels = 1;
 
-  /// Audio bit depth - Azure OpenAI Realtime API uses 16-bit PCM
+  /// Audio bit depth - OpenAI Realtime API uses 16-bit PCM
   static const int bitDepth = 16;
 
   /// Minimum audio buffer size (bytes) before starting playback

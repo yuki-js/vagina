@@ -234,19 +234,19 @@
   },
   "oobeAuthenticationManualSetup": "Set up manually",
   "@oobeAuthenticationManualSetup": {
-    "description": "Secondary button label on the OOBE authentication screen that takes the user to manual Azure OpenAI configuration instead of provider sign-in."
+    "description": "Secondary button label on the OOBE authentication screen that takes the user to manual OpenAI configuration instead of provider sign-in."
   },
   "oobeAuthenticationTermsNotice": "By continuing, you agree to the Terms of Service and Privacy Policy.",
   "@oobeAuthenticationTermsNotice": {
     "description": "Small legal notice near the bottom of the OOBE authentication screen."
   },
-  "oobeManualSetupTitle": "Azure OpenAI setup",
+  "oobeManualSetupTitle": "OpenAI setup",
   "@oobeManualSetupTitle": {
-    "description": "Main heading on the OOBE manual setup screen for entering Azure OpenAI Realtime API credentials."
+    "description": "Main heading on the OOBE manual setup screen for entering OpenAI Realtime API credentials."
   },
-  "oobeManualSetupSubtitle": "Enter your Azure OpenAI Realtime API connection details.",
+  "oobeManualSetupSubtitle": "Enter your OpenAI Realtime API connection details.",
   "@oobeManualSetupSubtitle": {
-    "description": "Introductory text on the OOBE manual setup screen explaining that the user should enter Azure OpenAI Realtime API connection information."
+    "description": "Introductory text on the OOBE manual setup screen explaining that the user should enter OpenAI Realtime API connection information."
   },
   "settingsLanguageSectionTitle": "Language",
   "@settingsLanguageSectionTitle": {
@@ -272,9 +272,9 @@
   "@settingsScreenTitle": {
     "description": "App bar title for the settings screen."
   },
-  "settingsAzureConfigSectionTitle": "Azure OpenAI",
+  "settingsAzureConfigSectionTitle": "OpenAI",
   "@settingsAzureConfigSectionTitle": {
-    "description": "Section header for the Azure OpenAI configuration card on the settings screen."
+    "description": "Section header for the OpenAI configuration card on the settings screen."
   },
   "settingsSetupSectionTitle": "Setup",
   "@settingsSetupSectionTitle": {
@@ -282,27 +282,27 @@
   },
   "settingsAzureLoadFailed": "Failed to load settings",
   "@settingsAzureLoadFailed": {
-    "description": "Snackbar shown when the saved Azure settings cannot be loaded."
+    "description": "Snackbar shown when the saved OpenAI settings cannot be loaded."
   },
   "settingsAzureRealtimeUrlRequired": "Enter the Realtime URL",
   "@settingsAzureRealtimeUrlRequired": {
-    "description": "Validation message shown when the Azure Realtime URL field is empty."
+    "description": "Validation message shown when the OpenAI Realtime URL field is empty."
   },
   "settingsAzureRealtimeUrlInvalid": "The Realtime URL format is invalid",
   "@settingsAzureRealtimeUrlInvalid": {
-    "description": "Validation message shown when the Azure Realtime URL cannot be parsed."
+    "description": "Validation message shown when the OpenAI Realtime URL cannot be parsed."
   },
   "settingsAzureApiKeyRequired": "Enter the API key",
   "@settingsAzureApiKeyRequired": {
-    "description": "Validation message shown when the Azure API key field is empty."
+    "description": "Validation message shown when the OpenAI API key field is empty."
   },
   "settingsAzureSaveSuccess": "Settings saved",
   "@settingsAzureSaveSuccess": {
-    "description": "Snackbar shown after the Azure settings are saved successfully."
+    "description": "Snackbar shown after the OpenAI settings are saved successfully."
   },
   "settingsAzureSaveFailed": "Failed to save settings: {error}",
   "@settingsAzureSaveFailed": {
-    "description": "Snackbar shown when saving the Azure settings fails.",
+    "description": "Snackbar shown when saving the OpenAI settings fails.",
     "placeholders": {
       "error": {
         "type": "String",
@@ -312,11 +312,11 @@
   },
   "settingsAzureConnectionTestSuccess": "Connection test succeeded",
   "@settingsAzureConnectionTestSuccess": {
-    "description": "Snackbar shown when the Azure Realtime connection test succeeds."
+    "description": "Snackbar shown when the OpenAI Realtime connection test succeeds."
   },
   "settingsAzureConnectionTestFailed": "Connection test failed: {error}",
   "@settingsAzureConnectionTestFailed": {
-    "description": "Snackbar shown when the Azure Realtime connection test fails.",
+    "description": "Snackbar shown when the OpenAI Realtime connection test fails.",
     "placeholders": {
       "error": {
         "type": "String",
@@ -326,11 +326,11 @@
   },
   "settingsAzureClearDialogTitle": "Clear settings?",
   "@settingsAzureClearDialogTitle": {
-    "description": "Confirmation dialog title before deleting the saved Azure settings."
+    "description": "Confirmation dialog title before deleting the saved OpenAI settings."
   },
   "settingsAzureClearDialogBody": "Delete all saved API settings?",
   "@settingsAzureClearDialogBody": {
-    "description": "Confirmation dialog body before deleting the saved Azure settings."
+    "description": "Confirmation dialog body before deleting the saved OpenAI settings."
   },
   "settingsCommonCancel": "Cancel",
   "@settingsCommonCancel": {
@@ -342,11 +342,11 @@
   },
   "settingsAzureClearSuccess": "Settings cleared",
   "@settingsAzureClearSuccess": {
-    "description": "Snackbar shown after the saved Azure settings are cleared."
+    "description": "Snackbar shown after the saved OpenAI settings are cleared."
   },
   "settingsAzureClearFailed": "Failed to clear settings: {error}",
   "@settingsAzureClearFailed": {
-    "description": "Snackbar shown when clearing the saved Azure settings fails.",
+    "description": "Snackbar shown when clearing the saved OpenAI settings fails.",
     "placeholders": {
       "error": {
         "type": "String",
@@ -354,25 +354,25 @@
       }
     }
   },
-  "settingsAzureRealtimeUrlLabel": "Azure OpenAI Realtime URL",
+  "settingsAzureRealtimeUrlLabel": "OpenAI Realtime URL",
   "@settingsAzureRealtimeUrlLabel": {
-    "description": "Field label above the Azure OpenAI Realtime URL input on the settings screen."
+    "description": "Field label above the OpenAI Realtime URL input on the settings screen."
   },
-  "settingsAzureRealtimeUrlHint": "https://<resource>.openai.azure.com/openai/realtime?api-version=2024-10-01-preview&deployment=gpt-4o-realtime",
+  "settingsAzureRealtimeUrlHint": "https://api.openai.com/v1/realtime?model=gpt-realtime-2",
   "@settingsAzureRealtimeUrlHint": {
-    "description": "Placeholder text inside the Azure OpenAI Realtime URL input. Keep the URL pattern intact."
+    "description": "Placeholder text inside the OpenAI Realtime URL input. Keep the URL pattern intact."
   },
-  "settingsAzureRealtimeUrlExample": "Example: https://your-resource.openai.azure.com/openai/realtime?api-version=2024-10-01-preview&deployment=gpt-realtime",
+  "settingsAzureRealtimeUrlExample": "Example: https://api.openai.com/v1/realtime?model=gpt-realtime-2",
   "@settingsAzureRealtimeUrlExample": {
-    "description": "Helper text below the Azure Realtime URL field showing an example endpoint. Keep the URL pattern intact."
+    "description": "Helper text below the OpenAI Realtime URL field showing an example endpoint. Keep the URL pattern intact."
   },
   "settingsAzureApiKeyLabel": "API key",
   "@settingsAzureApiKeyLabel": {
-    "description": "Field label above the Azure API key input on the settings screen."
+    "description": "Field label above the OpenAI API key input on the settings screen."
   },
   "settingsAzureApiKeyHint": "Enter the API key",
   "@settingsAzureApiKeyHint": {
-    "description": "Placeholder text inside the Azure API key input."
+    "description": "Placeholder text inside the OpenAI API key input."
   },
   "settingsCommonSave": "Save",
   "@settingsCommonSave": {
@@ -380,15 +380,15 @@
   },
   "settingsAzureTestConnectionButton": "Test connection",
   "@settingsAzureTestConnectionButton": {
-    "description": "Button label that runs the Azure Realtime connection test."
+    "description": "Button label that runs the OpenAI Realtime connection test."
   },
   "settingsCommonClear": "Clear",
   "@settingsCommonClear": {
-    "description": "Button label that clears the saved Azure settings."
+    "description": "Button label that clears the saved OpenAI settings."
   },
   "settingsAzureCredentialsStorageNote": "Credentials are stored securely on this device.",
   "@settingsAzureCredentialsStorageNote": {
-    "description": "Small note below the Azure settings buttons explaining where credentials are stored."
+    "description": "Small note below the OpenAI settings buttons explaining where credentials are stored."
   },
   "settingsSetupRestartOobeTitle": "Run initial setup again",
   "@settingsSetupRestartOobeTitle": {
