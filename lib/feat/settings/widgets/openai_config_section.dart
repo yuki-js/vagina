@@ -16,8 +16,18 @@ class OpenAiConfigSection extends ConsumerStatefulWidget {
 }
 
 class _OpenAiConfigSectionState extends ConsumerState<OpenAiConfigSection> {
+  static const String _defaultTranscriptionModel = 'gpt-4o-mini-transcribe';
+  static const String _transcriptionModelPersistenceUnavailableMessage =
+      'Transcription model persistence is not wired yet.';
+  static const List<String> _transcriptionModelPresets = <String>[
+    'gpt-4o-mini-transcribe',
+    'gpt-4o-transcribe',
+  ];
+
   final _realtimeUrlController = TextEditingController();
   final _apiKeyController = TextEditingController();
+  final _transcriptionModelController = TextEditingController();
+  final _transcriptionModelFocusNode = FocusNode();
   bool _isApiKeyVisible = false;
   bool _isLoading = true;
   bool _isSaving = false;
@@ -33,6 +43,8 @@ class _OpenAiConfigSectionState extends ConsumerState<OpenAiConfigSection> {
   void dispose() {
     _realtimeUrlController.dispose();
     _apiKeyController.dispose();
+    _transcriptionModelController.dispose();
+    _transcriptionModelFocusNode.dispose();
     super.dispose();
   }
 
@@ -42,13 +54,13 @@ class _OpenAiConfigSectionState extends ConsumerState<OpenAiConfigSection> {
 
       final realtimeUrl = await config.getRealtimeUrl();
       final apiKey = await config.getApiKey();
-
       if (realtimeUrl != null) {
         _realtimeUrlController.text = realtimeUrl;
       }
       if (apiKey != null) {
         _apiKeyController.text = apiKey;
       }
+      _transcriptionModelController.text = _defaultTranscriptionModel;
 
       if (mounted) {
         setState(() => _isLoading = false);
@@ -83,6 +95,21 @@ class _OpenAiConfigSectionState extends ConsumerState<OpenAiConfigSection> {
     return uri != null && uri.scheme.isNotEmpty && uri.host.isNotEmpty;
   }
 
+  Iterable<String> _transcriptionModelOptions(TextEditingValue value) {
+    final query = value.text.trim().toLowerCase();
+    if (query.isEmpty) {
+      return _transcriptionModelPresets;
+    }
+
+    return _transcriptionModelPresets.where(
+      (model) => model.toLowerCase().contains(query),
+    );
+  }
+
+  String _resolvedTranscriptionModel() {
+    return _transcriptionModelController.text.trim();
+  }
+
   Future<void> _saveSettings() async {
     final l10n = AppLocalizations.of(context);
 
@@ -101,13 +128,25 @@ class _OpenAiConfigSectionState extends ConsumerState<OpenAiConfigSection> {
       return;
     }
 
+    final transcriptionModel = _resolvedTranscriptionModel();
+    if (transcriptionModel.isEmpty) {
+      _showSnackBar(
+        l10n.settingsAzureTranscriptionModelRequired,
+        isError: true,
+      );
+      return;
+    }
+
     setState(() => _isSaving = true);
 
     try {
       final config = ref.read(configRepositoryProvider);
       await config.saveRealtimeUrl(_realtimeUrlController.text.trim());
       await config.saveApiKey(_apiKeyController.text.trim());
-      _showSnackBar(l10n.settingsAzureSaveSuccess);
+      _showSnackBar(
+        _transcriptionModelPersistenceUnavailableMessage,
+        isError: true,
+      );
     } catch (e) {
       _showSnackBar(l10n.settingsAzureSaveFailed(e.toString()), isError: true);
     } finally {
@@ -145,7 +184,10 @@ class _OpenAiConfigSectionState extends ConsumerState<OpenAiConfigSection> {
       final config = ref.read(configRepositoryProvider);
       await config.saveRealtimeUrl(_realtimeUrlController.text.trim());
       await config.saveApiKey(_apiKeyController.text.trim());
-      _showSnackBar(l10n.settingsAzureConnectionTestSuccess);
+      _showSnackBar(
+        _transcriptionModelPersistenceUnavailableMessage,
+        isError: true,
+      );
     } catch (e) {
       _showSnackBar(
         l10n.settingsAzureConnectionTestFailed(e.toString()),
@@ -186,6 +228,7 @@ class _OpenAiConfigSectionState extends ConsumerState<OpenAiConfigSection> {
         await config.clearAll();
         _realtimeUrlController.clear();
         _apiKeyController.clear();
+        _transcriptionModelController.text = _defaultTranscriptionModel;
         _showSnackBar(l10n.settingsAzureClearSuccess, isWarning: true);
       } catch (e) {
         _showSnackBar(l10n.settingsAzureClearFailed(e.toString()), isError: true);
@@ -255,6 +298,87 @@ class _OpenAiConfigSectionState extends ConsumerState<OpenAiConfigSection> {
                 ),
               ),
             ),
+          const SizedBox(height: 16),
+          Text(
+            l10n.settingsAzureTranscriptionModelLabel,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: AppTheme.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          if (!_isLoading)
+            RawAutocomplete<String>(
+              textEditingController: _transcriptionModelController,
+              focusNode: _transcriptionModelFocusNode,
+              optionsBuilder: _transcriptionModelOptions,
+              onSelected: (value) {
+                _transcriptionModelController.value = TextEditingValue(
+                  text: value,
+                  selection: TextSelection.collapsed(offset: value.length),
+                );
+              },
+              fieldViewBuilder:
+                  (context, textEditingController, focusNode, onFieldSubmitted) {
+                    return TextField(
+                      controller: textEditingController,
+                      focusNode: focusNode,
+                      enabled: !_isSaving && !_isTesting,
+                      decoration: InputDecoration(
+                        hintText: l10n.settingsAzureTranscriptionModelHint,
+                        suffixIcon: const Icon(Icons.arrow_drop_down),
+                      ),
+                      onSubmitted: (_) => onFieldSubmitted(),
+                    );
+                  },
+              optionsViewBuilder: (context, onSelected, options) {
+                final optionList = options.toList();
+                if (optionList.isEmpty) {
+                  return const SizedBox.shrink();
+                }
+
+                return Align(
+                  alignment: Alignment.topLeft,
+                  child: Material(
+                    elevation: 4,
+                    borderRadius: BorderRadius.circular(12),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxHeight: 220),
+                      child: SizedBox(
+                        width: 320,
+                        child: ListView.builder(
+                          padding: EdgeInsets.zero,
+                          shrinkWrap: true,
+                          itemCount: optionList.length,
+                          itemBuilder: (context, index) {
+                            final option = optionList[index];
+                            return InkWell(
+                              onTap: () => onSelected(option),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 12,
+                                ),
+                                child: Text(option),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          const SizedBox(height: 4),
+          Text(
+            l10n.settingsAzureTranscriptionModelHelper,
+            style: TextStyle(
+              fontSize: 11,
+              color: AppTheme.textSecondary.withValues(alpha: 0.7),
+            ),
+          ),
           const SizedBox(height: 16),
           Row(
             children: [

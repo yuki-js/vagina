@@ -1014,10 +1014,16 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
         'effort':
             "high", // todo: make it modifiabel. Also, it should be lazy-updated because a very few model supports this parameter, and it may cause issues if sent at the beginning of the session.
       },
-      if (_sessionInstructions != null) 'instructions': _sessionInstructions,
+      if (_sessionInstructions != null)
+        'instructions':
+            _sessionInstructions, // todo: make it dynamically updatable like tools.
       'output_modalities': ['audio'],
       'tools': _tools.map((tool) => tool.toRealtimeJson()).toList(),
-      'tool_choice': _tools.isEmpty ? 'none' : 'auto',
+      'tool_choice': _tools.isEmpty
+          ? 'none'
+          : 'auto', // todo: make it modifiable from panel like noise reduction.
+      // 'parallel_tool_calls':
+      //     true, // todo: make it modifiable since a very few model supports this parameter.
     };
   }
 

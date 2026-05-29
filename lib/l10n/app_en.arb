@@ -374,6 +374,30 @@
   "@settingsAzureApiKeyHint": {
     "description": "Placeholder text inside the OpenAI API key input."
   },
+  "settingsAzureTranscriptionModelLabel": "Transcription model",
+  "@settingsAzureTranscriptionModelLabel": {
+    "description": "Field label above the realtime transcription model selector on the settings screen."
+  },
+  "settingsAzureTranscriptionModelHint": "Select a transcription model",
+  "@settingsAzureTranscriptionModelHint": {
+    "description": "Placeholder text inside the transcription model preset selector."
+  },
+  "settingsAzureTranscriptionModelCustomOption": "Custom",
+  "@settingsAzureTranscriptionModelCustomOption": {
+    "description": "Dropdown option label for entering a custom transcription model name."
+  },
+  "settingsAzureTranscriptionModelCustomHint": "Enter a custom transcription model name",
+  "@settingsAzureTranscriptionModelCustomHint": {
+    "description": "Placeholder text inside the custom transcription model text field."
+  },
+  "settingsAzureTranscriptionModelHelper": "Used for speech-to-text on microphone input. Presets are provided, or you can enter any model name.",
+  "@settingsAzureTranscriptionModelHelper": {
+    "description": "Helper text below the transcription model controls explaining what the setting affects."
+  },
+  "settingsAzureTranscriptionModelRequired": "Enter the transcription model",
+  "@settingsAzureTranscriptionModelRequired": {
+    "description": "Validation message shown when the transcription model field is empty."
+  },
   "settingsCommonSave": "Save",
   "@settingsCommonSave": {
     "description": "Primary save button label used on the settings screen."

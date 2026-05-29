@@ -374,6 +374,30 @@
   "@settingsAzureApiKeyHint": {
     "description": "OpenAI API キー入力欄のプレースホルダー。"
   },
+  "settingsAzureTranscriptionModelLabel": "文字起こしモデル",
+  "@settingsAzureTranscriptionModelLabel": {
+    "description": "設定画面の realtime 文字起こしモデル選択欄の上に表示するラベル。"
+  },
+  "settingsAzureTranscriptionModelHint": "文字起こしモデルを選択",
+  "@settingsAzureTranscriptionModelHint": {
+    "description": "文字起こしモデルのプリセット選択欄に表示するプレースホルダー。"
+  },
+  "settingsAzureTranscriptionModelCustomOption": "カスタム",
+  "@settingsAzureTranscriptionModelCustomOption": {
+    "description": "任意の文字起こしモデル名を入力するためのドロップダウン項目ラベル。"
+  },
+  "settingsAzureTranscriptionModelCustomHint": "カスタムの文字起こしモデル名を入力",
+  "@settingsAzureTranscriptionModelCustomHint": {
+    "description": "カスタム文字起こしモデル名の入力欄に表示するプレースホルダー。"
+  },
+  "settingsAzureTranscriptionModelHelper": "マイク入力の音声認識に使われます。プリセットを選ぶか、任意のモデル名を入力できます。",
+  "@settingsAzureTranscriptionModelHelper": {
+    "description": "文字起こしモデル設定が何に使われるかを説明する補助文。"
+  },
+  "settingsAzureTranscriptionModelRequired": "文字起こしモデルを入力してください",
+  "@settingsAzureTranscriptionModelRequired": {
+    "description": "文字起こしモデルが空のときに表示するバリデーション文言。"
+  },
   "settingsCommonSave": "保存",
   "@settingsCommonSave": {
     "description": "設定画面で使う主要な保存ボタンのラベル。"
