@@ -16,7 +16,11 @@ import 'realtime_connect_config.dart';
 import 'realtime_connection_state.dart';
 import 'realtime_event.dart';
 
-enum _OaiInputAudioNoiseReductionSelection { off, nearField, farField;
+enum _OaiInputAudioNoiseReductionSelection {
+  off,
+  nearField,
+  farField;
+
   static _OaiInputAudioNoiseReductionSelection? fromPayload(Object? value) {
     return switch (value) {
       'off' => _OaiInputAudioNoiseReductionSelection.off,
@@ -53,6 +57,8 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
   List<ToolDefinition> _tools = const <ToolDefinition>[];
   _OaiInputAudioNoiseReductionSelection _inputAudioNoiseReductionSelection =
       _OaiInputAudioNoiseReductionSelection.nearField;
+  String? _sessionVoice;
+  String? _sessionInstructions;
   final Set<String> _locallyCancelledFunctionItemIds = <String>{};
   final Set<String> _locallyCancelledFunctionCallIds = <String>{};
   int _localIdCounter = 0;
@@ -402,13 +408,11 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
         : throw UnsupportedError(
             'OaiRealtimeAdapter only supports SelfhostedVoiceAgentApiConfig.',
           );
+    _sessionVoice = voice;
+    _sessionInstructions = instructions;
+
     await _client.connect(_toOaiConnectConfig(selfHosted));
-    await _client.updateSession(
-      _buildSessionConfig(
-        voice: voice,
-        instructions: instructions,
-      ),
-    );
+    await _client.updateSession(_buildSessionConfig());
   }
 
   @override
@@ -482,9 +486,7 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
       return;
     }
 
-    await _client.updateSession({
-      'turn_detection': _buildTurnDetectionConfig(mode),
-    });
+    await _client.updateSession(_buildSessionConfig());
   }
 
   @override
@@ -551,10 +553,7 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
       return;
     }
 
-    await _client.updateSession({
-      'tools': _tools.map((tool) => tool.toRealtimeJson()).toList(),
-      'tool_choice': _tools.isEmpty ? 'none' : 'auto',
-    });
+    await _client.updateSession(_buildSessionConfig());
   }
 
   @override
@@ -588,10 +587,7 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
       return true;
     }
 
-    await _client.updateSession({
-      'input_audio_noise_reduction':
-          _buildInputAudioNoiseReductionConfig(selection),
-    });
+    await _client.updateSession(_buildSessionConfig());
     return true;
   }
 
@@ -708,7 +704,6 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
   Future<void> interrupt() async {
     _ensureNotDisposed();
     await _client.cancelResponse();
-    await _client.clearOutputAudioBuffer();
   }
 
   // ---------------------------------------------------------------------------
@@ -990,23 +985,36 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
   // Internal — session config mapping
   // ---------------------------------------------------------------------------
 
-  Map<String, dynamic> _buildSessionConfig({
-    String? voice,
-    String? instructions,
-  }) {
+  Map<String, dynamic> _buildSessionConfig() {
     return {
-      'modalities': ['text', 'audio'],
-      if (voice != null) 'voice': voice,
-      if (instructions != null) 'instructions': instructions,
-      'input_audio_format': 'pcm16',
-      'output_audio_format': 'pcm16',
-      'input_audio_noise_reduction': _buildInputAudioNoiseReductionConfig(
-        _inputAudioNoiseReductionSelection,
-      ),
-      'input_audio_transcription': {
-        'model': 'gpt-4o-transcribe',
+      'type': 'realtime',
+      'audio': {
+        'input': {
+          'format': {
+            'type': 'audio/pcm',
+            'rate': 24000,
+          },
+          'noise_reduction': _buildInputAudioNoiseReductionConfig(
+            _inputAudioNoiseReductionSelection,
+          ),
+          'transcription': {
+            'model': 'gpt-4o-mini-transcribe',
+          },
+          'turn_detection': _buildTurnDetectionConfig(_audioTurnMode),
+        },
+        'output': {
+          'format': {
+            'type': 'audio/pcm',
+            'rate': 24000,
+          },
+          if (_sessionVoice != null) 'voice': _sessionVoice,
+        },
       },
-      'turn_detection': _buildTurnDetectionConfig(_audioTurnMode),
+      'reasoning': {
+        'effort': "high", // todo: make it modifiabel
+      },
+      if (_sessionInstructions != null) 'instructions': _sessionInstructions,
+      'output_modalities': ['audio'],
       'tools': _tools.map((tool) => tool.toRealtimeJson()).toList(),
       'tool_choice': _tools.isEmpty ? 'none' : 'auto',
     };
@@ -1117,7 +1125,7 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
     }
   }
 
-  Map<String, dynamic> _buildTurnDetectionConfig(
+  Map<String, dynamic>? _buildTurnDetectionConfig(
     RealtimeAudioTurnMode mode,
   ) {
     return switch (mode) {
@@ -1127,9 +1135,7 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
           'create_response': true,
           'interrupt_response': true,
         },
-      RealtimeAudioTurnMode.manual => {
-          'type': 'none',
-        },
+      RealtimeAudioTurnMode.manual => null,
     };
   }
 

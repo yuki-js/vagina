@@ -30,10 +30,6 @@ final class OaiRealtimeCommandEncoder {
         return {
           'type': command.type,
         };
-      case OaiOutputAudioBufferClearCommand():
-        return {
-          'type': command.type,
-        };
       case OaiConversationItemCreateCommand():
         return {
           'type': command.type,

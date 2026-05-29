@@ -205,10 +205,6 @@ final class OaiRealtimeClient {
     return _send(const OaiInputAudioBufferClearCommand());
   }
 
-  Future<void> clearOutputAudioBuffer() {
-    return _send(const OaiOutputAudioBufferClearCommand());
-  }
-
   Future<void> createConversationItem({
     String? previousItemId,
     required Map<String, dynamic> item,

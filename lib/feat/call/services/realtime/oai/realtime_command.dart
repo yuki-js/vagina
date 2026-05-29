@@ -37,10 +37,6 @@ final class OaiInputAudioBufferClearCommand extends OaiRealtimeCommand {
   const OaiInputAudioBufferClearCommand() : super('input_audio_buffer.clear');
 }
 
-final class OaiOutputAudioBufferClearCommand extends OaiRealtimeCommand {
-  const OaiOutputAudioBufferClearCommand() : super('output_audio_buffer.clear');
-}
-
 final class OaiConversationItemCreateCommand extends OaiRealtimeCommand {
   final String? previousItemId;
   final Map<String, dynamic> item;
