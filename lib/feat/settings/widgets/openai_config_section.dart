@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vagina/core/state/repository_providers.dart';
+import 'package:vagina/feat/call/models/voice_agent_api_config.dart';
 import 'package:vagina/utils/realtime_connection_test.dart';
 import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/l10n/app_localizations.dart';
@@ -17,8 +18,6 @@ class OpenAiConfigSection extends ConsumerStatefulWidget {
 
 class _OpenAiConfigSectionState extends ConsumerState<OpenAiConfigSection> {
   static const String _defaultTranscriptionModel = 'gpt-4o-mini-transcribe';
-  static const String _transcriptionModelPersistenceUnavailableMessage =
-      'Transcription model persistence is not wired yet.';
   static const List<String> _transcriptionModelPresets = <String>[
     'gpt-4o-mini-transcribe',
     'gpt-4o-transcribe',
@@ -52,15 +51,18 @@ class _OpenAiConfigSectionState extends ConsumerState<OpenAiConfigSection> {
     try {
       final config = ref.read(configRepositoryProvider);
 
-      final realtimeUrl = await config.getRealtimeUrl();
-      final apiKey = await config.getApiKey();
-      if (realtimeUrl != null) {
-        _realtimeUrlController.text = realtimeUrl;
+      final apiConfig = await config.getVoiceAgentApiConfig();
+      switch (apiConfig) {
+        case SelfhostedVoiceAgentApiConfig selfhostedConfig:
+          _realtimeUrlController.text = selfhostedConfig.baseUrl;
+          _apiKeyController.text = selfhostedConfig.apiKey;
+          _transcriptionModelController.text =
+              selfhostedConfig.transcriptionModel ?? _defaultTranscriptionModel;
+        case HostedVoiceAgentApiConfig _:
+          _transcriptionModelController.text = _defaultTranscriptionModel;
+        case null:
+          _transcriptionModelController.text = _defaultTranscriptionModel;
       }
-      if (apiKey != null) {
-        _apiKeyController.text = apiKey;
-      }
-      _transcriptionModelController.text = _defaultTranscriptionModel;
 
       if (mounted) {
         setState(() => _isLoading = false);
@@ -141,12 +143,35 @@ class _OpenAiConfigSectionState extends ConsumerState<OpenAiConfigSection> {
 
     try {
       final config = ref.read(configRepositoryProvider);
-      await config.saveRealtimeUrl(_realtimeUrlController.text.trim());
-      await config.saveApiKey(_apiKeyController.text.trim());
-      _showSnackBar(
-        _transcriptionModelPersistenceUnavailableMessage,
-        isError: true,
-      );
+      final existingConfig = await config.getVoiceAgentApiConfig();
+      final nextConfig = switch (existingConfig) {
+        SelfhostedVoiceAgentApiConfig selfhostedConfig => selfhostedConfig.copyWith(
+            providerType: VoiceAgentProviderType.openai,
+            baseUrl: _realtimeUrlController.text.trim(),
+            apiKey: _apiKeyController.text.trim(),
+            transcriptionModel: transcriptionModel,
+          ),
+        HostedVoiceAgentApiConfig() => SelfhostedVoiceAgentApiConfig(
+            providerType: VoiceAgentProviderType.openai,
+            baseUrl: _realtimeUrlController.text.trim(),
+            apiKey: _apiKeyController.text.trim(),
+            transcriptionModel: transcriptionModel,
+          ),
+        null => SelfhostedVoiceAgentApiConfig(
+            providerType: VoiceAgentProviderType.openai,
+            baseUrl: _realtimeUrlController.text.trim(),
+            apiKey: _apiKeyController.text.trim(),
+            transcriptionModel: transcriptionModel,
+          ),
+        _ => SelfhostedVoiceAgentApiConfig(
+            providerType: VoiceAgentProviderType.openai,
+            baseUrl: _realtimeUrlController.text.trim(),
+            apiKey: _apiKeyController.text.trim(),
+            transcriptionModel: transcriptionModel,
+          ),
+      };
+      await config.saveVoiceAgentApiConfig(nextConfig);
+      _showSnackBar(l10n.settingsAzureSaveSuccess);
     } catch (e) {
       _showSnackBar(l10n.settingsAzureSaveFailed(e.toString()), isError: true);
     } finally {
@@ -182,12 +207,35 @@ class _OpenAiConfigSectionState extends ConsumerState<OpenAiConfigSection> {
       );
 
       final config = ref.read(configRepositoryProvider);
-      await config.saveRealtimeUrl(_realtimeUrlController.text.trim());
-      await config.saveApiKey(_apiKeyController.text.trim());
-      _showSnackBar(
-        _transcriptionModelPersistenceUnavailableMessage,
-        isError: true,
-      );
+      final existingConfig = await config.getVoiceAgentApiConfig();
+      final nextConfig = switch (existingConfig) {
+        SelfhostedVoiceAgentApiConfig selfhostedConfig => selfhostedConfig.copyWith(
+            providerType: VoiceAgentProviderType.openai,
+            baseUrl: _realtimeUrlController.text.trim(),
+            apiKey: _apiKeyController.text.trim(),
+            transcriptionModel: _resolvedTranscriptionModel(),
+          ),
+        HostedVoiceAgentApiConfig() => SelfhostedVoiceAgentApiConfig(
+            providerType: VoiceAgentProviderType.openai,
+            baseUrl: _realtimeUrlController.text.trim(),
+            apiKey: _apiKeyController.text.trim(),
+            transcriptionModel: _resolvedTranscriptionModel(),
+          ),
+        null => SelfhostedVoiceAgentApiConfig(
+            providerType: VoiceAgentProviderType.openai,
+            baseUrl: _realtimeUrlController.text.trim(),
+            apiKey: _apiKeyController.text.trim(),
+            transcriptionModel: _resolvedTranscriptionModel(),
+          ),
+        _ => SelfhostedVoiceAgentApiConfig(
+            providerType: VoiceAgentProviderType.openai,
+            baseUrl: _realtimeUrlController.text.trim(),
+            apiKey: _apiKeyController.text.trim(),
+            transcriptionModel: _resolvedTranscriptionModel(),
+          ),
+      };
+      await config.saveVoiceAgentApiConfig(nextConfig);
+      _showSnackBar(l10n.settingsAzureConnectionTestSuccess);
     } catch (e) {
       _showSnackBar(
         l10n.settingsAzureConnectionTestFailed(e.toString()),

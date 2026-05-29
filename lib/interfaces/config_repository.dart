@@ -1,17 +1,11 @@
 import 'package:vagina/feat/call/models/text_agent_info.dart';
+import 'package:vagina/feat/call/models/voice_agent_api_config.dart';
 
 /// Repository for managing application configuration
 abstract class ConfigRepository {
-  /// OpenAI realtime configuration
-  Future<void> saveApiKey(String apiKey);
-  Future<String?> getApiKey();
-  Future<void> deleteApiKey();
-  Future<bool> hasApiKey();
-
-  Future<void> saveRealtimeUrl(String url);
-  Future<String?> getRealtimeUrl();
-  Future<void> deleteRealtimeUrl();
-  Future<bool> hasRealtimeConfig();
+  /// Voice agent API configuration
+  Future<void> saveVoiceAgentApiConfig(VoiceAgentApiConfig config);
+  Future<VoiceAgentApiConfig?> getVoiceAgentApiConfig();
 
   /// Text Agent Configuration
   Future<List<TextAgentInfo>> getAllTextAgents();

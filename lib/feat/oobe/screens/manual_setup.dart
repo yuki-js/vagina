@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vagina/core/state/repository_providers.dart';
+import 'package:vagina/feat/call/models/voice_agent_api_config.dart';
 import 'package:vagina/utils/realtime_connection_test.dart';
 import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/l10n/app_localizations.dart';
@@ -44,14 +45,10 @@ class _ManualSetupScreenState extends ConsumerState<ManualSetupScreen> {
     try {
       final config = ref.read(configRepositoryProvider);
 
-      final realtimeUrl = await config.getRealtimeUrl();
-      final apiKey = await config.getApiKey();
-
-      if (realtimeUrl != null) {
-        _realtimeUrlController.text = realtimeUrl;
-      }
-      if (apiKey != null) {
-        _apiKeyController.text = apiKey;
+      final apiConfig = await config.getVoiceAgentApiConfig();
+      if (apiConfig case SelfhostedVoiceAgentApiConfig selfhostedConfig) {
+        _realtimeUrlController.text = selfhostedConfig.baseUrl;
+        _apiKeyController.text = selfhostedConfig.apiKey;
       }
     } catch (e) {
       if (!mounted) return;
@@ -105,8 +102,30 @@ class _ManualSetupScreenState extends ConsumerState<ManualSetupScreen> {
 
       // Connection successful, save the config
       final config = ref.read(configRepositoryProvider);
-      await config.saveRealtimeUrl(_realtimeUrlController.text.trim());
-      await config.saveApiKey(_apiKeyController.text.trim());
+      final existingConfig = await config.getVoiceAgentApiConfig();
+      final nextConfig = switch (existingConfig) {
+        SelfhostedVoiceAgentApiConfig selfhostedConfig => selfhostedConfig.copyWith(
+            providerType: VoiceAgentProviderType.openai,
+            baseUrl: _realtimeUrlController.text.trim(),
+            apiKey: _apiKeyController.text.trim(),
+          ),
+        HostedVoiceAgentApiConfig() => SelfhostedVoiceAgentApiConfig(
+            providerType: VoiceAgentProviderType.openai,
+            baseUrl: _realtimeUrlController.text.trim(),
+            apiKey: _apiKeyController.text.trim(),
+          ),
+        null => SelfhostedVoiceAgentApiConfig(
+            providerType: VoiceAgentProviderType.openai,
+            baseUrl: _realtimeUrlController.text.trim(),
+            apiKey: _apiKeyController.text.trim(),
+          ),
+        _ => SelfhostedVoiceAgentApiConfig(
+            providerType: VoiceAgentProviderType.openai,
+            baseUrl: _realtimeUrlController.text.trim(),
+            apiKey: _apiKeyController.text.trim(),
+          ),
+      };
+      await config.saveVoiceAgentApiConfig(nextConfig);
 
       if (mounted) {
         widget.onContinue();

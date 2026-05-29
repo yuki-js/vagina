@@ -59,6 +59,7 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
       _OaiInputAudioNoiseReductionSelection.nearField;
   String? _sessionVoice;
   String? _sessionInstructions;
+  String _transcriptionModel = 'gpt-4o-mini-transcribe';
   final Set<String> _locallyCancelledFunctionItemIds = <String>{};
   final Set<String> _locallyCancelledFunctionCallIds = <String>{};
   int _localIdCounter = 0;
@@ -410,6 +411,9 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
           );
     _sessionVoice = voice;
     _sessionInstructions = instructions;
+    _transcriptionModel = selfHosted.transcriptionModel?.trim().isNotEmpty == true
+        ? selfHosted.transcriptionModel!.trim()
+        : 'gpt-4o-mini-transcribe';
 
     await _client.connect(_toOaiConnectConfig(selfHosted));
     await _client.updateSession(_buildSessionConfig());
@@ -998,7 +1002,7 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
             _inputAudioNoiseReductionSelection,
           ),
           'transcription': {
-            'model': 'gpt-4o-mini-transcribe', // todo: make it modifiable
+            'model': _transcriptionModel,
           },
           'turn_detection': _buildTurnDetectionConfig(_audioTurnMode),
         },

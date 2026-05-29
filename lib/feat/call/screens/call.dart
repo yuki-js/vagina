@@ -156,8 +156,10 @@ class _CallScreenState extends State<CallScreen> {
 
 Future<VoiceAgentInfo> _buildVoiceAgent(SpeedDial speedDial) async {
   final configRepository = RepositoryFactory.config;
-  final realtimeUrl = await configRepository.getRealtimeUrl();
-  final apiKey = await configRepository.getApiKey();
+  final apiConfig = await configRepository.getVoiceAgentApiConfig();
+  if (apiConfig == null) {
+    throw StateError('Voice agent API config is not configured.');
+  }
   return VoiceAgentInfo(
     id: speedDial.id,
     name: speedDial.name,
@@ -169,11 +171,7 @@ Future<VoiceAgentInfo> _buildVoiceAgent(SpeedDial speedDial) async {
         .map((tool) => tool.definition.toolKey)
         .where((toolKey) => speedDial.enabledTools[toolKey] ?? true)
         .toList(growable: false),
-    apiConfig: SelfhostedVoiceAgentApiConfig(
-      providerType: VoiceAgentProviderType.openai,
-      baseUrl: realtimeUrl ?? '',
-      apiKey: apiKey ?? '',
-    ),
+    apiConfig: apiConfig,
   );
 }
 

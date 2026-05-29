@@ -2,14 +2,14 @@ import 'package:vagina/interfaces/config_repository.dart';
 import 'package:vagina/interfaces/key_value_store.dart';
 import 'package:vagina/services/log_service.dart';
 import 'package:vagina/feat/call/models/text_agent_info.dart';
+import 'package:vagina/feat/call/models/voice_agent_api_config.dart';
 
 /// JSON-based implementation of ConfigRepository
 class JsonConfigRepository implements ConfigRepository {
   static const _tag = 'ConfigRepo';
 
   // Config keys
-  static const _apiKeyKey = 'api_key';
-  static const _realtimeUrlKey = 'realtime_url';
+  static const _voiceAgentApiConfigKey = 'voice_agent_api_config';
   static const _textAgentsKey = 'text_agents';
   static const _selectedTextAgentIdKey = 'selected_text_agent_id';
 
@@ -19,53 +19,32 @@ class JsonConfigRepository implements ConfigRepository {
   JsonConfigRepository(this._store, {LogService? logService})
       : _logService = logService ?? LogService();
 
-  // OpenAI realtime configuration
+  // Voice agent API configuration
 
   @override
-  Future<void> saveApiKey(String apiKey) async {
-    _logService.debug(_tag, 'Saving API key');
-    await _store.set(_apiKeyKey, apiKey);
+  Future<void> saveVoiceAgentApiConfig(VoiceAgentApiConfig config) async {
+    _logService.debug(_tag, 'Saving voice agent API config: ${config.runtimeType}');
+    await _store.set(_voiceAgentApiConfigKey, config.toJson());
   }
 
   @override
-  Future<String?> getApiKey() async {
-    return await _store.get(_apiKeyKey) as String?;
-  }
+  Future<VoiceAgentApiConfig?> getVoiceAgentApiConfig() async {
+    final data = await _store.get(_voiceAgentApiConfigKey);
+    if (data == null) {
+      return null;
+    }
 
-  @override
-  Future<void> deleteApiKey() async {
-    _logService.debug(_tag, 'Deleting API key');
-    await _store.delete(_apiKeyKey);
-  }
+    if (data is! Map) {
+      _logService.warn(_tag, 'Invalid voice agent api config data type');
+      return null;
+    }
 
-  @override
-  Future<bool> hasApiKey() async {
-    final apiKey = await getApiKey();
-    return apiKey != null && apiKey.isNotEmpty;
-  }
-
-  @override
-  Future<void> saveRealtimeUrl(String url) async {
-    _logService.debug(_tag, 'Saving realtime URL');
-    await _store.set(_realtimeUrlKey, url);
-  }
-
-  @override
-  Future<String?> getRealtimeUrl() async {
-    return await _store.get(_realtimeUrlKey) as String?;
-  }
-
-  @override
-  Future<void> deleteRealtimeUrl() async {
-    _logService.debug(_tag, 'Deleting realtime URL');
-    await _store.delete(_realtimeUrlKey);
-  }
-
-  @override
-  Future<bool> hasRealtimeConfig() async {
-    final hasKey = await hasApiKey();
-    final url = await getRealtimeUrl();
-    return hasKey && url != null && url.isNotEmpty;
+    try {
+      return VoiceAgentApiConfig.fromJson(Map<String, dynamic>.from(data));
+    } catch (e) {
+      _logService.error(_tag, 'Error parsing voice agent api config: $e');
+      return null;
+    }
   }
 
   // Text Agent Configuration
