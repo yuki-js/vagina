@@ -8,6 +8,7 @@ class SpeedDial {
         id: defaultId,
         name: 'Default',
         systemPrompt: 'You are a helpful AI assistant.',
+        description: 'Default voice assistant',
         voice: 'alloy',
         enabledTools: const {},
       );
@@ -15,6 +16,7 @@ class SpeedDial {
   final String id;
   final String name;
   final String systemPrompt;
+  final String? description;
   final String? iconEmoji; // Optional emoji icon
   final String voice;
   final Map<String, bool> enabledTools;
@@ -27,6 +29,7 @@ class SpeedDial {
     required this.id,
     required this.name,
     required this.systemPrompt,
+    this.description,
     this.iconEmoji,
     this.voice = 'alloy',
     this.enabledTools = const {},
@@ -37,6 +40,7 @@ class SpeedDial {
     String? id,
     String? name,
     String? systemPrompt,
+    String? description,
     String? iconEmoji,
     String? voice,
     Map<String, bool>? enabledTools,
@@ -46,6 +50,7 @@ class SpeedDial {
       id: id ?? this.id,
       name: name ?? this.name,
       systemPrompt: systemPrompt ?? this.systemPrompt,
+      description: description ?? this.description,
       iconEmoji: iconEmoji ?? this.iconEmoji,
       voice: voice ?? this.voice,
       enabledTools: enabledTools ?? this.enabledTools,
@@ -58,6 +63,7 @@ class SpeedDial {
       'id': id,
       'name': name,
       'systemPrompt': systemPrompt,
+      if (description != null) 'description': description,
       if (iconEmoji != null) 'iconEmoji': iconEmoji,
       'voice': voice,
       'enabledTools': enabledTools,
@@ -70,6 +76,7 @@ class SpeedDial {
       id: json['id'] as String,
       name: json['name'] as String,
       systemPrompt: json['systemPrompt'] as String,
+      description: json['description'] as String?,
       iconEmoji: json['iconEmoji'] as String?,
       voice: json['voice'] as String? ?? 'alloy',
       enabledTools: json['enabledTools'] != null

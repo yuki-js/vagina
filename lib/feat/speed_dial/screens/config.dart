@@ -27,6 +27,7 @@ class SpeedDialConfigScreen extends ConsumerStatefulWidget {
 
 class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
   late TextEditingController _nameController;
+  late TextEditingController _descriptionController;
   late TextEditingController _instructionsController;
   late String _selectedVoice;
   late String _selectedEmoji;
@@ -40,12 +41,15 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
 
     if (_isNewSpeedDial) {
       _nameController = TextEditingController();
+      _descriptionController = TextEditingController();
       _instructionsController = TextEditingController();
       _selectedVoice = 'alloy';
       _selectedEmoji = '⭐';
       _enabledTools = {}; // Empty map = all tools enabled
     } else {
       _nameController = TextEditingController(text: widget.speedDial!.name);
+      _descriptionController =
+          TextEditingController(text: widget.speedDial!.description);
       _instructionsController =
           TextEditingController(text: widget.speedDial!.systemPrompt);
       _selectedVoice = widget.speedDial!.voice;
@@ -57,6 +61,7 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
   @override
   void dispose() {
     _nameController.dispose();
+    _descriptionController.dispose();
     _instructionsController.dispose();
     super.dispose();
   }
@@ -105,6 +110,9 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
           ? DateTime.now().millisecondsSinceEpoch.toString()
           : widget.speedDial!.id,
       name: _nameController.text,
+      description: _descriptionController.text.trim().isEmpty
+          ? null
+          : _descriptionController.text.trim(),
       systemPrompt: _instructionsController.text,
       voice: _selectedVoice,
       iconEmoji: _selectedEmoji,
@@ -303,6 +311,40 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
                             : null,
                       ),
                       style: const TextStyle(color: AppTheme.lightTextPrimary),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Description configuration
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l10n.speedDialConfigDescriptionLabel,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.lightTextSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _descriptionController,
+                      decoration: InputDecoration(
+                        hintText: l10n.speedDialConfigDescriptionHint,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey[50],
+                      ),
+                      style: const TextStyle(color: AppTheme.lightTextPrimary),
+                      maxLines: 2,
                     ),
                   ],
                 ),

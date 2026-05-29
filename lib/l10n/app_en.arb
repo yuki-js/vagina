@@ -514,6 +514,14 @@
   "@speedDialConfigDefaultNameLocked": {
     "description": "Helper text shown when editing the protected default speed dial whose name cannot be changed."
   },
+  "speedDialConfigDescriptionLabel": "Description",
+  "@speedDialConfigDescriptionLabel": {
+    "description": "Field label for the optional description input on the speed dial configuration screen."
+  },
+  "speedDialConfigDescriptionHint": "Example: Friendly everyday assistant",
+  "@speedDialConfigDescriptionHint": {
+    "description": "Placeholder text inside the optional description input on the speed dial configuration screen."
+  },
   "speedDialConfigVoiceLabel": "Voice",
   "@speedDialConfigVoiceLabel": {
     "description": "Field label for the voice selection dropdown on the speed dial configuration screen."

@@ -177,15 +177,20 @@ class SpeedDialTab extends ConsumerWidget {
                 textAlign: TextAlign.center,
                 overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 4),
-              // Voice
-              Text(
-                speedDial.voice,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: AppTheme.lightTextSecondary,
+              if (speedDial.description != null &&
+                  speedDial.description!.trim().isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  speedDial.description!,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppTheme.lightTextSecondary,
+                  ),
+                  maxLines: 2,
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
+              ],
             ],
           ),
         ),

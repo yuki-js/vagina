@@ -15,12 +15,14 @@ void main() {
           'tool2': false,
           'tool3': true,
         },
+        description: 'Assistant profile',
       );
 
       // Act
       final json = speedDial.toJson();
 
       // Assert
+      expect(json['description'], 'Assistant profile');
       expect(json['enabledTools'], isA<Map<String, bool>>());
       expect(json['enabledTools'], {
         'tool1': true,
@@ -36,6 +38,7 @@ void main() {
         'name': 'Test Agent 2',
         'systemPrompt': 'Test prompt 2',
         'voice': 'echo',
+        'description': 'Second test agent',
         'enabledTools': {
           'toolA': true,
           'toolB': false,
@@ -46,6 +49,7 @@ void main() {
       final speedDial = SpeedDial.fromJson(json);
 
       // Assert
+      expect(speedDial.description, 'Second test agent');
       expect(speedDial.enabledTools, isA<Map<String, bool>>());
       expect(speedDial.enabledTools['toolA'], true);
       expect(speedDial.enabledTools['toolB'], false);
@@ -68,6 +72,7 @@ void main() {
       final speedDial = SpeedDial.fromJson(json);
 
       // Assert
+      expect(speedDial.description, isNull);
       expect(speedDial.enabledTools, isA<Map<String, bool>>());
       expect(speedDial.enabledTools.isEmpty, true);
       expect(speedDial.enabledTools, const <String, bool>{});
@@ -103,6 +108,7 @@ void main() {
           'tool1': true,
           'tool2': false,
         },
+        description: 'Original description',
       );
 
       final newTools = {
@@ -112,15 +118,20 @@ void main() {
       };
 
       // Act
-      final copied = original.copyWith(enabledTools: newTools);
+      final copied = original.copyWith(
+        enabledTools: newTools,
+        description: 'Updated description',
+      );
 
       // Assert
+      expect(copied.description, 'Updated description');
       expect(copied.enabledTools, newTools);
       expect(copied.enabledTools['tool1'], false);
       expect(copied.enabledTools['tool2'], true);
       expect(copied.enabledTools['tool3'], true);
 
       // Original should remain unchanged
+      expect(original.description, 'Original description');
       expect(original.enabledTools['tool1'], true);
       expect(original.enabledTools['tool2'], false);
       expect(original.enabledTools.containsKey('tool3'), false);
@@ -137,12 +148,14 @@ void main() {
           'tool1': true,
           'tool2': false,
         },
+        description: 'Stable description',
       );
 
       // Act
       final copied = original.copyWith(name: 'Modified');
 
       // Assert
+      expect(copied.description, original.description);
       expect(copied.enabledTools, original.enabledTools);
       expect(copied.enabledTools['tool1'], true);
       expect(copied.enabledTools['tool2'], false);
@@ -158,6 +171,7 @@ void main() {
       expect(defaultDial.enabledTools, const <String, bool>{});
       expect(defaultDial.id, SpeedDial.defaultId);
       expect(defaultDial.name, 'Default');
+      expect(defaultDial.description, 'Default voice assistant');
     });
 
     test('isDefault should return true for default speed dial', () {
@@ -194,6 +208,7 @@ void main() {
           'tool3': true,
           'tool4': false,
         },
+        description: 'Round-trip description',
       );
 
       // Act
@@ -205,6 +220,7 @@ void main() {
       expect(deserialized.name, original.name);
       expect(deserialized.systemPrompt, original.systemPrompt);
       expect(deserialized.voice, original.voice);
+      expect(deserialized.description, original.description);
       expect(deserialized.enabledTools, original.enabledTools);
       expect(deserialized.enabledTools['tool1'], true);
       expect(deserialized.enabledTools['tool2'], false);

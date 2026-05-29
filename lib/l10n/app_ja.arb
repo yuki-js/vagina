@@ -514,6 +514,14 @@
   "@speedDialConfigDefaultNameLocked": {
     "description": "保護されたデフォルトのスピードダイヤル名を変更できないことを示す補助文。"
   },
+  "speedDialConfigDescriptionLabel": "説明",
+  "@speedDialConfigDescriptionLabel": {
+    "description": "スピードダイヤル設定画面の任意説明入力欄ラベル。"
+  },
+  "speedDialConfigDescriptionHint": "例: 日常会話向けの親しみやすい相棒",
+  "@speedDialConfigDescriptionHint": {
+    "description": "スピードダイヤル設定画面の任意説明入力欄プレースホルダー。"
+  },
   "speedDialConfigVoiceLabel": "音声選択",
   "@speedDialConfigVoiceLabel": {
     "description": "スピードダイヤル設定画面の音声選択ドロップダウンラベル。"
@@ -908,7 +916,7 @@
   },
   "callSettingsReasoningEffortHint": "思考モデルでない場合、オフにしてください。",
   "@callSettingsReasoningEffortHint": {
-    "description": "思考モデルのときに使える上級者設定。思考モデルでないならばエラーでこけます",
+    "description": "思考モデルのときに使える上級者設定。思考モデルでないならばエラーでこけます"
   },
   "callSettingsReasoningEffortOff": "オフ",
   "@callSettingsReasoningEffortOff": {
