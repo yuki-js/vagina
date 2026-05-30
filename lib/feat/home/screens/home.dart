@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vagina/core/config/app_config.dart';
-import 'package:vagina/core/state/repository_providers.dart';
+import 'package:vagina/repositories/repository_factory.dart';
 import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/feat/announcement/services/announcement_service.dart';
 import 'package:vagina/feat/announcement/widgets/home_announcement_host.dart';
@@ -66,7 +66,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     super.initState();
     _pageController = PageController(initialPage: _currentTabIndex);
     _announcementService = AnnouncementService(
-      preferencesRepository: ref.read(preferencesRepositoryProvider),
+      preferencesRepository: RepositoryFactory.preferences,
     );
   }
 

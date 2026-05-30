@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:vagina/core/state/repository_providers.dart';
+import 'package:vagina/repositories/repository_factory.dart';
 import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/feat/shared/widgets/tool_config_section.dart';
 import 'package:vagina/feat/speed_dial/state/speed_dial_providers.dart';
@@ -104,7 +104,7 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
       return;
     }
 
-    final speedDialRepo = ref.read(speedDialRepositoryProvider);
+    final speedDialRepo = RepositoryFactory.speedDials;
     final speedDial = SpeedDial(
       id: _isNewSpeedDial
           ? DateTime.now().millisecondsSinceEpoch.toString()
@@ -180,7 +180,7 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
     );
 
     if (confirmed == true && mounted) {
-      await ref.read(speedDialRepositoryProvider).delete(widget.speedDial!.id);
+      await RepositoryFactory.speedDials.delete(widget.speedDial!.id);
       ref.invalidate(speedDialsProvider);
 
       if (mounted) {

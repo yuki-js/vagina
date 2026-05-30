@@ -102,7 +102,7 @@ class _VaginaAppState extends ConsumerState<VaginaApp> {
   }
 
   Future<void> _bootstrapAppState() async {
-    final preferences = ref.read(preferencesRepositoryProvider);
+    final preferences = RepositoryFactory.preferences;
     final isFirst = await preferences.isFirstLaunch();
     final preferredLocaleCode = await preferences.getPreferredLocaleCode();
 

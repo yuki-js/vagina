@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:vagina/core/state/repository_providers.dart';
+import 'package:vagina/repositories/repository_factory.dart';
 import 'package:vagina/feat/announcement/services/announcement_service.dart';
 import 'package:vagina/feat/home/screens/home.dart';
 import 'package:vagina/feat/oobe/screens/authentication.dart';
@@ -26,7 +26,7 @@ class _OobeFlowScreenState extends ConsumerState<OobeFlowScreen> {
   void initState() {
     super.initState();
     _announcementService = AnnouncementService(
-      preferencesRepository: ref.read(preferencesRepositoryProvider),
+      preferencesRepository: RepositoryFactory.preferences,
     );
   }
 
@@ -52,7 +52,7 @@ class _OobeFlowScreenState extends ConsumerState<OobeFlowScreen> {
 
   void _completeOOBE() async {
     // Mark first launch as completed using preferencesRepositoryProvider
-    final preferences = ref.read(preferencesRepositoryProvider);
+    final preferences = RepositoryFactory.preferences;
     await preferences.markFirstLaunchCompleted();
 
     if (!mounted) return;

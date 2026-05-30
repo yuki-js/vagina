@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:vagina/core/state/repository_providers.dart';
+import 'package:vagina/repositories/repository_factory.dart';
 import 'package:vagina/models/call_session.dart';
 import 'package:vagina/models/speed_dial.dart';
 import 'package:vagina/core/theme/app_theme.dart';
@@ -117,7 +117,7 @@ class SessionDetailInfoSegment extends ConsumerWidget {
   }
 
   Future<SpeedDial?> _loadSpeedDial(WidgetRef ref) async {
-    final repository = ref.read(speedDialRepositoryProvider);
+    final repository = RepositoryFactory.speedDials;
     return await repository.getById(session.speedDialId);
   }
 

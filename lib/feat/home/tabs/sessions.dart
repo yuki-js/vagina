@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:vagina/core/state/repository_providers.dart';
+import 'package:vagina/repositories/repository_factory.dart';
 import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/feat/session/screens/session_detail.dart';
 import 'package:vagina/feat/session/state/session_history_providers.dart';
@@ -85,7 +85,7 @@ class _SessionsTabState extends ConsumerState<SessionsTab> {
     );
 
     if (confirmed == true && mounted) {
-      final sessionRepo = ref.read(callSessionRepositoryProvider);
+      final sessionRepo = RepositoryFactory.callSessions;
       for (final id in _selectedSessionIds) {
         await sessionRepo.delete(id);
       }
