@@ -33,22 +33,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       _TabInfo(
         icon: Icons.star,
         label: l10n.homeTabSpeedDial,
-        canAdd: true,
       ),
       _TabInfo(
         icon: Icons.history,
         label: l10n.homeTabSessions,
-        canAdd: false,
       ),
       _TabInfo(
         icon: Icons.contacts,
         label: l10n.homeTabAgents,
-        canAdd: true,
       ),
       _TabInfo(
         icon: Icons.apps,
         label: l10n.homeTabMore,
-        canAdd: false,
       ),
     ];
   }
@@ -246,11 +242,9 @@ class HomeAnnouncementHostPlaceholder extends StatelessWidget {
 class _TabInfo {
   final IconData icon;
   final String label;
-  final bool canAdd; // Whether this tab supports the add button
 
   const _TabInfo({
     required this.icon,
     required this.label,
-    required this.canAdd,
   });
 }
