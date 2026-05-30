@@ -26,9 +26,11 @@ class SpeedDialTab extends ConsumerWidget {
           return _buildEmptyState(context);
         }
 
-        return ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
+        return _buildTabPanel(
+          context,
+          ListView(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+            children: [
             Text(
               l10n.homeTabSpeedDial,
               style: const TextStyle(
@@ -72,16 +74,19 @@ class SpeedDialTab extends ConsumerWidget {
                 );
               },
             ),
-          ],
+            ],
+          ),
         );
       },
     );
   }
 
   Widget _buildEmptyState(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
+    return _buildTabPanel(
+      context,
+      ListView(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+        children: [
         Text(
           AppLocalizations.of(context).homeTabSpeedDial,
           style: const TextStyle(
@@ -125,6 +130,33 @@ class SpeedDialTab extends ConsumerWidget {
                 ),
               ),
             ],
+          ),
+        ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTabPanel(BuildContext context, Widget child) {
+    return Stack(
+      children: [
+        Positioned.fill(child: child),
+        Positioned(
+          right: 16,
+          bottom: 16,
+          child: SafeArea(
+            top: false,
+            left: false,
+            child: FloatingActionButton(
+              heroTag: 'speed_dial_add_fab',
+              shape: const CircleBorder(),
+              onPressed: () => _addSpeedDial(context),
+              backgroundColor: AppTheme.primaryColor,
+              child: const Icon(
+                Icons.add,
+                color: Colors.white,
+              ),
+            ),
           ),
         ),
       ],
@@ -194,6 +226,14 @@ class SpeedDialTab extends ConsumerWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Future<void> _addSpeedDial(BuildContext context) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const SpeedDialConfigScreen(),
       ),
     );
   }

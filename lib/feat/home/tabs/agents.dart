@@ -37,7 +37,7 @@ class _AgentsTabState extends ConsumerState<AgentsTab> {
       ),
       data: (agents) {
         if (agents.isEmpty) {
-          return _buildEmptyState(context);
+          return _buildTabPanel(_buildEmptyState(context));
         }
 
         // Filter agents based on search query
@@ -49,17 +49,19 @@ class _AgentsTabState extends ConsumerState<AgentsTab> {
                     agent.description.toLowerCase().contains(query);
               }).toList();
 
-        return Column(
-          children: [
-            // Search bar
-            _buildSearchBar(),
-            // Agent list
-            Expanded(
-              child: filteredAgents.isEmpty
-                  ? _buildNoResultsState()
-                  : _buildAgentList(filteredAgents),
-            ),
-          ],
+        return _buildTabPanel(
+          Column(
+            children: [
+              // Search bar
+              _buildSearchBar(),
+              // Agent list
+              Expanded(
+                child: filteredAgents.isEmpty
+                    ? _buildNoResultsState()
+                    : _buildAgentList(filteredAgents),
+              ),
+            ],
+          ),
         );
       },
     );
@@ -118,6 +120,7 @@ class _AgentsTabState extends ConsumerState<AgentsTab> {
 
   Widget _buildAgentList(List<TextAgentInfo> agents) {
     return ListView.builder(
+      padding: const EdgeInsets.only(bottom: 96),
       itemCount: agents.length,
       itemBuilder: (context, index) {
         return _buildAgentListTile(agents[index]);
@@ -256,6 +259,32 @@ class _AgentsTabState extends ConsumerState<AgentsTab> {
     );
   }
 
+  Widget _buildTabPanel(Widget child) {
+    return Stack(
+      children: [
+        Positioned.fill(child: child),
+        Positioned(
+          right: 16,
+          bottom: 16,
+          child: SafeArea(
+            top: false,
+            left: false,
+            child: FloatingActionButton(
+              heroTag: 'agents_add_fab',
+              shape: const CircleBorder(),
+              onPressed: () => _addAgent(context),
+              backgroundColor: AppTheme.primaryColor,
+              child: const Icon(
+                Icons.add,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   String _getProviderDisplayString(TextAgentInfo agent) {
     final l10n = AppLocalizations.of(context);
     final apiConfig = agent.apiConfig;
@@ -280,6 +309,14 @@ class _AgentsTabState extends ConsumerState<AgentsTab> {
       default:
         return providerValue;
     }
+  }
+
+  Future<void> _addAgent(BuildContext context) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const AgentFormScreen(),
+      ),
+    );
   }
 
   Future<void> _editAgent(

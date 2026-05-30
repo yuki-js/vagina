@@ -10,8 +10,6 @@ import 'package:vagina/feat/home/tabs/more.dart';
 import 'package:vagina/feat/home/tabs/sessions.dart';
 import 'package:vagina/feat/home/tabs/speed_dial.dart';
 import 'package:vagina/feat/settings/screens/settings.dart';
-import 'package:vagina/feat/speed_dial/screens/config.dart';
-import 'package:vagina/feat/text_agents/screens/agent_form_screen.dart';
 import 'package:vagina/l10n/app_localizations.dart';
 import 'package:vagina/utils/call_navigation_utils.dart';
 
@@ -55,12 +53,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     ];
   }
 
-  static final List<Widget> _pages = [
-    const SpeedDialTab(),
-    const SessionsTab(),
-    const AgentsTab(),
-    const MoreTab(),
-  ];
+  List<Widget> _buildPages() {
+    return [
+      const SpeedDialTab(),
+      const SessionsTab(),
+      const AgentsTab(),
+      const MoreTab(),
+    ];
+  }
 
   // Reserve the middle slot in BottomNavigationBar for the FAB.
   static const int _fabNavIndex = 2;
@@ -87,39 +87,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Future<void> _handleAddButton() async {
-    // Context-sensitive add button based on current tab
-    final tab = _buildTabs()[_currentTabIndex];
-    if (!tab.canAdd) return;
-
-    switch (_currentTabIndex) {
-      case 0:
-        // Speed dial tab
-        await _addSpeedDial();
-        break;
-      case 2:
-        // Agents tab
-        await _addTextAgent();
-        break;
-    }
-  }
-
-  Future<void> _addSpeedDial() async {
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const SpeedDialConfigScreen(),
-      ),
-    );
-  }
-
-  Future<void> _addTextAgent() async {
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const AgentFormScreen(),
-      ),
-    );
-  }
-
   Future<void> _handleCallButton() async {
     await CallNavigationUtils.navigateToCallWithDefault(
       context: context,
@@ -130,7 +97,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final tabs = _buildTabs();
-    final currentTab = tabs[_currentTabIndex];
+    final pages = _buildPages();
 
     return Scaffold(
       body: Column(
@@ -161,24 +128,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ),
                         const Spacer(),
                         // Action buttons
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            // Add button (context-sensitive)
-                            if (currentTab.canAdd)
-                              IconButton(
-                                icon: const Icon(Icons.add),
-                                color: AppTheme.lightTextPrimary,
-                                onPressed: _handleAddButton,
-                              ),
-                            const SizedBox(width: 8),
-                            // Settings button (cog icon)
-                            IconButton(
-                              icon: const Icon(Icons.settings),
-                              color: AppTheme.lightTextPrimary,
-                              onPressed: _openSettings,
-                            ),
-                          ],
+                        IconButton(
+                          icon: const Icon(Icons.settings),
+                          color: AppTheme.lightTextPrimary,
+                          onPressed: _openSettings,
                         ),
                       ],
                     ),
@@ -201,7 +154,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       _currentTabIndex = index;
                     });
                   },
-                  children: _pages,
+                  children: pages,
                 ),
               ),
             ),
