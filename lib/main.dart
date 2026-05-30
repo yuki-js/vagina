@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logging/logging.dart';
 import 'package:window_manager/window_manager.dart';
 import 'core/config/app_config.dart';
-import 'core/state/repository_providers.dart';
+import 'core/state/locale_providers.dart';
 import 'feat/home/screens/home.dart';
 import 'feat/oobe/screens/oobe_flow.dart';
 import 'core/theme/app_theme.dart';
@@ -106,7 +106,7 @@ class _VaginaAppState extends ConsumerState<VaginaApp> {
     final isFirst = await preferences.isFirstLaunch();
     final preferredLocaleCode = await preferences.getPreferredLocaleCode();
 
-    ref.read(appLocaleCodeProvider.notifier).state = preferredLocaleCode;
+    ref.read(appLocaleCodeProvider.notifier).setLocaleCode(preferredLocaleCode);
 
     if (mounted) {
       setState(() {
