@@ -31,49 +31,49 @@ class SpeedDialTab extends ConsumerWidget {
           ListView(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
             children: [
-            Text(
-              l10n.homeTabSpeedDial,
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: AppTheme.lightTextPrimary,
+              Text(
+                l10n.homeTabSpeedDial,
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.lightTextPrimary,
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              l10n.speedDialTabSubtitle,
-              style: const TextStyle(
-                fontSize: 14,
-                color: AppTheme.lightTextSecondary,
+              const SizedBox(height: 8),
+              Text(
+                l10n.speedDialTabSubtitle,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppTheme.lightTextSecondary,
+                ),
               ),
-            ),
-            const SizedBox(height: 24),
-            // Speed dial grid with fixed-size cards
-            LayoutBuilder(
-              builder: (context, constraints) {
-                // Calculate number of columns based on screen width
-                // Each card should be approximately 160px wide
-                final cardWidth = 160.0;
-                final crossAxisCount =
-                    (constraints.maxWidth / cardWidth).floor().clamp(2, 6);
+              const SizedBox(height: 24),
+              // Speed dial grid with fixed-size cards
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  // Calculate number of columns based on screen width
+                  // Each card should be approximately 160px wide
+                  final cardWidth = 160.0;
+                  final crossAxisCount =
+                      (constraints.maxWidth / cardWidth).floor().clamp(2, 6);
 
-                return GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: crossAxisCount,
-                    childAspectRatio: 0.85,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                  ),
-                  itemCount: speedDials.length,
-                  itemBuilder: (context, index) {
-                    final speedDial = speedDials[index];
-                    return _buildSpeedDialCard(context, ref, speedDial);
-                  },
-                );
-              },
-            ),
+                  return GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: crossAxisCount,
+                      childAspectRatio: 0.85,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                    ),
+                    itemCount: speedDials.length,
+                    itemBuilder: (context, index) {
+                      final speedDial = speedDials[index];
+                      return _buildSpeedDialCard(context, ref, speedDial);
+                    },
+                  );
+                },
+              ),
             ],
           ),
         );
@@ -87,51 +87,51 @@ class SpeedDialTab extends ConsumerWidget {
       ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
         children: [
-        Text(
-          AppLocalizations.of(context).homeTabSpeedDial,
-          style: const TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: AppTheme.lightTextPrimary,
+          Text(
+            AppLocalizations.of(context).homeTabSpeedDial,
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.lightTextPrimary,
+            ),
           ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          AppLocalizations.of(context).speedDialTabSubtitle,
-          style: const TextStyle(
-            fontSize: 14,
-            color: AppTheme.lightTextSecondary,
+          const SizedBox(height: 8),
+          Text(
+            AppLocalizations.of(context).speedDialTabSubtitle,
+            style: const TextStyle(
+              fontSize: 14,
+              color: AppTheme.lightTextSecondary,
+            ),
           ),
-        ),
-        const SizedBox(height: 100),
-        Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.star_border,
-                size: 64,
-                color: AppTheme.lightTextSecondary.withValues(alpha: 0.5),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                AppLocalizations.of(context).speedDialTabEmptyTitle,
-                style: const TextStyle(
-                  fontSize: 16,
-                  color: AppTheme.lightTextSecondary,
+          const SizedBox(height: 100),
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.star_border,
+                  size: 64,
+                  color: AppTheme.lightTextSecondary.withValues(alpha: 0.5),
                 ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                AppLocalizations.of(context).speedDialTabEmptyBody,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: AppTheme.lightTextSecondary,
+                const SizedBox(height: 16),
+                Text(
+                  AppLocalizations.of(context).speedDialTabEmptyTitle,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: AppTheme.lightTextSecondary,
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 8),
+                Text(
+                  AppLocalizations.of(context).speedDialTabEmptyBody,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: AppTheme.lightTextSecondary,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
         ],
       ),
     );

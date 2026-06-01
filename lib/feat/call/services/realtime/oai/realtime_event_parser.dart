@@ -80,7 +80,8 @@ final class OaiRealtimeEventParser {
           receivedAt: receivedAt,
           rawPayload: rawPayload,
           previousItemId: payload['previous_item_id'] as String?,
-          item: OaiRealtimeConversationItem.fromJson(_requireMap(payload, 'item')),
+          item: OaiRealtimeConversationItem.fromJson(
+              _requireMap(payload, 'item')),
         );
       case 'conversation.item.deleted':
         return OaiRealtimeConversationItemDeletedEvent(
@@ -171,14 +172,16 @@ final class OaiRealtimeEventParser {
           eventId: eventId,
           receivedAt: receivedAt,
           rawPayload: rawPayload,
-          response: OaiRealtimeResponse.fromJson(_requireMap(payload, 'response')),
+          response:
+              OaiRealtimeResponse.fromJson(_requireMap(payload, 'response')),
         );
       case 'response.done':
         return OaiRealtimeResponseDoneEvent(
           eventId: eventId,
           receivedAt: receivedAt,
           rawPayload: rawPayload,
-          response: OaiRealtimeResponse.fromJson(_requireMap(payload, 'response')),
+          response:
+              OaiRealtimeResponse.fromJson(_requireMap(payload, 'response')),
         );
       case 'response.output_item.added':
         return OaiRealtimeResponseOutputItemAddedEvent(
@@ -187,7 +190,8 @@ final class OaiRealtimeEventParser {
           rawPayload: rawPayload,
           responseId: payload['response_id'] as String?,
           outputIndex: _asInt(payload['output_index']),
-          item: OaiRealtimeConversationItem.fromJson(_requireMap(payload, 'item')),
+          item: OaiRealtimeConversationItem.fromJson(
+              _requireMap(payload, 'item')),
         );
       case 'response.output_item.done':
         return OaiRealtimeResponseOutputItemDoneEvent(
@@ -196,7 +200,8 @@ final class OaiRealtimeEventParser {
           rawPayload: rawPayload,
           responseId: payload['response_id'] as String?,
           outputIndex: _asInt(payload['output_index']),
-          item: OaiRealtimeConversationItem.fromJson(_requireMap(payload, 'item')),
+          item: OaiRealtimeConversationItem.fromJson(
+              _requireMap(payload, 'item')),
         );
       case 'response.content_part.added':
         return OaiRealtimeResponseContentPartAddedEvent(

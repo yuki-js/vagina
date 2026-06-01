@@ -22,7 +22,8 @@ class JsonConfigRepository implements ConfigRepository {
 
   @override
   Future<void> saveVoiceAgentApiConfig(VoiceAgentApiConfig config) async {
-    _logService.debug(_tag, 'Saving voice agent API config: ${config.runtimeType}');
+    _logService.debug(
+        _tag, 'Saving voice agent API config: ${config.runtimeType}');
     await _store.set(_voiceAgentApiConfigKey, config.toJson());
   }
 

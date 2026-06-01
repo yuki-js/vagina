@@ -104,7 +104,8 @@ class _ManualSetupScreenState extends ConsumerState<ManualSetupScreen> {
       final config = RepositoryFactory.config;
       final existingConfig = await config.getVoiceAgentApiConfig();
       final nextConfig = switch (existingConfig) {
-        SelfhostedVoiceAgentApiConfig selfhostedConfig => selfhostedConfig.copyWith(
+        SelfhostedVoiceAgentApiConfig selfhostedConfig =>
+          selfhostedConfig.copyWith(
             providerType: VoiceAgentProviderType.openai,
             baseUrl: _realtimeUrlController.text.trim(),
             apiKey: _apiKeyController.text.trim(),

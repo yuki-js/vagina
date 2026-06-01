@@ -166,8 +166,8 @@ final class OaiRealtimeConversationItem {
     final content = contentJson is List
         ? contentJson
             .whereType<Map>()
-            .map((entry) =>
-                OaiRealtimeContentPart.fromJson(Map<String, dynamic>.from(entry)))
+            .map((entry) => OaiRealtimeContentPart.fromJson(
+                Map<String, dynamic>.from(entry)))
             .toList(growable: false)
         : const <OaiRealtimeContentPart>[];
 

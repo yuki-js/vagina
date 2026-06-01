@@ -86,13 +86,13 @@ class _AdaptiveTriColumnLayoutState extends State<AdaptiveTriColumnLayout> {
     super.initState();
     _currentPageIndex = widget.initialPage;
     _pageController = PageController(initialPage: widget.initialPage);
-    _leftColumnHostKey =
-        GlobalKey<_TriColumnPageHostState>(debugLabel: 'adaptive_tri_column_left');
+    _leftColumnHostKey = GlobalKey<_TriColumnPageHostState>(
+        debugLabel: 'adaptive_tri_column_left');
     _centerColumnHostKey = GlobalKey<_TriColumnPageHostState>(
       debugLabel: 'adaptive_tri_column_center',
     );
-    _rightColumnHostKey =
-        GlobalKey<_TriColumnPageHostState>(debugLabel: 'adaptive_tri_column_right');
+    _rightColumnHostKey = GlobalKey<_TriColumnPageHostState>(
+        debugLabel: 'adaptive_tri_column_right');
     widget.controller?._attach(_goToPage);
   }
 

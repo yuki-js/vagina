@@ -6,7 +6,7 @@ void main() {
     // Setup logging
     Logger.root.level = Level.ALL;
     final logs = <LogRecord>[];
-    
+
     Logger.root.onRecord.listen((record) {
       logs.add(record);
     });

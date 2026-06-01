@@ -49,7 +49,8 @@ class SessionDetailInfoSegment extends ConsumerWidget {
                 ),
                 _buildInfoRow(
                   l10n.sessionDetailMessageCount,
-                  l10n.sessionDetailMessageCountValue(session.chatMessages.length),
+                  l10n.sessionDetailMessageCountValue(
+                      session.chatMessages.length),
                 ),
                 _buildInfoRow(
                   l10n.callPaneNotepad,

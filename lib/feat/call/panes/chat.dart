@@ -649,7 +649,8 @@ final class _ResolvedToolCallDetails {
       _ResolvedToolStage.generating => l10n.callChatToolArgumentsStreaming,
       _ResolvedToolStage.executing ||
       _ResolvedToolStage.completed ||
-      _ResolvedToolStage.error => l10n.callChatToolArgumentsNone,
+      _ResolvedToolStage.error =>
+        l10n.callChatToolArgumentsNone,
       _ResolvedToolStage.cancelled => l10n.callChatToolArgumentsCancelled,
     };
   }
@@ -666,7 +667,8 @@ final class _ResolvedToolCallDetails {
   String? get resultDisplayText => isError ? (errorMessage ?? result) : result;
 
   _ResolvedToolStage get stage {
-    if (outputItem?.toolOutputDisposition == RealtimeToolOutputDisposition.error) {
+    if (outputItem?.toolOutputDisposition ==
+        RealtimeToolOutputDisposition.error) {
       return _ResolvedToolStage.error;
     }
     if (hasCompletedOutput) {
@@ -692,7 +694,8 @@ final class _ResolvedToolCallDetails {
   Color get statusColor {
     return switch (stage) {
       _ResolvedToolStage.generating ||
-      _ResolvedToolStage.executing => AppTheme.secondaryColor,
+      _ResolvedToolStage.executing =>
+        AppTheme.secondaryColor,
       _ResolvedToolStage.completed => Colors.green,
       _ResolvedToolStage.error => Colors.red,
       _ResolvedToolStage.cancelled => Colors.grey,
@@ -713,7 +716,8 @@ final class _ResolvedToolCallDetails {
     return switch (stage) {
       _ResolvedToolStage.generating ||
       _ResolvedToolStage.executing ||
-      _ResolvedToolStage.completed => Icons.build,
+      _ResolvedToolStage.completed =>
+        Icons.build,
       _ResolvedToolStage.error => Icons.error_outline,
       _ResolvedToolStage.cancelled => Icons.cancel_outlined,
     };
@@ -721,7 +725,8 @@ final class _ResolvedToolCallDetails {
 
   String statusText(AppLocalizations l10n) {
     return switch (stage) {
-      _ResolvedToolStage.generating => l10n.callChatToolStatusGeneratingArguments,
+      _ResolvedToolStage.generating =>
+        l10n.callChatToolStatusGeneratingArguments,
       _ResolvedToolStage.executing => l10n.callChatToolStatusExecuting,
       _ResolvedToolStage.completed => l10n.callChatToolStatusCompleted,
       _ResolvedToolStage.error => l10n.callChatToolStatusError,
