@@ -40,7 +40,8 @@ final class NotepadService extends SubService {
     }
 
     if (path.contains('\x00')) {
-      logger.warning('Path validation failed: null character in $paramName: $path');
+      logger.warning(
+          'Path validation failed: null character in $paramName: $path');
       throw ArgumentError.value(
         path,
         paramName,
@@ -85,7 +86,8 @@ final class NotepadService extends SubService {
       throw Exception('File is not active: $path');
     }
 
-    logger.info('Updating file: $path (${content.length} chars, persist: $persist)');
+    logger.info(
+        'Updating file: $path (${content.length} chars, persist: $persist)');
     _activeFiles[path] = content;
     _emitChanged();
 
@@ -118,7 +120,8 @@ final class NotepadService extends SubService {
     logger.fine('Reading file from VFS: $path');
     final file = await _vfs.read(path);
     if (file != null) {
-      logger.fine('File read successfully: $path (${file.content.length} chars)');
+      logger
+          .fine('File read successfully: $path (${file.content.length} chars)');
     } else {
       logger.fine('File not found: $path');
     }
@@ -225,7 +228,8 @@ final class NotepadService extends SubService {
 
   @override
   Future<void> dispose() async {
-    logger.info('Disposing NotepadService (${_activeFiles.length} active files)');
+    logger
+        .info('Disposing NotepadService (${_activeFiles.length} active files)');
     await super.dispose();
     await _activeFilesController.close();
     _activeFiles.clear();

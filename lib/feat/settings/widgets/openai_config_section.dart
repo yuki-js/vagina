@@ -13,7 +13,8 @@ class OpenAiConfigSection extends ConsumerStatefulWidget {
   const OpenAiConfigSection({super.key});
 
   @override
-  ConsumerState<OpenAiConfigSection> createState() => _OpenAiConfigSectionState();
+  ConsumerState<OpenAiConfigSection> createState() =>
+      _OpenAiConfigSectionState();
 }
 
 class _OpenAiConfigSectionState extends ConsumerState<OpenAiConfigSection> {
@@ -145,7 +146,8 @@ class _OpenAiConfigSectionState extends ConsumerState<OpenAiConfigSection> {
       final config = RepositoryFactory.config;
       final existingConfig = await config.getVoiceAgentApiConfig();
       final nextConfig = switch (existingConfig) {
-        SelfhostedVoiceAgentApiConfig selfhostedConfig => selfhostedConfig.copyWith(
+        SelfhostedVoiceAgentApiConfig selfhostedConfig =>
+          selfhostedConfig.copyWith(
             providerType: VoiceAgentProviderType.openai,
             baseUrl: _realtimeUrlController.text.trim(),
             apiKey: _apiKeyController.text.trim(),
@@ -209,7 +211,8 @@ class _OpenAiConfigSectionState extends ConsumerState<OpenAiConfigSection> {
       final config = RepositoryFactory.config;
       final existingConfig = await config.getVoiceAgentApiConfig();
       final nextConfig = switch (existingConfig) {
-        SelfhostedVoiceAgentApiConfig selfhostedConfig => selfhostedConfig.copyWith(
+        SelfhostedVoiceAgentApiConfig selfhostedConfig =>
+          selfhostedConfig.copyWith(
             providerType: VoiceAgentProviderType.openai,
             baseUrl: _realtimeUrlController.text.trim(),
             apiKey: _apiKeyController.text.trim(),
@@ -279,7 +282,8 @@ class _OpenAiConfigSectionState extends ConsumerState<OpenAiConfigSection> {
         _transcriptionModelController.text = _defaultTranscriptionModel;
         _showSnackBar(l10n.settingsAzureClearSuccess, isWarning: true);
       } catch (e) {
-        _showSnackBar(l10n.settingsAzureClearFailed(e.toString()), isError: true);
+        _showSnackBar(l10n.settingsAzureClearFailed(e.toString()),
+            isError: true);
       }
     }
   }
@@ -367,19 +371,19 @@ class _OpenAiConfigSectionState extends ConsumerState<OpenAiConfigSection> {
                   selection: TextSelection.collapsed(offset: value.length),
                 );
               },
-              fieldViewBuilder:
-                  (context, textEditingController, focusNode, onFieldSubmitted) {
-                    return TextField(
-                      controller: textEditingController,
-                      focusNode: focusNode,
-                      enabled: !_isSaving && !_isTesting,
-                      decoration: InputDecoration(
-                        hintText: l10n.settingsAzureTranscriptionModelHint,
-                        suffixIcon: const Icon(Icons.arrow_drop_down),
-                      ),
-                      onSubmitted: (_) => onFieldSubmitted(),
-                    );
-                  },
+              fieldViewBuilder: (context, textEditingController, focusNode,
+                  onFieldSubmitted) {
+                return TextField(
+                  controller: textEditingController,
+                  focusNode: focusNode,
+                  enabled: !_isSaving && !_isTesting,
+                  decoration: InputDecoration(
+                    hintText: l10n.settingsAzureTranscriptionModelHint,
+                    suffixIcon: const Icon(Icons.arrow_drop_down),
+                  ),
+                  onSubmitted: (_) => onFieldSubmitted(),
+                );
+              },
               optionsViewBuilder: (context, onSelected, options) {
                 final optionList = options.toList();
                 if (optionList.isEmpty) {

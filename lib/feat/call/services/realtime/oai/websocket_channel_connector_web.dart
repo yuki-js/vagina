@@ -28,7 +28,8 @@ Future<WebSocketChannel> connectOaiWebSocketChannelImpl(
       rethrow;
     }
 
-    final fallbackChannel = HtmlWebSocketChannel.connect(fallbackUri.toString());
+    final fallbackChannel =
+        HtmlWebSocketChannel.connect(fallbackUri.toString());
     await fallbackChannel.ready;
     return fallbackChannel;
   }

@@ -129,7 +129,8 @@ class _SessionsTabState extends ConsumerState<SessionsTab> {
                 child: Row(
                   children: [
                     Text(
-                      l10n.homeSessionsSelectedCount(_selectedSessionIds.length),
+                      l10n.homeSessionsSelectedCount(
+                          _selectedSessionIds.length),
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,

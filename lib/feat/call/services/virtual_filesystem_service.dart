@@ -44,7 +44,8 @@ final class VirtualFilesystemService extends SubService {
 
   @override
   Future<void> dispose() async {
-    logger.info('Disposing VirtualFilesystemService (${_systemPaths.length} reserved paths)');
+    logger.info(
+        'Disposing VirtualFilesystemService (${_systemPaths.length} reserved paths)');
     await super.dispose();
     _systemPaths.clear();
     logger.info('VirtualFilesystemService disposed successfully');
@@ -148,7 +149,8 @@ final class VirtualFilesystemService extends SubService {
     }
 
     await _repository.move(normalizedFromPath, normalizedToPath);
-    logger.fine('File moved successfully: $normalizedFromPath → $normalizedToPath');
+    logger.fine(
+        'File moved successfully: $normalizedFromPath → $normalizedToPath');
   }
 
   Future<List<String>> list(String path, {bool recursive = false}) async {

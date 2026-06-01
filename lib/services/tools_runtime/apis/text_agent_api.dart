@@ -451,7 +451,8 @@ class TextAgentApiClient implements TextAgentApi {
       item.toolCalls = toolCalls
           .map((tc) => TextAgentToolCall(
                 id: tc['id'] as String,
-                name: (tc['function'] as Map<String, dynamic>)['name'] as String,
+                name:
+                    (tc['function'] as Map<String, dynamic>)['name'] as String,
                 arguments: (tc['function'] as Map<String, dynamic>)['arguments']
                     as String,
               ))

@@ -97,7 +97,8 @@ final class ToolRunner extends SubService {
   Future<String> execute(String toolKey, String argumentsJson) async {
     ensureNotDisposed();
     if (!isStarted) {
-      logger.severe('Tool execution attempted before service started: $toolKey');
+      logger
+          .severe('Tool execution attempted before service started: $toolKey');
       throw StateError('ToolRunner has not been started.');
     }
 
@@ -111,7 +112,7 @@ final class ToolRunner extends SubService {
         'error': 'Unknown tool: $toolKey',
       });
     }
-    
+
     final Map<String, dynamic> args;
     try {
       final decoded = jsonDecode(argumentsJson);

@@ -4,7 +4,6 @@ import 'package:vagina/feat/call/models/realtime/realtime_thread.dart';
 import 'package:vagina/feat/call/services/call_service.dart';
 import 'package:vagina/feat/call/services/subservice.dart';
 
-
 /// Session-scoped timer service for call duration tracking and timeout detection.
 ///
 /// Provides:
@@ -66,7 +65,8 @@ final class TimerService extends SubService {
   Future<void> start() async {
     await super.start();
 
-    logger.info('Starting TimerService with silence timeout: ${_silenceTimeout.inSeconds}s');
+    logger.info(
+        'Starting TimerService with silence timeout: ${_silenceTimeout.inSeconds}s');
     _subscribeToCallServiceEvents();
   }
 
@@ -126,7 +126,7 @@ final class TimerService extends SubService {
   /// If tracking is active, takes effect immediately.
   void setSilenceTimeout(Duration timeout) {
     ensureNotDisposed();
-    
+
     if (timeout.isNegative) {
       logger.warning('Attempt to set negative silence timeout: $timeout');
       throw ArgumentError.value(
@@ -135,16 +135,17 @@ final class TimerService extends SubService {
         'Silence timeout cannot be negative',
       );
     }
-    
+
     if (timeout < minSilenceTimeout) {
-      logger.warning('Attempt to set silence timeout below minimum: $timeout (min: $minSilenceTimeout)');
+      logger.warning(
+          'Attempt to set silence timeout below minimum: $timeout (min: $minSilenceTimeout)');
       throw ArgumentError.value(
         timeout,
         'timeout',
         'Silence timeout must be at least ${minSilenceTimeout.inSeconds} seconds',
       );
     }
-    
+
     logger.info('Setting silence timeout: ${timeout.inSeconds}s');
     _silenceTimeout = timeout;
   }
@@ -163,14 +164,14 @@ final class TimerService extends SubService {
 
     await _durationController.close();
     await _timeoutController.close();
-    
+
     logger.info('TimerService disposed successfully');
   }
 
   /// Subscribe to CallService event streams for automatic timer reset and tracking.
   void _subscribeToCallServiceEvents() {
     logger.fine('Subscribing to call service events');
-    
+
     // Auto-start tracking when call becomes active
     _callStateSubscription = _callService.states.listen((callState) {
       if (callState == CallState.active && !_isTracking) {
@@ -184,7 +185,8 @@ final class TimerService extends SubService {
 
     final realtimeService = _callService.realtimeService;
     if (realtimeService == null) {
-      logger.fine('No realtime service available, skipping event subscriptions');
+      logger
+          .fine('No realtime service available, skipping event subscriptions');
       return;
     }
 

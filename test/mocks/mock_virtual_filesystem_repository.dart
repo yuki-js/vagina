@@ -37,7 +37,7 @@ class MockVirtualFilesystemRepository implements VirtualFilesystemRepository {
     if (path == '/') {
       return files.keys.toList()..sort();
     }
-    
+
     final prefix = path.endsWith('/') ? path : '$path/';
     return files.keys
         .where((p) => p.startsWith(prefix))

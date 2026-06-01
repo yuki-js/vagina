@@ -6,7 +6,6 @@ import 'package:vagina/core/config/app_config.dart';
 import 'package:vagina/feat/call/services/subservice.dart';
 import 'package:vagina/utils/audio_utils.dart';
 
-
 /// Session-scoped microphone recorder service.
 ///
 /// Owns microphone capture, mute behavior, amplitude reporting, and PCM stream
@@ -184,7 +183,7 @@ final class RecorderService extends SubService {
     await _audioController.close();
     await _amplitudeController.close();
     await _muteStateController.close();
-    
+
     logger.info('RecorderService disposed successfully');
   }
 

@@ -6,7 +6,6 @@ import 'package:taudio/taudio.dart';
 import 'package:vagina/core/config/app_config.dart';
 import 'package:vagina/feat/call/services/subservice.dart';
 
-
 /// Immutable snapshot of [PlaybackService] buffering state.
 final class PlaybackMetrics {
   final int bufferedBytes;
@@ -49,8 +48,7 @@ final class PlaybackMetrics {
 final class PlaybackService extends SubService {
   /// Buffer size for audio playback streaming
   static const int playbackBufferSize = 8192;
-  static const Duration drainCancellationTimeout =
-      Duration(milliseconds: 100);
+  static const Duration drainCancellationTimeout = Duration(milliseconds: 100);
 
   final Queue<Uint8List> _bufferQueue = Queue<Uint8List>();
   final StreamController<bool> _playingStateController =
@@ -375,5 +373,4 @@ final class PlaybackService extends SubService {
       _metricsController.add(_metrics);
     }
   }
-
 }

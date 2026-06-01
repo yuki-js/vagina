@@ -39,7 +39,8 @@ const Set<String> _excludedEventTypes = {
 ///
 /// @deprecated Use package:logging instead. See lib/main.dart _setupLogging()
 /// for the new logging configuration. This service will be removed in Phase 2.
-@Deprecated('Use package:logging instead. This service will be removed in Phase 2.')
+@Deprecated(
+    'Use package:logging instead. This service will be removed in Phase 2.')
 class LogService {
   static final LogService _instance = LogService._internal();
   factory LogService() => _instance;

@@ -353,7 +353,8 @@ class HistoricalNotepadView extends StatelessWidget {
 
     if (lower.endsWith('.v2d.csv')) return l10n.sessionDetailFileTypeCsvTable;
     if (lower.endsWith('.v2d.json')) return l10n.sessionDetailFileTypeJsonTable;
-    if (lower.endsWith('.v2d.jsonl')) return l10n.sessionDetailFileTypeJsonlTable;
+    if (lower.endsWith('.v2d.jsonl'))
+      return l10n.sessionDetailFileTypeJsonlTable;
     if (lower.endsWith('.md') || lower.endsWith('.markdown')) {
       return l10n.sessionDetailFileTypeMarkdown;
     }
