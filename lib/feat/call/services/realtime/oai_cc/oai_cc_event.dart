@@ -39,6 +39,21 @@ final class OaiCcErrorEvent extends OaiCcEvent {
   const OaiCcErrorEvent({required this.message});
 }
 
+/// A tool call delta event containing partial information of a function call.
+final class OaiCcToolCallDeltaEvent extends OaiCcEvent {
+  final int index;
+  final String? id;
+  final String? name;
+  final String? arguments;
+
+  const OaiCcToolCallDeltaEvent({
+    required this.index,
+    this.id,
+    this.name,
+    this.arguments,
+  });
+}
+
 /// Parser utility to translate SSE lines to [OaiCcEvent]s.
 final class OaiCcEventParser {
   const OaiCcEventParser();
@@ -68,6 +83,24 @@ final class OaiCcEventParser {
         }
 
         if (delta != null) {
+          if (delta.containsKey('tool_calls')) {
+            final toolCalls = delta['tool_calls'] as List<dynamic>?;
+            if (toolCalls != null && toolCalls.isNotEmpty) {
+              final toolCall = toolCalls.first as Map<String, dynamic>;
+              final index = toolCall['index'] as int? ?? 0;
+              final id = toolCall['id'] as String?;
+              final function = toolCall['function'] as Map<String, dynamic>?;
+              final name = function?['name'] as String?;
+              final arguments = function?['arguments'] as String?;
+              return OaiCcToolCallDeltaEvent(
+                index: index,
+                id: id,
+                name: name,
+                arguments: arguments,
+              );
+            }
+          }
+
           if (delta.containsKey('audio')) {
             final audio = delta['audio'];
             if (audio is Map<String, dynamic>) {

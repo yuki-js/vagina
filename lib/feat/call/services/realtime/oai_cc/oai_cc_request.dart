@@ -97,3 +97,62 @@ final class OaiCcAssistantAudioMessage extends OaiCcMessage {
   }
 }
 
+final class OaiCcToolCallPart {
+  final String id;
+  final String name;
+  final String arguments;
+
+  const OaiCcToolCallPart({
+    required this.id,
+    required this.name,
+    required this.arguments,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'type': 'function',
+      'function': {
+        'name': name,
+        'arguments': arguments,
+      },
+    };
+  }
+}
+
+final class OaiCcAssistantToolCallMessage extends OaiCcMessage {
+  final List<OaiCcToolCallPart> toolCalls;
+
+  const OaiCcAssistantToolCallMessage({
+    required this.toolCalls,
+  }) : super(role: 'assistant');
+
+  @override
+  Map<String, dynamic> toJson() {
+    return {
+      'role': role,
+      'tool_calls': toolCalls.map((tc) => tc.toJson()).toList(),
+    };
+  }
+}
+
+final class OaiCcToolResultMessage extends OaiCcMessage {
+  final String callId;
+  final String content;
+
+  const OaiCcToolResultMessage({
+    required this.callId,
+    required this.content,
+  }) : super(role: 'tool');
+
+  @override
+  Map<String, dynamic> toJson() {
+    return {
+      'role': role,
+      'tool_call_id': callId,
+      'content': content,
+    };
+  }
+}
+
+

@@ -44,6 +44,9 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
   int _localIdCounter = 0;
   bool _disposed = false;
   final Map<String, String> _assistantAudioIds = {};
+  final Map<String, String> _toolCallIdToItemId = {};
+  final Map<int, String> _activeToolCallIndexToItemId = {};
+  List<ToolDefinition> _tools = const <ToolDefinition>[];
 
   RealtimeAudioTurnMode _audioTurnMode = RealtimeAudioTurnMode.manual;
   bool _isManualAudioInputTurnActive = false;
@@ -264,7 +267,8 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
 
   @override
   Future<void> registerTools(List<ToolDefinition> tools) async {
-    // Tools not implemented in v1 Chat Completion adapter
+    _ensureNotDisposed();
+    _tools = List<ToolDefinition>.unmodifiable(tools);
   }
 
   @override
@@ -309,8 +313,45 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
         RealtimeToolOutputDisposition.success,
     String? errorMessage,
   }) async {
-    throw UnimplementedError(
-        'Tool execution is not supported in OaiCcRealtimeAdapter v1.');
+    _ensureNotDisposed();
+    await interrupt();
+
+    final itemId = _nextLocalId();
+    _thread.addItem(
+      RealtimeThreadItem(
+        id: itemId,
+        type: RealtimeThreadItemType.functionCallOutput,
+        role: RealtimeThreadItemRole.assistant,
+        status: RealtimeThreadItemStatus.completed,
+        callId: callId,
+        output: output,
+        toolOutputDisposition: disposition,
+        toolErrorMessage: errorMessage,
+      ),
+    );
+    _emitThreadUpdate();
+
+    if (_allToolCallsHaveOutputs()) {
+      final messages = _buildMessages();
+      await _executeChatCompletion(messages);
+    }
+    return itemId;
+  }
+
+  bool _allToolCallsHaveOutputs() {
+    final toolCallIds = _thread.items
+        .where((item) => item.type == RealtimeThreadItemType.functionCall)
+        .map((item) => item.callId)
+        .whereType<String>()
+        .toSet();
+
+    final toolOutputIds = _thread.items
+        .where((item) => item.type == RealtimeThreadItemType.functionCallOutput)
+        .map((item) => item.callId)
+        .whereType<String>()
+        .toSet();
+
+    return toolCallIds.every((id) => toolOutputIds.contains(id));
   }
 
   @override
@@ -373,8 +414,70 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
         OaiCcTextMessage(role: 'system', content: _instructions!),
     ];
 
+    final processedCallIds = <String>{};
+
     for (int i = 0; i < _thread.items.length; i++) {
       final item = _thread.items[i];
+
+      if (item.type == RealtimeThreadItemType.functionCallOutput) {
+        continue;
+      }
+
+      if (item.type == RealtimeThreadItemType.functionCall) {
+        if (item.callId != null && processedCallIds.contains(item.callId)) {
+          continue;
+        }
+
+        final currentToolCalls = <RealtimeThreadItem>[];
+        int j = i;
+        while (j < _thread.items.length) {
+          final nextItem = _thread.items[j];
+          if (nextItem.type == RealtimeThreadItemType.functionCall) {
+            if (nextItem.callId != null &&
+                nextItem.name != null &&
+                nextItem.arguments != null) {
+              currentToolCalls.add(nextItem);
+            }
+            j++;
+          } else if (nextItem.type == RealtimeThreadItemType.functionCallOutput) {
+            j++;
+          } else {
+            break;
+          }
+        }
+        i = j - 1;
+
+        if (currentToolCalls.isNotEmpty) {
+          final toolCallParts = currentToolCalls.map((tc) {
+            processedCallIds.add(tc.callId!);
+            return OaiCcToolCallPart(
+              id: tc.callId!,
+              name: tc.name!,
+              arguments: tc.arguments!,
+            );
+          }).toList();
+          messages.add(OaiCcAssistantToolCallMessage(toolCalls: toolCallParts));
+
+          for (final tc in currentToolCalls) {
+            RealtimeThreadItem? outputItem;
+            for (final x in _thread.items) {
+              if (x.type == RealtimeThreadItemType.functionCallOutput &&
+                  x.callId == tc.callId) {
+                outputItem = x;
+                break;
+              }
+            }
+            if (outputItem != null && outputItem.output != null) {
+              messages.add(OaiCcToolResultMessage(
+                callId: tc.callId!,
+                content: outputItem.output!,
+              ));
+            }
+          }
+        }
+        continue;
+      }
+
       if (item.type != RealtimeThreadItemType.message) continue;
       final roleStr = switch (item.role) {
         RealtimeThreadItemRole.user => 'user',
@@ -426,6 +529,8 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
   Future<void> _executeChatCompletion(List<OaiCcMessage> messages) async {
     if (_config == null) return;
 
+    _activeToolCallIndexToItemId.clear();
+
     final assistantItemId = _nextLocalId();
     final assistantTextPart = RealtimeThreadTextPart(text: '', isDone: false);
     final assistantItem = RealtimeThreadItem(
@@ -442,19 +547,33 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
         _config!.model.toLowerCase().contains('gpt-5.4') ||
         _config!.model.toLowerCase().contains('realtime');
 
+    final requestTools = _tools.map((t) {
+      return {
+        'type': 'function',
+        'function': {
+          'name': t.toolKey,
+          'description': t.description,
+          'parameters': t.parametersSchema,
+        },
+      };
+    }).toList();
+
     final request = OaiCcRequest(
       model: _config!.model,
       messages: messages,
       stream: true,
       modalities: isAudioModel ? ['text', 'audio'] : null,
-      additionalParams: isAudioModel
-          ? {
-              'audio': {
-                'voice': _voice ?? 'alloy',
-                'format': 'pcm16',
-              }
-            }
-          : null,
+      additionalParams: {
+        if (isAudioModel)
+          'audio': {
+            'voice': _voice ?? 'alloy',
+            'format': 'pcm16',
+          },
+        if (requestTools.isNotEmpty) ...{
+          'tools': requestTools,
+          'tool_choice': 'auto',
+        },
+      },
     );
 
     final eventStream = _client.streamCompletions(
@@ -462,10 +581,22 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
       requestPayload: request,
     );
 
+    bool hasToolCalls = false;
+
     _responseStreamSubscription = eventStream.listen(
       (event) {
         if (event is OaiCcContentDeltaEvent) {
           assistantTextPart.appendDelta(event.content);
+          _emitThreadUpdate();
+        } else if (event is OaiCcToolCallDeltaEvent) {
+          hasToolCalls = true;
+          final item = _findOrCreateToolCallItem(event);
+          if (event.name != null) {
+            item.name = event.name;
+          }
+          if (event.arguments != null) {
+            item.arguments = (item.arguments ?? '') + event.arguments!;
+          }
           _emitThreadUpdate();
         } else if (event is OaiCcAudioDeltaEvent) {
           if (event.audioId != null && event.audioId!.isNotEmpty) {
@@ -489,7 +620,18 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
             }
           }
         } else if (event is OaiCcFinishedEvent) {
-          assistantItem.markDone();
+          if (hasToolCalls && assistantTextPart.text.isEmpty) {
+            _thread.removeItem(assistantItemId);
+          } else {
+            assistantItem.markDone();
+          }
+          // Also mark any in-progress tool calls as completed/ready since they finished streaming
+          for (final item in _thread.items) {
+            if (item.type == RealtimeThreadItemType.functionCall &&
+                item.status == RealtimeThreadItemStatus.inProgress) {
+              item.status = RealtimeThreadItemStatus.completed;
+            }
+          }
           _assistantAudioCompletedController.add(null);
           _emitThreadUpdate();
           _responseStreamSubscription?.cancel();
@@ -524,6 +666,50 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
   String _nextLocalId() {
     _localIdCounter++;
     return 'cc_item_$_localIdCounter';
+  }
+
+  RealtimeThreadItem _findOrCreateToolCallItem(OaiCcToolCallDeltaEvent event) {
+    final existingItemId = _activeToolCallIndexToItemId[event.index];
+    if (existingItemId != null) {
+      final existing = _thread.findItem(existingItemId);
+      if (existing != null) {
+        if (event.id != null) {
+          existing.callId = event.id;
+          _toolCallIdToItemId[event.id!] = existingItemId;
+        }
+        return existing;
+      }
+    }
+
+    final callId = event.id;
+    if (callId != null) {
+      final itemId = _toolCallIdToItemId[callId];
+      if (itemId != null) {
+        final existing = _thread.findItem(itemId);
+        if (existing != null) {
+          _activeToolCallIndexToItemId[event.index] = itemId;
+          return existing;
+        }
+      }
+    }
+
+    final itemId = _nextLocalId();
+    _activeToolCallIndexToItemId[event.index] = itemId;
+    if (callId != null) {
+      _toolCallIdToItemId[callId] = itemId;
+    }
+
+    final item = RealtimeThreadItem(
+      id: itemId,
+      type: RealtimeThreadItemType.functionCall,
+      role: RealtimeThreadItemRole.assistant,
+      status: RealtimeThreadItemStatus.inProgress,
+      callId: callId,
+      name: event.name,
+      arguments: event.arguments,
+    );
+    _thread.addItem(item);
+    return item;
   }
 
   void _emitThreadUpdate() {
