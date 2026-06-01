@@ -12,6 +12,19 @@ final class OaiCcContentDeltaEvent extends OaiCcEvent {
   const OaiCcContentDeltaEvent({required this.content});
 }
 
+/// An audio delta event containing base64 audio and optional transcript.
+final class OaiCcAudioDeltaEvent extends OaiCcEvent {
+  final String? audioId;
+  final String? audioBase64;
+  final String? transcript;
+
+  const OaiCcAudioDeltaEvent({
+    this.audioId,
+    this.audioBase64,
+    this.transcript,
+  });
+}
+
 /// An event signaling the stream is finished.
 final class OaiCcFinishedEvent extends OaiCcEvent {
   final String? finishReason;
@@ -54,10 +67,26 @@ final class OaiCcEventParser {
           return OaiCcFinishedEvent(finishReason: finishReason);
         }
 
-        if (delta != null && delta.containsKey('content')) {
-          final content = delta['content'] as String? ?? '';
-          if (content.isNotEmpty) {
-            return OaiCcContentDeltaEvent(content: content);
+        if (delta != null) {
+          if (delta.containsKey('audio')) {
+            final audio = delta['audio'];
+            if (audio is Map<String, dynamic>) {
+              final id = audio['id'] as String?;
+              final data = audio['data'] as String?;
+              final transcript = audio['transcript'] as String?;
+              return OaiCcAudioDeltaEvent(
+                audioId: id,
+                audioBase64: data,
+                transcript: transcript,
+              );
+            }
+          }
+
+          if (delta.containsKey('content')) {
+            final content = delta['content'] as String? ?? '';
+            if (content.isNotEmpty) {
+              return OaiCcContentDeltaEvent(content: content);
+            }
           }
         }
       }

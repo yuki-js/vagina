@@ -272,36 +272,36 @@
   "@settingsScreenTitle": {
     "description": "App bar title for the settings screen."
   },
-  "settingsAzureConfigSectionTitle": "OpenAI",
-  "@settingsAzureConfigSectionTitle": {
-    "description": "Section header for the OpenAI configuration card on the settings screen."
+  "settingsOpenAiConfigSectionTitle": "Voice Agent API Settings",
+  "@settingsOpenAiConfigSectionTitle": {
+    "description": "Section header for the Voice Agent API configuration card on the settings screen."
   },
   "settingsSetupSectionTitle": "Setup",
   "@settingsSetupSectionTitle": {
     "description": "Section header for the setup card on the settings screen."
   },
-  "settingsAzureLoadFailed": "Failed to load settings",
-  "@settingsAzureLoadFailed": {
+  "settingsOpenAiLoadFailed": "Failed to load settings",
+  "@settingsOpenAiLoadFailed": {
     "description": "Snackbar shown when the saved OpenAI settings cannot be loaded."
   },
-  "settingsAzureRealtimeUrlRequired": "Enter the Realtime URL",
-  "@settingsAzureRealtimeUrlRequired": {
-    "description": "Validation message shown when the OpenAI Realtime URL field is empty."
+  "settingsOpenAiUrlRequired": "Enter the API URL",
+  "@settingsOpenAiUrlRequired": {
+    "description": "Validation message shown when the OpenAI API URL field is empty."
   },
-  "settingsAzureRealtimeUrlInvalid": "The Realtime URL format is invalid",
-  "@settingsAzureRealtimeUrlInvalid": {
-    "description": "Validation message shown when the OpenAI Realtime URL cannot be parsed."
+  "settingsOpenAiUrlInvalid": "The API URL format is invalid",
+  "@settingsOpenAiUrlInvalid": {
+    "description": "Validation message shown when the OpenAI API URL cannot be parsed."
   },
-  "settingsAzureApiKeyRequired": "Enter the API key",
-  "@settingsAzureApiKeyRequired": {
+  "settingsOpenAiApiKeyRequired": "Enter the API key",
+  "@settingsOpenAiApiKeyRequired": {
     "description": "Validation message shown when the OpenAI API key field is empty."
   },
-  "settingsAzureSaveSuccess": "Settings saved",
-  "@settingsAzureSaveSuccess": {
+  "settingsOpenAiSaveSuccess": "Settings saved",
+  "@settingsOpenAiSaveSuccess": {
     "description": "Snackbar shown after the OpenAI settings are saved successfully."
   },
-  "settingsAzureSaveFailed": "Failed to save settings: {error}",
-  "@settingsAzureSaveFailed": {
+  "settingsOpenAiSaveFailed": "Failed to save settings: {error}",
+  "@settingsOpenAiSaveFailed": {
     "description": "Snackbar shown when saving the OpenAI settings fails.",
     "placeholders": {
       "error": {
@@ -310,13 +310,13 @@
       }
     }
   },
-  "settingsAzureConnectionTestSuccess": "Connection test succeeded",
-  "@settingsAzureConnectionTestSuccess": {
-    "description": "Snackbar shown when the OpenAI Realtime connection test succeeds."
+  "settingsOpenAiConnectionTestSuccess": "Connection test succeeded",
+  "@settingsOpenAiConnectionTestSuccess": {
+    "description": "Snackbar shown when the OpenAI connection test succeeds."
   },
-  "settingsAzureConnectionTestFailed": "Connection test failed: {error}",
-  "@settingsAzureConnectionTestFailed": {
-    "description": "Snackbar shown when the OpenAI Realtime connection test fails.",
+  "settingsOpenAiConnectionTestFailed": "Connection test failed: {error}",
+  "@settingsOpenAiConnectionTestFailed": {
+    "description": "Snackbar shown when the OpenAI connection test fails.",
     "placeholders": {
       "error": {
         "type": "String",
@@ -324,12 +324,12 @@
       }
     }
   },
-  "settingsAzureClearDialogTitle": "Clear settings?",
-  "@settingsAzureClearDialogTitle": {
+  "settingsOpenAiClearDialogTitle": "Clear settings?",
+  "@settingsOpenAiClearDialogTitle": {
     "description": "Confirmation dialog title before deleting the saved OpenAI settings."
   },
-  "settingsAzureClearDialogBody": "Delete all saved API settings?",
-  "@settingsAzureClearDialogBody": {
+  "settingsOpenAiClearDialogBody": "Delete all saved API settings?",
+  "@settingsOpenAiClearDialogBody": {
     "description": "Confirmation dialog body before deleting the saved OpenAI settings."
   },
   "settingsCommonCancel": "Cancel",
@@ -340,12 +340,12 @@
   "@settingsCommonDelete": {
     "description": "Destructive delete action used in the settings screen confirmation dialog."
   },
-  "settingsAzureClearSuccess": "Settings cleared",
-  "@settingsAzureClearSuccess": {
+  "settingsOpenAiClearSuccess": "Settings cleared",
+  "@settingsOpenAiClearSuccess": {
     "description": "Snackbar shown after the saved OpenAI settings are cleared."
   },
-  "settingsAzureClearFailed": "Failed to clear settings: {error}",
-  "@settingsAzureClearFailed": {
+  "settingsOpenAiClearFailed": "Failed to clear settings: {error}",
+  "@settingsOpenAiClearFailed": {
     "description": "Snackbar shown when clearing the saved OpenAI settings fails.",
     "placeholders": {
       "error": {
@@ -354,64 +354,84 @@
       }
     }
   },
-  "settingsAzureRealtimeUrlLabel": "OpenAI Realtime URL",
-  "@settingsAzureRealtimeUrlLabel": {
-    "description": "Field label above the OpenAI Realtime URL input on the settings screen."
+  "settingsOpenAiConnectionType": "API Connection Type",
+  "@settingsOpenAiConnectionType": {
+    "description": "Field label for the API Connection Type dropdown in OpenAI settings."
   },
-  "settingsAzureRealtimeUrlHint": "https://api.openai.com/v1/realtime?model=gpt-realtime-2",
-  "@settingsAzureRealtimeUrlHint": {
-    "description": "Placeholder text inside the OpenAI Realtime URL input. Keep the URL pattern intact."
+  "settingsOpenAiConnectionTypeOpenAi": "OpenAI Realtime API (WebSocket)",
+  "@settingsOpenAiConnectionTypeOpenAi": {
+    "description": "Dropdown item label for the standard OpenAI Realtime API."
   },
-  "settingsAzureRealtimeUrlExample": "Example: https://api.openai.com/v1/realtime?model=gpt-realtime-2",
-  "@settingsAzureRealtimeUrlExample": {
-    "description": "Helper text below the OpenAI Realtime URL field showing an example endpoint. Keep the URL pattern intact."
+  "settingsOpenAiConnectionTypeOpenAiCc": "OpenAI Chat Completions (HTTP)",
+  "@settingsOpenAiConnectionTypeOpenAiCc": {
+    "description": "Dropdown item label for the OpenAI Chat Completions adapter."
   },
-  "settingsAzureApiKeyLabel": "API key",
-  "@settingsAzureApiKeyLabel": {
+  "settingsOpenAiConnectionTypeGemini": "Gemini API (Under Construction)",
+  "@settingsOpenAiConnectionTypeGemini": {
+    "description": "Dropdown item label for the Gemini API connection option."
+  },
+  "settingsOpenAiConnectionTypeGeminiWarning": "※ Gemini API connection is currently under construction. Please wait for future updates.",
+  "@settingsOpenAiConnectionTypeGeminiWarning": {
+    "description": "Warning message shown when the Gemini API connection type is selected."
+  },
+  "settingsOpenAiUrlLabel": "OpenAI API URL (Base)",
+  "@settingsOpenAiUrlLabel": {
+    "description": "Field label above the OpenAI API base URL input on the settings screen."
+  },
+  "settingsOpenAiUrlHint": "https://api.openai.com/v1",
+  "@settingsOpenAiUrlHint": {
+    "description": "Placeholder text inside the OpenAI API URL input."
+  },
+  "settingsOpenAiUrlExample": "Example: https://api.openai.com/v1 (Realtime appends /realtime suffix automatically)",
+  "@settingsOpenAiUrlExample": {
+    "description": "Helper text below the OpenAI API URL field showing an example endpoint."
+  },
+  "settingsOpenAiApiKeyLabel": "API key",
+  "@settingsOpenAiApiKeyLabel": {
     "description": "Field label above the OpenAI API key input on the settings screen."
   },
-  "settingsAzureApiKeyHint": "Enter the API key",
-  "@settingsAzureApiKeyHint": {
+  "settingsOpenAiApiKeyHint": "Enter the API key",
+  "@settingsOpenAiApiKeyHint": {
     "description": "Placeholder text inside the OpenAI API key input."
   },
-  "settingsAzureTranscriptionModelLabel": "Transcription model",
-  "@settingsAzureTranscriptionModelLabel": {
+  "settingsOpenAiTranscriptionModelLabel": "Transcription model",
+  "@settingsOpenAiTranscriptionModelLabel": {
     "description": "Field label above the realtime transcription model selector on the settings screen."
   },
-  "settingsAzureTranscriptionModelHint": "Select a transcription model",
-  "@settingsAzureTranscriptionModelHint": {
+  "settingsOpenAiTranscriptionModelHint": "Select a transcription model",
+  "@settingsOpenAiTranscriptionModelHint": {
     "description": "Placeholder text inside the transcription model preset selector."
   },
-  "settingsAzureTranscriptionModelCustomOption": "Custom",
-  "@settingsAzureTranscriptionModelCustomOption": {
+  "settingsOpenAiTranscriptionModelCustomOption": "Custom",
+  "@settingsOpenAiTranscriptionModelCustomOption": {
     "description": "Dropdown option label for entering a custom transcription model name."
   },
-  "settingsAzureTranscriptionModelCustomHint": "Enter a custom transcription model name",
-  "@settingsAzureTranscriptionModelCustomHint": {
+  "settingsOpenAiTranscriptionModelCustomHint": "Enter a custom transcription model name",
+  "@settingsOpenAiTranscriptionModelCustomHint": {
     "description": "Placeholder text inside the custom transcription model text field."
   },
-  "settingsAzureTranscriptionModelHelper": "Used for speech-to-text on microphone input. Presets are provided, or you can enter any model name.",
-  "@settingsAzureTranscriptionModelHelper": {
+  "settingsOpenAiTranscriptionModelHelper": "Used for speech-to-text on microphone input. Presets are provided, or you can enter any model name.",
+  "@settingsOpenAiTranscriptionModelHelper": {
     "description": "Helper text below the transcription model controls explaining what the setting affects."
   },
-  "settingsAzureTranscriptionModelRequired": "Enter the transcription model",
-  "@settingsAzureTranscriptionModelRequired": {
+  "settingsOpenAiTranscriptionModelRequired": "Enter the transcription model",
+  "@settingsOpenAiTranscriptionModelRequired": {
     "description": "Validation message shown when the transcription model field is empty."
   },
   "settingsCommonSave": "Save",
   "@settingsCommonSave": {
     "description": "Primary save button label used on the settings screen."
   },
-  "settingsAzureTestConnectionButton": "Test connection",
-  "@settingsAzureTestConnectionButton": {
-    "description": "Button label that runs the OpenAI Realtime connection test."
+  "settingsOpenAiTestConnectionButton": "Test connection",
+  "@settingsOpenAiTestConnectionButton": {
+    "description": "Button label that runs the OpenAI connection test."
   },
   "settingsCommonClear": "Clear",
   "@settingsCommonClear": {
     "description": "Button label that clears the saved OpenAI settings."
   },
-  "settingsAzureCredentialsStorageNote": "Credentials are stored securely on this device.",
-  "@settingsAzureCredentialsStorageNote": {
+  "settingsOpenAiCredentialsStorageNote": "Credentials are stored securely on this device.",
+  "@settingsOpenAiCredentialsStorageNote": {
     "description": "Small note below the OpenAI settings buttons explaining where credentials are stored."
   },
   "settingsSetupRestartOobeTitle": "Run initial setup again",

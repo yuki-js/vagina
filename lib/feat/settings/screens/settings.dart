@@ -33,7 +33,7 @@ class SettingsScreen extends StatelessWidget {
                 const SizedBox(height: 24),
 
                 // OpenAI configuration section
-                SectionHeader(title: l10n.settingsAzureConfigSectionTitle),
+                SectionHeader(title: l10n.settingsOpenAiConfigSectionTitle),
                 const SizedBox(height: 12),
                 const OpenAiConfigSection(),
                 const SizedBox(height: 24),

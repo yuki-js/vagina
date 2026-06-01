@@ -272,36 +272,36 @@
   "@settingsScreenTitle": {
     "description": "設定画面のアプリバータイトル。"
   },
-  "settingsAzureConfigSectionTitle": "OpenAI 設定",
-  "@settingsAzureConfigSectionTitle": {
-    "description": "設定画面で OpenAI 設定カードをまとめるセクション見出し。"
+  "settingsOpenAiConfigSectionTitle": "音声エージェント API 設定",
+  "@settingsOpenAiConfigSectionTitle": {
+    "description": "設定画面で音声エージェントのAPI設定カードをまとめるセクション見出し。"
   },
   "settingsSetupSectionTitle": "セットアップ",
   "@settingsSetupSectionTitle": {
     "description": "設定画面でセットアップ関連カードをまとめるセクション見出し。"
   },
-  "settingsAzureLoadFailed": "設定の読み込みに失敗しました",
-  "@settingsAzureLoadFailed": {
+  "settingsOpenAiLoadFailed": "設定の読み込みに失敗しました",
+  "@settingsOpenAiLoadFailed": {
     "description": "保存済みの OpenAI 設定を読み込めなかったときに表示するスナックバー文言。"
   },
-  "settingsAzureRealtimeUrlRequired": "Realtime URLを入力してください",
-  "@settingsAzureRealtimeUrlRequired": {
-    "description": "OpenAI Realtime URL 入力欄が空のときに表示するバリデーション文言。"
+  "settingsOpenAiUrlRequired": "API URLを入力してください",
+  "@settingsOpenAiUrlRequired": {
+    "description": "OpenAI API URL 入力欄が空のときに表示するバリデーション文言。"
   },
-  "settingsAzureRealtimeUrlInvalid": "Realtime URLの形式が正しくありません",
-  "@settingsAzureRealtimeUrlInvalid": {
-    "description": "OpenAI Realtime URL を解析できないときに表示するバリデーション文言。"
+  "settingsOpenAiUrlInvalid": "API URLの形式が正しくありません",
+  "@settingsOpenAiUrlInvalid": {
+    "description": "OpenAI API URL を解析できないときに表示するバリデーション文言。"
   },
-  "settingsAzureApiKeyRequired": "APIキーを入力してください",
-  "@settingsAzureApiKeyRequired": {
+  "settingsOpenAiApiKeyRequired": "APIキーを入力してください",
+  "@settingsOpenAiApiKeyRequired": {
     "description": "OpenAI API キー入力欄が空のときに表示するバリデーション文言。"
   },
-  "settingsAzureSaveSuccess": "設定を保存しました",
-  "@settingsAzureSaveSuccess": {
+  "settingsOpenAiSaveSuccess": "設定を保存しました",
+  "@settingsOpenAiSaveSuccess": {
     "description": "OpenAI 設定の保存に成功したあとに表示するスナックバー文言。"
   },
-  "settingsAzureSaveFailed": "保存に失敗しました: {error}",
-  "@settingsAzureSaveFailed": {
+  "settingsOpenAiSaveFailed": "保存に失敗しました: {error}",
+  "@settingsOpenAiSaveFailed": {
     "description": "OpenAI 設定の保存に失敗したときに表示するスナックバー文言。",
     "placeholders": {
       "error": {
@@ -310,13 +310,13 @@
       }
     }
   },
-  "settingsAzureConnectionTestSuccess": "接続テスト成功",
-  "@settingsAzureConnectionTestSuccess": {
-    "description": "OpenAI Realtime 接続テストが成功したときに表示するスナックバー文言。"
+  "settingsOpenAiConnectionTestSuccess": "接続テスト成功",
+  "@settingsOpenAiConnectionTestSuccess": {
+    "description": "OpenAI 接続テストが成功したときに表示するスナックバー文言。"
   },
-  "settingsAzureConnectionTestFailed": "接続テスト失敗: {error}",
-  "@settingsAzureConnectionTestFailed": {
-    "description": "OpenAI Realtime 接続テストが失敗したときに表示するスナックバー文言。",
+  "settingsOpenAiConnectionTestFailed": "接続テスト失敗: {error}",
+  "@settingsOpenAiConnectionTestFailed": {
+    "description": "OpenAI 接続テストが失敗したときに表示するスナックバー文言。",
     "placeholders": {
       "error": {
         "type": "String",
@@ -324,12 +324,12 @@
       }
     }
   },
-  "settingsAzureClearDialogTitle": "設定をクリア?",
-  "@settingsAzureClearDialogTitle": {
+  "settingsOpenAiClearDialogTitle": "設定をクリア?",
+  "@settingsOpenAiClearDialogTitle": {
     "description": "保存済みの OpenAI 設定を削除する前に表示する確認ダイアログのタイトル。"
   },
-  "settingsAzureClearDialogBody": "保存済みのAPI設定をすべて削除しますか？",
-  "@settingsAzureClearDialogBody": {
+  "settingsOpenAiClearDialogBody": "保存済みのAPI設定をすべて削除しますか？",
+  "@settingsOpenAiClearDialogBody": {
     "description": "保存済みの OpenAI 設定を削除する前に表示する確認ダイアログの本文。"
   },
   "settingsCommonCancel": "キャンセル",
@@ -340,12 +340,12 @@
   "@settingsCommonDelete": {
     "description": "設定画面の確認ダイアログで使う削除操作ラベル。"
   },
-  "settingsAzureClearSuccess": "設定をクリアしました",
-  "@settingsAzureClearSuccess": {
+  "settingsOpenAiClearSuccess": "設定をクリアしました",
+  "@settingsOpenAiClearSuccess": {
     "description": "保存済みの OpenAI 設定をクリアしたあとに表示するスナックバー文言。"
   },
-  "settingsAzureClearFailed": "設定のクリアに失敗しました: {error}",
-  "@settingsAzureClearFailed": {
+  "settingsOpenAiClearFailed": "設定のクリアに失敗しました: {error}",
+  "@settingsOpenAiClearFailed": {
     "description": "保存済みの OpenAI 設定のクリアに失敗したときに表示するスナックバー文言。",
     "placeholders": {
       "error": {
@@ -354,64 +354,84 @@
       }
     }
   },
-  "settingsAzureRealtimeUrlLabel": "OpenAI Realtime URL",
-  "@settingsAzureRealtimeUrlLabel": {
-    "description": "設定画面の OpenAI Realtime URL 入力欄の上に表示するラベル。"
+  "settingsOpenAiConnectionType": "API接続タイプ",
+  "@settingsOpenAiConnectionType": {
+    "description": "設定画面の OpenAI 設定における API接続タイプ ドロップダウンのラベル。"
   },
-  "settingsAzureRealtimeUrlHint": "https://api.openai.com/v1/realtime?model=gpt-realtime-2",
-  "@settingsAzureRealtimeUrlHint": {
-    "description": "OpenAI Realtime URL 入力欄のプレースホルダー。URL パターンは維持すること。"
+  "settingsOpenAiConnectionTypeOpenAi": "OpenAI Realtime API (WebSocket)",
+  "@settingsOpenAiConnectionTypeOpenAi": {
+    "description": "標準の OpenAI Realtime API ドロップダウン項目ラベル。"
   },
-  "settingsAzureRealtimeUrlExample": "例: https://api.openai.com/v1/realtime?model=gpt-realtime-2",
-  "@settingsAzureRealtimeUrlExample": {
-    "description": "OpenAI Realtime URL 欄の下に表示する補助テキスト。URL パターンは維持すること。"
+  "settingsOpenAiConnectionTypeOpenAiCc": "OpenAI Chat Completions (HTTP)",
+  "@settingsOpenAiConnectionTypeOpenAiCc": {
+    "description": "OpenAI Chat Completions アダプターのドロップダウン項目ラベル。"
   },
-  "settingsAzureApiKeyLabel": "APIキー",
-  "@settingsAzureApiKeyLabel": {
+  "settingsOpenAiConnectionTypeGemini": "Gemini API (準備中)",
+  "@settingsOpenAiConnectionTypeGemini": {
+    "description": "Gemini API 接続オプションのドロップダウン項目ラベル。"
+  },
+  "settingsOpenAiConnectionTypeGeminiWarning": "※ Gemini API 接続は現在工事中です。今後のアップデートをお待ちください。",
+  "@settingsOpenAiConnectionTypeGeminiWarning": {
+    "description": "Gemini API 接続タイプが選択されたときに表示される警告メッセージ。"
+  },
+  "settingsOpenAiUrlLabel": "OpenAI API 接続URL (Base)",
+  "@settingsOpenAiUrlLabel": {
+    "description": "設定画面の OpenAI API ベースURL入力欄の上に表示するラベル。"
+  },
+  "settingsOpenAiUrlHint": "https://api.openai.com/v1",
+  "@settingsOpenAiUrlHint": {
+    "description": "OpenAI API URL 入力欄のプレースホルダー。"
+  },
+  "settingsOpenAiUrlExample": "例: https://api.openai.com/v1 (Realtime接続時は末尾に /realtime が自動追加されます)",
+  "@settingsOpenAiUrlExample": {
+    "description": "OpenAI API URL 欄の下に表示する補助テキスト。"
+  },
+  "settingsOpenAiApiKeyLabel": "APIキー",
+  "@settingsOpenAiApiKeyLabel": {
     "description": "設定画面の OpenAI API キー入力欄の上に表示するラベル。"
   },
-  "settingsAzureApiKeyHint": "APIキーを入力",
-  "@settingsAzureApiKeyHint": {
+  "settingsOpenAiApiKeyHint": "APIキーを入力",
+  "@settingsOpenAiApiKeyHint": {
     "description": "OpenAI API キー入力欄のプレースホルダー。"
   },
-  "settingsAzureTranscriptionModelLabel": "文字起こしモデル",
-  "@settingsAzureTranscriptionModelLabel": {
+  "settingsOpenAiTranscriptionModelLabel": "文字起こしモデル",
+  "@settingsOpenAiTranscriptionModelLabel": {
     "description": "設定画面の realtime 文字起こしモデル選択欄の上に表示するラベル。"
   },
-  "settingsAzureTranscriptionModelHint": "文字起こしモデルを選択",
-  "@settingsAzureTranscriptionModelHint": {
+  "settingsOpenAiTranscriptionModelHint": "文字起こしモデルを選択",
+  "@settingsOpenAiTranscriptionModelHint": {
     "description": "文字起こしモデルのプリセット選択欄に表示するプレースホルダー。"
   },
-  "settingsAzureTranscriptionModelCustomOption": "カスタム",
-  "@settingsAzureTranscriptionModelCustomOption": {
+  "settingsOpenAiTranscriptionModelCustomOption": "カスタム",
+  "@settingsOpenAiTranscriptionModelCustomOption": {
     "description": "任意の文字起こしモデル名を入力するためのドロップダウン項目ラベル。"
   },
-  "settingsAzureTranscriptionModelCustomHint": "カスタムの文字起こしモデル名を入力",
-  "@settingsAzureTranscriptionModelCustomHint": {
+  "settingsOpenAiTranscriptionModelCustomHint": "カスタムの文字起こしモデル名を入力",
+  "@settingsOpenAiTranscriptionModelCustomHint": {
     "description": "カスタム文字起こしモデル名の入力欄に表示するプレースホルダー。"
   },
-  "settingsAzureTranscriptionModelHelper": "マイク入力の音声認識に使われます。プリセットを選ぶか、任意のモデル名を入力できます。",
-  "@settingsAzureTranscriptionModelHelper": {
+  "settingsOpenAiTranscriptionModelHelper": "マイク入力の音声認識に使われます。プリセットを選ぶか、任意のモデル名を入力できます。",
+  "@settingsOpenAiTranscriptionModelHelper": {
     "description": "文字起こしモデル設定が何に使われるかを説明する補助文。"
   },
-  "settingsAzureTranscriptionModelRequired": "文字起こしモデルを入力してください",
-  "@settingsAzureTranscriptionModelRequired": {
+  "settingsOpenAiTranscriptionModelRequired": "文字起こしモデルを入力してください",
+  "@settingsOpenAiTranscriptionModelRequired": {
     "description": "文字起こしモデルが空のときに表示するバリデーション文言。"
   },
   "settingsCommonSave": "保存",
   "@settingsCommonSave": {
     "description": "設定画面で使う主要な保存ボタンのラベル。"
   },
-  "settingsAzureTestConnectionButton": "接続テスト",
-  "@settingsAzureTestConnectionButton": {
+  "settingsOpenAiTestConnectionButton": "接続テスト",
+  "@settingsOpenAiTestConnectionButton": {
     "description": "OpenAI Realtime の接続テストを実行するボタンのラベル。"
   },
   "settingsCommonClear": "クリア",
   "@settingsCommonClear": {
     "description": "保存済みの OpenAI 設定をクリアするボタンのラベル。"
   },
-  "settingsAzureCredentialsStorageNote": "認証情報はデバイス上に安全に保存されます。",
-  "@settingsAzureCredentialsStorageNote": {
+  "settingsOpenAiCredentialsStorageNote": "認証情報はデバイス上に安全に保存されます。",
+  "@settingsOpenAiCredentialsStorageNote": {
     "description": "OpenAI 設定ボタンの下に表示する、認証情報の保存先に関する補足文。"
   },
   "settingsSetupRestartOobeTitle": "初期設定をやり直す",

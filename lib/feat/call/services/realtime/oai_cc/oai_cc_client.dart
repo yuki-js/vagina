@@ -35,8 +35,8 @@ final class OaiCcClient {
         config.baseUrl.replace(path: '${config.baseUrl.path}/chat/completions');
     final httpRequest = http.Request('POST', url);
 
-    // Apply authorization header
     if (config.apiKey != null && config.apiKey!.isNotEmpty) {
+      httpRequest.headers['api-key'] = config.apiKey!;
       httpRequest.headers['Authorization'] = 'Bearer ${config.apiKey}';
     }
     httpRequest.headers['Content-Type'] = 'application/json';

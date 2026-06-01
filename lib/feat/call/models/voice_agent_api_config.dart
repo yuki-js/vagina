@@ -23,6 +23,7 @@ abstract class VoiceAgentApiConfig {
 enum VoiceAgentProviderType {
   openai,
   gemini,
+  openaiCc,
 }
 
 /// Use the application's hosted realtime voice API.

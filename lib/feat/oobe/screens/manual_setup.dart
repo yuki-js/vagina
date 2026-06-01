@@ -53,7 +53,7 @@ class _ManualSetupScreenState extends ConsumerState<ManualSetupScreen> {
     } catch (e) {
       if (!mounted) return;
       final l10n = AppLocalizations.of(context);
-      _showSnackBar(l10n.settingsAzureLoadFailed, isError: true);
+      _showSnackBar(l10n.settingsOpenAiLoadFailed, isError: true);
     }
   }
 
@@ -77,17 +77,17 @@ class _ManualSetupScreenState extends ConsumerState<ManualSetupScreen> {
     final l10n = AppLocalizations.of(context);
 
     if (_realtimeUrlController.text.trim().isEmpty) {
-      _showSnackBar(l10n.settingsAzureRealtimeUrlRequired, isError: true);
+      _showSnackBar(l10n.settingsOpenAiUrlRequired, isError: true);
       return;
     }
 
     if (!_hasValidRealtimeBaseUri(_realtimeUrlController.text.trim())) {
-      _showSnackBar(l10n.settingsAzureRealtimeUrlInvalid, isError: true);
+      _showSnackBar(l10n.settingsOpenAiUrlInvalid, isError: true);
       return;
     }
 
     if (_apiKeyController.text.trim().isEmpty) {
-      _showSnackBar(l10n.settingsAzureApiKeyRequired, isError: true);
+      _showSnackBar(l10n.settingsOpenAiApiKeyRequired, isError: true);
       return;
     }
 
@@ -133,7 +133,7 @@ class _ManualSetupScreenState extends ConsumerState<ManualSetupScreen> {
       }
     } catch (e) {
       _showSnackBar(
-        l10n.settingsAzureConnectionTestFailed(e.toString()),
+        l10n.settingsOpenAiConnectionTestFailed(e.toString()),
         isError: true,
       );
     } finally {
@@ -183,7 +183,7 @@ class _ManualSetupScreenState extends ConsumerState<ManualSetupScreen> {
 
                     // Realtime URL field
                     Text(
-                      l10n.settingsAzureRealtimeUrlLabel,
+                      l10n.settingsOpenAiUrlLabel,
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -195,7 +195,7 @@ class _ManualSetupScreenState extends ConsumerState<ManualSetupScreen> {
                       controller: _realtimeUrlController,
                       style: const TextStyle(color: Colors.white),
                       decoration: InputDecoration(
-                        hintText: l10n.settingsAzureRealtimeUrlHint,
+                        hintText: l10n.settingsOpenAiUrlHint,
                         hintStyle: TextStyle(
                           color: Colors.white.withValues(alpha: 0.3),
                         ),
@@ -229,7 +229,7 @@ class _ManualSetupScreenState extends ConsumerState<ManualSetupScreen> {
 
                     // API Key field
                     Text(
-                      l10n.settingsAzureApiKeyLabel,
+                      l10n.settingsOpenAiApiKeyLabel,
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -242,7 +242,7 @@ class _ManualSetupScreenState extends ConsumerState<ManualSetupScreen> {
                       obscureText: !_isApiKeyVisible,
                       style: const TextStyle(color: Colors.white),
                       decoration: InputDecoration(
-                        hintText: l10n.settingsAzureApiKeyHint,
+                        hintText: l10n.settingsOpenAiApiKeyHint,
                         hintStyle: TextStyle(
                           color: Colors.white.withValues(alpha: 0.3),
                         ),
@@ -320,7 +320,7 @@ class _ManualSetupScreenState extends ConsumerState<ManualSetupScreen> {
 
                     // Security notice
                     Text(
-                      l10n.settingsAzureCredentialsStorageNote,
+                      l10n.settingsOpenAiCredentialsStorageNote,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 12,
