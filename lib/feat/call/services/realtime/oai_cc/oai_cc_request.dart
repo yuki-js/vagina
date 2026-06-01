@@ -1,4 +1,3 @@
-import 'dart:convert';
 
 /// Models representing requests sent to the OpenAI Chat Completions API.
 final class OaiCcRequest {
@@ -79,3 +78,22 @@ final class OaiCcAudioMessage extends OaiCcMessage {
     };
   }
 }
+
+final class OaiCcAssistantAudioMessage extends OaiCcMessage {
+  final String audioId;
+
+  const OaiCcAssistantAudioMessage({
+    required this.audioId,
+  }) : super(role: 'assistant');
+
+  @override
+  Map<String, dynamic> toJson() {
+    return {
+      'role': role,
+      'audio': {
+        'id': audioId,
+      },
+    };
+  }
+}
+

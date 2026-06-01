@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:vagina/feat/call/models/realtime/realtime_adapter_models.dart';
@@ -38,9 +39,11 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
 
   OaiCcConnectConfig? _config;
   String? _instructions;
+  String? _voice;
   bool _isConnected = false;
   int _localIdCounter = 0;
   bool _disposed = false;
+  final Map<String, String> _assistantAudioIds = {};
 
   RealtimeAudioTurnMode _audioTurnMode = RealtimeAudioTurnMode.manual;
   bool _isManualAudioInputTurnActive = false;
@@ -114,11 +117,28 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
       _connectionController.add(state);
       throw ArgumentError('Unsupported API configuration type.');
     }
-
     _instructions = instructions;
+    _voice = voice;
+
+    final parsedUri = Uri.parse(apiConfig.baseUrl);
+    String extractedModel = apiConfig.params['model'] as String? ?? 'gpt-4o';
+    Uri cleanUri = parsedUri;
+
+    if (parsedUri.queryParameters.containsKey('model')) {
+      final modelFromQuery = parsedUri.queryParameters['model'];
+      if (modelFromQuery != null && modelFromQuery.isNotEmpty) {
+        extractedModel = modelFromQuery;
+      }
+      final newQueryParameters =
+          Map<String, String>.from(parsedUri.queryParameters)..remove('model');
+      cleanUri = parsedUri.replace(
+        queryParameters: newQueryParameters.isEmpty ? null : newQueryParameters,
+      );
+    }
+
     _config = OaiCcConnectConfig(
-      baseUrl: Uri.parse(apiConfig.baseUrl),
-      model: apiConfig.params['model'] as String? ?? 'gpt-4o',
+      baseUrl: cleanUri,
+      model: extractedModel,
       apiKey: apiConfig.apiKey,
       extraHeaders: const <String, String>{},
     );
@@ -320,35 +340,87 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
 
   Future<void> _sendAudioTurn(String wavBase64) async {
     final userItemId = _nextLocalId();
+    final audioPart = RealtimeThreadAudioPart(
+      transcript: null,
+      isDone: true,
+    );
+    audioPart.replaceAudio(wavBase64);
+
     final userItem = RealtimeThreadItem(
       id: userItemId,
       type: RealtimeThreadItemType.message,
       role: RealtimeThreadItemRole.user,
       status: RealtimeThreadItemStatus.completed,
-      content: [
-        RealtimeThreadAudioPart(transcript: '[Audio Input]', isDone: true)
-      ],
+      content: [audioPart],
     );
     _thread.addItem(userItem);
     _emitThreadUpdate();
 
-    final messages = <OaiCcMessage>[
-      if (_instructions != null && _instructions!.isNotEmpty)
-        OaiCcTextMessage(role: 'system', content: _instructions!),
-      OaiCcAudioMessage(role: 'user', audioBase64: wavBase64),
-    ];
+    final messages = _buildMessages();
 
     await _executeChatCompletion(messages);
   }
 
   Future<void> _sendTextTurn(String text) async {
+    final messages = _buildMessages();
+
+    await _executeChatCompletion(messages);
+  }
+
+  List<OaiCcMessage> _buildMessages() {
     final messages = <OaiCcMessage>[
       if (_instructions != null && _instructions!.isNotEmpty)
         OaiCcTextMessage(role: 'system', content: _instructions!),
-      OaiCcTextMessage(role: 'user', content: text),
     ];
 
-    await _executeChatCompletion(messages);
+    for (int i = 0; i < _thread.items.length; i++) {
+      final item = _thread.items[i];
+      if (item.type != RealtimeThreadItemType.message) continue;
+      final roleStr = switch (item.role) {
+        RealtimeThreadItemRole.user => 'user',
+        RealtimeThreadItemRole.assistant => 'assistant',
+        RealtimeThreadItemRole.system => 'system',
+        null => null,
+      };
+      if (roleStr == null) continue;
+
+      if (roleStr == 'assistant') {
+        final audioId = _assistantAudioIds[item.id];
+        if (audioId != null) {
+          messages.add(OaiCcAssistantAudioMessage(audioId: audioId));
+          continue;
+        }
+      } else if (roleStr == 'user') {
+        final audioPart =
+            item.content.whereType<RealtimeThreadAudioPart>().firstOrNull;
+        if (audioPart != null) {
+          final audioBase64 = audioPart.fullAudioBase64;
+          if (audioBase64.isNotEmpty) {
+            messages.add(
+                OaiCcAudioMessage(role: roleStr, audioBase64: audioBase64));
+            continue;
+          }
+        }
+      }
+
+      final textContent = item.content
+          .map((part) {
+            if (part is RealtimeThreadTextPart) {
+              return part.text;
+            } else if (part is RealtimeThreadAudioPart) {
+              return part.transcript ?? '';
+            }
+            return '';
+          })
+          .join('\n')
+          .trim();
+
+      if (textContent.isNotEmpty) {
+        messages.add(OaiCcTextMessage(role: roleStr, content: textContent));
+      }
+    }
+
+    return messages;
   }
 
   Future<void> _executeChatCompletion(List<OaiCcMessage> messages) async {
@@ -366,10 +438,23 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
     _thread.addItem(assistantItem);
     _emitThreadUpdate();
 
+    final isAudioModel = _config!.model.toLowerCase().contains('audio') ||
+        _config!.model.toLowerCase().contains('gpt-5.4') ||
+        _config!.model.toLowerCase().contains('realtime');
+
     final request = OaiCcRequest(
       model: _config!.model,
       messages: messages,
       stream: true,
+      modalities: isAudioModel ? ['text', 'audio'] : null,
+      additionalParams: isAudioModel
+          ? {
+              'audio': {
+                'voice': _voice ?? 'alloy',
+                'format': 'pcm16',
+              }
+            }
+          : null,
     );
 
     final eventStream = _client.streamCompletions(
@@ -382,8 +467,30 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
         if (event is OaiCcContentDeltaEvent) {
           assistantTextPart.appendDelta(event.content);
           _emitThreadUpdate();
+        } else if (event is OaiCcAudioDeltaEvent) {
+          if (event.audioId != null && event.audioId!.isNotEmpty) {
+            _assistantAudioIds[assistantItemId] = event.audioId!;
+          }
+          if (event.transcript != null && event.transcript!.isNotEmpty) {
+            assistantTextPart.appendDelta(event.transcript!);
+            _emitThreadUpdate();
+          }
+          if (event.audioBase64 != null && event.audioBase64!.isNotEmpty) {
+            try {
+              final decodedBytes = base64Decode(event.audioBase64!);
+              _assistantAudioController.add(decodedBytes);
+            } catch (err) {
+              _errorController.add(
+                RealtimeAdapterError(
+                  code: 'audio_decode_error',
+                  message: 'Failed to decode audio delta: $err',
+                ),
+              );
+            }
+          }
         } else if (event is OaiCcFinishedEvent) {
           assistantItem.markDone();
+          _assistantAudioCompletedController.add(null);
           _emitThreadUpdate();
           _responseStreamSubscription?.cancel();
           _responseStreamSubscription = null;

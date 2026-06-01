@@ -449,11 +449,13 @@ class _RealtimeChatBubble extends StatelessWidget {
             ),
           ),
         );
-      } else if (part is RealtimeThreadAudioPart &&
-          (part.transcript?.isNotEmpty ?? false)) {
+      } else if (part is RealtimeThreadAudioPart) {
+        final displayTxt = (part.transcript?.isNotEmpty ?? false)
+            ? part.transcript!
+            : '[Audio Input]';
         widgets.add(
           SelectableText(
-            part.transcript!,
+            displayTxt,
             style: TextStyle(
               color: _textColor,
               fontSize: 15,
