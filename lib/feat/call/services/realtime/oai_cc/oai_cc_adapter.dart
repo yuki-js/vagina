@@ -51,7 +51,9 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
     String? threadId,
   })  : _client = client ?? OaiCcClient(),
         _buffer = buffer ?? OaiCcAudioBuffer(),
-        _thread = RealtimeThread(id: threadId ?? 'thread_cc_${DateTime.now().millisecondsSinceEpoch}') {
+        _thread = RealtimeThread(
+            id: threadId ??
+                'thread_cc_${DateTime.now().millisecondsSinceEpoch}') {
     // Initialize with idle state
     _connectionController.add(const RealtimeAdapterConnectionState.idle());
   }
@@ -67,7 +69,8 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
   Stream<RealtimeThread> get threadUpdates => _threadController.stream;
 
   @override
-  Stream<RealtimeAdapterConnectionState> get connectionStates => _connectionController.stream;
+  Stream<RealtimeAdapterConnectionState> get connectionStates =>
+      _connectionController.stream;
 
   @override
   Stream<RealtimeAdapterError> get errors => _errorController.stream;
@@ -76,10 +79,12 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
   bool get isConnected => _isConnected;
 
   @override
-  Stream<Uint8List> get assistantAudioStream => _assistantAudioController.stream;
+  Stream<Uint8List> get assistantAudioStream =>
+      _assistantAudioController.stream;
 
   @override
-  Stream<void> get assistantAudioCompleted => _assistantAudioCompletedController.stream;
+  Stream<void> get assistantAudioCompleted =>
+      _assistantAudioCompletedController.stream;
 
   @override
   Stream<bool> get userSpeakingStates => _userSpeakingStateController.stream;
@@ -98,11 +103,13 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
     String? instructions,
   }) async {
     _ensureNotDisposed();
-    _connectionController.add(const RealtimeAdapterConnectionState.connecting());
+    _connectionController
+        .add(const RealtimeAdapterConnectionState.connecting());
 
     if (apiConfig is! SelfhostedVoiceAgentApiConfig) {
       final state = RealtimeAdapterConnectionState.failed(
-        message: 'OaiCcRealtimeAdapter only supports SelfhostedVoiceAgentApiConfig.',
+        message:
+            'OaiCcRealtimeAdapter only supports SelfhostedVoiceAgentApiConfig.',
       );
       _connectionController.add(state);
       throw ArgumentError('Unsupported API configuration type.');
@@ -125,7 +132,8 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
     _ensureNotDisposed();
     await _cleanupActiveCalls();
     _isConnected = false;
-    _connectionController.add(const RealtimeAdapterConnectionState.disconnected());
+    _connectionController
+        .add(const RealtimeAdapterConnectionState.disconnected());
   }
 
   @override
@@ -186,7 +194,7 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
   Future<void> beginManualAudioInputTurn() async {
     _ensureNotDisposed();
     if (_audioTurnMode != RealtimeAudioTurnMode.manual) return;
-    
+
     // Interrupt any ongoing assistant response
     await interrupt();
 
@@ -196,7 +204,8 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
   }
 
   @override
-  Future<bool> endManualAudioInputTurn({required Duration minAudioDuration}) async {
+  Future<bool> endManualAudioInputTurn(
+      {required Duration minAudioDuration}) async {
     _ensureNotDisposed();
     if (!_isManualAudioInputTurnActive) return false;
 
@@ -204,7 +213,8 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
     _userSpeakingStateController.add(false);
 
     final totalBytes = _buffer.lengthInBytes;
-    final totalDurationMs = (totalBytes / 2) / 24; // PCM 16-bit 24kHz mono = 48000 bytes/sec = 48 bytes/ms = 48000 bytes/sec / 2 bytes/sample = 24000 samples/sec
+    final totalDurationMs = (totalBytes / 2) /
+        24; // PCM 16-bit 24kHz mono = 48000 bytes/sec = 48 bytes/ms = 48000 bytes/sec / 2 bytes/sample = 24000 samples/sec
     final totalDuration = Duration(milliseconds: totalDurationMs.round());
 
     if (totalDuration < minAudioDuration) {
@@ -238,7 +248,8 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
   }
 
   @override
-  Future<bool> applyProviderExtension(String extensionType, Map<String, dynamic> payload) async {
+  Future<bool> applyProviderExtension(
+      String extensionType, Map<String, dynamic> payload) async {
     return false; // Extension config not supported in v1
   }
 
@@ -266,21 +277,26 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
   @override
   Future<String> sendImage(String dataUri) async {
     _ensureNotDisposed();
-    throw UnimplementedError('Image input is not supported in OaiCcRealtimeAdapter v1.');
+    throw UnimplementedError(
+        'Image input is not supported in OaiCcRealtimeAdapter v1.');
   }
 
   @override
   Future<String> sendFunctionOutput({
     required String callId,
     required String output,
-    RealtimeToolOutputDisposition disposition = RealtimeToolOutputDisposition.success,
+    RealtimeToolOutputDisposition disposition =
+        RealtimeToolOutputDisposition.success,
     String? errorMessage,
   }) async {
-    throw UnimplementedError('Tool execution is not supported in OaiCcRealtimeAdapter v1.');
+    throw UnimplementedError(
+        'Tool execution is not supported in OaiCcRealtimeAdapter v1.');
   }
 
   @override
-  void cancelFunctionCalls({Set<String> itemIds = const <String>{}, Set<String> callIds = const <String>{}}) {}
+  void cancelFunctionCalls(
+      {Set<String> itemIds = const <String>{},
+      Set<String> callIds = const <String>{}}) {}
 
   // ---------------------------------------------------------------------------
   // Response Control
@@ -309,7 +325,9 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
       type: RealtimeThreadItemType.message,
       role: RealtimeThreadItemRole.user,
       status: RealtimeThreadItemStatus.completed,
-      content: [RealtimeThreadAudioPart(transcript: '[Audio Input]', isDone: true)],
+      content: [
+        RealtimeThreadAudioPart(transcript: '[Audio Input]', isDone: true)
+      ],
     );
     _thread.addItem(userItem);
     _emitThreadUpdate();

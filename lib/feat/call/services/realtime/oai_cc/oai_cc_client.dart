@@ -10,7 +10,7 @@ import 'oai_cc_request.dart';
 final class OaiCcClient {
   final http.Client _client;
   final OaiCcEventParser _parser;
-  
+
   /// The active request client if any request is currently streaming.
   http.Client? _activeClient;
 
@@ -31,7 +31,8 @@ final class OaiCcClient {
     final requestClient = http.Client();
     _activeClient = requestClient;
 
-    final url = config.baseUrl.replace(path: '${config.baseUrl.path}/chat/completions');
+    final url =
+        config.baseUrl.replace(path: '${config.baseUrl.path}/chat/completions');
     final httpRequest = http.Request('POST', url);
 
     // Apply authorization header
@@ -39,7 +40,7 @@ final class OaiCcClient {
       httpRequest.headers['Authorization'] = 'Bearer ${config.apiKey}';
     }
     httpRequest.headers['Content-Type'] = 'application/json';
-    
+
     // Apply extra headers (e.g. OpenAI organization/project if any)
     config.extraHeaders.forEach((key, value) {
       httpRequest.headers[key] = value;

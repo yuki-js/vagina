@@ -31,7 +31,8 @@ final class OaiCcAudioBuffer {
   }
 
   /// Prefixes raw PCM bytes with a standard 44-byte WAV header.
-  Uint8List _addWavHeader(Uint8List rawPcm, int sampleRate, int channels, int bitsPerSample) {
+  Uint8List _addWavHeader(
+      Uint8List rawPcm, int sampleRate, int channels, int bitsPerSample) {
     final byteRate = sampleRate * channels * bitsPerSample ~/ 8;
     final blockAlign = channels * bitsPerSample ~/ 8;
     final subChunk2Size = rawPcm.length;
@@ -49,8 +50,8 @@ final class OaiCcAudioBuffer {
     header.setUint32(4, chunkSize, Endian.little);
 
     // Format "WAVE"
-    header.setUint8(8, 0x57);  // W
-    header.setUint8(9, 0x41);  // A
+    header.setUint8(8, 0x57); // W
+    header.setUint8(9, 0x41); // A
     header.setUint8(10, 0x56); // V
     header.setUint8(11, 0x45); // E
 
