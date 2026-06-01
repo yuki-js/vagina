@@ -1,10 +1,10 @@
 {
   "name": "vagina",
-  //"image": "ghcr.io/aokiapp/vagina/devcontainer:latest",
-  "build": {
-    "dockerfile": "./Dockerfile",
-    "context": ".."
-  },
+  "image": "ghcr.io/yuki-js/vagina/devcontainer:latest",
+  // "build": {
+  //   "dockerfile": "./Dockerfile",
+  //   "context": ".."
+  // },
   "remoteUser": "user",
   "runArgs": ["--env-file", ".devcontainer/.env"],
   "workspaceFolder": "/home/user/codes/vagina",
