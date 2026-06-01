@@ -35,8 +35,6 @@ migrate_working_dir/
 /coverage/
 
 # FVM
-.fvm/flutter_sdk
-.fvm/versions
 
 # Symbolication related
 app.*.symbols
@@ -68,3 +66,6 @@ lib/l10n/app_localizations_*.dart
 vagina.iml
 _codeql_detected_source_root
 .idea/
+
+# FVM Version Cache
+.fvm/
