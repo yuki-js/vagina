@@ -374,6 +374,10 @@
   "@settingsOpenAiConnectionTypeGeminiWarning": {
     "description": "Gemini API 接続タイプが選択されたときに表示される警告メッセージ。"
   },
+  "settingsOpenAiModalityLabel": "モダリティ",
+  "@settingsOpenAiModalityLabel": {
+    "description": "設定画面の OpenAI 設定におけるモダリティ選択ドロップダウンのラベル。"
+  },
   "settingsOpenAiUrlLabel": "OpenAI API 接続URL (Base)",
   "@settingsOpenAiUrlLabel": {
     "description": "設定画面の OpenAI API ベースURL入力欄の上に表示するラベル。"

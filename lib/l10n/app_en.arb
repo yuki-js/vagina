@@ -374,6 +374,10 @@
   "@settingsOpenAiConnectionTypeGeminiWarning": {
     "description": "Warning message shown when the Gemini API connection type is selected."
   },
+  "settingsOpenAiModalityLabel": "Modality",
+  "@settingsOpenAiModalityLabel": {
+    "description": "Label for the modality selection dropdown in OpenAI settings."
+  },
   "settingsOpenAiUrlLabel": "OpenAI API URL (Base)",
   "@settingsOpenAiUrlLabel": {
     "description": "Field label above the OpenAI API base URL input on the settings screen."

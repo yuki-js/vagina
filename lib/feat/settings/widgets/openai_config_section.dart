@@ -427,9 +427,9 @@ class _OpenAiConfigSectionState extends ConsumerState<OpenAiConfigSection> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'モダリティ',
-                          style: TextStyle(
+                        Text(
+                          l10n.settingsOpenAiModalityLabel,
+                          style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
                             color: AppTheme.textSecondary,
