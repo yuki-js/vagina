@@ -17,6 +17,105 @@ import 'oai_cc_request.dart';
 /// OpenAI Chat Completions API implementation of [RealtimeAdapter].
 /// Supports manual push-to-talk mode, while disabling audio input on hands-free VAD mode for v1.
 final class OaiCcRealtimeAdapter implements RealtimeAdapter {
+  /// Test Chat Completions API connectivity.
+  static Future<void> testConnection(
+    String baseUrl,
+    String apiKey, {
+    VoiceAgentModality modality = VoiceAgentModality.audio,
+  }) async {
+    final parsedUri = Uri.parse(baseUrl);
+    if (parsedUri.scheme.isEmpty || parsedUri.host.isEmpty) {
+      throw Exception('Invalid Chat Completions base URI');
+    }
+
+    String extractedModel = 'gpt-4o';
+    Uri cleanUri = parsedUri;
+
+    if (parsedUri.queryParameters.containsKey('model')) {
+      final modelFromQuery = parsedUri.queryParameters['model'];
+      if (modelFromQuery != null && modelFromQuery.isNotEmpty) {
+        extractedModel = modelFromQuery;
+      }
+      final newQueryParameters =
+          Map<String, String>.from(parsedUri.queryParameters)..remove('model');
+      cleanUri = parsedUri.replace(
+        queryParameters: newQueryParameters.isEmpty ? null : newQueryParameters,
+      );
+    }
+
+    final isAudioModel = modality == VoiceAgentModality.audio;
+
+    final config = OaiCcConnectConfig(
+      baseUrl: cleanUri,
+      model: extractedModel,
+      apiKey: apiKey,
+      modality: modality,
+    );
+
+    final request = OaiCcRequest(
+      model: extractedModel,
+      messages: [
+        const OaiCcTextMessage(role: 'user', content: 'ping'),
+      ],
+      stream: true,
+      modalities: isAudioModel ? ['text', 'audio'] : null,
+      additionalParams: isAudioModel
+          ? {
+              'audio': {
+                'voice': 'alloy',
+                'format': 'pcm16',
+              }
+            }
+          : null,
+    );
+
+    final client = OaiCcClient();
+    final completer = Completer<void>();
+    StreamSubscription<OaiCcEvent>? sub;
+
+    try {
+      final eventStream = client.streamCompletions(
+        config: config,
+        requestPayload: request,
+      );
+
+      sub = eventStream.listen(
+        (event) {
+          if (event is OaiCcErrorEvent) {
+            if (!completer.isCompleted) {
+              completer.completeError(Exception(event.message));
+            }
+          } else {
+            // If we receive any successful delta/finished event, connection is verified.
+            if (!completer.isCompleted) {
+              completer.complete();
+            }
+          }
+        },
+        onError: (err) {
+          if (!completer.isCompleted) {
+            completer.completeError(Exception(err.toString()));
+          }
+        },
+        onDone: () {
+          if (!completer.isCompleted) {
+            completer.complete();
+          }
+        },
+      );
+
+      await completer.future.timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          throw TimeoutException('Connection timeout');
+        },
+      );
+    } finally {
+      await sub?.cancel();
+      client.dispose();
+    }
+  }
+
   final OaiCcClient _client;
   final OaiCcAudioBuffer _buffer;
   final RealtimeThread _thread;
@@ -143,6 +242,7 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
       baseUrl: cleanUri,
       model: extractedModel,
       apiKey: apiConfig.apiKey,
+      modality: apiConfig.modality,
       extraHeaders: const <String, String>{},
     );
 
@@ -543,9 +643,7 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
     _thread.addItem(assistantItem);
     _emitThreadUpdate();
 
-    final isAudioModel = _config!.model.toLowerCase().contains('audio') ||
-        _config!.model.toLowerCase().contains('gpt-5.4') ||
-        _config!.model.toLowerCase().contains('realtime');
+    final isAudioModel = _config!.modality == VoiceAgentModality.audio;
 
     final requestTools = _tools.map((t) {
       return {

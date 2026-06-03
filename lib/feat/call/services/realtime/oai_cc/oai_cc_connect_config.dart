@@ -1,3 +1,5 @@
+import 'package:vagina/feat/call/models/voice_agent_api_config.dart';
+
 /// Configuration for OpenAI Chat Completions API connections.
 final class OaiCcConnectConfig {
   /// The base URL for the Chat Completions API (e.g., https://api.openai.com/v1).
@@ -9,6 +11,9 @@ final class OaiCcConnectConfig {
   /// Optional API key / token.
   final String? apiKey;
 
+  /// Modality selection (VoiceAgentModality.audio or VoiceAgentModality.text).
+  final VoiceAgentModality modality;
+
   /// Additional custom headers.
   final Map<String, String> extraHeaders;
 
@@ -16,6 +21,7 @@ final class OaiCcConnectConfig {
     required this.baseUrl,
     required this.model,
     this.apiKey,
+    this.modality = VoiceAgentModality.audio,
     this.extraHeaders = const <String, String>{},
   });
 }

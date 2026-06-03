@@ -57,11 +57,18 @@ class HostedVoiceAgentApiConfig extends VoiceAgentApiConfig {
   }
 }
 
+/// Modality settings for a voice agent.
+enum VoiceAgentModality {
+  text,
+  audio,
+}
+
 /// Use a self-hosted or user-managed realtime voice API endpoint.
 class SelfhostedVoiceAgentApiConfig extends VoiceAgentApiConfig {
   final VoiceAgentProviderType providerType;
   final String baseUrl;
   final String apiKey;
+  final VoiceAgentModality modality;
   final String? transcriptionModel;
   final Map<String, Object?> params;
 
@@ -69,6 +76,7 @@ class SelfhostedVoiceAgentApiConfig extends VoiceAgentApiConfig {
     required this.providerType,
     required this.baseUrl,
     required this.apiKey,
+    this.modality = VoiceAgentModality.audio,
     this.transcriptionModel,
     this.params = const {},
   });
@@ -77,6 +85,7 @@ class SelfhostedVoiceAgentApiConfig extends VoiceAgentApiConfig {
     VoiceAgentProviderType? providerType,
     String? baseUrl,
     String? apiKey,
+    VoiceAgentModality? modality,
     String? transcriptionModel,
     bool clearTranscriptionModel = false,
     Map<String, Object?>? params,
@@ -85,6 +94,7 @@ class SelfhostedVoiceAgentApiConfig extends VoiceAgentApiConfig {
       providerType: providerType ?? this.providerType,
       baseUrl: baseUrl ?? this.baseUrl,
       apiKey: apiKey ?? this.apiKey,
+      modality: modality ?? this.modality,
       transcriptionModel: clearTranscriptionModel
           ? null
           : (transcriptionModel ?? this.transcriptionModel),
@@ -99,6 +109,7 @@ class SelfhostedVoiceAgentApiConfig extends VoiceAgentApiConfig {
       'providerType': providerType.name,
       'baseUrl': baseUrl,
       'apiKey': apiKey,
+      'modality': modality.name,
       if (transcriptionModel != null) 'transcriptionModel': transcriptionModel,
       'params': params,
     };
@@ -106,6 +117,7 @@ class SelfhostedVoiceAgentApiConfig extends VoiceAgentApiConfig {
 
   factory SelfhostedVoiceAgentApiConfig.fromJson(Map<String, dynamic> json) {
     final providerName = json['providerType'] as String?;
+    final modalityName = json['modality'] as String?;
     return SelfhostedVoiceAgentApiConfig(
       providerType: VoiceAgentProviderType.values.firstWhere(
         (value) => value.name == providerName,
@@ -113,6 +125,10 @@ class SelfhostedVoiceAgentApiConfig extends VoiceAgentApiConfig {
       ),
       baseUrl: json['baseUrl'] as String? ?? '',
       apiKey: json['apiKey'] as String? ?? '',
+      modality: VoiceAgentModality.values.firstWhere(
+        (value) => value.name == modalityName,
+        orElse: () => VoiceAgentModality.audio,
+      ),
       transcriptionModel: json['transcriptionModel'] as String?,
       params: json['params'] is Map
           ? Map<String, Object?>.from(json['params'] as Map)

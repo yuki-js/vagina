@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vagina/repositories/repository_factory.dart';
 import 'package:vagina/feat/call/models/voice_agent_api_config.dart';
-import 'package:vagina/utils/realtime_connection_test.dart';
+import 'package:vagina/feat/call/services/realtime/realtime_adapter_factory.dart';
 import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/l10n/app_localizations.dart';
 
@@ -95,10 +95,13 @@ class _ManualSetupScreenState extends ConsumerState<ManualSetupScreen> {
 
     // Test connection before saving
     try {
-      await testRealtimeConnection(
-        _realtimeUrlController.text.trim(),
-        _apiKeyController.text.trim(),
+      final testConfig = SelfhostedVoiceAgentApiConfig(
+        providerType: VoiceAgentProviderType.openai,
+        baseUrl: _realtimeUrlController.text.trim(),
+        apiKey: _apiKeyController.text.trim(),
+        modality: VoiceAgentModality.audio,
       );
+      await RealtimeAdapterFactory.testConnection(testConfig);
 
       // Connection successful, save the config
       final config = RepositoryFactory.config;

@@ -3,8 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vagina/repositories/repository_factory.dart';
 import 'package:vagina/feat/call/models/voice_agent_api_config.dart';
-import 'package:vagina/utils/realtime_connection_test.dart';
-import 'package:vagina/utils/cc_connection_test.dart';
+import 'package:vagina/feat/call/services/realtime/realtime_adapter_factory.dart';
 import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/l10n/app_localizations.dart';
 import 'settings_card.dart';
@@ -34,6 +33,7 @@ class _OpenAiConfigSectionState extends ConsumerState<OpenAiConfigSection> {
   bool _isSaving = false;
   bool _isTesting = false;
   VoiceAgentProviderType _providerType = VoiceAgentProviderType.openai;
+  VoiceAgentModality _selectedModality = VoiceAgentModality.audio;
 
   @override
   void initState() {
@@ -62,14 +62,17 @@ class _OpenAiConfigSectionState extends ConsumerState<OpenAiConfigSection> {
           _transcriptionModelController.text =
               selfhostedConfig.transcriptionModel ?? _defaultTranscriptionModel;
           _providerType = selfhostedConfig.providerType;
+          _selectedModality = selfhostedConfig.modality;
         case HostedVoiceAgentApiConfig _:
           _transcriptionModelController.text = _defaultTranscriptionModel;
           _providerType = VoiceAgentProviderType
               .openai; // todo: handle hosted config properly
+          _selectedModality = VoiceAgentModality.audio;
         case null:
           _transcriptionModelController.text = _defaultTranscriptionModel;
           _providerType = VoiceAgentProviderType
               .openai; // todo: handle null config properly
+          _selectedModality = VoiceAgentModality.audio;
       }
 
       if (mounted) {
@@ -158,24 +161,28 @@ class _OpenAiConfigSectionState extends ConsumerState<OpenAiConfigSection> {
             providerType: _providerType,
             baseUrl: _realtimeUrlController.text.trim(),
             apiKey: _apiKeyController.text.trim(),
+            modality: _selectedModality,
             transcriptionModel: transcriptionModel,
           ),
         HostedVoiceAgentApiConfig() => SelfhostedVoiceAgentApiConfig(
             providerType: _providerType,
             baseUrl: _realtimeUrlController.text.trim(),
             apiKey: _apiKeyController.text.trim(),
+            modality: _selectedModality,
             transcriptionModel: transcriptionModel,
           ),
         null => SelfhostedVoiceAgentApiConfig(
             providerType: _providerType,
             baseUrl: _realtimeUrlController.text.trim(),
             apiKey: _apiKeyController.text.trim(),
+            modality: _selectedModality,
             transcriptionModel: transcriptionModel,
           ),
         _ => SelfhostedVoiceAgentApiConfig(
             providerType: _providerType,
             baseUrl: _realtimeUrlController.text.trim(),
             apiKey: _apiKeyController.text.trim(),
+            modality: _selectedModality,
             transcriptionModel: transcriptionModel,
           ),
       };
@@ -210,17 +217,15 @@ class _OpenAiConfigSectionState extends ConsumerState<OpenAiConfigSection> {
     setState(() => _isTesting = true);
 
     try {
-      if (_providerType == VoiceAgentProviderType.openaiCc) {
-        await testCcConnection(
-          _realtimeUrlController.text.trim(),
-          _apiKeyController.text.trim(),
-        );
-      } else {
-        await testRealtimeConnection(
-          _realtimeUrlController.text.trim(),
-          _apiKeyController.text.trim(),
-        );
-      }
+      final testConfig = SelfhostedVoiceAgentApiConfig(
+        providerType: _providerType,
+        baseUrl: _realtimeUrlController.text.trim(),
+        apiKey: _apiKeyController.text.trim(),
+        modality: _selectedModality,
+        transcriptionModel: _resolvedTranscriptionModel(),
+      );
+
+      await RealtimeAdapterFactory.testConnection(testConfig);
 
       final config = RepositoryFactory.config;
       final existingConfig = await config.getVoiceAgentApiConfig();
@@ -230,24 +235,28 @@ class _OpenAiConfigSectionState extends ConsumerState<OpenAiConfigSection> {
             providerType: _providerType,
             baseUrl: _realtimeUrlController.text.trim(),
             apiKey: _apiKeyController.text.trim(),
+            modality: _selectedModality,
             transcriptionModel: _resolvedTranscriptionModel(),
           ),
         HostedVoiceAgentApiConfig() => SelfhostedVoiceAgentApiConfig(
             providerType: _providerType,
             baseUrl: _realtimeUrlController.text.trim(),
             apiKey: _apiKeyController.text.trim(),
+            modality: _selectedModality,
             transcriptionModel: _resolvedTranscriptionModel(),
           ),
         null => SelfhostedVoiceAgentApiConfig(
             providerType: _providerType,
             baseUrl: _realtimeUrlController.text.trim(),
             apiKey: _apiKeyController.text.trim(),
+            modality: _selectedModality,
             transcriptionModel: _resolvedTranscriptionModel(),
           ),
         _ => SelfhostedVoiceAgentApiConfig(
             providerType: _providerType,
             baseUrl: _realtimeUrlController.text.trim(),
             apiKey: _apiKeyController.text.trim(),
+            modality: _selectedModality,
             transcriptionModel: _resolvedTranscriptionModel(),
           ),
       };
@@ -410,86 +419,140 @@ class _OpenAiConfigSectionState extends ConsumerState<OpenAiConfigSection> {
                 ),
               ),
             const SizedBox(height: 16),
-            Text(
-              l10n.settingsOpenAiTranscriptionModelLabel,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: AppTheme.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 8),
             if (!_isLoading)
-              RawAutocomplete<String>(
-                textEditingController: _transcriptionModelController,
-                focusNode: _transcriptionModelFocusNode,
-                optionsBuilder: _transcriptionModelOptions,
-                onSelected: (value) {
-                  _transcriptionModelController.value = TextEditingValue(
-                    text: value,
-                    selection: TextSelection.collapsed(offset: value.length),
-                  );
-                },
-                fieldViewBuilder: (context, textEditingController, focusNode,
-                    onFieldSubmitted) {
-                  return TextField(
-                    controller: textEditingController,
-                    focusNode: focusNode,
-                    enabled: !_isSaving && !_isTesting,
-                    decoration: InputDecoration(
-                      hintText: l10n.settingsOpenAiTranscriptionModelHint,
-                      suffixIcon: const Icon(Icons.arrow_drop_down),
-                    ),
-                    onSubmitted: (_) => onFieldSubmitted(),
-                  );
-                },
-                optionsViewBuilder: (context, onSelected, options) {
-                  final optionList = options.toList();
-                  if (optionList.isEmpty) {
-                    return const SizedBox.shrink();
-                  }
-
-                  return Align(
-                    alignment: Alignment.topLeft,
-                    child: Material(
-                      elevation: 4,
-                      borderRadius: BorderRadius.circular(12),
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxHeight: 220),
-                        child: SizedBox(
-                          width: 320,
-                          child: ListView.builder(
-                            padding: EdgeInsets.zero,
-                            shrinkWrap: true,
-                            itemCount: optionList.length,
-                            itemBuilder: (context, index) {
-                              final option = optionList[index];
-                              return InkWell(
-                                onTap: () => onSelected(option),
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 12,
-                                  ),
-                                  child: Text(option),
-                                ),
-                              );
-                            },
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'モダリティ',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: AppTheme.textSecondary,
                           ),
                         ),
-                      ),
+                        const SizedBox(height: 8),
+                        DropdownButtonFormField<VoiceAgentModality>(
+                          value: _selectedModality,
+                          dropdownColor: AppTheme.lightSurfaceColor,
+                          decoration: const InputDecoration(
+                            contentPadding: EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 8),
+                          ),
+                          items: const [
+                            DropdownMenuItem(
+                              value: VoiceAgentModality.audio,
+                              child: Text('audio'),
+                            ),
+                            DropdownMenuItem(
+                              value: VoiceAgentModality.text,
+                              child: Text('text'),
+                            ),
+                          ],
+                          onChanged: _isSaving || _isTesting
+                              ? null
+                              : (val) {
+                                  if (val != null) {
+                                    setState(() => _selectedModality = val);
+                                  }
+                                },
+                        ),
+                      ],
                     ),
-                  );
-                },
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          l10n.settingsOpenAiTranscriptionModelLabel,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: AppTheme.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        RawAutocomplete<String>(
+                          textEditingController: _transcriptionModelController,
+                          focusNode: _transcriptionModelFocusNode,
+                          optionsBuilder: _transcriptionModelOptions,
+                          onSelected: (value) {
+                            _transcriptionModelController.value = TextEditingValue(
+                              text: value,
+                              selection: TextSelection.collapsed(offset: value.length),
+                            );
+                          },
+                          fieldViewBuilder: (context, textEditingController, focusNode,
+                              onFieldSubmitted) {
+                            return TextField(
+                              controller: textEditingController,
+                              focusNode: focusNode,
+                              enabled: !_isSaving && !_isTesting,
+                              decoration: InputDecoration(
+                                hintText: l10n.settingsOpenAiTranscriptionModelHint,
+                                suffixIcon: const Icon(Icons.arrow_drop_down),
+                              ),
+                              onSubmitted: (_) => onFieldSubmitted(),
+                            );
+                          },
+                          optionsViewBuilder: (context, onSelected, options) {
+                            final optionList = options.toList();
+                            if (optionList.isEmpty) {
+                              return const SizedBox.shrink();
+                            }
+
+                            return Align(
+                              alignment: Alignment.topLeft,
+                              child: Material(
+                                elevation: 4,
+                                borderRadius: BorderRadius.circular(12),
+                                child: ConstrainedBox(
+                                  constraints: const BoxConstraints(maxHeight: 220),
+                                  child: SizedBox(
+                                    width: 320,
+                                    child: ListView.builder(
+                                      padding: EdgeInsets.zero,
+                                      shrinkWrap: true,
+                                      itemCount: optionList.length,
+                                      itemBuilder: (context, index) {
+                                        final option = optionList[index];
+                                        return InkWell(
+                                          onTap: () => onSelected(option),
+                                          child: Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 16,
+                                              vertical: 12,
+                                            ),
+                                            child: Text(option),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          l10n.settingsOpenAiTranscriptionModelHelper,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: AppTheme.textSecondary.withValues(alpha: 0.7),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            const SizedBox(height: 4),
-            Text(
-              l10n.settingsOpenAiTranscriptionModelHelper,
-              style: TextStyle(
-                fontSize: 11,
-                color: AppTheme.textSecondary.withValues(alpha: 0.7),
-              ),
-            ),
             const SizedBox(height: 16),
             Row(
               children: [

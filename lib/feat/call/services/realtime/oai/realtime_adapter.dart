@@ -36,6 +36,60 @@ enum _OaiInputAudioNoiseReductionSelection {
 /// Owns all protocol-specific defaults (audio format, VAD, transcription model).
 /// The caller only provides voice + instructions at connect time.
 final class OaiRealtimeAdapter implements RealtimeAdapter {
+  static Future<void> testConnection(
+    String baseUrl,
+    String apiKey, {
+    VoiceAgentModality modality = VoiceAgentModality.audio,
+  }) async {
+    final baseUri = Uri.parse(baseUrl);
+    if (baseUri.scheme.isEmpty || baseUri.host.isEmpty) {
+      throw Exception('Invalid Realtime base URI');
+    }
+
+    final client = OaiRealtimeClient();
+    StreamSubscription<OaiRealtimeConnectionState>? sub;
+
+    try {
+      final config = OaiRealtimeConnectConfig(
+        baseUri: baseUri,
+        bearerToken: apiKey,
+      );
+
+      final completer = Completer<void>();
+      sub = client.connectionStates.listen((state) {
+        if (state.phase == OaiRealtimeConnectionPhase.connected) {
+          if (!completer.isCompleted) {
+            completer.complete();
+          }
+        } else if (state.phase == OaiRealtimeConnectionPhase.failed) {
+          if (!completer.isCompleted) {
+            completer.completeError(
+              Exception(state.message ?? 'Connection failed'),
+            );
+          }
+        }
+      });
+
+      final connectFuture = client.connect(config);
+
+      await Future.any([
+        completer.future,
+        connectFuture,
+      ]).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          throw TimeoutException('Connection timeout');
+        },
+      );
+    } finally {
+      await sub?.cancel();
+      try {
+        await client.disconnect();
+      } catch (_) {}
+      await client.dispose();
+    }
+  }
+
   final OaiRealtimeClient _client;
   final RealtimeThread _thread;
   final StreamController<RealtimeThread> _threadController =
@@ -62,6 +116,7 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
   String? _sessionVoice;
   String? _sessionInstructions;
   String _transcriptionModel = 'gpt-4o-mini-transcribe';
+  VoiceAgentModality _sessionModality = VoiceAgentModality.audio;
   final Set<String> _locallyCancelledFunctionItemIds = <String>{};
   final Set<String> _locallyCancelledFunctionCallIds = <String>{};
   int _localIdCounter = 0;
@@ -413,6 +468,7 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
           );
     _sessionVoice = voice;
     _sessionInstructions = instructions;
+    _sessionModality = selfHosted.modality;
     _transcriptionModel =
         selfHosted.transcriptionModel?.trim().isNotEmpty == true
             ? selfHosted.transcriptionModel!.trim()
@@ -1059,7 +1115,7 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
       if (_sessionInstructions != null)
         'instructions':
             _sessionInstructions, // todo: make it dynamically updatable like tools.
-      'output_modalities': ['audio'],
+      'output_modalities': _sessionModality == VoiceAgentModality.audio ? ['audio'] : ['text'],
       'tools': _tools.map((tool) => tool.toRealtimeJson()).toList(),
       'tool_choice':
           _tools.isEmpty ? 'none' : (_toolChoiceRequired ? 'required' : 'auto'),

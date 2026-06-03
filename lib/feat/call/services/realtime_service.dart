@@ -7,9 +7,8 @@ import 'package:vagina/feat/call/models/voice_agent_info.dart';
 import 'package:vagina/feat/call/services/subservice.dart';
 import 'package:vagina/services/tools_runtime/tool_definition.dart';
 
-import 'realtime/oai/realtime_adapter.dart';
-import 'realtime/oai_cc/oai_cc_adapter.dart';
 import 'realtime/realtime_adapter.dart';
+import 'realtime/realtime_adapter_factory.dart';
 
 /// Session-scoped realtime backing service for a single call.
 final class RealtimeService extends SubService {
@@ -207,27 +206,6 @@ final class RealtimeService extends SubService {
   RealtimeAdapter _createAdapter(VoiceAgentApiConfig apiConfig) {
     logger.fine(
         'Creating realtime adapter for config type: ${apiConfig.runtimeType}');
-    return switch (apiConfig) {
-      SelfhostedVoiceAgentApiConfig(
-        providerType: VoiceAgentProviderType.openai
-      ) =>
-        OaiRealtimeAdapter(),
-      SelfhostedVoiceAgentApiConfig(
-        providerType: VoiceAgentProviderType.openaiCc
-      ) =>
-        OaiCcRealtimeAdapter(),
-      HostedVoiceAgentApiConfig() => throw UnsupportedError(
-          'Hosted voice agents are not wired to RealtimeAdapter yet.',
-        ),
-      SelfhostedVoiceAgentApiConfig(
-        providerType: VoiceAgentProviderType.gemini
-      ) =>
-        throw UnsupportedError(
-          'Gemini adapter is not implemented yet.',
-        ),
-      _ => throw UnsupportedError(
-          'Unsupported voice agent api config for realtime service.',
-        ),
-    };
+    return RealtimeAdapterFactory.create(apiConfig);
   }
 }
