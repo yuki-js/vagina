@@ -83,13 +83,13 @@ final class VirtualFilesystemService extends SubService {
     final normalizedPath = _validateFilePath(file.path);
     final contentSize = _byteSize(file.content);
 
-    logger.info('Writing file: $normalizedPath (${contentSize} bytes)');
+    logger.info('Writing file: $normalizedPath ($contentSize bytes)');
 
     if (contentSize > _maxFileSizeBytes) {
       logger.warning(
           'File too large: $normalizedPath ($contentSize > $_maxFileSizeBytes bytes)');
       throw VirtualFilesystemException(
-        'File too large (max ${_maxFileSizeBytes} bytes)',
+        'File too large (max $_maxFileSizeBytes bytes)',
       );
     }
 

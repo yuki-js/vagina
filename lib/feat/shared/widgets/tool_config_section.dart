@@ -75,23 +75,6 @@ class _ToolConfigSectionState extends State<ToolConfigSection> {
     widget.onChanged(newEnabledTools);
   }
 
-  /// 指定されたカテゴリのすべてのツールを有効化
-  void _enableCategory(List<ToolMetadata> categoryTools) {
-    final newEnabledTools = Map<String, bool>.from(widget.enabledTools);
-    for (final tool in categoryTools) {
-      newEnabledTools[tool.name] = true;
-    }
-    widget.onChanged(newEnabledTools);
-  }
-
-  /// 指定されたカテゴリのすべてのツールを無効化
-  void _disableCategory(List<ToolMetadata> categoryTools) {
-    final newEnabledTools = Map<String, bool>.from(widget.enabledTools);
-    for (final tool in categoryTools) {
-      newEnabledTools[tool.name] = false;
-    }
-    widget.onChanged(newEnabledTools);
-  }
 
   /// 選択したタブを画面中央にスクロール
   void _scrollTabToCenter(int index) {

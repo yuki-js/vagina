@@ -10,9 +10,8 @@ class ToolActivation {
       : alwaysAvailable = true,
         extensions = const [];
 
-  const ToolActivation.forExtensions(List<String> extensions)
-      : alwaysAvailable = false,
-        extensions = extensions;
+  const ToolActivation.forExtensions(this.extensions)
+      : alwaysAvailable = false;
 
   bool isEnabledForExtensions(Set<String> activeExtensions) {
     if (alwaysAvailable) {

@@ -332,7 +332,7 @@ class _OpenAiConfigSectionState extends ConsumerState<OpenAiConfigSection> {
             const Center(child: CircularProgressIndicator())
           else
             DropdownButtonFormField<VoiceAgentProviderType>(
-              value: _providerType,
+              initialValue: _providerType,
               dropdownColor: AppTheme.lightSurfaceColor,
               decoration: const InputDecoration(
                 contentPadding:
@@ -437,7 +437,7 @@ class _OpenAiConfigSectionState extends ConsumerState<OpenAiConfigSection> {
                         ),
                         const SizedBox(height: 8),
                         DropdownButtonFormField<VoiceAgentModality>(
-                          value: _selectedModality,
+                          initialValue: _selectedModality,
                           dropdownColor: AppTheme.lightSurfaceColor,
                           decoration: const InputDecoration(
                             contentPadding: EdgeInsets.symmetric(

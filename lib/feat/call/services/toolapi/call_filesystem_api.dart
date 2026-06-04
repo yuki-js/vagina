@@ -1,5 +1,4 @@
 import 'package:vagina/feat/call/services/notepad_service.dart';
-import 'package:vagina/models/virtual_file.dart';
 import 'package:vagina/services/tools_runtime/apis/filesystem_api.dart';
 
 /// Session-scoped [FilesystemApi] implementation for tool execution.

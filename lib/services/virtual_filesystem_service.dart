@@ -58,7 +58,7 @@ class VirtualFilesystemService {
 
     if (contentSize > _maxFileSizeBytes) {
       throw VirtualFilesystemException(
-        'File too large (max ${_maxFileSizeBytes} bytes)',
+        'File too large (max $_maxFileSizeBytes bytes)',
       );
     }
 
@@ -69,7 +69,7 @@ class VirtualFilesystemService {
 
     if (nextTotalSize > _maxTotalSizeBytes) {
       throw VirtualFilesystemException(
-        'Filesystem quota exceeded (max ${_maxTotalSizeBytes} bytes)',
+        'Filesystem quota exceeded (max $_maxTotalSizeBytes bytes)',
       );
     }
 
@@ -149,7 +149,7 @@ class VirtualFilesystemService {
   String _normalizeAndValidatePath(String path) {
     if (path.length > _maxPathLength) {
       throw VirtualFilesystemException(
-        'Path too long (max ${_maxPathLength} chars)',
+        'Path too long (max $_maxPathLength chars)',
       );
     }
 

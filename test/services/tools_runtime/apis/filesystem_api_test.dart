@@ -50,7 +50,7 @@ void main() {
 
     test('read throws on invalid payload shape', () async {
       final client = FilesystemApiClient(
-        hostCall: (_, __) async => 'invalid',
+        hostCall: (arg1, arg2) async => 'invalid',
       );
 
       expect(

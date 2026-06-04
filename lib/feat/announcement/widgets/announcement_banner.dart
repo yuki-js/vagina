@@ -16,7 +16,6 @@ class AnnouncementBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final borderColor = theme.colorScheme.outlineVariant;
 
     return AspectRatio(
       aspectRatio: 5,

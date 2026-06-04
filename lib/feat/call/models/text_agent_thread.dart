@@ -11,6 +11,7 @@
 ///   provider APIs), while tool results remain independent items.
 /// - Suitable for APIs that are request/response based, even when they do not
 ///   expose realtime item events like the voice stack does.
+library;
 
 enum TextAgentThreadItemType {
   message,

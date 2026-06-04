@@ -46,7 +46,6 @@ void main() {
     expect(errorLog.error, isA<Exception>());
     expect(errorLog.stackTrace, isNotNull);
 
-    print('\n✅ All logging tests passed!');
-    print('📊 Total logs captured: ${logs.length}');
+    expect(logs, isNotEmpty);
   });
 }
