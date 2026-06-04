@@ -722,11 +722,18 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
     // Detect MIME type from magic numbers
     String mimeType = 'image/png';
     if (imageBytes.length >= 4) {
-      if (imageBytes[0] == 0xFF && imageBytes[1] == 0xD8 && imageBytes[2] == 0xFF) {
+      if (imageBytes[0] == 0xFF &&
+          imageBytes[1] == 0xD8 &&
+          imageBytes[2] == 0xFF) {
         mimeType = 'image/jpeg';
-      } else if (imageBytes[0] == 0x47 && imageBytes[1] == 0x49 && imageBytes[2] == 0x46) {
+      } else if (imageBytes[0] == 0x47 &&
+          imageBytes[1] == 0x49 &&
+          imageBytes[2] == 0x46) {
         mimeType = 'image/gif';
-      } else if (imageBytes[0] == 0x89 && imageBytes[1] == 0x50 && imageBytes[2] == 0x4E && imageBytes[3] == 0x47) {
+      } else if (imageBytes[0] == 0x89 &&
+          imageBytes[1] == 0x50 &&
+          imageBytes[2] == 0x4E &&
+          imageBytes[3] == 0x47) {
         mimeType = 'image/png';
       }
     }
@@ -1132,7 +1139,8 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
       if (_sessionInstructions != null)
         'instructions':
             _sessionInstructions, // todo: make it dynamically updatable like tools.
-      'output_modalities': _sessionModality == VoiceAgentModality.audio ? ['audio'] : ['text'],
+      'output_modalities':
+          _sessionModality == VoiceAgentModality.audio ? ['audio'] : ['text'],
       'tools': _tools.map((tool) => tool.toRealtimeJson()).toList(),
       'tool_choice':
           _tools.isEmpty ? 'none' : (_toolChoiceRequired ? 'required' : 'auto'),

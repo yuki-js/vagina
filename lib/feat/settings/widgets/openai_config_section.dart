@@ -483,19 +483,22 @@ class _OpenAiConfigSectionState extends ConsumerState<OpenAiConfigSection> {
                           focusNode: _transcriptionModelFocusNode,
                           optionsBuilder: _transcriptionModelOptions,
                           onSelected: (value) {
-                            _transcriptionModelController.value = TextEditingValue(
+                            _transcriptionModelController.value =
+                                TextEditingValue(
                               text: value,
-                              selection: TextSelection.collapsed(offset: value.length),
+                              selection:
+                                  TextSelection.collapsed(offset: value.length),
                             );
                           },
-                          fieldViewBuilder: (context, textEditingController, focusNode,
-                              onFieldSubmitted) {
+                          fieldViewBuilder: (context, textEditingController,
+                              focusNode, onFieldSubmitted) {
                             return TextField(
                               controller: textEditingController,
                               focusNode: focusNode,
                               enabled: !_isSaving && !_isTesting,
                               decoration: InputDecoration(
-                                hintText: l10n.settingsOpenAiTranscriptionModelHint,
+                                hintText:
+                                    l10n.settingsOpenAiTranscriptionModelHint,
                                 suffixIcon: const Icon(Icons.arrow_drop_down),
                               ),
                               onSubmitted: (_) => onFieldSubmitted(),
@@ -513,7 +516,8 @@ class _OpenAiConfigSectionState extends ConsumerState<OpenAiConfigSection> {
                                 elevation: 4,
                                 borderRadius: BorderRadius.circular(12),
                                 child: ConstrainedBox(
-                                  constraints: const BoxConstraints(maxHeight: 220),
+                                  constraints:
+                                      const BoxConstraints(maxHeight: 220),
                                   child: SizedBox(
                                     width: 320,
                                     child: ListView.builder(
@@ -545,7 +549,8 @@ class _OpenAiConfigSectionState extends ConsumerState<OpenAiConfigSection> {
                           l10n.settingsOpenAiTranscriptionModelHelper,
                           style: TextStyle(
                             fontSize: 11,
-                            color: AppTheme.textSecondary.withValues(alpha: 0.7),
+                            color:
+                                AppTheme.textSecondary.withValues(alpha: 0.7),
                           ),
                         ),
                       ],

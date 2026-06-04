@@ -539,7 +539,8 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
               currentToolCalls.add(nextItem);
             }
             j++;
-          } else if (nextItem.type == RealtimeThreadItemType.functionCallOutput) {
+          } else if (nextItem.type ==
+              RealtimeThreadItemType.functionCallOutput) {
             j++;
           } else {
             break;

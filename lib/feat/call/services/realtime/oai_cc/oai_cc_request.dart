@@ -1,4 +1,3 @@
-
 /// Models representing requests sent to the OpenAI Chat Completions API.
 final class OaiCcRequest {
   final String model;
@@ -154,5 +153,3 @@ final class OaiCcToolResultMessage extends OaiCcMessage {
     };
   }
 }
-
-
