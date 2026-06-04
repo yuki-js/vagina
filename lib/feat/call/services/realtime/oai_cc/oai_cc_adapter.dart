@@ -399,7 +399,7 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
   }
 
   @override
-  Future<String> sendImage(String dataUri) async {
+  Future<String> sendImage(Uint8List imageBytes) async {
     _ensureNotDisposed();
     throw UnimplementedError(
         'Image input is not supported in OaiCcRealtimeAdapter v1.');

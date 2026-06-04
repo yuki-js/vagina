@@ -715,9 +715,26 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
   }
 
   @override
-  Future<String> sendImage(String dataUri) async {
+  Future<String> sendImage(Uint8List imageBytes) async {
     _ensureNotDisposed();
     final itemId = _nextLocalId('msg');
+
+    // Detect MIME type from magic numbers
+    String mimeType = 'image/png';
+    if (imageBytes.length >= 4) {
+      if (imageBytes[0] == 0xFF && imageBytes[1] == 0xD8 && imageBytes[2] == 0xFF) {
+        mimeType = 'image/jpeg';
+      } else if (imageBytes[0] == 0x47 && imageBytes[1] == 0x49 && imageBytes[2] == 0x46) {
+        mimeType = 'image/gif';
+      } else if (imageBytes[0] == 0x89 && imageBytes[1] == 0x50 && imageBytes[2] == 0x4E && imageBytes[3] == 0x47) {
+        mimeType = 'image/png';
+      }
+    }
+
+    // Convert to data URI
+    final base64Image = base64Encode(imageBytes);
+    final dataUri = 'data:$mimeType;base64,$base64Image';
+
     await _client.createConversationItem(
       item: {
         'id': itemId,

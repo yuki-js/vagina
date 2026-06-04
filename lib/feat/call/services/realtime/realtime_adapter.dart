@@ -140,8 +140,8 @@ abstract interface class RealtimeAdapter {
   /// Send a text message from the user.  Returns the local item ID.
   Future<String> sendText(String text);
 
-  /// Send an image (data-URI) from the user.  Returns the local item ID.
-  Future<String> sendImage(String dataUri);
+  /// Send an image from the user.  Returns the local item ID.
+  Future<String> sendImage(Uint8List imageBytes);
 
   /// Return the result of a function/tool call the model requested.
   /// [callId] is the provider-assigned correlation ID from the thread item.

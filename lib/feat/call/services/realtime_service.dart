@@ -142,9 +142,9 @@ final class RealtimeService extends SubService {
     return _adapter.sendText(text);
   }
 
-  Future<String> sendImage(String dataUri) {
-    logger.info('Sending image (${dataUri.length} bytes)');
-    return _adapter.sendImage(dataUri);
+  Future<String> sendImage(Uint8List imageBytes) {
+    logger.info('Sending image (${imageBytes.length} bytes)');
+    return _adapter.sendImage(imageBytes);
   }
 
   Future<String> sendFunctionOutput({
