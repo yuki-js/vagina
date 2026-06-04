@@ -23,17 +23,17 @@ RUN wget -qO /tmp/dart-sdk.zip https://storage.googleapis.com/dart-archive/chann
     unzip -q /tmp/dart-sdk.zip -d /opt && \
     rm /tmp/dart-sdk.zip
 
-# Install fvm and Flutter 3.27.1
+# Install fvm and Flutter stable
 ENV PUB_CACHE=/opt/pub-cache
 ENV PATH="/opt/dart-sdk/bin:$PUB_CACHE/bin:$PATH"
 RUN dart pub global activate fvm
 
-# Download Flutter 3.27.1 via fvm
+# Download Flutter stable via fvm
 ENV FVM_HOME=/opt/fvm_home
 RUN mkdir -p $FVM_HOME && \
     cd $FVM_HOME && \
-    fvm install 3.27.1 && \
-    fvm global 3.27.1
+    fvm install stable && \
+    fvm global stable
 
 # ---- main stage ----
 FROM ghcr.io/yuki-js/dotfiles/dotimage:latest
