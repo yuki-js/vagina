@@ -6,7 +6,7 @@
   //   "context": ".."
   // },
   "remoteUser": "user",
-  "runArgs": ["--env-file", ".devcontainer/.env"],
+  // "runArgs": ["--env-file", ".devcontainer/.env"],
   "workspaceFolder": "/home/user/codes/vagina",
   "workspaceMount": "type=bind,source=${localWorkspaceFolder},target=/home/user/codes/vagina",
 

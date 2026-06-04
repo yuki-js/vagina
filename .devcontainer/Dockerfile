@@ -70,9 +70,6 @@ RUN set -eux; \
 # Switch back to user
 USER user
 
-# Copy codex config file
-RUN mkdir -p ~/.codex
-COPY --chown=user:user .devcontainer/codex-config/config.toml /home/user/.codex/config.toml
 RUN set -eux; \
     git config --global --add safe.directory $FVM_HOME/default; \
     fvm flutter config --android-sdk "$ANDROID_SDK_ROOT"; 
