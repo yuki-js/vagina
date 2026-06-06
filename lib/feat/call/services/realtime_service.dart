@@ -53,16 +53,6 @@ final class RealtimeService extends SubService {
     }
   }
 
-  Future<void> disconnect() async {
-    ensureNotDisposed();
-    if (!isStarted) {
-      logger.fine('Disconnect called but service not started');
-      return;
-    }
-    logger.info('Disconnecting from realtime API');
-    await _adapter.disconnect();
-  }
-
   // ---------------------------------------------------------------------------
   // Audio input / output
   // ---------------------------------------------------------------------------
@@ -71,12 +61,6 @@ final class RealtimeService extends SubService {
   Future<void> bindAudioInput(Stream<Uint8List> audioStream) {
     logger.info('Binding audio input stream to realtime adapter');
     return _adapter.bindAudioInput(audioStream);
-  }
-
-  /// Stop forwarding audio.
-  Future<void> unbindAudioInput() {
-    logger.info('Unbinding audio input stream from realtime adapter');
-    return _adapter.unbindAudioInput();
   }
 
   Future<void> setAudioTurnMode(RealtimeAudioTurnMode mode) {
@@ -193,7 +177,6 @@ final class RealtimeService extends SubService {
   @override
   Future<void> dispose() async {
     logger.info('Disposing RealtimeService');
-    await unbindAudioInput();
     await _adapter.dispose();
     await super.dispose();
     logger.info('RealtimeService disposed successfully');

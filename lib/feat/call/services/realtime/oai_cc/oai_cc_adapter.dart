@@ -251,20 +251,17 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
   }
 
   @override
-  Future<void> disconnect() async {
-    _ensureNotDisposed();
-    await _cleanupActiveCalls();
-    _isConnected = false;
-    _connectionController
-        .add(const RealtimeAdapterConnectionState.disconnected());
-  }
-
-  @override
   Future<void> dispose() async {
     if (_disposed) return;
     _disposed = true;
 
-    await disconnect();
+    await _cleanupActiveCalls();
+    await _cancelAudioInput();
+    _isConnected = false;
+    if (!_connectionController.isClosed) {
+      _connectionController
+          .add(const RealtimeAdapterConnectionState.disconnected());
+    }
     _client.dispose();
 
     await _threadController.close();
@@ -282,7 +279,7 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
   @override
   Future<void> bindAudioInput(Stream<Uint8List> audioStream) async {
     _ensureNotDisposed();
-    await unbindAudioInput();
+    await _cancelAudioInput();
 
     _audioInputSubscription = audioStream.listen((chunk) {
       // In hands-free voiceActivity mode, do not stream/buffer any audio in v1.
@@ -294,12 +291,6 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
         _buffer.append(chunk);
       }
     });
-  }
-
-  @override
-  Future<void> unbindAudioInput() async {
-    await _audioInputSubscription?.cancel();
-    _audioInputSubscription = null;
   }
 
   @override
@@ -477,6 +468,11 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
     await _responseStreamSubscription?.cancel();
     _responseStreamSubscription = null;
     _client.cancelOngoingRequest();
+  }
+
+  Future<void> _cancelAudioInput() async {
+    await _audioInputSubscription?.cancel();
+    _audioInputSubscription = null;
   }
 
   Future<void> _sendAudioTurn(String wavBase64) async {

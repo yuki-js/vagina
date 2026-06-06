@@ -479,31 +479,27 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
   }
 
   @override
-  Future<void> disconnect() async {
-    _ensureNotDisposed();
-    _setUserSpeaking(false);
-    await _cancelAudioInput();
-    await _client.disconnect();
-  }
-
-  @override
   Future<void> dispose() async {
     if (_disposed) {
       return;
     }
-    _disposed = true;
     _setUserSpeaking(false);
     await _cancelAudioInput();
-    for (final subscription in _subscriptions) {
-      await subscription.cancel();
+    try {
+      await _client.disconnect();
+    } finally {
+      _disposed = true;
+      for (final subscription in _subscriptions) {
+        await subscription.cancel();
+      }
+      await _client.dispose();
+      await _threadController.close();
+      await _connectionController.close();
+      await _errorController.close();
+      await _assistantAudioController.close();
+      await _assistantAudioCompletedController.close();
+      await _userSpeakingStateController.close();
     }
-    await _client.dispose();
-    await _threadController.close();
-    await _connectionController.close();
-    await _errorController.close();
-    await _assistantAudioController.close();
-    await _assistantAudioCompletedController.close();
-    await _userSpeakingStateController.close();
   }
 
   // ---------------------------------------------------------------------------
@@ -528,11 +524,6 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
         );
       },
     );
-  }
-
-  @override
-  Future<void> unbindAudioInput() async {
-    await _cancelAudioInput();
   }
 
   @override

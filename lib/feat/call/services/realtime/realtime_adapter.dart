@@ -54,11 +54,7 @@ abstract interface class RealtimeAdapter {
     String? instructions,
   });
 
-  /// Gracefully close the connection.
-  Future<void> disconnect();
-
-  /// Release all resources. Idempotent.
-  /// @deprecated Use [disconnect] instead, which is more semantically clear and can be implemented by the adapter without needing to dispose/recreate it for a new call.
+  /// Gracefully close the connection and release all resources. Idempotent.
   Future<void> dispose();
 
   // ---------------------------------------------------------------------------
@@ -71,9 +67,6 @@ abstract interface class RealtimeAdapter {
   /// (OpenAI: `input_audio_buffer.append`, Gemini: inline in BidiStream).
   /// Calling this while a stream is already bound replaces the previous one.
   Future<void> bindAudioInput(Stream<Uint8List> audioStream);
-
-  /// Stop forwarding audio. Safe to call if nothing is bound.
-  Future<void> unbindAudioInput();
 
   /// Switch between server-side VAD turn handling and manual client-side turn
   /// control.
