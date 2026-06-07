@@ -12,8 +12,10 @@ enum RealtimeAudioTurnMode { voiceActivity, manual }
 /// Design principles:
 /// - Callers never touch provider-native payloads (no `Map<String, dynamic>`
 ///   session patches, no `response.create`, no `output_audio_buffer.clear`).
-/// - Audio input is a [Stream] that the adapter subscribes to.  Internal
-///   buffering (OpenAI) or direct forwarding (Gemini) is an adapter concern.
+/// - Live microphone streaming and client-managed audio turns are separate
+///   concerns.
+/// - Client-side/manual turn capture happens above the adapter; provider-native
+///   audio ingestion/encoding stays inside the adapter.
 /// - Each `send*` method implies "and generate a response".  The adapter
 ///   decides how to trigger that for its protocol.
 /// - Provider-specific session defaults (audio format, VAD config, transcription
@@ -60,32 +62,20 @@ abstract interface class RealtimeAdapter {
   // Audio input / output
   // ---------------------------------------------------------------------------
 
-  /// Start forwarding PCM audio from [audioStream] to the model.
+  /// Bind live PCM audio from [audioStream] for turn modes that use streaming
+  /// microphone input.
   ///
-  /// The adapter subscribes and manages any protocol-level buffering
-  /// (OpenAI: `input_audio_buffer.append`, Gemini: inline in BidiStream).
+  /// In [RealtimeAudioTurnMode.voiceActivity], implementations may forward or
+  /// buffer chunks according to provider protocol. In
+  /// [RealtimeAudioTurnMode.manual], callers typically accumulate a client-side
+  /// turn and submit it with [sendAudioOneShot].
+  /// Passing `null` unbinds the currently bound live audio input stream.
   /// Calling this while a stream is already bound replaces the previous one.
-  Future<void> bindAudioInput(Stream<Uint8List> audioStream);
+  Future<void> bindAudioInput(Stream<Uint8List>? audioStream);
 
-  /// Switch between server-side VAD turn handling and manual client-side turn
-  /// control.
+  /// Switch between server-side VAD turn handling and client-managed one-shot
+  /// audio turns. This is orthogonal to whether live input is currently bound.
   Future<void> setAudioTurnMode(RealtimeAudioTurnMode mode);
-
-  /// Start a manual audio turn.
-  ///
-  /// In manual mode, chunks from the bound audio stream are forwarded only while
-  /// the turn is active.
-  Future<void> beginManualAudioInputTurn();
-
-  /// End the current manual audio turn.
-  ///
-  /// Returns `true` when buffered audio met the minimum duration and was
-  /// committed for response generation, otherwise `false`.
-  Future<bool> endManualAudioInputTurn({required Duration minAudioDuration});
-
-  /// Cancel the current manual audio turn and discard any pending buffered
-  /// input audio.
-  Future<void> cancelManualAudioInputTurn();
 
   /// Provider-decoded assistant PCM output stream.
   ///
@@ -129,10 +119,17 @@ abstract interface class RealtimeAdapter {
   // User content  (each call implies "and generate a response")
   // ---------------------------------------------------------------------------
 
-  /// Send a text message from the user.  Returns the local item ID.
+  /// Send one completed audio turn from the user. Returns the local item ID.
+  ///
+  /// The caller owns client-side/manual turn capture and passes the final PCM
+  /// payload here. Implementations translate [audioBytes] into the provider-native
+  /// input format and generate a response.
+  Future<String> sendAudioOneShot(Uint8List audioBytes);
+
+  /// Send a text message from the user. Returns the local item ID.
   Future<String> sendText(String text);
 
-  /// Send an image from the user.  Returns the local item ID.
+  /// Send an image from the user. Returns the local item ID.
   Future<String> sendImage(Uint8List imageBytes);
 
   /// Return the result of a function/tool call the model requested.
