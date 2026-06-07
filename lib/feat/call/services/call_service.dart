@@ -166,7 +166,7 @@ class CallService {
   Future<void> beginPushToTalk() async {
     if (!_pushToTalkEnabled ||
         state != CallState.active ||
-        !_realtimeService.isConnected) {
+        !_realtimeService.connectionState.isConnected) {
       return;
     }
 
@@ -374,7 +374,7 @@ class CallService {
       unawaited(_playbackService.markResponseComplete());
     });
     _userSpeakingStateSubscription =
-        _realtimeService.userSpeakingStates.listen((isSpeaking) {
+        _realtimeService.isUserSpeakingUpdates.listen((isSpeaking) {
       if (!isSpeaking || _pushToTalkEnabled) {
         return;
       }
@@ -427,7 +427,7 @@ class CallService {
   Future<void> _interruptAssistantOutput() async {
     _cancelPendingToolWork(playSound: true);
     await _playbackService.interrupt();
-    if (_realtimeService.isConnected) {
+    if (_realtimeService.connectionState.isConnected) {
       await _realtimeService.interrupt();
     }
   }

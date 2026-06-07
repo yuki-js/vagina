@@ -9,9 +9,9 @@ import 'realtime_connection_state.dart';
 abstract interface class OaiRealtimeTransport {
   Stream<Map<String, dynamic>> get inboundMessages;
 
-  Stream<OaiRealtimeConnectionState> get connectionStates;
+  OaiRealtimeConnectionState get connectionState;
 
-  bool get isConnected;
+  Stream<OaiRealtimeConnectionState> get connectionStateUpdates;
 
   Future<void> connect(OaiRealtimeConnectConfig config);
 

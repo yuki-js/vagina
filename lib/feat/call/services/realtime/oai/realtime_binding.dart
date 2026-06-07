@@ -47,13 +47,13 @@ final class OaiRealtimeClient {
         _encoder = encoder ?? const OaiRealtimeCommandEncoder() {
     _messageSubscription = _transport.inboundMessages.listen(_handleInbound);
     _connectionStateSubscription =
-        _transport.connectionStates.listen(_handleConnectionState);
+        _transport.connectionStateUpdates.listen(_handleConnectionState);
   }
 
-  bool get isConnected => _transport.isConnected;
+  OaiRealtimeConnectionState get connectionState => _transport.connectionState;
 
-  Stream<OaiRealtimeConnectionState> get connectionStates =>
-      _transport.connectionStates;
+  Stream<OaiRealtimeConnectionState> get connectionStateUpdates =>
+      _transport.connectionStateUpdates;
 
   Stream<OaiRealtimeConnectionError> get connectionErrors =>
       _errorController.stream;

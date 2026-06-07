@@ -43,11 +43,11 @@ final class WebSocketOaiRealtimeTransport implements OaiRealtimeTransport {
   Stream<Map<String, dynamic>> get inboundMessages => _inboundController.stream;
 
   @override
-  Stream<OaiRealtimeConnectionState> get connectionStates =>
-      _stateController.stream;
+  OaiRealtimeConnectionState get connectionState => _lastState;
 
   @override
-  bool get isConnected => _lastState.isConnected;
+  Stream<OaiRealtimeConnectionState> get connectionStateUpdates =>
+      _stateController.stream;
 
   @override
   Future<void> connect(OaiRealtimeConnectConfig config) async {
@@ -106,7 +106,7 @@ final class WebSocketOaiRealtimeTransport implements OaiRealtimeTransport {
   Future<void> sendJson(Map<String, dynamic> payload) async {
     _ensureNotDisposed();
     final channel = _channel;
-    if (channel == null || !isConnected) {
+    if (channel == null || !connectionState.isConnected) {
       throw StateError('Cannot send realtime payload while disconnected.');
     }
 

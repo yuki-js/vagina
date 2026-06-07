@@ -56,7 +56,7 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
       );
 
       final completer = Completer<void>();
-      sub = client.connectionStates.listen((state) {
+      sub = client.connectionStateUpdates.listen((state) {
         if (state.phase == OaiRealtimeConnectionPhase.connected) {
           if (!completer.isCompleted) {
             completer.complete();
@@ -121,6 +121,8 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
   final Set<String> _locallyCancelledFunctionCallIds = <String>{};
   int _localIdCounter = 0;
   bool _disposed = false;
+  RealtimeAdapterConnectionState _connectionState =
+      const RealtimeAdapterConnectionState.idle();
   bool _isUserSpeaking = false;
   RealtimeAudioTurnMode _audioTurnMode = RealtimeAudioTurnMode.voiceActivity;
   bool _isManualAudioInputTurnActive = false;
@@ -132,8 +134,8 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
           id: threadId ?? _makeThreadId(),
         ) {
     _subscriptions.addAll([
-      _client.connectionStates.listen((state) {
-        _connectionController.add(
+      _client.connectionStateUpdates.listen((state) {
+        _setConnectionState(
           switch (state.phase) {
             OaiRealtimeConnectionPhase.idle =>
               const RealtimeAdapterConnectionState.idle(),
@@ -427,7 +429,10 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
   Stream<RealtimeThread> get threadUpdates => _threadController.stream;
 
   @override
-  Stream<RealtimeAdapterConnectionState> get connectionStates =>
+  RealtimeAdapterConnectionState get connectionState => _connectionState;
+
+  @override
+  Stream<RealtimeAdapterConnectionState> get connectionStateUpdates =>
       _connectionController.stream;
 
   @override
@@ -442,13 +447,12 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
       _assistantAudioCompletedController.stream;
 
   @override
-  Stream<bool> get userSpeakingStates => _userSpeakingStateController.stream;
+  Stream<bool> get isUserSpeakingUpdates => _userSpeakingStateController.stream;
 
   @override
   bool get isUserSpeaking => _isUserSpeaking;
 
-  @override
-  bool get isConnected => _client.isConnected;
+  bool get _isConnected => connectionState.isConnected;
 
   // ---------------------------------------------------------------------------
   // Lifecycle
@@ -536,7 +540,7 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
     await _cancelManualAudioInputTurn(clearRemoteBuffer: true);
     _audioTurnMode = mode;
 
-    if (!isConnected) {
+    if (!_isConnected) {
       return;
     }
 
@@ -549,7 +553,7 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
     if (_audioTurnMode != RealtimeAudioTurnMode.manual) {
       await setAudioTurnMode(RealtimeAudioTurnMode.manual);
     }
-    if (!isConnected || _isManualAudioInputTurnActive) {
+    if (!_isConnected || _isManualAudioInputTurnActive) {
       return;
     }
 
@@ -575,7 +579,7 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
     final capturedAudioBytes = _manualAudioInputBytes;
     _manualAudioInputBytes = 0;
 
-    if (!isConnected) {
+    if (!_isConnected) {
       return false;
     }
 
@@ -603,7 +607,7 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
   Future<void> registerTools(List<ToolDefinition> tools) async {
     _ensureNotDisposed();
     _tools = List<ToolDefinition>.unmodifiable(tools);
-    if (!isConnected) {
+    if (!_isConnected) {
       return;
     }
 
@@ -672,7 +676,7 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
         return false;
     }
 
-    if (!isConnected) {
+    if (!_isConnected) {
       return true;
     }
 
@@ -820,8 +824,15 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
   }
 
   // ---------------------------------------------------------------------------
-  // Internal — speech state
+  // Internal — state
   // ---------------------------------------------------------------------------
+
+  void _setConnectionState(RealtimeAdapterConnectionState value) {
+    _connectionState = value;
+    if (!_connectionController.isClosed) {
+      _connectionController.add(value);
+    }
+  }
 
   void _setUserSpeaking(bool value) {
     if (_isUserSpeaking == value) {
@@ -1216,7 +1227,7 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
   }
 
   Future<void> _handleInputAudioChunk(Uint8List bytes) async {
-    if (bytes.isEmpty || !isConnected) {
+    if (bytes.isEmpty || !_isConnected) {
       return;
     }
 
@@ -1240,7 +1251,7 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
     _manualAudioInputBytes = 0;
     _setUserSpeaking(false);
 
-    if (clearRemoteBuffer && isConnected) {
+    if (clearRemoteBuffer && _isConnected) {
       await _client.clearInputAudioBuffer();
     }
   }

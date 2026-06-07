@@ -207,7 +207,7 @@ final class TimerService extends SubService {
 
     // Reset on user speaking
     _userSpeakingSubscription =
-        realtimeService.userSpeakingStates.listen((isSpeaking) {
+        realtimeService.isUserSpeakingUpdates.listen((isSpeaking) {
       if (isSpeaking && _isTracking) {
         resetSilenceTimer();
       }

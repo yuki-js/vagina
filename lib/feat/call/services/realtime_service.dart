@@ -23,12 +23,12 @@ final class RealtimeService extends SubService {
 
   Stream<RealtimeThread> get threadUpdates => _adapter.threadUpdates;
 
-  Stream<RealtimeAdapterConnectionState> get connectionStates =>
-      _adapter.connectionStates;
+  RealtimeAdapterConnectionState get connectionState => _adapter.connectionState;
+
+  Stream<RealtimeAdapterConnectionState> get connectionStateUpdates =>
+      _adapter.connectionStateUpdates;
 
   Stream<RealtimeAdapterError> get errors => _adapter.errors;
-
-  bool get isConnected => _adapter.isConnected;
 
   @override
   Future<void> start() async {
@@ -91,11 +91,11 @@ final class RealtimeService extends SubService {
   /// Completion signal for the current assistant audio response.
   Stream<void> get assistantAudioCompleted => _adapter.assistantAudioCompleted;
 
-  /// Emits the current VAD speaking state whenever it changes.
-  Stream<bool> get userSpeakingStates => _adapter.userSpeakingStates;
-
   /// Whether VAD currently considers the user to be speaking.
   bool get isUserSpeaking => _adapter.isUserSpeaking;
+
+  /// Emits the current VAD speaking state whenever it changes.
+  Stream<bool> get isUserSpeakingUpdates => _adapter.isUserSpeakingUpdates;
 
   // ---------------------------------------------------------------------------
   // Tool configuration

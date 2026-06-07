@@ -36,7 +36,7 @@ final class FeedbackService extends SubService {
       unawaited(_handleAssistantAudioCompletedSignal());
     });
     _userSpeakingStateSubscription =
-        realtimeService.userSpeakingStates.listen((isSpeaking) {
+        realtimeService.isUserSpeakingUpdates.listen((isSpeaking) {
       if (!isSpeaking) {
         return;
       }

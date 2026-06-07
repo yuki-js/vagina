@@ -139,7 +139,9 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
   OaiCcConnectConfig? _config;
   String? _instructions;
   String? _voice;
-  bool _isConnected = false;
+  RealtimeAdapterConnectionState _connectionState =
+      const RealtimeAdapterConnectionState.idle();
+  bool _isUserSpeaking = false;
   int _localIdCounter = 0;
   bool _disposed = false;
   final Map<String, String> _assistantAudioIds = {};
@@ -158,10 +160,7 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
         _buffer = buffer ?? OaiCcAudioBuffer(),
         _thread = RealtimeThread(
             id: threadId ??
-                'thread_cc_${DateTime.now().millisecondsSinceEpoch}') {
-    // Initialize with idle state
-    _connectionController.add(const RealtimeAdapterConnectionState.idle());
-  }
+                'thread_cc_${DateTime.now().millisecondsSinceEpoch}');
 
   // ---------------------------------------------------------------------------
   // State
@@ -174,14 +173,14 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
   Stream<RealtimeThread> get threadUpdates => _threadController.stream;
 
   @override
-  Stream<RealtimeAdapterConnectionState> get connectionStates =>
+  RealtimeAdapterConnectionState get connectionState => _connectionState;
+
+  @override
+  Stream<RealtimeAdapterConnectionState> get connectionStateUpdates =>
       _connectionController.stream;
 
   @override
   Stream<RealtimeAdapterError> get errors => _errorController.stream;
-
-  @override
-  bool get isConnected => _isConnected;
 
   @override
   Stream<Uint8List> get assistantAudioStream =>
@@ -192,10 +191,10 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
       _assistantAudioCompletedController.stream;
 
   @override
-  Stream<bool> get userSpeakingStates => _userSpeakingStateController.stream;
+  Stream<bool> get isUserSpeakingUpdates => _userSpeakingStateController.stream;
 
   @override
-  bool get isUserSpeaking => false; // VAD not implemented locally in v1
+  bool get isUserSpeaking => _isUserSpeaking;
 
   // ---------------------------------------------------------------------------
   // Lifecycle
@@ -208,15 +207,14 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
     String? instructions,
   }) async {
     _ensureNotDisposed();
-    _connectionController
-        .add(const RealtimeAdapterConnectionState.connecting());
+    _setConnectionState(const RealtimeAdapterConnectionState.connecting());
 
     if (apiConfig is! SelfhostedVoiceAgentApiConfig) {
       final state = RealtimeAdapterConnectionState.failed(
         message:
             'OaiCcRealtimeAdapter only supports SelfhostedVoiceAgentApiConfig.',
       );
-      _connectionController.add(state);
+      _setConnectionState(state);
       throw ArgumentError('Unsupported API configuration type.');
     }
     _instructions = instructions;
@@ -246,8 +244,7 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
       extraHeaders: const <String, String>{},
     );
 
-    _isConnected = true;
-    _connectionController.add(const RealtimeAdapterConnectionState.connected());
+    _setConnectionState(const RealtimeAdapterConnectionState.connected());
   }
 
   @override
@@ -257,11 +254,7 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
 
     await _cleanupActiveCalls();
     await _cancelAudioInput();
-    _isConnected = false;
-    if (!_connectionController.isClosed) {
-      _connectionController
-          .add(const RealtimeAdapterConnectionState.disconnected());
-    }
+    _setConnectionState(const RealtimeAdapterConnectionState.disconnected());
     _client.dispose();
 
     await _threadController.close();
@@ -314,7 +307,7 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
 
     _isManualAudioInputTurnActive = true;
     _buffer.clear();
-    _userSpeakingStateController.add(true);
+    _setUserSpeaking(true);
   }
 
   @override
@@ -324,7 +317,7 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
     if (!_isManualAudioInputTurnActive) return false;
 
     _isManualAudioInputTurnActive = false;
-    _userSpeakingStateController.add(false);
+    _setUserSpeaking(false);
 
     final totalBytes = _buffer.lengthInBytes;
     final totalDurationMs = (totalBytes / 2) /
@@ -349,7 +342,7 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
     _ensureNotDisposed();
     _isManualAudioInputTurnActive = false;
     _buffer.clear();
-    _userSpeakingStateController.add(false);
+    _setUserSpeaking(false);
   }
 
   // ---------------------------------------------------------------------------
@@ -810,6 +803,23 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
   void _emitThreadUpdate() {
     if (!_threadController.isClosed) {
       _threadController.add(_thread);
+    }
+  }
+
+  void _setConnectionState(RealtimeAdapterConnectionState value) {
+    _connectionState = value;
+    if (!_connectionController.isClosed) {
+      _connectionController.add(value);
+    }
+  }
+
+  void _setUserSpeaking(bool value) {
+    if (_isUserSpeaking == value) {
+      return;
+    }
+    _isUserSpeaking = value;
+    if (!_userSpeakingStateController.isClosed) {
+      _userSpeakingStateController.add(value);
     }
   }
 

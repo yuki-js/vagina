@@ -67,7 +67,7 @@ class _ChatPaneState extends State<ChatPane> {
     _boundRealtimeService = service;
 
     _items = service?.thread.items ?? const <RealtimeThreadItem>[];
-    _isConnected = service?.isConnected ?? false;
+    _isConnected = service?.connectionState.isConnected ?? false;
 
     if (service == null) {
       return;
@@ -82,7 +82,7 @@ class _ChatPaneState extends State<ChatPane> {
       });
     });
 
-    _connectionStateSubscription = service.connectionStates.listen((state) {
+    _connectionStateSubscription = service.connectionStateUpdates.listen((state) {
       if (!mounted) {
         return;
       }
