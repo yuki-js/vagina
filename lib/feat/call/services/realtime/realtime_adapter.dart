@@ -29,14 +29,13 @@ abstract interface class RealtimeAdapter {
   /// Fires whenever [thread] is mutated (new item, delta, status change…).
   Stream<RealtimeThread> get threadUpdates;
 
+  /// Current connection lifecycle state.
+  RealtimeAdapterConnectionState get connectionState;
   /// Connection lifecycle state changes.
-  Stream<RealtimeAdapterConnectionState> get connectionStates;
+  Stream<RealtimeAdapterConnectionState> get connectionStateUpdates;
 
   /// Protocol and transport errors.
   Stream<RealtimeAdapterError> get errors;
-
-  /// Whether the underlying transport is connected right now.
-  bool get isConnected;
 
   // ---------------------------------------------------------------------------
   // Lifecycle
@@ -100,11 +99,11 @@ abstract interface class RealtimeAdapter {
   /// chunk delivery from response-boundary completion.
   Stream<void> get assistantAudioCompleted;
 
-  /// Emits the current VAD speaking state whenever it changes.
-  Stream<bool> get userSpeakingStates;
-
   /// Whether VAD currently considers the user to be speaking.
   bool get isUserSpeaking;
+
+  /// Emits the current VAD speaking state whenever it changes.
+  Stream<bool> get isUserSpeakingUpdates;
 
   // ---------------------------------------------------------------------------
   // Tool configuration
