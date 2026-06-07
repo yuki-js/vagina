@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:convert';
+import 'dart:convert' show base64Decode;
 import 'dart:typed_data';
 
 import 'package:vagina/feat/call/models/realtime/realtime_adapter_models.dart';
@@ -8,14 +8,16 @@ import 'package:vagina/feat/call/models/voice_agent_api_config.dart';
 import 'package:vagina/feat/call/services/realtime/realtime_adapter.dart';
 import 'package:vagina/services/tools_runtime/tool_definition.dart';
 
-import 'oai_cc_buffer.dart';
 import 'oai_cc_client.dart';
 import 'oai_cc_connect_config.dart';
 import 'oai_cc_event.dart';
 import 'oai_cc_request.dart';
+import 'oai_cc_wav_encoder.dart';
 
 /// OpenAI Chat Completions API implementation of [RealtimeAdapter].
-/// Supports manual push-to-talk mode, while disabling audio input on hands-free VAD mode for v1.
+///
+/// Live microphone input is lifecycle-bound only; completed manual/PTT audio
+/// turns are supplied by CallService through [sendAudioOneShot].
 final class OaiCcRealtimeAdapter implements RealtimeAdapter {
   /// Test Chat Completions API connectivity.
   static Future<void> testConnection(
@@ -117,7 +119,6 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
   }
 
   final OaiCcClient _client;
-  final OaiCcAudioBuffer _buffer;
   final RealtimeThread _thread;
 
   final StreamController<RealtimeThread> _threadController =
@@ -141,7 +142,6 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
   String? _voice;
   RealtimeAdapterConnectionState _connectionState =
       const RealtimeAdapterConnectionState.idle();
-  bool _isUserSpeaking = false;
   int _localIdCounter = 0;
   bool _disposed = false;
   final Map<String, String> _assistantAudioIds = {};
@@ -149,15 +149,10 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
   final Map<int, String> _activeToolCallIndexToItemId = {};
   List<ToolDefinition> _tools = const <ToolDefinition>[];
 
-  RealtimeAudioTurnMode _audioTurnMode = RealtimeAudioTurnMode.manual;
-  bool _isManualAudioInputTurnActive = false;
-
   OaiCcRealtimeAdapter({
     OaiCcClient? client,
-    OaiCcAudioBuffer? buffer,
     String? threadId,
   })  : _client = client ?? OaiCcClient(),
-        _buffer = buffer ?? OaiCcAudioBuffer(),
         _thread = RealtimeThread(
             id: threadId ??
                 'thread_cc_${DateTime.now().millisecondsSinceEpoch}');
@@ -194,7 +189,7 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
   Stream<bool> get isUserSpeakingUpdates => _userSpeakingStateController.stream;
 
   @override
-  bool get isUserSpeaking => _isUserSpeaking;
+  bool get isUserSpeaking => false;
 
   // ---------------------------------------------------------------------------
   // Lifecycle
@@ -270,79 +265,22 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
   // ---------------------------------------------------------------------------
 
   @override
-  Future<void> bindAudioInput(Stream<Uint8List> audioStream) async {
+  Future<void> bindAudioInput(Stream<Uint8List>? audioStream) async {
     _ensureNotDisposed();
     await _cancelAudioInput();
+    if (audioStream == null) {
+      return;
+    }
 
-    _audioInputSubscription = audioStream.listen((chunk) {
-      // In hands-free voiceActivity mode, do not stream/buffer any audio in v1.
-      if (_audioTurnMode == RealtimeAudioTurnMode.voiceActivity) {
-        return;
-      }
-
-      if (_isManualAudioInputTurnActive) {
-        _buffer.append(chunk);
-      }
-    });
+    // Chat Completions does not consume live microphone chunks directly.
+    // CallService owns manual/PTT turn capture and submits completed turns via
+    // sendAudioOneShot(). Keep the live binding only as a lifecycle boundary.
+    _audioInputSubscription = audioStream.listen((_) {});
   }
 
   @override
   Future<void> setAudioTurnMode(RealtimeAudioTurnMode mode) async {
     _ensureNotDisposed();
-    _audioTurnMode = mode;
-    if (mode == RealtimeAudioTurnMode.voiceActivity) {
-      // Clear manual state if switching to VAD
-      _isManualAudioInputTurnActive = false;
-      _buffer.clear();
-    }
-  }
-
-  @override
-  Future<void> beginManualAudioInputTurn() async {
-    _ensureNotDisposed();
-    if (_audioTurnMode != RealtimeAudioTurnMode.manual) return;
-
-    // Interrupt any ongoing assistant response
-    await interrupt();
-
-    _isManualAudioInputTurnActive = true;
-    _buffer.clear();
-    _setUserSpeaking(true);
-  }
-
-  @override
-  Future<bool> endManualAudioInputTurn(
-      {required Duration minAudioDuration}) async {
-    _ensureNotDisposed();
-    if (!_isManualAudioInputTurnActive) return false;
-
-    _isManualAudioInputTurnActive = false;
-    _setUserSpeaking(false);
-
-    final totalBytes = _buffer.lengthInBytes;
-    final totalDurationMs = (totalBytes / 2) /
-        24; // PCM 16-bit 24kHz mono = 48000 bytes/sec = 48 bytes/ms = 48000 bytes/sec / 2 bytes/sample = 24000 samples/sec
-    final totalDuration = Duration(milliseconds: totalDurationMs.round());
-
-    if (totalDuration < minAudioDuration) {
-      _buffer.clear();
-      return false;
-    }
-
-    final audioBase64 = _buffer.toWavBase64();
-    _buffer.clear();
-
-    // Trigger API request with audio input
-    await _sendAudioTurn(audioBase64);
-    return true;
-  }
-
-  @override
-  Future<void> cancelManualAudioInputTurn() async {
-    _ensureNotDisposed();
-    _isManualAudioInputTurnActive = false;
-    _buffer.clear();
-    _setUserSpeaking(false);
   }
 
   // ---------------------------------------------------------------------------
@@ -359,6 +297,15 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
   Future<bool> applyProviderExtension(
       String extensionType, Map<String, dynamic> payload) async {
     return false; // Extension config not supported in v1
+  }
+
+  @override
+  Future<String> sendAudioOneShot(Uint8List audioBytes) async {
+    _ensureNotDisposed();
+    await interrupt();
+
+    final wavBase64 = OaiCcWavEncoder.encodeBase64(audioBytes);
+    return _sendAudioTurn(wavBase64);
   }
 
   @override
@@ -468,7 +415,7 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
     _audioInputSubscription = null;
   }
 
-  Future<void> _sendAudioTurn(String wavBase64) async {
+  Future<String> _sendAudioTurn(String wavBase64) async {
     final userItemId = _nextLocalId();
     final audioPart = RealtimeThreadAudioPart(
       transcript: null,
@@ -489,6 +436,7 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
     final messages = _buildMessages();
 
     await _executeChatCompletion(messages);
+    return userItemId;
   }
 
   Future<void> _sendTextTurn(String text) async {
@@ -810,16 +758,6 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
     _connectionState = value;
     if (!_connectionController.isClosed) {
       _connectionController.add(value);
-    }
-  }
-
-  void _setUserSpeaking(bool value) {
-    if (_isUserSpeaking == value) {
-      return;
-    }
-    _isUserSpeaking = value;
-    if (!_userSpeakingStateController.isClosed) {
-      _userSpeakingStateController.add(value);
     }
   }
 

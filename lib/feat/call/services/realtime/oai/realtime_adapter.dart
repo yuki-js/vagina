@@ -2,8 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:vagina/core/config/app_config.dart';
-
 import '../realtime_adapter.dart';
 import '../realtime_provider_extensions.dart';
 
@@ -125,8 +123,6 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
       const RealtimeAdapterConnectionState.idle();
   bool _isUserSpeaking = false;
   RealtimeAudioTurnMode _audioTurnMode = RealtimeAudioTurnMode.voiceActivity;
-  bool _isManualAudioInputTurnActive = false;
-  int _manualAudioInputBytes = 0;
 
   OaiRealtimeAdapter({OaiRealtimeClient? client, String? threadId})
       : _client = client ?? OaiRealtimeClient(),
@@ -511,9 +507,12 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
   // ---------------------------------------------------------------------------
 
   @override
-  Future<void> bindAudioInput(Stream<Uint8List> audioStream) async {
+  Future<void> bindAudioInput(Stream<Uint8List>? audioStream) async {
     _ensureNotDisposed();
     await _cancelAudioInput();
+    if (audioStream == null) {
+      return;
+    }
     _audioInputSubscription = audioStream.listen(
       (bytes) {
         unawaited(_handleInputAudioChunk(bytes));
@@ -536,8 +535,9 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
     if (_audioTurnMode == mode) {
       return;
     }
-
-    await _cancelManualAudioInputTurn(clearRemoteBuffer: true);
+    if (_isConnected && _audioTurnMode == RealtimeAudioTurnMode.manual) {
+      await _client.clearInputAudioBuffer();
+    }
     _audioTurnMode = mode;
 
     if (!_isConnected) {
@@ -545,58 +545,6 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
     }
 
     await _client.updateSession(_buildSessionConfig());
-  }
-
-  @override
-  Future<void> beginManualAudioInputTurn() async {
-    _ensureNotDisposed();
-    if (_audioTurnMode != RealtimeAudioTurnMode.manual) {
-      await setAudioTurnMode(RealtimeAudioTurnMode.manual);
-    }
-    if (!_isConnected || _isManualAudioInputTurnActive) {
-      return;
-    }
-
-    await _client.clearInputAudioBuffer();
-    _manualAudioInputBytes = 0;
-    _isManualAudioInputTurnActive = true;
-    _setUserSpeaking(true);
-  }
-
-  @override
-  Future<bool> endManualAudioInputTurn({
-    required Duration minAudioDuration,
-  }) async {
-    _ensureNotDisposed();
-    if (_audioTurnMode != RealtimeAudioTurnMode.manual ||
-        !_isManualAudioInputTurnActive) {
-      return false;
-    }
-
-    _isManualAudioInputTurnActive = false;
-    _setUserSpeaking(false);
-
-    final capturedAudioBytes = _manualAudioInputBytes;
-    _manualAudioInputBytes = 0;
-
-    if (!_isConnected) {
-      return false;
-    }
-
-    if (capturedAudioBytes < _minimumAudioBytes(minAudioDuration)) {
-      await _client.clearInputAudioBuffer();
-      return false;
-    }
-
-    await _client.commitInputAudioBuffer();
-    await _client.createResponse();
-    return true;
-  }
-
-  @override
-  Future<void> cancelManualAudioInputTurn() async {
-    _ensureNotDisposed();
-    await _cancelManualAudioInputTurn(clearRemoteBuffer: true);
   }
 
   // ---------------------------------------------------------------------------
@@ -687,6 +635,21 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
   // ---------------------------------------------------------------------------
   // User content
   // ---------------------------------------------------------------------------
+
+  @override
+  Future<String> sendAudioOneShot(Uint8List audioBytes) async {
+    _ensureNotDisposed();
+    final itemId = _nextLocalId('audio');
+    if (!_isConnected || audioBytes.isEmpty) {
+      return itemId;
+    }
+
+    await _client.clearInputAudioBuffer();
+    await _client.appendInputAudio(audioBytes);
+    await _client.commitInputAudioBuffer();
+    await _client.createResponse();
+    return itemId;
+  }
 
   @override
   Future<String> sendText(String text) async {
@@ -1231,29 +1194,11 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
       return;
     }
 
-    if (_audioTurnMode == RealtimeAudioTurnMode.voiceActivity) {
-      await _client.appendInputAudio(bytes);
+    if (_audioTurnMode != RealtimeAudioTurnMode.voiceActivity) {
       return;
     }
 
-    if (!_isManualAudioInputTurnActive) {
-      return;
-    }
-
-    _manualAudioInputBytes += bytes.length;
     await _client.appendInputAudio(bytes);
-  }
-
-  Future<void> _cancelManualAudioInputTurn({
-    required bool clearRemoteBuffer,
-  }) async {
-    _isManualAudioInputTurnActive = false;
-    _manualAudioInputBytes = 0;
-    _setUserSpeaking(false);
-
-    if (clearRemoteBuffer && _isConnected) {
-      await _client.clearInputAudioBuffer();
-    }
   }
 
   Map<String, dynamic>? _buildTurnDetectionConfig(
@@ -1284,13 +1229,6 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
     };
   }
 
-  int _minimumAudioBytes(Duration duration) {
-    final bytesPerSample = AppConfig.bitDepth ~/ 8;
-    final bytesPerSecond =
-        AppConfig.sampleRate * AppConfig.channels * bytesPerSample;
-    return (duration.inMicroseconds * bytesPerSecond) ~/
-        Duration.microsecondsPerSecond;
-  }
 
   void _ensureNotDisposed() {
     if (_disposed) {

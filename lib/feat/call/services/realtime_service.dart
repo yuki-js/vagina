@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:vagina/feat/call/models/realtime/realtime_adapter_models.dart';
@@ -14,9 +15,21 @@ import 'realtime/realtime_adapter_factory.dart';
 final class RealtimeService extends SubService {
   final VoiceAgentInfo voiceAgent;
   late final RealtimeAdapter _adapter;
+  final StreamController<bool> _userSpeakingProjectionController =
+      StreamController<bool>.broadcast();
+  StreamSubscription<bool>? _adapterUserSpeakingSubscription;
+  bool _adapterUserSpeaking = false;
+  bool _manualAudioTurnSpeaking = false;
+  bool _isUserSpeakingProjection = false;
 
   RealtimeService({required this.voiceAgent}) {
     _adapter = _createAdapter(voiceAgent.apiConfig);
+    _adapterUserSpeaking = _adapter.isUserSpeaking;
+    _adapterUserSpeakingSubscription =
+        _adapter.isUserSpeakingUpdates.listen((isSpeaking) {
+      _adapterUserSpeaking = isSpeaking;
+      _refreshUserSpeakingProjection();
+    });
   }
 
   RealtimeThread get thread => _adapter.thread;
@@ -57,9 +70,11 @@ final class RealtimeService extends SubService {
   // Audio input / output
   // ---------------------------------------------------------------------------
 
-  /// Start forwarding a PCM audio stream to the model.
-  Future<void> bindAudioInput(Stream<Uint8List> audioStream) {
-    logger.info('Binding audio input stream to realtime adapter');
+  /// Bind or unbind a live PCM audio stream to the realtime adapter.
+  Future<void> bindAudioInput(Stream<Uint8List>? audioStream) {
+    logger.info(audioStream == null
+        ? 'Unbinding audio input stream from realtime adapter'
+        : 'Binding audio input stream to realtime adapter');
     return _adapter.bindAudioInput(audioStream);
   }
 
@@ -68,21 +83,10 @@ final class RealtimeService extends SubService {
     return _adapter.setAudioTurnMode(mode);
   }
 
-  Future<void> beginManualAudioInputTurn() {
-    logger.info('Beginning manual audio input turn');
-    return _adapter.beginManualAudioInputTurn();
-  }
-
-  Future<bool> endManualAudioInputTurn({required Duration minAudioDuration}) {
-    logger.info('Ending manual audio input turn');
-    return _adapter.endManualAudioInputTurn(
-      minAudioDuration: minAudioDuration,
-    );
-  }
-
-  Future<void> cancelManualAudioInputTurn() {
-    logger.info('Cancelling manual audio input turn');
-    return _adapter.cancelManualAudioInputTurn();
+  void projectManualAudioTurnSpeakingState(bool isSpeaking) {
+    logger.fine('Projecting manual audio turn speaking state: $isSpeaking');
+    _manualAudioTurnSpeaking = isSpeaking;
+    _refreshUserSpeakingProjection();
   }
 
   /// Provider-decoded assistant PCM output stream.
@@ -91,11 +95,12 @@ final class RealtimeService extends SubService {
   /// Completion signal for the current assistant audio response.
   Stream<void> get assistantAudioCompleted => _adapter.assistantAudioCompleted;
 
-  /// Whether VAD currently considers the user to be speaking.
-  bool get isUserSpeaking => _adapter.isUserSpeaking;
+  /// Whether the user is currently considered to be speaking.
+  bool get isUserSpeaking => _isUserSpeakingProjection;
 
-  /// Emits the current VAD speaking state whenever it changes.
-  Stream<bool> get isUserSpeakingUpdates => _adapter.isUserSpeakingUpdates;
+  /// Emits the projected user speaking state whenever it changes.
+  Stream<bool> get isUserSpeakingUpdates =>
+      _userSpeakingProjectionController.stream;
 
   // ---------------------------------------------------------------------------
   // Tool configuration
@@ -118,6 +123,11 @@ final class RealtimeService extends SubService {
   // ---------------------------------------------------------------------------
   // User content
   // ---------------------------------------------------------------------------
+
+  Future<String> sendAudioOneShot(Uint8List audioBytes) {
+    logger.info('Sending completed manual audio turn (${audioBytes.length} bytes)');
+    return _adapter.sendAudioOneShot(audioBytes);
+  }
 
   Future<String> sendText(String text) {
     logger.info('Sending text message (${text.length} chars)');
@@ -177,9 +187,26 @@ final class RealtimeService extends SubService {
   @override
   Future<void> dispose() async {
     logger.info('Disposing RealtimeService');
+    await _adapterUserSpeakingSubscription?.cancel();
+    _adapterUserSpeakingSubscription = null;
     await _adapter.dispose();
+    await _userSpeakingProjectionController.close();
     await super.dispose();
     logger.info('RealtimeService disposed successfully');
+  }
+
+  void _refreshUserSpeakingProjection() {
+    _setProjectedUserSpeaking(_adapterUserSpeaking || _manualAudioTurnSpeaking);
+  }
+
+  void _setProjectedUserSpeaking(bool value) {
+    if (_isUserSpeakingProjection == value) {
+      return;
+    }
+    _isUserSpeakingProjection = value;
+    if (!_userSpeakingProjectionController.isClosed) {
+      _userSpeakingProjectionController.add(value);
+    }
   }
 
   // ---------------------------------------------------------------------------

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:vagina/core/config/app_config.dart';
 import 'package:vagina/feat/call/models/active_file.dart';
@@ -9,6 +10,7 @@ import 'package:vagina/feat/call/models/text_agent_info.dart';
 import 'package:vagina/feat/call/models/voice_agent_api_config.dart';
 import 'package:vagina/feat/call/models/voice_agent_info.dart';
 import 'package:vagina/feat/call/services/feedback_service.dart';
+import 'package:vagina/feat/call/services/manual_audio_turn_buffer.dart';
 import 'package:vagina/feat/call/services/virtual_filesystem_service.dart';
 import 'package:vagina/feat/call/services/notepad_service.dart';
 import 'package:vagina/feat/call/services/playback_service.dart';
@@ -58,6 +60,7 @@ class CallService {
   late final TimerService _timerService;
   late final ToolRunner _toolRunner;
   late final TextAgentService _textAgentService;
+  late final ManualAudioTurnBuffer _manualAudioTurnBuffer;
   late final Set<String> _exposedToolKeys;
 
   /// Item IDs for function-call items that have already been dispatched
@@ -70,6 +73,7 @@ class CallService {
   StreamSubscription<bool>? _userSpeakingStateSubscription;
   StreamSubscription<List<ActiveFile>>? _activeFilesSubscription;
   StreamSubscription<RealtimeAdapterError>? _errorSubscription;
+  StreamSubscription<Uint8List>? _manualAudioTurnInputSubscription;
 
   final StreamController<CallState> _stateController =
       StreamController<CallState>.broadcast();
@@ -179,7 +183,8 @@ class CallService {
 
     await _interruptAssistantOutput();
     _pushToTalkActive = true;
-    await _realtimeService.beginManualAudioInputTurn();
+    _manualAudioTurnBuffer.begin();
+    _realtimeService.projectManualAudioTurnSpeakingState(true);
   }
 
   Future<bool> endPushToTalk() async {
@@ -199,10 +204,16 @@ class CallService {
     }
 
     _pushToTalkActive = false;
+    _realtimeService.projectManualAudioTurnSpeakingState(false);
     try {
-      return await _realtimeService.endManualAudioInputTurn(
+      final manualAudioTurn = _manualAudioTurnBuffer.finish(
         minAudioDuration: AppConfig.minPttAudioDuration,
       );
+      if (manualAudioTurn == null) {
+        return false;
+      }
+      await _realtimeService.sendAudioOneShot(manualAudioTurn.audioBytes);
+      return true;
     } finally {
       completer.complete();
       if (identical(_pendingPushToTalkRelease, completer.future)) {
@@ -225,7 +236,8 @@ class CallService {
       return;
     }
 
-    await _realtimeService.cancelManualAudioInputTurn();
+    _manualAudioTurnBuffer.cancel();
+    _realtimeService.projectManualAudioTurnSpeakingState(false);
   }
 
   void setVoiceAgent(VoiceAgentInfo voiceAgent) {
@@ -295,6 +307,7 @@ class CallService {
 
     _realtimeService = RealtimeService(voiceAgent: _voiceAgent!);
     _recorderService = RecorderService();
+    _manualAudioTurnBuffer = ManualAudioTurnBuffer();
     _textAgentService = TextAgentService(
       agents: _textAgents!,
     );
@@ -363,6 +376,8 @@ class CallService {
     await _realtimeService.start();
     await _recorderService.startRecordingSession();
     await _realtimeService.bindAudioInput(_recorderService.audioStream);
+    _manualAudioTurnInputSubscription =
+        _recorderService.audioStream.listen(_manualAudioTurnBuffer.append);
     await _playbackService
         .bindInputStream(_realtimeService.assistantAudioStream);
 
@@ -673,6 +688,9 @@ class CallService {
     _activeFilesSubscription = null;
     await _errorSubscription?.cancel();
     _errorSubscription = null;
+    await _manualAudioTurnInputSubscription?.cancel();
+    _manualAudioTurnInputSubscription = null;
+    _manualAudioTurnBuffer.cancel();
     _dispatchedToolCallIds.clear();
     _cancelledToolCallIds.clear();
     _pushToTalkActive = false;
