@@ -1,0 +1,1270 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:typed_data';
+
+import '../realtime_adapter.dart';
+import '../realtime_provider_extensions.dart';
+
+import 'package:vagina/feat/call/models/realtime/realtime_adapter_models.dart';
+import 'package:vagina/feat/call/models/realtime/realtime_thread.dart';
+import 'package:vagina/feat/call/models/voice_agent_api_config.dart';
+import 'package:vagina/services/tools_runtime/tool_definition.dart';
+import 'realtime_binding.dart';
+import 'realtime_connect_config.dart';
+import 'realtime_connection_state.dart';
+import 'realtime_event.dart';
+
+enum _OaiInputAudioNoiseReductionSelection {
+  off,
+  nearField,
+  farField;
+
+  static _OaiInputAudioNoiseReductionSelection? fromPayload(Object? value) {
+    return switch (value) {
+      'off' => _OaiInputAudioNoiseReductionSelection.off,
+      'nearField' => _OaiInputAudioNoiseReductionSelection.nearField,
+      'farField' => _OaiInputAudioNoiseReductionSelection.farField,
+      _ => null,
+    };
+  }
+}
+
+/// OpenAI Realtime protocol family implementation of [RealtimeAdapter].
+///
+/// Owns all protocol-specific defaults (audio format, VAD, transcription model).
+/// The caller only provides voice + instructions at connect time.
+final class OaiRealtimeAdapter implements RealtimeAdapter {
+  static Future<void> testConnection(
+    String baseUrl,
+    String apiKey, {
+    VoiceAgentModality modality = VoiceAgentModality.audio,
+  }) async {
+    final baseUri = Uri.parse(baseUrl);
+    if (baseUri.scheme.isEmpty || baseUri.host.isEmpty) {
+      throw Exception('Invalid Realtime base URI');
+    }
+
+    final client = OaiRealtimeClient();
+    StreamSubscription<OaiRealtimeConnectionState>? sub;
+
+    try {
+      final config = OaiRealtimeConnectConfig(
+        baseUri: baseUri,
+        bearerToken: apiKey,
+      );
+
+      final completer = Completer<void>();
+      sub = client.connectionStateUpdates.listen((state) {
+        if (state.phase == OaiRealtimeConnectionPhase.connected) {
+          if (!completer.isCompleted) {
+            completer.complete();
+          }
+        } else if (state.phase == OaiRealtimeConnectionPhase.failed) {
+          if (!completer.isCompleted) {
+            completer.completeError(
+              Exception(state.message ?? 'Connection failed'),
+            );
+          }
+        }
+      });
+
+      final connectFuture = client.connect(config);
+
+      await Future.any([
+        completer.future,
+        connectFuture,
+      ]).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          throw TimeoutException('Connection timeout');
+        },
+      );
+    } finally {
+      await sub?.cancel();
+      try {
+        await client.disconnect();
+      } catch (_) {}
+      await client.dispose();
+    }
+  }
+
+  final OaiRealtimeClient _client;
+  final RealtimeThread _thread;
+  final StreamController<RealtimeThread> _threadController =
+      StreamController<RealtimeThread>.broadcast();
+  final StreamController<RealtimeAdapterConnectionState> _connectionController =
+      StreamController<RealtimeAdapterConnectionState>.broadcast();
+  final StreamController<RealtimeAdapterError> _errorController =
+      StreamController<RealtimeAdapterError>.broadcast();
+  final StreamController<Uint8List> _assistantAudioController =
+      StreamController<Uint8List>.broadcast();
+  final StreamController<void> _assistantAudioCompletedController =
+      StreamController<void>.broadcast();
+  final StreamController<bool> _userSpeakingStateController =
+      StreamController<bool>.broadcast();
+  final List<StreamSubscription<dynamic>> _subscriptions =
+      <StreamSubscription<dynamic>>[];
+
+  StreamSubscription<Uint8List>? _audioInputSubscription;
+  List<ToolDefinition> _tools = const <ToolDefinition>[];
+  _OaiInputAudioNoiseReductionSelection _inputAudioNoiseReductionSelection =
+      _OaiInputAudioNoiseReductionSelection.nearField;
+  String? _reasoningEffort;
+  bool _toolChoiceRequired = false;
+  String? _sessionVoice;
+  String? _sessionInstructions;
+  String _transcriptionModel = 'gpt-4o-mini-transcribe';
+  VoiceAgentModality _sessionModality = VoiceAgentModality.audio;
+  final Set<String> _locallyCancelledFunctionItemIds = <String>{};
+  final Set<String> _locallyCancelledFunctionCallIds = <String>{};
+  int _localIdCounter = 0;
+  bool _disposed = false;
+  RealtimeAdapterConnectionState _connectionState =
+      const RealtimeAdapterConnectionState.idle();
+  bool _isUserSpeaking = false;
+  RealtimeAudioTurnMode _audioTurnMode = RealtimeAudioTurnMode.voiceActivity;
+
+  OaiRealtimeAdapter({OaiRealtimeClient? client, String? threadId})
+      : _client = client ?? OaiRealtimeClient(),
+        _thread = RealtimeThread(
+          id: threadId ?? _makeThreadId(),
+        ) {
+    _subscriptions.addAll([
+      _client.connectionStateUpdates.listen((state) {
+        _setConnectionState(
+          switch (state.phase) {
+            OaiRealtimeConnectionPhase.idle =>
+              const RealtimeAdapterConnectionState.idle(),
+            OaiRealtimeConnectionPhase.connecting ||
+            OaiRealtimeConnectionPhase.reconnecting =>
+              const RealtimeAdapterConnectionState.connecting(),
+            OaiRealtimeConnectionPhase.connected =>
+              const RealtimeAdapterConnectionState.connected(),
+            OaiRealtimeConnectionPhase.disconnecting =>
+              const RealtimeAdapterConnectionState.disconnecting(),
+            OaiRealtimeConnectionPhase.disconnected =>
+              RealtimeAdapterConnectionState.disconnected(
+                message: state.message,
+              ),
+            OaiRealtimeConnectionPhase.failed =>
+              RealtimeAdapterConnectionState.failed(
+                message: state.message,
+                error: state.error,
+              ),
+          },
+        );
+      }),
+      _client.connectionErrors.listen((error) {
+        _errorController.add(
+          RealtimeAdapterError(
+            code: error.code,
+            message: error.message,
+            cause: error.cause,
+          ),
+        );
+      }),
+      _client.errorEvents.listen((event) {
+        _errorController.add(
+          RealtimeAdapterError(
+            code: event.error.code ?? event.error.type,
+            message: event.error.message,
+            cause: event.rawPayload,
+          ),
+        );
+      }),
+      _client.conversationCreatedEvents.listen((event) {
+        _thread.conversationId = event.conversation.id;
+        _emitThreadUpdate();
+      }),
+      _client.conversationItemCreatedEvents.listen((event) {
+        _upsertConversationItem(event.item);
+        _emitThreadUpdate();
+      }),
+      _client.conversationItemDeletedEvents.listen((event) {
+        final itemId = event.itemId;
+        if (itemId == null || itemId.isEmpty) {
+          return;
+        }
+        if (_thread.removeItem(itemId)) {
+          _emitThreadUpdate();
+        }
+      }),
+      _client.conversationItemInputAudioTranscriptionDeltaEvents
+          .listen((event) {
+        final itemId = event.itemId;
+        final delta = event.delta;
+        if (itemId == null ||
+            itemId.isEmpty ||
+            delta == null ||
+            delta.isEmpty) {
+          return;
+        }
+        final item = _ensureUserMessageItem(itemId);
+        final audioPart = _findOrCreateAudioPart(
+          item,
+          contentIndex: event.contentIndex,
+        );
+        audioPart.appendTranscriptDelta(delta);
+        _emitThreadUpdate();
+      }),
+      _client.conversationItemInputAudioTranscriptionCompletedEvents
+          .listen((event) {
+        final itemId = event.itemId;
+        final transcript = event.transcript;
+        if (itemId == null ||
+            itemId.isEmpty ||
+            transcript == null ||
+            transcript.isEmpty) {
+          return;
+        }
+        final item = _ensureUserMessageItem(itemId);
+        final audioPart = _findOrCreateAudioPart(
+          item,
+          contentIndex: event.contentIndex,
+        );
+        audioPart
+          ..replaceTranscript(transcript)
+          ..markDone();
+        item.status = RealtimeThreadItemStatus.completed;
+        _emitThreadUpdate();
+      }),
+      _client.inputAudioBufferSpeechStartedEvents.listen((_) {
+        _setUserSpeaking(true);
+      }),
+      _client.inputAudioBufferSpeechStoppedEvents.listen((_) {
+        _setUserSpeaking(false);
+      }),
+      _client.responseOutputItemAddedEvents.listen((event) {
+        _upsertConversationItem(event.item);
+        _emitThreadUpdate();
+      }),
+      _client.responseOutputItemDoneEvents.listen((event) {
+        final item = _upsertConversationItem(event.item);
+        final nextStatus = RealtimeThreadItemStatus.fromWireValue(
+          event.item.status,
+        );
+        final isLocallyCancelled = _isLocallyCancelledFunctionCall(
+          itemId: item.id,
+          callId: item.callId,
+        );
+        if (!isLocallyCancelled ||
+            nextStatus == RealtimeThreadItemStatus.incomplete) {
+          item.status = nextStatus;
+        }
+        _emitThreadUpdate();
+      }),
+      _client.responseContentPartAddedEvents.listen((event) {
+        final itemId = event.itemId;
+        if (itemId == null || itemId.isEmpty) {
+          return;
+        }
+        final item = _ensureAssistantMessageItem(itemId);
+        _mergeContentPart(
+          item,
+          event.part,
+          contentIndex: event.contentIndex,
+          isDone: false,
+        );
+        _emitThreadUpdate();
+      }),
+      _client.responseContentPartDoneEvents.listen((event) {
+        final itemId = event.itemId;
+        if (itemId == null || itemId.isEmpty) {
+          return;
+        }
+        final item = _ensureAssistantMessageItem(itemId);
+        _mergeContentPart(
+          item,
+          event.part,
+          contentIndex: event.contentIndex,
+          isDone: true,
+        );
+        _emitThreadUpdate();
+      }),
+      _client.responseOutputTextDeltaEvents.listen((event) {
+        final itemId = event.itemId;
+        final delta = event.delta;
+        if (itemId == null || itemId.isEmpty || delta == null) {
+          return;
+        }
+        final item = _ensureAssistantMessageItem(itemId);
+        final textPart = _findOrCreateTextPart(
+          item,
+          contentIndex: event.contentIndex,
+        );
+        textPart.appendDelta(delta);
+        _emitThreadUpdate();
+      }),
+      _client.responseOutputTextDoneEvents.listen((event) {
+        final itemId = event.itemId;
+        if (itemId == null || itemId.isEmpty) {
+          return;
+        }
+        final item = _ensureAssistantMessageItem(itemId);
+        if (event.text != null) {
+          final textPart = _findOrCreateTextPart(
+            item,
+            contentIndex: event.contentIndex,
+          );
+          textPart
+            ..replaceText(event.text!)
+            ..markDone();
+        } else if (event.contentIndex != null) {
+          item.findContentPart(event.contentIndex!)?.markDone();
+        }
+        _emitThreadUpdate();
+      }),
+      _client.responseOutputAudioDeltaEvents.listen((event) {
+        final itemId = event.itemId;
+        final delta = event.delta;
+        if (itemId == null || itemId.isEmpty || delta == null) {
+          return;
+        }
+        final item = _ensureAssistantMessageItem(itemId);
+        final audioPart = _findOrCreateAudioPart(
+          item,
+          contentIndex: event.contentIndex,
+        );
+        audioPart.appendAudioDelta(delta);
+        try {
+          if (!_assistantAudioController.isClosed) {
+            _assistantAudioController.add(base64Decode(delta));
+          }
+        } catch (error) {
+          _errorController.add(
+            RealtimeAdapterError(
+              code: 'audio_output_decode_error',
+              message: 'Failed to decode assistant audio delta.',
+              cause: error,
+            ),
+          );
+        }
+        _emitThreadUpdate();
+      }),
+      _client.responseOutputAudioDoneEvents.listen((event) {
+        final itemId = event.itemId;
+        if (itemId == null || itemId.isEmpty) {
+          return;
+        }
+        final item = _ensureAssistantMessageItem(itemId);
+        _findContentPartOfType<RealtimeThreadAudioPart>(
+          item,
+          contentIndex: event.contentIndex,
+        )?.markDone();
+        if (!_assistantAudioCompletedController.isClosed) {
+          _assistantAudioCompletedController.add(null);
+        }
+        _emitThreadUpdate();
+      }),
+      _client.responseOutputAudioTranscriptDeltaEvents.listen((event) {
+        final itemId = event.itemId;
+        final delta = event.delta;
+        if (itemId == null || itemId.isEmpty || delta == null) {
+          return;
+        }
+        final item = _ensureAssistantMessageItem(itemId);
+        final audioPart = _findOrCreateAudioPart(
+          item,
+          contentIndex: event.contentIndex,
+        );
+        audioPart.appendTranscriptDelta(delta);
+        _emitThreadUpdate();
+      }),
+      _client.responseOutputAudioTranscriptDoneEvents.listen((event) {
+        final itemId = event.itemId;
+        final transcript = event.transcript;
+        if (itemId == null || itemId.isEmpty || transcript == null) {
+          return;
+        }
+        final item = _ensureAssistantMessageItem(itemId);
+        final audioPart = _findOrCreateAudioPart(
+          item,
+          contentIndex: event.contentIndex,
+        );
+        audioPart
+          ..replaceTranscript(transcript)
+          ..markDone();
+        _emitThreadUpdate();
+      }),
+      _client.responseFunctionCallArgumentsDeltaEvents.listen((event) {
+        final itemId = event.itemId;
+        final delta = event.delta;
+        if (itemId == null || itemId.isEmpty || delta == null) {
+          return;
+        }
+        final item = _ensureFunctionCallItem(itemId, callId: event.callId);
+        item.arguments = (item.arguments ?? '') + delta;
+        _emitThreadUpdate();
+      }),
+      _client.responseFunctionCallArgumentsDoneEvents.listen((event) {
+        final itemId = event.itemId;
+        if (itemId == null || itemId.isEmpty) {
+          return;
+        }
+        final item = _ensureFunctionCallItem(
+          itemId,
+          callId: event.callId,
+          name: event.name,
+        );
+        item.callId = event.callId ?? item.callId;
+        item.name = event.name ?? item.name;
+        item.arguments = event.arguments ?? item.arguments;
+        _emitThreadUpdate();
+      }),
+    ]);
+  }
+
+  // ---------------------------------------------------------------------------
+  // State
+  // ---------------------------------------------------------------------------
+
+  @override
+  RealtimeThread get thread => _thread;
+
+  @override
+  Stream<RealtimeThread> get threadUpdates => _threadController.stream;
+
+  @override
+  RealtimeAdapterConnectionState get connectionState => _connectionState;
+
+  @override
+  Stream<RealtimeAdapterConnectionState> get connectionStateUpdates =>
+      _connectionController.stream;
+
+  @override
+  Stream<RealtimeAdapterError> get errors => _errorController.stream;
+
+  @override
+  Stream<Uint8List> get assistantAudioStream =>
+      _assistantAudioController.stream;
+
+  @override
+  Stream<void> get assistantAudioCompleted =>
+      _assistantAudioCompletedController.stream;
+
+  @override
+  Stream<bool> get isUserSpeakingUpdates => _userSpeakingStateController.stream;
+
+  @override
+  bool get isUserSpeaking => _isUserSpeaking;
+
+  bool get _isConnected => connectionState.isConnected;
+
+  // ---------------------------------------------------------------------------
+  // Lifecycle
+  // ---------------------------------------------------------------------------
+
+  @override
+  Future<void> connect(
+    VoiceAgentApiConfig apiConfig, {
+    String? voice,
+    String? instructions,
+  }) async {
+    _ensureNotDisposed();
+    final selfHosted = apiConfig is SelfhostedVoiceAgentApiConfig
+        ? apiConfig
+        : throw UnsupportedError(
+            'OaiRealtimeAdapter only supports SelfhostedVoiceAgentApiConfig.',
+          );
+    _sessionVoice = voice;
+    _sessionInstructions = instructions;
+    _sessionModality = selfHosted.modality;
+    _transcriptionModel =
+        selfHosted.transcriptionModel?.trim().isNotEmpty == true
+            ? selfHosted.transcriptionModel!.trim()
+            : 'gpt-4o-mini-transcribe';
+
+    await _client.connect(_toOaiConnectConfig(selfHosted));
+    await _client.updateSession(_buildSessionConfig());
+  }
+
+  @override
+  Future<void> dispose() async {
+    if (_disposed) {
+      return;
+    }
+    _setUserSpeaking(false);
+    await _cancelAudioInput();
+    try {
+      await _client.disconnect();
+    } finally {
+      _disposed = true;
+      for (final subscription in _subscriptions) {
+        await subscription.cancel();
+      }
+      await _client.dispose();
+      await _threadController.close();
+      await _connectionController.close();
+      await _errorController.close();
+      await _assistantAudioController.close();
+      await _assistantAudioCompletedController.close();
+      await _userSpeakingStateController.close();
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Audio input
+  // ---------------------------------------------------------------------------
+
+  @override
+  Future<void> bindAudioInput(Stream<Uint8List>? audioStream) async {
+    _ensureNotDisposed();
+    await _cancelAudioInput();
+    if (audioStream == null) {
+      return;
+    }
+    _audioInputSubscription = audioStream.listen(
+      (bytes) {
+        unawaited(_handleInputAudioChunk(bytes));
+      },
+      onError: (Object error) {
+        _errorController.add(
+          RealtimeAdapterError(
+            code: 'audio_input_error',
+            message: 'Audio input stream error.',
+            cause: error,
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  Future<void> setAudioTurnMode(RealtimeAudioTurnMode mode) async {
+    _ensureNotDisposed();
+    if (_audioTurnMode == mode) {
+      return;
+    }
+    if (_isConnected && _audioTurnMode == RealtimeAudioTurnMode.manual) {
+      await _client.clearInputAudioBuffer();
+    }
+    _audioTurnMode = mode;
+
+    if (!_isConnected) {
+      return;
+    }
+
+    await _client.updateSession(_buildSessionConfig());
+  }
+
+  // ---------------------------------------------------------------------------
+  // Tool configuration
+  // ---------------------------------------------------------------------------
+
+  @override
+  Future<void> registerTools(List<ToolDefinition> tools) async {
+    _ensureNotDisposed();
+    _tools = List<ToolDefinition>.unmodifiable(tools);
+    if (!_isConnected) {
+      return;
+    }
+
+    await _client.updateSession(_buildSessionConfig());
+  }
+
+  @override
+  Future<void> setInstructions(String? instructions) async {
+    _ensureNotDisposed();
+    final normalized = instructions?.trim();
+    final nextInstructions =
+        normalized == null || normalized.isEmpty ? null : normalized;
+    if (_sessionInstructions == nextInstructions) {
+      return;
+    }
+
+    _sessionInstructions = nextInstructions;
+    if (!_isConnected) {
+      return;
+    }
+
+    await _client.updateSession(_buildSessionConfig());
+  }
+
+  @override
+  Future<bool> applyProviderExtension(
+    String extensionType,
+    Map<String, dynamic> payload,
+  ) async {
+    _ensureNotDisposed();
+
+    switch (extensionType) {
+      case RealtimeProviderExtensions.inputNoiseReductionSelection:
+        final selection = _OaiInputAudioNoiseReductionSelection.fromPayload(
+          payload[RealtimeProviderExtensions.selectionKey],
+        );
+        if (selection == null) {
+          throw ArgumentError.value(
+            payload[RealtimeProviderExtensions.selectionKey],
+            RealtimeProviderExtensions.selectionKey,
+            'Unsupported input noise reduction selection.',
+          );
+        }
+
+        if (_inputAudioNoiseReductionSelection == selection) {
+          return true;
+        }
+
+        _inputAudioNoiseReductionSelection = selection;
+        break;
+      case RealtimeProviderExtensions.reasoningEffortSelection:
+        final selection = payload[RealtimeProviderExtensions.selectionKey];
+        if (selection != null && selection is! String) {
+          throw ArgumentError.value(
+            selection,
+            RealtimeProviderExtensions.selectionKey,
+            'Reasoning effort selection must be a string or null.',
+          );
+        }
+
+        if (_reasoningEffort == selection) {
+          return true;
+        }
+
+        _reasoningEffort = selection;
+        break;
+      case RealtimeProviderExtensions.toolChoiceRequired:
+        final required = payload[RealtimeProviderExtensions.requiredKey];
+        if (required is! bool) {
+          throw ArgumentError.value(
+            required,
+            RealtimeProviderExtensions.requiredKey,
+            'Tool choice required flag must be a bool.',
+          );
+        }
+
+        if (_toolChoiceRequired == required) {
+          return true;
+        }
+
+        _toolChoiceRequired = required;
+        break;
+      default:
+        return false;
+    }
+
+    if (!_isConnected) {
+      return true;
+    }
+
+    await _client.updateSession(_buildSessionConfig());
+    return true;
+  }
+
+  // ---------------------------------------------------------------------------
+  // User content
+  // ---------------------------------------------------------------------------
+
+  @override
+  Future<String> sendAudioOneShot(Uint8List audioBytes) async {
+    _ensureNotDisposed();
+    final itemId = _nextLocalId('audio');
+    if (!_isConnected || audioBytes.isEmpty) {
+      return itemId;
+    }
+
+    await _client.createConversationItem(
+      item: {
+        'id': itemId,
+        'type': 'message',
+        'role': 'user',
+        'content': [
+          {
+            'type': 'input_audio',
+            'audio': base64Encode(audioBytes),
+          },
+        ],
+      },
+    );
+    await _client.createResponse();
+    return itemId;
+  }
+
+  @override
+  Future<String> sendText(String text) async {
+    _ensureNotDisposed();
+    final itemId = _nextLocalId('msg');
+    await _client.createConversationItem(
+      item: {
+        'id': itemId,
+        'type': 'message',
+        'role': 'user',
+        'content': [
+          {
+            'type': 'input_text',
+            'text': text,
+          },
+        ],
+      },
+    );
+    await _client.createResponse();
+    return itemId;
+  }
+
+  @override
+  Future<String> sendImage(Uint8List imageBytes) async {
+    _ensureNotDisposed();
+    final itemId = _nextLocalId('msg');
+
+    // Detect MIME type from magic numbers
+    String mimeType = 'image/png';
+    if (imageBytes.length >= 4) {
+      if (imageBytes[0] == 0xFF &&
+          imageBytes[1] == 0xD8 &&
+          imageBytes[2] == 0xFF) {
+        mimeType = 'image/jpeg';
+      } else if (imageBytes[0] == 0x47 &&
+          imageBytes[1] == 0x49 &&
+          imageBytes[2] == 0x46) {
+        mimeType = 'image/gif';
+      } else if (imageBytes[0] == 0x89 &&
+          imageBytes[1] == 0x50 &&
+          imageBytes[2] == 0x4E &&
+          imageBytes[3] == 0x47) {
+        mimeType = 'image/png';
+      }
+    }
+
+    // Convert to data URI
+    final base64Image = base64Encode(imageBytes);
+    final dataUri = 'data:$mimeType;base64,$base64Image';
+
+    await _client.createConversationItem(
+      item: {
+        'id': itemId,
+        'type': 'message',
+        'role': 'user',
+        'content': [
+          {
+            'type': 'input_image',
+            'image_url': dataUri,
+            'detail': 'auto',
+          },
+        ],
+      },
+    );
+    await _client.createResponse();
+    return itemId;
+  }
+
+  @override
+  Future<String> sendFunctionOutput({
+    required String callId,
+    required String output,
+    RealtimeToolOutputDisposition disposition =
+        RealtimeToolOutputDisposition.success,
+    String? errorMessage,
+  }) async {
+    _ensureNotDisposed();
+    final itemId = _nextLocalId('tool');
+    _stageLocalFunctionOutputItem(
+      itemId,
+      callId: callId,
+      output: output,
+      disposition: disposition,
+      errorMessage: errorMessage,
+    );
+    await _client.createConversationItem(
+      item: {
+        'id': itemId,
+        'type': 'function_call_output',
+        'call_id': callId,
+        'output': output,
+      },
+    );
+    await _client.createResponse();
+    return itemId;
+  }
+
+  @override
+  void cancelFunctionCalls({
+    Set<String> itemIds = const <String>{},
+    Set<String> callIds = const <String>{},
+  }) {
+    _ensureNotDisposed();
+    _locallyCancelledFunctionItemIds.addAll(itemIds);
+    _locallyCancelledFunctionCallIds.addAll(callIds);
+
+    var hasChanges = false;
+    for (final item in _thread.items) {
+      if (item.type != RealtimeThreadItemType.functionCall) {
+        continue;
+      }
+      if (!_isLocallyCancelledFunctionCall(
+          itemId: item.id, callId: item.callId)) {
+        continue;
+      }
+      if (item.status == RealtimeThreadItemStatus.incomplete) {
+        continue;
+      }
+      item.markIncomplete();
+      hasChanges = true;
+    }
+    if (hasChanges) {
+      _emitThreadUpdate();
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Response control
+  // ---------------------------------------------------------------------------
+
+  @override
+  Future<void> interrupt() async {
+    _ensureNotDisposed();
+    await _client.cancelResponse();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Internal — state
+  // ---------------------------------------------------------------------------
+
+  void _setConnectionState(RealtimeAdapterConnectionState value) {
+    _connectionState = value;
+    if (!_connectionController.isClosed) {
+      _connectionController.add(value);
+    }
+  }
+
+  void _setUserSpeaking(bool value) {
+    if (_isUserSpeaking == value) {
+      return;
+    }
+    _isUserSpeaking = value;
+    if (!_userSpeakingStateController.isClosed) {
+      _userSpeakingStateController.add(value);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Internal — thread projection
+  // ---------------------------------------------------------------------------
+
+  RealtimeThreadItem _upsertConversationItem(
+    OaiRealtimeConversationItem conversationItem,
+  ) {
+    final existing = _thread.findItem(conversationItem.id);
+    if (existing != null) {
+      existing.role = _mapRole(conversationItem.role);
+      final nextStatus = RealtimeThreadItemStatus.fromWireValue(
+        conversationItem.status,
+      );
+      existing.callId = conversationItem.callId ?? existing.callId;
+      existing.name = conversationItem.name ?? existing.name;
+      existing.arguments = conversationItem.arguments ?? existing.arguments;
+      existing.output = conversationItem.output ?? existing.output;
+      final isLocallyCancelled = _isLocallyCancelledFunctionCall(
+        itemId: existing.id,
+        callId: existing.callId,
+      );
+      if (!isLocallyCancelled ||
+          nextStatus == RealtimeThreadItemStatus.incomplete) {
+        existing.status = nextStatus;
+      }
+      if (existing.content.isEmpty && conversationItem.content.isNotEmpty) {
+        for (final part in conversationItem.content) {
+          _mergeContentPart(existing, part, isDone: true);
+        }
+      }
+      return existing;
+    }
+
+    final itemType = _mapItemType(conversationItem.type);
+    final itemCallId = conversationItem.callId;
+    final item = RealtimeThreadItem(
+      id: conversationItem.id,
+      type: itemType,
+      role: _mapRole(conversationItem.role),
+      status: itemType == RealtimeThreadItemType.functionCall &&
+              _isLocallyCancelledFunctionCall(
+                itemId: conversationItem.id,
+                callId: itemCallId,
+              )
+          ? RealtimeThreadItemStatus.incomplete
+          : RealtimeThreadItemStatus.fromWireValue(conversationItem.status),
+      callId: itemCallId,
+      name: conversationItem.name,
+      arguments: conversationItem.arguments,
+      output: conversationItem.output,
+    );
+    for (final part in conversationItem.content) {
+      _mergeContentPart(item, part, isDone: true);
+    }
+    _thread.addItem(item);
+    return item;
+  }
+
+  RealtimeThreadItem _ensureUserMessageItem(String itemId) {
+    final existing = _thread.findItem(itemId);
+    if (existing != null) {
+      existing.role ??= RealtimeThreadItemRole.user;
+      return existing;
+    }
+    final item = RealtimeThreadItem(
+      id: itemId,
+      type: RealtimeThreadItemType.message,
+      role: RealtimeThreadItemRole.user,
+      status: RealtimeThreadItemStatus.inProgress,
+    );
+    _thread.addItem(item);
+    return item;
+  }
+
+  RealtimeThreadItem _ensureAssistantMessageItem(String itemId) {
+    final existing = _thread.findItem(itemId);
+    if (existing != null) {
+      return existing;
+    }
+    final item = RealtimeThreadItem(
+      id: itemId,
+      type: RealtimeThreadItemType.message,
+      role: RealtimeThreadItemRole.assistant,
+      status: RealtimeThreadItemStatus.inProgress,
+    );
+    _thread.addItem(item);
+    return item;
+  }
+
+  RealtimeThreadItem _ensureFunctionCallItem(
+    String itemId, {
+    String? callId,
+    String? name,
+  }) {
+    final existing = _thread.findItem(itemId);
+    if (existing != null) {
+      existing.callId = callId ?? existing.callId;
+      existing.name = name ?? existing.name;
+      if (_isLocallyCancelledFunctionCall(
+        itemId: existing.id,
+        callId: existing.callId,
+      )) {
+        existing.markIncomplete();
+      }
+      return existing;
+    }
+    final item = RealtimeThreadItem(
+      id: itemId,
+      type: RealtimeThreadItemType.functionCall,
+      role: RealtimeThreadItemRole.assistant,
+      status: _isLocallyCancelledFunctionCall(itemId: itemId, callId: callId)
+          ? RealtimeThreadItemStatus.incomplete
+          : RealtimeThreadItemStatus.inProgress,
+      callId: callId,
+      name: name,
+    );
+    _thread.addItem(item);
+    return item;
+  }
+
+  bool _isLocallyCancelledFunctionCall({
+    required String itemId,
+    required String? callId,
+  }) {
+    return _locallyCancelledFunctionItemIds.contains(itemId) ||
+        (callId != null && _locallyCancelledFunctionCallIds.contains(callId));
+  }
+
+  void _stageLocalFunctionOutputItem(
+    String itemId, {
+    required String callId,
+    required String output,
+    required RealtimeToolOutputDisposition disposition,
+    String? errorMessage,
+  }) {
+    final existing = _thread.findItem(itemId);
+    if (existing != null) {
+      existing.role ??= RealtimeThreadItemRole.assistant;
+      existing.status = RealtimeThreadItemStatus.completed;
+      existing.callId = callId;
+      existing.output = output;
+      existing.toolOutputDisposition = disposition;
+      existing.toolErrorMessage = errorMessage;
+      _emitThreadUpdate();
+      return;
+    }
+
+    _thread.addItem(
+      RealtimeThreadItem(
+        id: itemId,
+        type: RealtimeThreadItemType.functionCallOutput,
+        role: RealtimeThreadItemRole.assistant,
+        status: RealtimeThreadItemStatus.completed,
+        callId: callId,
+        output: output,
+        toolOutputDisposition: disposition,
+        toolErrorMessage: errorMessage,
+      ),
+    );
+    _emitThreadUpdate();
+  }
+
+  T? _findContentPartOfType<T extends RealtimeThreadContentPart>(
+    RealtimeThreadItem item, {
+    int? contentIndex,
+  }) {
+    if (contentIndex != null) {
+      final part = item.findContentPart(contentIndex);
+      return part is T ? part : null;
+    }
+
+    for (final part in item.content.reversed) {
+      if (part is T) {
+        return part;
+      }
+    }
+    return null;
+  }
+
+  RealtimeThreadTextPart _findOrCreateTextPart(
+    RealtimeThreadItem item, {
+    int? contentIndex,
+  }) {
+    final existing = _findContentPartOfType<RealtimeThreadTextPart>(
+      item,
+      contentIndex: contentIndex,
+    );
+    if (existing != null) {
+      return existing;
+    }
+
+    final created = RealtimeThreadTextPart();
+    item.putContentPart(created, contentIndex: contentIndex);
+    return created;
+  }
+
+  RealtimeThreadAudioPart _findOrCreateAudioPart(
+    RealtimeThreadItem item, {
+    int? contentIndex,
+  }) {
+    final existing = _findContentPartOfType<RealtimeThreadAudioPart>(
+      item,
+      contentIndex: contentIndex,
+    );
+    if (existing != null) {
+      return existing;
+    }
+
+    final created = RealtimeThreadAudioPart();
+    item.putContentPart(created, contentIndex: contentIndex);
+    return created;
+  }
+
+  void _mergeContentPart(
+    RealtimeThreadItem item,
+    OaiRealtimeContentPart part, {
+    int? contentIndex,
+    required bool isDone,
+  }) {
+    switch (part.type) {
+      case 'text':
+      case 'input_text':
+      case 'output_text':
+        final textPart =
+            _findOrCreateTextPart(item, contentIndex: contentIndex);
+        if (part.text != null && part.text!.isNotEmpty) {
+          textPart.replaceText(part.text!);
+        }
+        if (isDone) {
+          textPart.markDone();
+        }
+        return;
+      case 'audio':
+      case 'input_audio':
+      case 'output_audio':
+        final audioPart = _findOrCreateAudioPart(
+          item,
+          contentIndex: contentIndex,
+        );
+        if (part.audio != null && part.audio!.isNotEmpty) {
+          audioPart.replaceAudio(part.audio!);
+        }
+        if (part.transcript != null && part.transcript!.isNotEmpty) {
+          audioPart.replaceTranscript(part.transcript!);
+        }
+        if (isDone) {
+          audioPart.markDone();
+        }
+        return;
+      case 'input_image':
+        item.putContentPart(
+          RealtimeThreadImagePart(
+            imageUrl: part.imageUrl ?? '',
+            detail: part.detail ?? 'auto',
+          ),
+          contentIndex: contentIndex,
+        );
+        return;
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Internal — session config mapping
+  // ---------------------------------------------------------------------------
+
+  Map<String, dynamic> _buildSessionConfig() {
+    return {
+      'type': 'realtime',
+      'audio': {
+        'input': {
+          'format': {
+            'type': 'audio/pcm',
+            'rate': 24000,
+          },
+          'noise_reduction': _buildInputAudioNoiseReductionConfig(
+            _inputAudioNoiseReductionSelection,
+          ),
+          'transcription': {
+            'model': _transcriptionModel,
+          },
+          'turn_detection': _buildTurnDetectionConfig(_audioTurnMode),
+        },
+        'output': {
+          'format': {
+            'type': 'audio/pcm',
+            'rate': 24000,
+          },
+          if (_sessionVoice != null) 'voice': _sessionVoice,
+        },
+      },
+      if (_reasoningEffort != null)
+        'reasoning': {
+          'effort': _reasoningEffort,
+        },
+      if (_sessionInstructions != null)
+        'instructions':
+            _sessionInstructions, // todo: make it dynamically updatable like tools.
+      'output_modalities':
+          _sessionModality == VoiceAgentModality.audio ? ['audio'] : ['text'],
+      'tools': _tools.map((tool) => tool.toRealtimeJson()).toList(),
+      'tool_choice':
+          _tools.isEmpty ? 'none' : (_toolChoiceRequired ? 'required' : 'auto'),
+      // 'parallel_tool_calls':
+      //     true, // todo: make it modifiable since a very few model supports this parameter.
+    };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Internal — config mapping
+  // ---------------------------------------------------------------------------
+
+  OaiRealtimeConnectConfig _toOaiConnectConfig(
+    SelfhostedVoiceAgentApiConfig config,
+  ) {
+    final baseUrl = config.baseUrl.trim();
+    if (baseUrl.isEmpty) {
+      throw ArgumentError(
+        'SelfhostedVoiceAgentApiConfig.baseUrl must not be empty.',
+      );
+    }
+
+    final epFragment = switch (config.params['epFragment']) {
+      String value when value.trim().isNotEmpty => value.trim(),
+      _ => '/realtime',
+    };
+
+    final extraHeaders = <String, String>{};
+    final extraHeadersParam = config.params['extraHeaders'];
+    if (extraHeadersParam is Map) {
+      for (final entry in extraHeadersParam.entries) {
+        final key = entry.key;
+        final value = entry.value;
+        if (key is String && value is String) {
+          extraHeaders[key] = value;
+        }
+      }
+    }
+    return OaiRealtimeConnectConfig(
+      baseUri: Uri.parse(baseUrl),
+      epFragment: epFragment,
+      bearerToken: config.apiKey,
+      extraHeaders: Map<String, String>.unmodifiable(extraHeaders),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Internal — helpers
+  // ---------------------------------------------------------------------------
+
+  RealtimeThreadItemType _mapItemType(String value) {
+    return switch (value) {
+      'function_call' => RealtimeThreadItemType.functionCall,
+      'function_call_output' => RealtimeThreadItemType.functionCallOutput,
+      _ => RealtimeThreadItemType.message,
+    };
+  }
+
+  RealtimeThreadItemRole? _mapRole(String? value) {
+    return switch (value) {
+      'system' => RealtimeThreadItemRole.system,
+      'user' => RealtimeThreadItemRole.user,
+      'assistant' => RealtimeThreadItemRole.assistant,
+      _ => null,
+    };
+  }
+
+  void _emitThreadUpdate() {
+    if (!_threadController.isClosed) {
+      _threadController.add(_thread);
+    }
+  }
+
+  String _nextLocalId(String prefix) {
+    _localIdCounter += 1;
+    return '${prefix}_${DateTime.now().microsecondsSinceEpoch}_$_localIdCounter';
+  }
+
+  Future<void> _cancelAudioInput() async {
+    await _audioInputSubscription?.cancel();
+    _audioInputSubscription = null;
+  }
+
+  Future<void> _handleInputAudioChunk(Uint8List bytes) async {
+    if (bytes.isEmpty || !_isConnected) {
+      return;
+    }
+
+    if (_audioTurnMode != RealtimeAudioTurnMode.voiceActivity) {
+      return;
+    }
+
+    await _client.appendInputAudio(bytes);
+  }
+
+  Map<String, dynamic>? _buildTurnDetectionConfig(
+    RealtimeAudioTurnMode mode,
+  ) {
+    return switch (mode) {
+      RealtimeAudioTurnMode.voiceActivity => {
+          'type': 'semantic_vad',
+          'eagerness': 'low',
+          'create_response': true,
+          'interrupt_response': true,
+        },
+      RealtimeAudioTurnMode.manual => null,
+    };
+  }
+
+  Map<String, dynamic>? _buildInputAudioNoiseReductionConfig(
+    _OaiInputAudioNoiseReductionSelection selection,
+  ) {
+    return switch (selection) {
+      _OaiInputAudioNoiseReductionSelection.off => null,
+      _OaiInputAudioNoiseReductionSelection.nearField => {
+          'type': 'near_field',
+        },
+      _OaiInputAudioNoiseReductionSelection.farField => {
+          'type': 'far_field',
+        },
+    };
+  }
+
+
+  void _ensureNotDisposed() {
+    if (_disposed) {
+      throw StateError('OaiRealtimeAdapter is already disposed.');
+    }
+  }
+
+  static String _makeThreadId() {
+    return 'thread_${DateTime.now().microsecondsSinceEpoch}';
+  }
+}
