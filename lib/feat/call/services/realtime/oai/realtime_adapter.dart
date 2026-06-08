@@ -662,19 +662,9 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
       return itemId;
     }
 
-    await _client.createConversationItem(
-      item: {
-        'id': itemId,
-        'type': 'message',
-        'role': 'user',
-        'content': [
-          {
-            'type': 'input_audio',
-            'audio': base64Encode(audioBytes),
-          },
-        ],
-      },
-    );
+    await _client.clearInputAudioBuffer();
+    await _client.appendInputAudio(audioBytes);
+    await _client.commitInputAudioBuffer();
     await _client.createResponse();
     return itemId;
   }
