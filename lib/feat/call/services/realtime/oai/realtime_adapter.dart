@@ -662,10 +662,16 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
       return itemId;
     }
 
+     // One shot workaround start
+    // ワークアラウンドが必要
+    // 確かにワンショットで音声を送り、サーバースレッドデータに積み上げる機能はリアルタイムAPIに存在する。
+    // しかしながら、それで送ってしまうとトランスクリプションが出てこなくなる。
+    // ワークアラウンドとして、PTTであってもハンズフリーと同じように送信し、そのために、音声バッファをクリアしてから、本来ストリームで流れる音声データを一括で投入し、コミットる、という手順を踏む。
     await _client.clearInputAudioBuffer();
     await _client.appendInputAudio(audioBytes);
     await _client.commitInputAudioBuffer();
     await _client.createResponse();
+    // One shot workaround end
     return itemId;
   }
 
