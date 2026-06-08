@@ -45,7 +45,7 @@ abstract interface class RealtimeAdapter {
 
   /// Open a connection.
   ///
-  /// [apiConfig] carries credentials and provider routing.
+  /// [apiConfig] carries routing and adapter-specific connection context.
   /// [voice] and [instructions] are the only session-level knobs the caller
   /// needs; everything else (audio format, VAD, transcription model) is owned
   /// by the adapter's defaults.
@@ -106,7 +106,14 @@ abstract interface class RealtimeAdapter {
   /// calling for the session.
   Future<void> registerTools(List<ToolDefinition> tools);
 
-  /// Apply an opaque provider-extension update.
+  /// Replace the session instructions used for subsequent responses.
+  ///
+  /// This is the only mid-session prompt mutation exposed by the current
+  /// adapter contract. Voice changes, if supported, should flow through
+  /// [applyProviderExtension].
+  Future<void> setInstructions(String? instructions);
+
+  /// Apply a session-scoped opaque provider-extension update.
   ///
   /// [extensionType] and [payload] are application-defined values. Adapters may
   /// ignore unsupported extensions by returning `false`.

@@ -112,6 +112,11 @@ final class RealtimeService extends SubService {
     return _adapter.registerTools(tools);
   }
 
+  Future<void> setInstructions(String? instructions) {
+    logger.info('Updating realtime instructions');
+    return _adapter.setInstructions(instructions);
+  }
+
   Future<bool> applyProviderExtension(
     String extensionType,
     Map<String, dynamic> payload,

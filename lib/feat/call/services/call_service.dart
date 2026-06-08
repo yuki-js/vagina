@@ -149,6 +149,14 @@ class CallService {
     return _realtimeService.applyProviderExtension(extensionType, payload);
   }
 
+  Future<void> setRealtimeInstructions(String? instructions) async {
+    if (state == CallState.uninitialized || state == CallState.disposed) {
+      return;
+    }
+
+    await _realtimeService.setInstructions(instructions);
+  }
+
   Future<void> setPushToTalkEnabled(bool enabled) async {
     _pushToTalkEnabled = enabled;
 
