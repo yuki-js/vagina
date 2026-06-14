@@ -1,0 +1,11 @@
+florval:
+  schema_path: ../server/build/openapi-compiled/openapi.yaml
+  output_directory: lib/api/generated
+
+  client:
+    base_url_env: VAGINA_API_BASE_URL
+    timeout: 30000
+
+  riverpod:
+    enabled: true
+    auto_invalidate: false
