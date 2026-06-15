@@ -11,11 +11,7 @@ include: package:flutter_lints/flutter.yaml
 
 analyzer:
   exclude:
-    - lib/feat/call/panes/**
-    - lib/feat/call/screens/**
-    - lib/feat/call/state/**
-    - lib/feat/call/widgets/chat_input.dart
-    - lib/feat/call/widgets/control_panel.dart
+    - lib/api/generated/**
     - test/feat/call/**
     - test/lib/feat/call/**
   plugins:
