@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:vagina/core/app/app_container.dart';
 import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/l10n/app_localizations.dart';
-import 'package:vagina/repositories/repository_factory.dart';
 import 'package:vagina/services/virtual_filesystem_service.dart';
 import 'package:vagina/utils/file_icon_utils.dart';
 import 'package:vagina/feat/filebrowser/screens/text_viewer_screen.dart';
@@ -18,10 +18,7 @@ import 'package:vagina/tools/builtin/shared/file_type_support.dart';
 class FileBrowserScreen extends StatefulWidget {
   final String initialPath;
 
-  const FileBrowserScreen({
-    super.key,
-    this.initialPath = '/',
-  });
+  const FileBrowserScreen({super.key, this.initialPath = '/'});
 
   @override
   State<FileBrowserScreen> createState() => _FileBrowserScreenState();
@@ -43,7 +40,7 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
   @override
   void initState() {
     super.initState();
-    _fsService = VirtualFilesystemService(RepositoryFactory.filesystem);
+    _fsService = VirtualFilesystemService(AppContainer.filesystem);
     _loadDirectory();
   }
 
@@ -120,10 +117,12 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
 
   void _invertSelection() {
     setState(() {
-      final toSelect =
-          _entries.where((entry) => !_selectedEntries.contains(entry)).toSet();
-      final toDeselect =
-          _selectedEntries.where((entry) => _entries.contains(entry)).toSet();
+      final toSelect = _entries
+          .where((entry) => !_selectedEntries.contains(entry))
+          .toSet();
+      final toDeselect = _selectedEntries
+          .where((entry) => _entries.contains(entry))
+          .toSet();
       _selectedEntries.removeAll(toDeselect);
       _selectedEntries.addAll(toSelect);
     });
@@ -181,9 +180,7 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
         return;
     }
 
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) => screen),
-    );
+    Navigator.of(context).push(MaterialPageRoute(builder: (context) => screen));
   }
 
   // ---------------------------------------------------------------------------
@@ -240,8 +237,9 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
       final isDirectory = oldEntry.endsWith('/');
       final oldPath = _absolutePath(oldEntry);
       final newPath = '$_path/$newName${isDirectory ? '/' : ''}';
-      final oldDisplayName =
-          isDirectory ? oldEntry.substring(0, oldEntry.length - 1) : oldEntry;
+      final oldDisplayName = isDirectory
+          ? oldEntry.substring(0, oldEntry.length - 1)
+          : oldEntry;
 
       await _fsService.move(oldPath, newPath);
 
@@ -281,9 +279,7 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            style: TextButton.styleFrom(
-              foregroundColor: AppTheme.errorColor,
-            ),
+            style: TextButton.styleFrom(foregroundColor: AppTheme.errorColor),
             child: Text(_l10n.settingsCommonDelete),
           ),
         ],
@@ -336,8 +332,9 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = _l10n;
-    final dirName =
-        _path == '/' ? l10n.fileBrowserRootTitle : _path.split('/').last;
+    final dirName = _path == '/'
+        ? l10n.fileBrowserRootTitle
+        : _path.split('/').last;
 
     return Scaffold(
       appBar: AppBar(
@@ -407,8 +404,10 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
                     PopupMenuItem(
                       value: 'delete',
                       child: ListTile(
-                        leading: const Icon(Icons.delete,
-                            color: AppTheme.errorColor),
+                        leading: const Icon(
+                          Icons.delete,
+                          color: AppTheme.errorColor,
+                        ),
                         title: Text(
                           l10n.settingsCommonDelete,
                           style: const TextStyle(color: AppTheme.errorColor),
@@ -486,17 +485,15 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
 
   Widget _buildEntryItem(String entry) {
     final isDirectory = entry.endsWith('/');
-    final displayName =
-        isDirectory ? entry.substring(0, entry.length - 1) : entry;
+    final displayName = isDirectory
+        ? entry.substring(0, entry.length - 1)
+        : entry;
     final isSelected = _selectedEntries.contains(entry);
 
     return Container(
       decoration: BoxDecoration(
         border: Border(
-          bottom: BorderSide(
-            color: Colors.grey[200]!,
-            width: 0.5,
-          ),
+          bottom: BorderSide(color: Colors.grey[200]!, width: 0.5),
         ),
         color: isSelected && _isSelectionMode
             ? AppTheme.primaryColor.withValues(alpha: 0.1)
@@ -512,8 +509,8 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
                 onChanged: (_) => _toggleSelection(entry),
               )
             : (isDirectory
-                ? const Icon(Icons.folder, color: Colors.amber)
-                : Icon(iconForPath(entry), color: colorForPath(entry))),
+                  ? const Icon(Icons.folder, color: Colors.amber)
+                  : Icon(iconForPath(entry), color: colorForPath(entry))),
         title: Text(
           displayName,
           style: const TextStyle(
@@ -523,16 +520,13 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
           ),
         ),
         trailing: isDirectory
-            ? Icon(
-                Icons.chevron_right,
-                color: AppTheme.lightTextSecondary,
-              )
+            ? Icon(Icons.chevron_right, color: AppTheme.lightTextSecondary)
             : null,
         onTap: _isSelectionMode
             ? () => _toggleSelection(entry)
             : (isDirectory
-                ? () => _openDirectory(entry)
-                : () => _openFile(entry)),
+                  ? () => _openDirectory(entry)
+                  : () => _openFile(entry)),
         onLongPress: _isSelectionMode ? null : () => _enterSelectionMode(entry),
       ),
     );

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:vagina/core/config/app_config.dart';
 import 'package:vagina/core/theme/app_theme.dart';
@@ -7,10 +9,7 @@ import 'package:vagina/l10n/app_localizations.dart';
 class WelcomeScreen extends StatefulWidget {
   final VoidCallback onContinue;
 
-  const WelcomeScreen({
-    super.key,
-    required this.onContinue,
-  });
+  const WelcomeScreen({super.key, required this.onContinue});
 
   @override
   State<WelcomeScreen> createState() => _WelcomeScreenState();
@@ -22,6 +21,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
 
   late AnimationController _pulseController;
   int _currentMessageIndex = 0;
+  Timer? _messageCycleTimer;
 
   @override
   void initState() {
@@ -33,7 +33,12 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     )..repeat(reverse: true);
 
     // Cycle through messages
-    Future.delayed(const Duration(seconds: 2), _cycleMessages);
+    _scheduleMessageCycle();
+  }
+
+  void _scheduleMessageCycle() {
+    _messageCycleTimer?.cancel();
+    _messageCycleTimer = Timer(const Duration(seconds: 2), _cycleMessages);
   }
 
   void _cycleMessages() {
@@ -42,11 +47,12 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       _currentMessageIndex =
           (_currentMessageIndex + 1) % (_rotatingMessageCount + 1);
     });
-    Future.delayed(const Duration(seconds: 2), _cycleMessages);
+    _scheduleMessageCycle();
   }
 
   @override
   void dispose() {
+    _messageCycleTimer?.cancel();
     _pulseController.dispose();
     super.dispose();
   }
@@ -85,19 +91,11 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                           AppTheme.primaryColor.withValues(alpha: 0.3),
                           Colors.transparent,
                         ],
-                        stops: [
-                          0.0,
-                          0.5 + (_pulseController.value * 0.3),
-                          1.0,
-                        ],
+                        stops: [0.0, 0.5 + (_pulseController.value * 0.3), 1.0],
                       ),
                     ),
                     child: const Center(
-                      child: Icon(
-                        Icons.mic,
-                        size: 80,
-                        color: Colors.white,
-                      ),
+                      child: Icon(Icons.mic, size: 80, color: Colors.white),
                     ),
                   );
                 },

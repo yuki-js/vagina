@@ -228,6 +228,56 @@
       }
     }
   },
+  "oobeAuthenticationSigningIn": "Signing in...",
+  "@oobeAuthenticationSigningIn": {
+    "description": "Progress label shown while the OOBE sign-in flow is in progress."
+  },
+  "oobeAuthenticationContinueInBrowser": "Continue sign-in in your browser and return to the app after authorization.",
+  "@oobeAuthenticationContinueInBrowser": {
+    "description": "Snackbar guidance shown after opening native browser for OAuth."
+  },
+  "oobeAuthenticationStartFailed": "Could not start sign-in: {error}",
+  "@oobeAuthenticationStartFailed": {
+    "description": "Snackbar message shown when starting the OIDC login request fails.",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "Error details returned from the failed OIDC start call."
+      }
+    }
+  },
+  "oobeAuthenticationCallbackFailed": "Sign-in callback failed: {error}",
+  "@oobeAuthenticationCallbackFailed": {
+    "description": "Snackbar message shown when OAuth callback contains an error or invalid parameters.",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "Error code/message from callback query parameters."
+      }
+    }
+  },
+  "oobeAuthenticationMissingAuthCode": "Missing authorization code in callback.",
+  "@oobeAuthenticationMissingAuthCode": {
+    "description": "Fallback message when callback lacks required code/state query parameters."
+  },
+  "oobeAuthenticationExchangeFailed": "Could not finish sign-in: {error}",
+  "@oobeAuthenticationExchangeFailed": {
+    "description": "Snackbar message shown when exchanging callback code for app tokens fails.",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "Error details returned by the exchange API."
+      }
+    }
+  },
+  "oobeAuthenticationSignInSuccess": "Sign-in completed successfully.",
+  "@oobeAuthenticationSignInSuccess": {
+    "description": "Snackbar message shown when OOBE sign-in succeeds and tokens are saved."
+  },
+  "oobeAuthenticationSignInRequired": "Please sign in with GitHub before continuing setup.",
+  "@oobeAuthenticationSignInRequired": {
+    "description": "Snackbar message shown when the user attempts to proceed in OOBE without completing GitHub sign-in."
+  },
   "oobeAuthenticationOr": "or",
   "@oobeAuthenticationOr": {
     "description": "Divider label between third-party sign-in buttons and manual setup on the OOBE authentication screen."

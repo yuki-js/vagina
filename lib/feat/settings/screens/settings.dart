@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vagina/core/state/locale_providers.dart';
-import 'package:vagina/repositories/repository_factory.dart';
+import 'package:vagina/core/app/app_container.dart';
 import 'package:vagina/feat/settings/widgets/openai_config_section.dart';
 import 'package:vagina/feat/settings/widgets/setup_section.dart';
 import 'package:vagina/feat/settings/widgets/settings_card.dart';
@@ -83,7 +83,7 @@ class _LanguageSelectorCard extends ConsumerWidget {
 
   Future<void> _persistLocaleSelection(WidgetRef ref, String selection) async {
     final localeCode = _localeCodeFromSelection(selection);
-    await RepositoryFactory.preferences.setPreferredLocaleCode(localeCode);
+    await AppContainer.preferences.setPreferredLocaleCode(localeCode);
     ref.read(appLocaleCodeProvider.notifier).setLocaleCode(localeCode);
   }
 

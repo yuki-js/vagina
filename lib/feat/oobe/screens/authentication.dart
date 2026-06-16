@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/feat/announcement/services/announcement_service.dart';
 import 'package:vagina/feat/announcement/widgets/home_announcement_host.dart';
 import 'package:vagina/l10n/app_localizations.dart';
@@ -22,12 +21,16 @@ class AuthProvider {
 /// Second OOBE screen - Authentication options
 class AuthenticationScreen extends StatelessWidget {
   final AnnouncementService announcementService;
+  final Future<void> Function(AuthProvider provider) onProviderTap;
+  final bool isAuthenticating;
   final VoidCallback onManualSetup;
   final VoidCallback onBack;
 
   const AuthenticationScreen({
     super.key,
     required this.announcementService,
+    required this.onProviderTap,
+    this.isAuthenticating = false,
     required this.onManualSetup,
     required this.onBack,
   });
@@ -48,7 +51,7 @@ class AuthenticationScreen extends StatelessWidget {
       color: Color(0xFF181717),
     ),
     AuthProvider(
-      id: 'x',
+      id: 'twitter',
       name: 'X (Twitter)',
       icon: Icons.close, // X symbol
       color: Color(0xFF000000),
@@ -62,15 +65,7 @@ class AuthenticationScreen extends StatelessWidget {
   ];
 
   void _handleProviderTap(BuildContext context, AuthProvider provider) {
-    final l10n = AppLocalizations.of(context);
-
-    // TODO: Implement actual authentication when backend is ready
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(l10n.oobeAuthenticationProviderComingSoon(provider.name)),
-        backgroundColor: AppTheme.warningColor,
-      ),
-    );
+    onProviderTap(provider);
   }
 
   @override
@@ -105,21 +100,43 @@ class AuthenticationScreen extends StatelessWidget {
 
                     SizedBox(
                       width: double.infinity,
-                      child: HomeAnnouncementHost(
-                        service: announcementService,
-                      ),
+                      child: HomeAnnouncementHost(service: announcementService),
                     ),
 
                     const SizedBox(height: 24),
 
                     // Authentication provider buttons
-                    ..._providers.map((provider) => Padding(
-                          padding: const EdgeInsets.only(bottom: 16),
-                          child: _buildProviderButton(
-                            context,
-                            provider,
+                    ..._providers.map(
+                      (provider) => Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: _buildProviderButton(context, provider),
+                      ),
+                    ),
+
+                    if (isAuthenticating) ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
                           ),
-                        )),
+                          const SizedBox(width: 8),
+                          Text(
+                            l10n.oobeAuthenticationSigningIn,
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.8),
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
 
                     const SizedBox(height: 32),
 
@@ -157,7 +174,7 @@ class AuthenticationScreen extends StatelessWidget {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: onManualSetup,
+                        onPressed: isAuthenticating ? null : onManualSetup,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.white.withValues(alpha: 0.1),
                           foregroundColor: Colors.white,
@@ -217,14 +234,13 @@ class AuthenticationScreen extends StatelessWidget {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton.icon(
-        onPressed: () => _handleProviderTap(context, provider),
+        onPressed: isAuthenticating
+            ? null
+            : () => _handleProviderTap(context, provider),
         icon: Icon(provider.icon, size: 24),
         label: Text(
           l10n.oobeAuthenticationProviderButton(provider.name),
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
         style: ElevatedButton.styleFrom(
           backgroundColor: provider.color,

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:vagina/repositories/repository_factory.dart';
+import 'package:vagina/core/app/app_container.dart';
 import 'package:vagina/models/call_session.dart';
 import 'package:vagina/models/speed_dial.dart';
 import 'package:vagina/core/theme/app_theme.dart';
@@ -11,10 +11,7 @@ import 'package:vagina/l10n/app_localizations.dart';
 class SessionDetailInfoSegment extends ConsumerWidget {
   final CallSession session;
 
-  const SessionDetailInfoSegment({
-    super.key,
-    required this.session,
-  });
+  const SessionDetailInfoSegment({super.key, required this.session});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -50,7 +47,8 @@ class SessionDetailInfoSegment extends ConsumerWidget {
                 _buildInfoRow(
                   l10n.sessionDetailMessageCount,
                   l10n.sessionDetailMessageCountValue(
-                      session.chatMessages.length),
+                    session.chatMessages.length,
+                  ),
                 ),
                 _buildInfoRow(
                   l10n.callPaneNotepad,
@@ -118,8 +116,16 @@ class SessionDetailInfoSegment extends ConsumerWidget {
   }
 
   Future<SpeedDial?> _loadSpeedDial(WidgetRef ref) async {
-    final repository = RepositoryFactory.speedDials;
-    return await repository.getById(session.speedDialId);
+    final repository = AppContainer.speedDials;
+    try {
+      return await repository.getById(session.speedDialId);
+    } catch (e) {
+      AppContainer.logService.warn(
+        'SessionInfo',
+        'SpeedDial load failed for ${session.speedDialId}: $e',
+      );
+      return null;
+    }
   }
 
   Widget _buildSectionHeader(String title) {
@@ -159,10 +165,7 @@ class SessionDetailInfoSegment extends ConsumerWidget {
         children: [
           Text(
             label,
-            style: TextStyle(
-              fontSize: 14,
-              color: AppTheme.lightTextSecondary,
-            ),
+            style: TextStyle(fontSize: 14, color: AppTheme.lightTextSecondary),
           ),
           Text(
             value,
@@ -233,9 +236,7 @@ class SessionDetailInfoSegment extends ConsumerWidget {
       decoration: BoxDecoration(
         color: AppTheme.lightSurfaceColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: AppTheme.primaryColor.withValues(alpha: 0.3),
-        ),
+        border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -262,15 +263,14 @@ class SessionDetailInfoSegment extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 8),
-          _buildInfoRow(AppLocalizations.of(context).speedDialConfigVoiceLabel,
-              speedDial.voice),
+          _buildInfoRow(
+            AppLocalizations.of(context).speedDialConfigVoiceLabel,
+            speedDial.voice,
+          ),
           const SizedBox(height: 8),
           Text(
             '${AppLocalizations.of(context).speedDialConfigSystemPromptLabel}:',
-            style: TextStyle(
-              fontSize: 12,
-              color: AppTheme.lightTextSecondary,
-            ),
+            style: TextStyle(fontSize: 12, color: AppTheme.lightTextSecondary),
           ),
           const SizedBox(height: 4),
           Container(

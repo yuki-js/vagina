@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:vagina/repositories/repository_factory.dart';
+import 'package:vagina/core/app/app_container.dart';
 import 'package:vagina/feat/call/models/voice_agent_api_config.dart';
 import 'package:vagina/feat/call/services/realtime/realtime_adapter_factory.dart';
 import 'package:vagina/core/theme/app_theme.dart';
@@ -52,7 +52,7 @@ class _OpenAiConfigSectionState extends ConsumerState<OpenAiConfigSection> {
 
   Future<void> _loadSettings() async {
     try {
-      final config = RepositoryFactory.config;
+      final config = AppContainer.config;
 
       final apiConfig = await config.getVoiceAgentApiConfig();
       switch (apiConfig) {
@@ -153,7 +153,7 @@ class _OpenAiConfigSectionState extends ConsumerState<OpenAiConfigSection> {
     setState(() => _isSaving = true);
 
     try {
-      final config = RepositoryFactory.config;
+      final config = AppContainer.config;
       final existingConfig = await config.getVoiceAgentApiConfig();
       final nextConfig = switch (existingConfig) {
         SelfhostedVoiceAgentApiConfig selfhostedConfig =>
@@ -227,7 +227,7 @@ class _OpenAiConfigSectionState extends ConsumerState<OpenAiConfigSection> {
 
       await RealtimeAdapterFactory.testConnection(testConfig);
 
-      final config = RepositoryFactory.config;
+      final config = AppContainer.config;
       final existingConfig = await config.getVoiceAgentApiConfig();
       final nextConfig = switch (existingConfig) {
         SelfhostedVoiceAgentApiConfig selfhostedConfig =>
@@ -298,7 +298,7 @@ class _OpenAiConfigSectionState extends ConsumerState<OpenAiConfigSection> {
 
     if (confirmed == true) {
       try {
-        final config = RepositoryFactory.config;
+        final config = AppContainer.config;
         await config.clearAll();
         _realtimeUrlController.clear();
         _apiKeyController.clear();

@@ -1,11 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:vagina/core/app/app_container.dart';
 import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/l10n/app_localizations.dart';
 import 'package:vagina/models/virtual_file.dart';
 import 'package:vagina/models/tabular_data.dart';
-import 'package:vagina/repositories/repository_factory.dart';
 import 'package:vagina/services/virtual_filesystem_service.dart';
 import 'package:vagina/utils/file_icon_utils.dart';
 import 'package:vagina/feat/call/widgets/spreadsheet/editable_spreadsheet_table.dart';
@@ -15,10 +15,7 @@ import 'package:vagina/tools/builtin/shared/file_type_support.dart';
 class TableViewerScreen extends StatefulWidget {
   final String filePath;
 
-  const TableViewerScreen({
-    super.key,
-    required this.filePath,
-  });
+  const TableViewerScreen({super.key, required this.filePath});
 
   @override
   State<TableViewerScreen> createState() => _TableViewerScreenState();
@@ -45,7 +42,7 @@ class _TableViewerScreenState extends State<TableViewerScreen> {
   @override
   void initState() {
     super.initState();
-    _fsService = VirtualFilesystemService(RepositoryFactory.filesystem);
+    _fsService = VirtualFilesystemService(AppContainer.filesystem);
     _loadFile();
   }
 
@@ -164,12 +161,7 @@ class _TableViewerScreenState extends State<TableViewerScreen> {
               size: 20,
             ),
             const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                _fileName,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
+            Expanded(child: Text(_fileName, overflow: TextOverflow.ellipsis)),
           ],
         ),
         backgroundColor: Colors.transparent,

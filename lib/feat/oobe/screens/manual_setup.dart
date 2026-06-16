@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:vagina/repositories/repository_factory.dart';
+import 'package:vagina/core/app/app_container.dart';
 import 'package:vagina/feat/call/models/voice_agent_api_config.dart';
 import 'package:vagina/feat/call/services/realtime/realtime_adapter_factory.dart';
 import 'package:vagina/core/theme/app_theme.dart';
@@ -43,7 +43,7 @@ class _ManualSetupScreenState extends ConsumerState<ManualSetupScreen> {
 
   Future<void> _loadSettings() async {
     try {
-      final config = RepositoryFactory.config;
+      final config = AppContainer.config;
 
       final apiConfig = await config.getVoiceAgentApiConfig();
       if (apiConfig case SelfhostedVoiceAgentApiConfig selfhostedConfig) {
@@ -104,7 +104,7 @@ class _ManualSetupScreenState extends ConsumerState<ManualSetupScreen> {
       await RealtimeAdapterFactory.testConnection(testConfig);
 
       // Connection successful, save the config
-      final config = RepositoryFactory.config;
+      final config = AppContainer.config;
       final existingConfig = await config.getVoiceAgentApiConfig();
       final nextConfig = switch (existingConfig) {
         SelfhostedVoiceAgentApiConfig selfhostedConfig =>

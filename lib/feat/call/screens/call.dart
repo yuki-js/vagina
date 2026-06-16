@@ -1,10 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:vagina/core/app/app_container.dart';
 import 'package:vagina/core/widgets/adaptive_tri_column_layout.dart';
 import 'package:vagina/l10n/app_localizations.dart';
 import 'package:vagina/feat/call/models/text_agent_info.dart';
-import 'package:vagina/feat/call/models/voice_agent_api_config.dart';
 import 'package:vagina/feat/call/models/voice_agent_info.dart';
 import 'package:vagina/feat/call/panes/call.dart';
 import 'package:vagina/feat/call/panes/chat.dart';
@@ -12,17 +12,13 @@ import 'package:vagina/feat/call/panes/notepad.dart';
 import 'package:vagina/feat/call/services/call_service.dart';
 import 'package:vagina/feat/call/widgets/call_screen_shell.dart';
 import 'package:vagina/models/speed_dial.dart';
-import 'package:vagina/repositories/repository_factory.dart';
 import 'package:vagina/tools/tools.dart';
 
-/// Temporary layout scaffold for the call rework.
+/// Layout scaffold for the call screen.
 class CallScreen extends StatefulWidget {
   final SpeedDial speedDial;
 
-  const CallScreen({
-    super.key,
-    required this.speedDial,
-  });
+  const CallScreen({super.key, required this.speedDial});
 
   @override
   State<CallScreen> createState() => _CallScreenState();
@@ -40,8 +36,8 @@ class _CallScreenState extends State<CallScreen> {
   void initState() {
     super.initState();
     _callService = CallService(
-      filesystemRepository: RepositoryFactory.filesystem,
-      sessionRepository: RepositoryFactory.callSessions,
+      filesystemRepository: AppContainer.filesystem,
+      sessionRepository: AppContainer.callSessions,
     );
 
     // CallStateの変化を監視してpaneを再構築
@@ -155,7 +151,7 @@ class _CallScreenState extends State<CallScreen> {
 }
 
 Future<VoiceAgentInfo> _buildVoiceAgent(SpeedDial speedDial) async {
-  final configRepository = RepositoryFactory.config;
+  final configRepository = AppContainer.config;
   final apiConfig = await configRepository.getVoiceAgentApiConfig();
   if (apiConfig == null) {
     throw StateError('Voice agent API config is not configured.');
@@ -163,7 +159,7 @@ Future<VoiceAgentInfo> _buildVoiceAgent(SpeedDial speedDial) async {
   return VoiceAgentInfo(
     id: speedDial.id,
     name: speedDial.name,
-    description: 'TODO: Add description to SpeedDial and show it here',
+    description: speedDial.description ?? '',
     iconEmoji: speedDial.iconEmoji,
     voice: speedDial.voice,
     prompt: speedDial.systemPrompt,
@@ -176,6 +172,6 @@ Future<VoiceAgentInfo> _buildVoiceAgent(SpeedDial speedDial) async {
 }
 
 Future<List<TextAgentInfo>> _buildTextAgents() async {
-  final configRepository = RepositoryFactory.config;
+  final configRepository = AppContainer.config;
   return configRepository.getAllTextAgents();
 }

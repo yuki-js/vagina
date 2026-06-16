@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:vagina/repositories/repository_factory.dart';
+import 'package:vagina/core/app/app_container.dart';
 import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/feat/shared/widgets/tool_config_section.dart';
 import 'package:vagina/feat/speed_dial/state/speed_dial_providers.dart';
@@ -14,11 +14,7 @@ class SpeedDialConfigScreen extends ConsumerStatefulWidget {
   final String? speedDialId; // null for new speed dial
   final SpeedDial? speedDial; // null for new speed dial
 
-  const SpeedDialConfigScreen({
-    super.key,
-    this.speedDialId,
-    this.speedDial,
-  });
+  const SpeedDialConfigScreen({super.key, this.speedDialId, this.speedDial});
 
   @override
   ConsumerState<SpeedDialConfigScreen> createState() =>
@@ -48,10 +44,12 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
       _enabledTools = {}; // Empty map = all tools enabled
     } else {
       _nameController = TextEditingController(text: widget.speedDial!.name);
-      _descriptionController =
-          TextEditingController(text: widget.speedDial!.description);
-      _instructionsController =
-          TextEditingController(text: widget.speedDial!.systemPrompt);
+      _descriptionController = TextEditingController(
+        text: widget.speedDial!.description,
+      );
+      _instructionsController = TextEditingController(
+        text: widget.speedDial!.systemPrompt,
+      );
       _selectedVoice = widget.speedDial!.voice;
       _selectedEmoji = widget.speedDial!.iconEmoji ?? '⭐';
       _enabledTools = Map<String, bool>.from(widget.speedDial!.enabledTools);
@@ -91,9 +89,9 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
     final l10n = AppLocalizations.of(context);
 
     if (_nameController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.speedDialConfigNameRequired)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.speedDialConfigNameRequired)));
       return;
     }
 
@@ -104,7 +102,7 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
       return;
     }
 
-    final speedDialRepo = RepositoryFactory.speedDials;
+    final speedDialRepo = AppContainer.speedDials;
     final speedDial = SpeedDial(
       id: _isNewSpeedDial
           ? DateTime.now().millisecondsSinceEpoch.toString()
@@ -120,26 +118,35 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
       createdAt: _isNewSpeedDial ? DateTime.now() : widget.speedDial!.createdAt,
     );
 
-    if (_isNewSpeedDial) {
-      await speedDialRepo.save(speedDial);
-    } else {
-      await speedDialRepo.update(speedDial);
-    }
+    try {
+      if (_isNewSpeedDial) {
+        await speedDialRepo.save(speedDial);
+      } else {
+        await speedDialRepo.update(speedDial);
+      }
+      ref.invalidate(speedDialsProvider);
 
-    ref.invalidate(speedDialsProvider);
-
-    if (mounted) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              _isNewSpeedDial
+                  ? l10n.speedDialConfigAdded
+                  : l10n.speedDialConfigUpdated,
+            ),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+        Navigator.of(context).pop();
+      }
+    } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            _isNewSpeedDial
-                ? l10n.speedDialConfigAdded
-                : l10n.speedDialConfigUpdated,
-          ),
-          duration: const Duration(seconds: 2),
+          content: Text(e.toString()),
+          backgroundColor: AppTheme.errorColor,
         ),
       );
-      Navigator.of(context).pop();
     }
   }
 
@@ -170,9 +177,7 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            style: TextButton.styleFrom(
-              foregroundColor: AppTheme.errorColor,
-            ),
+            style: TextButton.styleFrom(foregroundColor: AppTheme.errorColor),
             child: Text(l10n.settingsCommonDelete),
           ),
         ],
@@ -180,14 +185,24 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
     );
 
     if (confirmed == true && mounted) {
-      await RepositoryFactory.speedDials.delete(widget.speedDial!.id);
-      ref.invalidate(speedDialsProvider);
+      try {
+        await AppContainer.speedDials.delete(widget.speedDial!.id);
+        ref.invalidate(speedDialsProvider);
 
-      if (mounted) {
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(l10n.speedDialConfigDeleted)));
+          Navigator.of(context).pop();
+        }
+      } catch (e) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.speedDialConfigDeleted)),
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: AppTheme.errorColor,
+          ),
         );
-        Navigator.of(context).pop();
       }
     }
   }
@@ -294,7 +309,8 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
                     const SizedBox(height: 12),
                     TextField(
                       controller: _nameController,
-                      enabled: _isNewSpeedDial ||
+                      enabled:
+                          _isNewSpeedDial ||
                           widget.speedDial!.id !=
                               SpeedDial
                                   .defaultId, // Disable for default speed dial
@@ -305,7 +321,8 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
                         ),
                         filled: true,
                         fillColor: Colors.grey[50],
-                        helperText: (!_isNewSpeedDial &&
+                        helperText:
+                            (!_isNewSpeedDial &&
                                 widget.speedDial!.id == SpeedDial.defaultId)
                             ? l10n.speedDialConfigDefaultNameLocked
                             : null,
@@ -380,7 +397,9 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
                         DropdownMenuItem(value: 'alloy', child: Text('Alloy')),
                         DropdownMenuItem(value: 'echo', child: Text('Echo')),
                         DropdownMenuItem(
-                            value: 'shimmer', child: Text('Shimmer')),
+                          value: 'shimmer',
+                          child: Text('Shimmer'),
+                        ),
                       ],
                       onChanged: (value) {
                         if (value != null) {

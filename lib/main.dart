@@ -5,12 +5,12 @@ import 'l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logging/logging.dart';
 import 'package:window_manager/window_manager.dart';
+import 'core/app/app_container.dart';
 import 'core/config/app_config.dart';
 import 'core/state/locale_providers.dart';
 import 'feat/home/screens/home.dart';
 import 'feat/oobe/screens/oobe_flow.dart';
 import 'core/theme/app_theme.dart';
-import 'repositories/repository_factory.dart';
 
 /// Setup logging configuration based on build mode
 void _setupLogging() {
@@ -19,7 +19,8 @@ void _setupLogging() {
 
   // Configure console output
   Logger.root.onRecord.listen((record) {
-    final time = '${record.time.hour.toString().padLeft(2, '0')}:'
+    final time =
+        '${record.time.hour.toString().padLeft(2, '0')}:'
         '${record.time.minute.toString().padLeft(2, '0')}:'
         '${record.time.second.toString().padLeft(2, '0')}.'
         '${(record.time.millisecond ~/ 100).toString()}';
@@ -53,7 +54,8 @@ void main() async {
   _setupLogging();
 
   // Initialize repositories
-  await RepositoryFactory.initialize();
+  await AppContainer.initialize();
+  await AppContainer.authCallbacks.start();
 
   // Initialize window manager ONLY for desktop platforms
   // This prevents crashes on mobile (Android/iOS) and web
@@ -76,11 +78,7 @@ void main() async {
     });
   }
 
-  runApp(
-    const ProviderScope(
-      child: VaginaApp(),
-    ),
-  );
+  runApp(const ProviderScope(child: VaginaApp()));
 }
 
 /// Main application widget
@@ -94,15 +92,36 @@ class VaginaApp extends ConsumerStatefulWidget {
 class _VaginaAppState extends ConsumerState<VaginaApp> {
   bool _isFirstLaunch = true;
   bool _isLoading = true;
+  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
 
   @override
   void initState() {
     super.initState();
+    AppContainer.auth.onSignedOut = _handleSignedOut;
     _bootstrapAppState();
   }
 
+  @override
+  void dispose() {
+    if (AppContainer.auth.onSignedOut == _handleSignedOut) {
+      AppContainer.auth.onSignedOut = null;
+    }
+    super.dispose();
+  }
+
+  void _handleSignedOut() {
+    final navigator = _navigatorKey.currentState;
+    if (navigator == null) {
+      return;
+    }
+    navigator.pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const OobeFlowScreen()),
+      (_) => false,
+    );
+  }
+
   Future<void> _bootstrapAppState() async {
-    final preferences = RepositoryFactory.preferences;
+    final preferences = AppContainer.preferences;
     final isFirst = await preferences.isFirstLaunch();
     final preferredLocaleCode = await preferences.getPreferredLocaleCode();
 
@@ -144,6 +163,7 @@ class _VaginaAppState extends ConsumerState<VaginaApp> {
     final localeCode = ref.watch(appLocaleCodeProvider);
 
     return MaterialApp(
+      navigatorKey: _navigatorKey,
       onGenerateTitle: (context) =>
           AppLocalizations.of(context).appTitle(AppConfig.appName),
       debugShowCheckedModeBanner: false,
@@ -158,13 +178,11 @@ class _VaginaAppState extends ConsumerState<VaginaApp> {
       home: _isLoading
           ? const Scaffold(
               backgroundColor: Colors.black,
-              body: Center(
-                child: CircularProgressIndicator(),
-              ),
+              body: Center(child: CircularProgressIndicator()),
             )
           : _isFirstLaunch
-              ? const OobeFlowScreen()
-              : const HomeScreen(),
+          ? const OobeFlowScreen()
+          : const HomeScreen(),
     );
   }
 }

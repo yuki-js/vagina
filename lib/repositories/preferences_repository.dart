@@ -10,6 +10,10 @@ class PreferencesRepository {
   static const String _keyPreferredLocaleCode = 'preferred_locale_code';
   static const String _keyDismissedAnnouncementTopicIds =
       'dismissed_announcement_topic_ids';
+  static const String _keyAuthRefreshToken = 'auth_refresh_token';
+  static const String _keyLegacyAuthSession = 'auth_session';
+  static const String _keyPendingPkceVerifier = 'pending_pkce_verifier';
+  static const String _keyPendingOidcProvider = 'pending_oidc_provider';
   static const Set<String> _supportedLocaleCodes = {'ja', 'en'};
 
   final KeyValueStore _store;
@@ -61,8 +65,9 @@ class PreferencesRepository {
 
   /// Returns the persisted dismissed announcement topic ids.
   Future<Set<String>> getDismissedAnnouncementTopicIds() async {
-    final dismissedTopicIds =
-        await _store.get(_keyDismissedAnnouncementTopicIds);
+    final dismissedTopicIds = await _store.get(
+      _keyDismissedAnnouncementTopicIds,
+    );
     if (dismissedTopicIds is! List) {
       return <String>{};
     }
@@ -72,13 +77,15 @@ class PreferencesRepository {
 
   /// Persists the full set of dismissed announcement topic ids.
   Future<void> setDismissedAnnouncementTopicIds(
-      Iterable<String> topicIds) async {
-    final normalizedTopicIds = topicIds
-        .map((topicId) => topicId.trim())
-        .where((topicId) => topicId.isNotEmpty)
-        .toSet()
-        .toList()
-      ..sort();
+    Iterable<String> topicIds,
+  ) async {
+    final normalizedTopicIds =
+        topicIds
+            .map((topicId) => topicId.trim())
+            .where((topicId) => topicId.isNotEmpty)
+            .toSet()
+            .toList()
+          ..sort();
 
     if (normalizedTopicIds.isEmpty) {
       await _store.delete(_keyDismissedAnnouncementTopicIds);
@@ -123,6 +130,111 @@ class PreferencesRepository {
   /// Clears all dismissed announcement topic ids.
   Future<void> clearDismissedAnnouncementTopicIds() async {
     await _store.delete(_keyDismissedAnnouncementTopicIds);
+  }
+
+  /// Returns the persisted authentication refresh token, if present.
+  Future<String?> getAuthRefreshToken() async {
+    await _migrateLegacyAuthSessionIfNeeded();
+    final token = await _store.get(_keyAuthRefreshToken);
+    if (token is! String) {
+      return null;
+    }
+
+    final normalized = token.trim();
+    return normalized.isEmpty ? null : normalized;
+  }
+
+  /// Persists the authentication refresh token.
+  Future<void> saveAuthRefreshToken(String refreshToken) async {
+    final normalized = refreshToken.trim();
+    if (normalized.isEmpty) {
+      throw ArgumentError.value(
+        refreshToken,
+        'refreshToken',
+        'Refresh token must not be empty.',
+      );
+    }
+    await _store.set(_keyAuthRefreshToken, normalized);
+  }
+
+  /// Removes persisted authentication refresh token.
+  Future<void> clearAuthRefreshToken() async {
+    await _store.delete(_keyAuthRefreshToken);
+    await _store.delete(_keyLegacyAuthSession);
+  }
+
+  Future<void> savePendingPkceVerifier(String codeVerifier) async {
+    final normalized = codeVerifier.trim();
+    if (normalized.isEmpty) {
+      throw ArgumentError.value(
+        codeVerifier,
+        'codeVerifier',
+        'codeVerifier must not be empty.',
+      );
+    }
+    await _store.set(_keyPendingPkceVerifier, normalized);
+  }
+
+  Future<String?> consumePendingPkceVerifier() async {
+    final raw = await _store.get(_keyPendingPkceVerifier);
+    await _store.delete(_keyPendingPkceVerifier);
+    if (raw is! String) {
+      return null;
+    }
+    final normalized = raw.trim();
+    return normalized.isEmpty ? null : normalized;
+  }
+
+  Future<void> clearPendingPkceVerifier() async {
+    await _store.delete(_keyPendingPkceVerifier);
+  }
+
+  Future<void> savePendingOidcProvider(String provider) async {
+    final normalized = provider.trim();
+    if (normalized.isEmpty) {
+      throw ArgumentError.value(
+        provider,
+        'provider',
+        'provider must not be empty.',
+      );
+    }
+    await _store.set(_keyPendingOidcProvider, normalized);
+  }
+
+  Future<String?> consumePendingOidcProvider() async {
+    final raw = await _store.get(_keyPendingOidcProvider);
+    await _store.delete(_keyPendingOidcProvider);
+    if (raw is! String) {
+      return null;
+    }
+    final normalized = raw.trim();
+    return normalized.isEmpty ? null : normalized;
+  }
+
+  Future<void> clearPendingOidcProvider() async {
+    await _store.delete(_keyPendingOidcProvider);
+  }
+
+  Future<void> _migrateLegacyAuthSessionIfNeeded() async {
+    final hasRefreshToken = await _store.contains(_keyAuthRefreshToken);
+    if (hasRefreshToken) {
+      if (await _store.contains(_keyLegacyAuthSession)) {
+        await _store.delete(_keyLegacyAuthSession);
+      }
+      return;
+    }
+
+    final raw = await _store.get(_keyLegacyAuthSession);
+    if (raw is Map) {
+      final token = raw['refreshToken'];
+      if (token is String && token.trim().isNotEmpty) {
+        await _store.set(_keyAuthRefreshToken, token.trim());
+      }
+    }
+
+    if (await _store.contains(_keyLegacyAuthSession)) {
+      await _store.delete(_keyLegacyAuthSession);
+    }
   }
 
   /// Reset first launch flag (for testing)

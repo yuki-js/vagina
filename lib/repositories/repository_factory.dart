@@ -3,14 +3,10 @@ import 'package:vagina/core/data/json_file_store.dart';
 import 'package:vagina/interfaces/call_session_repository.dart';
 import 'package:vagina/interfaces/config_repository.dart';
 import 'package:vagina/interfaces/key_value_store.dart';
-import 'package:vagina/interfaces/speed_dial_repository.dart';
-import 'package:vagina/interfaces/virtual_filesystem_repository.dart';
 import 'package:vagina/services/log_service.dart';
 
 import 'json_call_session_repository.dart';
 import 'json_config_repository.dart';
-import 'json_speed_dial_repository.dart';
-import 'json_virtual_filesystem_repository.dart';
 import 'preferences_repository.dart';
 
 /// Factory for creating repository instances
@@ -20,8 +16,6 @@ import 'preferences_repository.dart';
 class RepositoryFactory {
   static KeyValueStore? _store;
   static CallSessionRepository? _callSessionRepo;
-  static SpeedDialRepository? _speedDialRepo;
-  static VirtualFilesystemRepository? _filesystemRepo;
   static ConfigRepository? _configRepo;
   static PreferencesRepository? _preferencesRepo;
   static LogService? _logService;
@@ -31,8 +25,10 @@ class RepositoryFactory {
   /// In widget/unit tests, file IO / platform channels can hang. When running
   /// under test (`bool.fromEnvironment('FLUTTER_TEST') == true`), we default to
   /// an in-memory store.
-  static Future<void> initialize(
-      {LogService? logService, KeyValueStore? store}) async {
+  static Future<void> initialize({
+    LogService? logService,
+    KeyValueStore? store,
+  }) async {
     _logService = logService ?? LogService();
 
     if (_store != null) return;
@@ -58,29 +54,19 @@ class RepositoryFactory {
   /// Get the CallSession repository
   static CallSessionRepository get callSessions {
     _ensureInitialized();
-    return _callSessionRepo ??=
-        JsonCallSessionRepository(_store!, logService: _logService);
-  }
-
-  /// Get the SpeedDial repository
-  static SpeedDialRepository get speedDials {
-    _ensureInitialized();
-    return _speedDialRepo ??=
-        JsonSpeedDialRepository(_store!, logService: _logService);
-  }
-
-  /// Get the Virtual Filesystem repository
-  static VirtualFilesystemRepository get filesystem {
-    _ensureInitialized();
-    return _filesystemRepo ??=
-        JsonVirtualFilesystemRepository(_store!, logService: _logService);
+    return _callSessionRepo ??= JsonCallSessionRepository(
+      _store!,
+      logService: _logService,
+    );
   }
 
   /// Get the Config repository
   static ConfigRepository get config {
     _ensureInitialized();
-    return _configRepo ??=
-        JsonConfigRepository(_store!, logService: _logService);
+    return _configRepo ??= JsonConfigRepository(
+      _store!,
+      logService: _logService,
+    );
   }
 
   /// Get the Preferences repository
@@ -89,11 +75,18 @@ class RepositoryFactory {
     return _preferencesRepo ??= PreferencesRepository(_store!);
   }
 
+  /// Shared logger instance.
+  static LogService get logService {
+    _ensureInitialized();
+    return _logService ??= LogService();
+  }
+
   /// Helper to ensure initialization
   static void _ensureInitialized() {
     if (_store == null) {
       throw StateError(
-          'RepositoryFactory not initialized. Call initialize() first.');
+        'RepositoryFactory not initialized. Call initialize() first.',
+      );
     }
   }
 
@@ -101,8 +94,6 @@ class RepositoryFactory {
   static void reset() {
     _store = null;
     _callSessionRepo = null;
-    _speedDialRepo = null;
-    _filesystemRepo = null;
     _configRepo = null;
     _preferencesRepo = null;
     _logService = null;

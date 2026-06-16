@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:vagina/core/app/app_container.dart';
 import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/l10n/app_localizations.dart';
 import 'package:vagina/models/virtual_file.dart';
-import 'package:vagina/repositories/repository_factory.dart';
 import 'package:vagina/services/virtual_filesystem_service.dart';
 import 'package:vagina/utils/file_icon_utils.dart';
 import 'package:vagina/tools/builtin/shared/file_type_support.dart';
@@ -11,10 +11,7 @@ import 'package:vagina/tools/builtin/shared/file_type_support.dart';
 class FileInfoViewerScreen extends StatefulWidget {
   final String filePath;
 
-  const FileInfoViewerScreen({
-    super.key,
-    required this.filePath,
-  });
+  const FileInfoViewerScreen({super.key, required this.filePath});
 
   @override
   State<FileInfoViewerScreen> createState() => _FileInfoViewerScreenState();
@@ -33,7 +30,7 @@ class _FileInfoViewerScreenState extends State<FileInfoViewerScreen> {
   @override
   void initState() {
     super.initState();
-    _fsService = VirtualFilesystemService(RepositoryFactory.filesystem);
+    _fsService = VirtualFilesystemService(AppContainer.filesystem);
     _loadFile();
   }
 
@@ -86,12 +83,7 @@ class _FileInfoViewerScreenState extends State<FileInfoViewerScreen> {
               size: 20,
             ),
             const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                _fileName,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
+            Expanded(child: Text(_fileName, overflow: TextOverflow.ellipsis)),
           ],
         ),
         backgroundColor: Colors.transparent,
@@ -165,9 +157,9 @@ class _FileInfoViewerScreenState extends State<FileInfoViewerScreen> {
           children: [
             Text(
               _l10n.fileViewerInfoTitle,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             _buildInfoRow(_l10n.fileViewerInfoNameLabel, _fileName),
@@ -177,7 +169,9 @@ class _FileInfoViewerScreenState extends State<FileInfoViewerScreen> {
               _extension.isNotEmpty ? _extension : _l10n.fileViewerNoExtension,
             ),
             _buildInfoRow(
-                _l10n.fileViewerInfoSizeLabel, _formatFileSize(contentBytes)),
+              _l10n.fileViewerInfoSizeLabel,
+              _formatFileSize(contentBytes),
+            ),
             _buildInfoRow(_l10n.fileViewerInfoLinesLabel, lineCount.toString()),
             _buildInfoRow(
               _l10n.fileViewerInfoCharactersLabel,
@@ -208,9 +202,7 @@ class _FileInfoViewerScreenState extends State<FileInfoViewerScreen> {
           Expanded(
             child: SelectableText(
               value,
-              style: const TextStyle(
-                color: AppTheme.lightTextPrimary,
-              ),
+              style: const TextStyle(color: AppTheme.lightTextPrimary),
             ),
           ),
         ],
@@ -233,9 +225,9 @@ class _FileInfoViewerScreenState extends State<FileInfoViewerScreen> {
           children: [
             Text(
               _l10n.fileViewerPreviewTitle,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             Container(
@@ -244,9 +236,7 @@ class _FileInfoViewerScreenState extends State<FileInfoViewerScreen> {
               decoration: BoxDecoration(
                 color: Colors.grey[100],
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: Colors.grey[300]!,
-                ),
+                border: Border.all(color: Colors.grey[300]!),
               ),
               child: SelectableText(
                 preview.isEmpty ? _l10n.sessionDetailNoContent : preview,

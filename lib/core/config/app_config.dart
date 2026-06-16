@@ -37,6 +37,28 @@ class AppConfig {
   static const String devAnnouncementJsonAssetPath =
       'assets/announcements/dev.json';
 
+  /// OAuth callback SSOT.
+  static const String callbackScheme = 'https';
+  static const String callbackHost = 'vagina.app';
+  static const String callbackPath = '/callback';
+  static String get callbackUrl => '$callbackScheme://$callbackHost$callbackPath';
+
+  static const String _apiBaseUrlEnvKey = 'VAGINA_API_BASE_URL';
+  static const String defaultDebugApiBaseUrl = 'http://localhost:8080/api';
+  static const String defaultReleaseApiBaseUrl =
+      'https://vagina-api.ouchiserver.aokiapp.com/api';
+
+  static String resolveApiBaseUrl({
+    required bool isDebugMode,
+  }) {
+    const configured = String.fromEnvironment(_apiBaseUrlEnvKey, defaultValue: '');
+    final trimmed = configured.trim();
+    if (trimmed.isNotEmpty) {
+      return trimmed;
+    }
+    return isDebugMode ? defaultDebugApiBaseUrl : defaultReleaseApiBaseUrl;
+  }
+
   /// Parsed announcement endpoint URI, or `null` when not configured.
   static Uri? get announcementJsonUri {
     return resolveAnnouncementJsonUri(

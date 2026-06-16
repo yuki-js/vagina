@@ -228,6 +228,56 @@
       }
     }
   },
+  "oobeAuthenticationSigningIn": "サインイン中...",
+  "@oobeAuthenticationSigningIn": {
+    "description": "OOBE 認証フロー実行中に表示する進捗ラベル。"
+  },
+  "oobeAuthenticationContinueInBrowser": "ブラウザで認証を続行し、許可後にアプリへ戻ってください。",
+  "@oobeAuthenticationContinueInBrowser": {
+    "description": "ネイティブ環境で OAuth 用ブラウザを開いた直後に表示するガイダンス。"
+  },
+  "oobeAuthenticationStartFailed": "サインイン開始に失敗しました: {error}",
+  "@oobeAuthenticationStartFailed": {
+    "description": "OIDC 開始 API 呼び出しが失敗したときのスナックバー文言。",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "OIDC 開始 API から返されたエラー詳細。"
+      }
+    }
+  },
+  "oobeAuthenticationCallbackFailed": "サインインコールバックに失敗しました: {error}",
+  "@oobeAuthenticationCallbackFailed": {
+    "description": "OAuth コールバックにエラーまたは不正パラメータがあるときのスナックバー文言。",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "コールバックのクエリパラメータから得たエラー内容。"
+      }
+    }
+  },
+  "oobeAuthenticationMissingAuthCode": "コールバックに認可コードが含まれていません。",
+  "@oobeAuthenticationMissingAuthCode": {
+    "description": "コールバックに必要な code/state が存在しない場合のフォールバック文言。"
+  },
+  "oobeAuthenticationExchangeFailed": "サインイン完了処理に失敗しました: {error}",
+  "@oobeAuthenticationExchangeFailed": {
+    "description": "認可コード交換 API 呼び出しが失敗したときのスナックバー文言。",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "認可コード交換 API から返されたエラー詳細。"
+      }
+    }
+  },
+  "oobeAuthenticationSignInSuccess": "サインインが完了しました。",
+  "@oobeAuthenticationSignInSuccess": {
+    "description": "OOBE サインイン成功時に表示するスナックバー文言。"
+  },
+  "oobeAuthenticationSignInRequired": "セットアップを続けるには GitHub でのサインインが必要です。",
+  "@oobeAuthenticationSignInRequired": {
+    "description": "GitHub サインイン前に OOBE を進めようとしたときのスナックバー文言。"
+  },
   "oobeAuthenticationOr": "または",
   "@oobeAuthenticationOr": {
     "description": "OOBE 認証画面で外部ログインボタン群と手動設定ボタンの間に表示する区切りラベル。"

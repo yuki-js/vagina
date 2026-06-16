@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:vagina/core/app/app_container.dart';
 import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/l10n/app_localizations.dart';
 import 'package:vagina/models/virtual_file.dart';
-import 'package:vagina/repositories/repository_factory.dart';
 import 'package:vagina/services/virtual_filesystem_service.dart';
 import 'package:vagina/utils/file_icon_utils.dart';
 
@@ -11,10 +11,7 @@ import 'package:vagina/utils/file_icon_utils.dart';
 class TextViewerScreen extends StatefulWidget {
   final String filePath;
 
-  const TextViewerScreen({
-    super.key,
-    required this.filePath,
-  });
+  const TextViewerScreen({super.key, required this.filePath});
 
   @override
   State<TextViewerScreen> createState() => _TextViewerScreenState();
@@ -37,7 +34,7 @@ class _TextViewerScreenState extends State<TextViewerScreen> {
   @override
   void initState() {
     super.initState();
-    _fsService = VirtualFilesystemService(RepositoryFactory.filesystem);
+    _fsService = VirtualFilesystemService(AppContainer.filesystem);
     _controller = TextEditingController();
     _loadFile();
   }
@@ -141,12 +138,7 @@ class _TextViewerScreenState extends State<TextViewerScreen> {
               size: 20,
             ),
             const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                _fileName,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
+            Expanded(child: Text(_fileName, overflow: TextOverflow.ellipsis)),
           ],
         ),
         backgroundColor: Colors.transparent,
@@ -262,8 +254,9 @@ class _TextViewerScreenState extends State<TextViewerScreen> {
               color: AppTheme.lightTextPrimary,
             ),
             code: TextStyle(
-              backgroundColor:
-                  AppTheme.lightTextSecondary.withValues(alpha: 0.1),
+              backgroundColor: AppTheme.lightTextSecondary.withValues(
+                alpha: 0.1,
+              ),
               color: AppTheme.primaryColor,
               fontFamily: 'monospace',
             ),
@@ -275,9 +268,7 @@ class _TextViewerScreenState extends State<TextViewerScreen> {
               color: AppTheme.lightTextSecondary,
               fontStyle: FontStyle.italic,
             ),
-            listBullet: const TextStyle(
-              color: AppTheme.primaryColor,
-            ),
+            listBullet: const TextStyle(color: AppTheme.primaryColor),
           ),
         ),
       );
@@ -329,8 +320,10 @@ class _TextViewerScreenState extends State<TextViewerScreen> {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
-            borderSide:
-                const BorderSide(color: AppTheme.primaryColor, width: 2),
+            borderSide: const BorderSide(
+              color: AppTheme.primaryColor,
+              width: 2,
+            ),
           ),
           filled: true,
           fillColor: Colors.white,

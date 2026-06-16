@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:vagina/repositories/repository_factory.dart';
+import 'package:vagina/core/app/app_container.dart';
 import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/feat/call/models/text_agent_api_config.dart';
 import 'package:vagina/feat/call/models/text_agent_info.dart';
@@ -142,7 +142,7 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
         enabledTools: _enabledTools,
       );
 
-      final configRepository = RepositoryFactory.config;
+      final configRepository = AppContainer.config;
       await configRepository.saveTextAgent(agent);
 
       if (mounted) {
@@ -208,7 +208,7 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
 
     if (confirmed == true && mounted) {
       try {
-        final configRepository = RepositoryFactory.config;
+        final configRepository = AppContainer.config;
         await configRepository.deleteTextAgent(widget.agent!.id);
         ref.invalidate(textAgentsProvider);
 

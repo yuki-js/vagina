@@ -1,5 +1,5 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:vagina/repositories/repository_factory.dart';
+import 'package:vagina/core/app/app_container.dart';
 import 'package:vagina/models/call_session.dart';
 
 part 'session_history_providers.g.dart';
@@ -10,6 +10,6 @@ part 'session_history_providers.g.dart';
 /// - call `ref.invalidate(callSessionsProvider)` after deleting sessions.
 @riverpod
 Future<List<CallSession>> callSessions(Ref ref) async {
-  final repo = RepositoryFactory.callSessions;
+  final repo = AppContainer.callSessions;
   return repo.getAll();
 }

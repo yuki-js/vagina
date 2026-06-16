@@ -1,5 +1,5 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:vagina/repositories/repository_factory.dart';
+import 'package:vagina/core/app/app_container.dart';
 import 'package:vagina/models/speed_dial.dart';
 
 part 'speed_dial_providers.g.dart';
@@ -10,6 +10,6 @@ part 'speed_dial_providers.g.dart';
 /// - call `ref.invalidate(speedDialsProvider)` after create/update/delete.
 @riverpod
 Future<List<SpeedDial>> speedDials(Ref ref) async {
-  final repo = RepositoryFactory.speedDials;
+  final repo = AppContainer.speedDials;
   return repo.getAll();
 }
