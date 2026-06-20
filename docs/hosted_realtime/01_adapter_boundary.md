@@ -31,7 +31,7 @@
 | Adapter API | backend に必要な責務 | wire primitive |
 | --- | --- | --- |
 | `connect()` | model 選択、voice/instructions 設定、session 開始 | `session.open` |
-| `dispose()` | graceful close、リソース解放 | WebSocket close / `session.close` |
+| `dispose()` | graceful close、リソース解放 | WebSocket close |
 | `bindAudioInput()` | live PCM chunk 受信の開始停止 | `live.audio.chunk` |
 | `setAudioTurnMode()` | VAD / manual の切り替え | `audio.turn.mode.set` |
 | `assistantAudioStream` | assistant PCM chunk 配信 | `assistant.audio.chunk` |
@@ -113,7 +113,6 @@ thread は semi-mutable だが、正規形は backend が持つ。adapter は pa
 
 - server 送信列の単調増加番号 `streamSeq`
 - canonical thread 全体の revision `threadRevision`
-- item 単位の `itemRevision`
 - 差分再送の `thread.patch`
 - 正規全体像の `thread.snapshot`
 

@@ -1,367 +1,449 @@
 # Quarkus Backend Spec
 
-## 目的
+## この文書の位置づけ
 
-ここでいう backend は、Flutter app と model provider 群の間に立つ hosted realtime service である。責務は次の 4 つに限定する。
+[01_adapter_boundary.md](./01_adapter_boundary.md) と [02_vhrp_wire_protocol.md](./02_vhrp_wire_protocol.md) を前提に、VHRP/1 の **server 側実装方針** を定める。実装に入る前のクリーンルーム設計であり、責務分割・パッケージ構造・クラス関係・主要シーケンスを確定させることが目的である。
 
-1. app 固有 protocol `VHRP/1` の終端
-2. session / thread / tool-call の整合性維持
-3. model/ASR/TTS/VAD driver の隠蔽
-4. asset と認証の管理
+## 中核となる設計判断
 
-## 実装方針
+この設計は、ユーザとの対話で確定した複数の設計判断の上に立つ。中核は以下の判断1〜5 + 判断(音声リレー)であり、判断6 以降は後続の各セクションで個別に導入する。
 
-### 推奨構成
+### 判断1: ワープ界面は `RealtimeAdapter` interface である
 
-- WebSocket: realtime session 本体
-- binary codec: CBOR
-- session state: メモリ or 外部 store
-- replay log + snapshot checkpoint
-- audio/image asset: object storage
-- model integration: backend 内部 SPI
+standalone 実装である [`OaiRealtimeAdapter`](../../lib/feat/call/services/realtime/oai/realtime_adapter.dart) は 2 つの顔を持つ。
 
-### 採用しないもの
+- **上面**: `implements RealtimeAdapter`。10 系統の能力と `RealtimeThread` の見え方。外向きのポータルの口。
+- **下面**: OAI event を `RealtimeThread` に投影し、契約を OAI command へ翻訳する vendor translation 本体。
 
-- 独自 TCP protocol
-- HTTP polling
-- gRPC streaming を Flutter adapter へ直接露出
-- vendor native event 名の透過
+VHRP 化とは、この 1 枚のクラスを界面で割り、**下面をインターネットの向こう（Quarkus）へ移送する**操作である。
 
-## Public API
-
-### `GET /api/hosted-realtime/v1/connect`
-
-WebSocket upgrade endpoint。
-
-要件:
-
-- `Sec-WebSocket-Protocol: vhrp.cbor.v1`
-- application-layer では upgrade 時認証を要求しない
-- 接続後の最初の application message は `session.open` でなければならない
-- `session.open.body.token` に載る JWT を検証して session context を生成する
-
-upgrade 後の active session は WebSocket connection context に束縛される。in-band frame に毎回 `sessionId` を載せる必要はない。
-
-補足:
-
-- WebSocket 以外の REST endpoint が JWT を使うかどうかは本 protocol の外である
-- JWT refresh と WebSocket connection lifetime の連動規則は定義しない
-- application-level heartbeat は v1 では定義せず、keepalive は WebSocket ping/pong に委ねる
-
-## Quarkus Component Layout
-
-### `HostedRealtimeSocketEndpoint`
-
-WebSocket endpoint。責務:
-
-- binary frame 受信
-- CBOR decode
-- `type` ごとの dispatch
-- connection context から active session を解決
-- session close
-
-イベントループ上で重い処理をしない。decode 後の model call, transcription, asset upload, tool wait は worker 側へ逃がす。
-
-### `HostedSessionCoordinator`
-
-session ごとの orchestrator。責務:
-
-- session state machine
-- `streamSeq` / `threadRevision` / `itemRevision` 管理
-- current generation 管理
-- turn mode 管理
-- active tool catalog
-- pending tool call 管理
-- resume handle としての `sessionId` 管理
-- current instructions 管理
-
-### `ThreadProjector`
-
-server 正規状態から `thread.patch` / `thread.snapshot` を生成する。Flutter 側 `RealtimeThread` と 1 対 1 で対応する event のみを出す。
-
-### `ReplayLog`
-
-責務:
-
-- 最近送った `streamSeq` 付き server message を session ごとに保持
-- `afterStreamSeq` からの replay 可否を判定
-- retention window 外なら snapshot fallback を指示
-
-### `CheckpointStore`
-
-責務:
-
-- `thread.snapshot` の生成元となる canonical thread state を保持
-- `threadRevision` と item revision index を保持
-- transport 欠落時の authoritative resync を支える
-
-### `AudioIngressService`
-
-責務:
-
-- `live.audio.chunk` の sequence 検証
-- PCM format 検証
-- VAD 用 buffer 管理
-- manual / voice-activity mode の切り替え
-- `manual` mode 中に受けた `live.audio.chunk` の黙殺
-
-### `AssistantAudioEgressService`
-
-責務:
-
-- TTS あるいは model audio 出力の PCM chunk 化
-- `assistant.audio.chunk`
-- `assistant.audio.done`
-
-### `ToolCallBroker`
-
-責務:
-
-- model からの tool request を `functionCall` item に変換
-- `callId` 採番
-- generation ごとの pending tool queue を管理
-- `tool.result.submit` 待機
-- timeout / generation 失効処理
-
-### `AssetService`
-
-責務:
-
-- `turn.image.submit` の bytes を object storage に保存
-- content type 判定
-- asset URL 発行
-- TTL 管理
-
-## Session State Machine
-
-```text
-NEW
-  -> OPENING
-  -> READY
-  -> ACTIVE
-  -> DETACHED
-  -> INTERRUPTING
-  -> CLOSING
-  -> CLOSED
+```mermaid
+graph TB
+    subgraph Client[Flutter client]
+        CS[CallService] --> RS[RealtimeService]
+        RS --> RA[RealtimeAdapter interface ワープ界面]
+        RA --> VA[VhrpRealtimeAdapter 入口ポータル 薄い]
+    end
+    VA -.VHRP CBOR over WebSocket ワームホール.-> EP
+    subgraph Server[Quarkus server]
+        EP[VhrpEndpoint 出口ポータル 薄い] --> JRA[RealtimeAdapter.java 同型界面]
+        JRA --> OA[OaiRealtimeAdapter.java OAI翻訳本体 写経]
+        OA --> OC[OaiRealtimeClient.java binding]
+    end
+    OC -.OpenAI Realtime API.-> OAI[OpenAI]
 ```
 
-補助 state:
+### 判断2: レイヤードではなく Dart パッケージの逐語ミラー
 
-- `streamSeq`: `long`
-- `generation`: `long`
-- `threadRevision`: `long`
-- `audioTurnMode`: `voice_activity | manual`
-- `liveInputBound`: boolean
+既存サーバの `resource -> usecase -> service` 三層規約は、この機能には最適でない。代わりに **Dart の `realtime/` パッケージ構造を Java へ逐語ミラーする**。理由は、standalone OAI 実装をほぼそのまま写経でき、ワープ界面の同型性がコードレベルで保証されるからである。
 
-`DETACHED` は transport が切れたが session 自体は保持している状態である。grace period 内なら `session.resumed` で `ACTIVE` に戻れる。
+VHRP エンドポイントは、このミラー界面を **駆動する薄いプロキシ** に徹する。usecase/service 層は介在させない。
 
-### generation rule
+### 判断3: 非同期プリミティブは Mutiny
 
-`assistant.interrupt` ごとに `generation` を increment する。model, TTS, transcription, tool wait の各 async task は generation を捕捉し、completion 時に current generation と一致しなければ output を捨てる。
+Quarkus/Vert.x のイベントループと自然に噛み合い、`quarkus-websockets-next` とも相性が良いため、Dart の非同期表現を次のように写経する。
 
-これで Flutter 側の `cancelFunctionCalls()` と整合する。
+| Dart | Java (Mutiny) |
+| --- | --- |
+| `StreamController<T>.broadcast()` | `BroadcastProcessor<T>` |
+| `Stream<T>` | `Multi<T>` |
+| `Future<T>` | `Uni<T>` |
+| `Future<void>` | `Uni<Void>` |
+| `StreamSubscription` | `Cancellable` |
 
-### resume / resync rule
+### 判断4: thread.patch は mutation site で発行する
 
-server は session ごとに次を持つ。
+Dart 実装は thread を破壊的に変異させ、`_emitThreadUpdate()` で **thread 全体** を流すだけである。一方 VHRP は **差分 op 列 (`thread.patch`)** を要求する。この衝突を、**mutation helper のラップ**で吸収する。
 
-- bounded replay log
-- 最新 canonical thread
-- `threadRevision`
-- item ごとの revision
+具体的には、ミラー側の変異ヘルパ (`appendTextDelta` / `markDone` / `addItem` / `setStatus` 等) を「**canonical thread を更新しつつ、対応する op を outbound patch buffer へ追記する**」形にする。Dart で `_emitThreadUpdate()` を呼んでいた箇所が、Java では「**buffer 済み op 列を 1 つの `thread.patch` としてフラッシュする**」点になる。
 
-resume 時:
+この設計により:
 
-1. `session.open.resume.afterStreamSeq` を受ける
-2. replay log が残っていれば replay
-3. 残っていなければ `thread.snapshot`
-4. session 自体が失効していれば `resume.not_available`
+- OAI 翻訳ロジック本体（どの event で何を変異させるか）は **ほぼそのまま写経できる**
+- `streamSeq` / `baseThreadRevision` / `targetThreadRevision` の採番が patch 生成の 1 箇所に集約される
+- 将来の resume / gap recovery で必要な「op の履歴」が自然に得られる
 
-これが、断片欠落と transport reconnect を同一メカニズムで扱う中心設計である。
-
-補足:
-
-- WebSocket/TCP 自体は active connection 内の順序と再送を保証する
-- したがって `streamSeq` は packet loss 対策ではなく、reconnect 境界と application-state continuity のためにある
-
-## Model Driver SPI
-
-backend の内部では vendor 差分を次の SPI に閉じ込める。
-
-```text
-ModelDriver
-  openSession()
-  closeSession()
-  submitUserText()
-  submitUserAudio()
-  submitUserImage()
-  updateInstructions()
-  updateTools()
-  applyExtension()
-  interruptGeneration()
-  resumeAfterToolResult()
+```mermaid
+graph LR
+    EV[OAI inbound event] --> H[mutation helper ラップ済み]
+    H --> TH[canonical RealtimeThread 更新]
+    H --> OPS[outbound op buffer 追記]
+    EMIT[emit 点 旧_emitThreadUpdate] --> FLUSH[op buffer を thread.patch にflush]
+    OPS --> FLUSH
+    FLUSH --> SEQ[streamSeq/revision 採番]
+    SEQ --> OUT[VHRP thread.patch 送信]
 ```
 
-driver が返すイベントも backend 内の抽象イベントに正規化する。
+### 判断5: 認証は既存の in-band JWT 検証を再利用
+
+[`AuthService.authenticateFromJwt(String rawToken)`](../../../server/src/main/java/app/vagina/server/service/AuthService.java) は既に「VHRP/1 `session.open` token」を想定して実装済みである。`session.open.body.token` の生 JWT をこのメソッドへ渡し、`Optional<User>` を解決する。失敗時は `error(auth.invalid_jwt)` を返して接続を閉じる。
+
+### 判断(音声リレー): 音声は client 直結ではなく Quarkus 経由でリレーする
+
+live mic PCM と assistant PCM は client↔OAI 直結 (例: WebRTC + ephemeral key) ではなく、Quarkus を全二重リレーとして経由させる。レイテンシ・帯域・サーバ CPU を毎フレーム払う取引だが、次の理由で正当化される。
+
+- **Cli-Qua 間は lossy**: モバイル client は基地局ハンドオーバ等で頻繁に瞬断・reconnect する。VHRP の resume/resync 機構 (streamSeq/threadRevision) はこの境界を吸収するために存在する。
+- **Qua-Oai 間は stable**: server-server link は安定で切れにくく、サーバ型にするからこそこの区間の耐久性が確保される。
+- **WebRTC の弱点**: WebRTC は基地局ハンドオーバ時の compensation が弱く、lossy な Cli-Qua 区間にはむしろ不利。直結は採らない。
+
+この判断により vendor 翻訳を backend に閉じ込めつつ、不安定な client 側回線を VHRP layer で吸収できる。
+
+## パッケージ構造
+
+サーバ側は `app.vagina.server.realtime` 配下に、Dart 構造をミラーして配置する。
 
 ```text
-AssistantTextDelta
-AssistantAudioChunk
-AssistantTranscriptDelta
-ToolCallRequested
-TurnCompleted
-ModelProblem
+app.vagina.server.realtime
+├── RealtimeAdapter.java              ; ワープ界面 (Dart realtime_adapter.dart と同型)
+├── RealtimeDriverFactory.java        ; 判断7: modelId -> driver 解決
+├── VhrpEndpoint.java                 ; 出口ポータル: @WebSocket /api/hosted-realtime/v1/connect
+├── VhrpMessage.java                  ; sealed: C2S/S2C メッセージ型 + error code 定数を同居
+├── VhrpCborCodec.java                ; CBOR encode/decode を 1 ファイルに集約
+├── VhrpSession.java                  ; 1接続=1セッション。streamSeq/revision/canonical thread を所有し、判断4の op buffer + flush + 採番を担う
+├── model
+│   ├── RealtimeThread.java           ; thread + item + part 一式 (Dart realtime_thread.dart ミラー)
+│   └── RealtimeAdapterModels.java    ; 判断8集約: ConnectionState + Error
+│                                     ;           + AudioTurnMode + ToolOutputDisposition
+│                                     ; (Dart realtime_adapter_models.dart の集約方針を踏襲)
+└── oai                               ; OAI翻訳本体 (Dart oai/ パッケージ逐語ミラー・写経対象)
+    ├── OaiRealtimeAdapter.java       ; implements RealtimeAdapter
+    ├── OaiRealtimeClient.java        ; typed binding (Dart realtime_binding.dart)
+    ├── OaiRealtimeEvent.java         ; inbound event 型 一式 (Dart realtime_event.dart)
+    ├── OaiRealtimeEventParser.java   ; (Dart realtime_event_parser.dart)
+    ├── OaiRealtimeCommand.java       ; outbound command 型 + encoder を同居
+    ├── OaiRealtimeTransport.java     ; OAI への WS 抽象 (Dart realtime_transport.dart)
+    └── OaiRealtimeConnectConfig.java ; baseUrl/apiKey/model (config 由来)
 ```
 
-WebSocket へ直接 vendor event を流さない。
+判断9: VHRP 関連ファイル (`Vhrp*`) は `realtime` 直下にフラット配置する。VHRP は出口ポータルの実装そのものであり `realtime` パッケージの主役なので、独立サブパッケージにする意義が薄い。一方 `oai` だけはサブパッケージとして切り、VHRP を一切知らない翻訳本体として隔離する。これにより「`realtime` 直下 = VHRP を知る出口ポータル」「`oai` 配下 = VHRP を知らない vendor 翻訳本体」という依存方向が階層で表現される。両者を繋ぐのが `VhrpEndpoint` + `VhrpSession`。
 
-## Replay And Checkpoint Policy
+### 判断8: 関連する小型 type は集約ファイルに同居させる
 
-最低限必要なポリシー:
+Java は 1 ファイル 1 public type を強制するため、enum/record を素朴に分割すると 20 行未満の極小ファイルが多発する。これを避け、Dart の [`realtime_adapter_models.dart`](../../lib/feat/call/models/realtime/realtime_adapter_models.dart) が state/error を 1 ファイルに同居させている集約方針を Java でも踏襲する。
 
-- replay log は直近 N 件または M 秒保持
-- `threadRevision` は thread を変えるたび increment
-- `itemRevision` は対象 item を変えるたび increment
-- snapshot checkpoint は少なくとも最新 1 個を保持
+| 集約先 | 同居させる型 (nested static) | 写経元 Dart |
+| --- | --- | --- |
+| `model/RealtimeAdapterModels.java` | `ConnectionState` (+phase enum) / `Error` / `AudioTurnMode` / `ToolOutputDisposition` | `realtime_adapter_models.dart` + adapter 内 enum |
+| `model/RealtimeThread.java` | `RealtimeThread` / `Item` / `ContentPart` (text/audio/image) / `ItemType` / `ItemRole` / `ItemStatus` | `realtime_thread.dart` |
+| `VhrpMessage.java` | C2S/S2C 各メッセージ (sealed permits) + error code 定数 | (VHRP 仕様 02) |
+| `VhrpCborCodec.java` | encoder + decoder | `realtime_command_encoder.dart` + `realtime_event_parser.dart` |
+| `oai/OaiRealtimeCommand.java` | command sealed 群 + encoder | `realtime_command.dart` + `realtime_command_encoder.dart` |
+| `oai/OaiRealtimeEvent.java` | event sealed 群 | `realtime_event.dart` |
 
-推奨:
+この集約により、極小ファイルは設定由来の `OaiRealtimeConnectConfig.java` (record) 程度に限定され、それ以外は意味のある単位で 1 ファイルにまとまる。
 
-- replay log: 2,000 message または 2 分
-- checkpoint 更新: 25 revision ごと、または 1 秒ごと
+## レイヤ責務
 
-完全 event sourcing は不要だが、resume を名乗るなら replay log と最新 checkpoint は必要である。
+### 出口ポータル: `VhrpEndpoint` + `VhrpSession`
 
-## Quarkus-Specific Guidance
+`quarkus-websockets-next` の `@WebSocket` で `/api/hosted-realtime/v1/connect` を提供する。binary frame のみ扱い、subprotocol は `vhrp.cbor.v1`。
 
-### WebSocket 実装
+責務:
 
-- 新規実装なら `WebSockets Next` を第一候補にする
-- 既存コードが Jakarta WebSocket 前提なら legacy extension でもよい
-- 重要なのは binary message を素直に扱えることだけで、API スタイルは backend 全体の既存規約に合わせる
+1. WebSocket lifecycle (open / binary message / close / error) を受ける
+2. 最初の application message が `session.open` であることを強制し、JWT を検証する
+3. C2S メッセージを decode し、対応する `RealtimeAdapter` メソッドへ振り分ける
+4. `RealtimeAdapter` の観測点 (`Multi`) を購読し、S2C メッセージへ encode して送る
+5. `streamSeq` / revision の付与、`messageId` / `replyTo` 相関、`ack` / `error` 応答
 
-### CBOR codec
+`VhrpSession` は 1 WebSocket connection = 1 session として、session 固有状態 (sessionId, lastStreamSeq, threadRevision, canonical thread への参照, pending messageId 相関) を保持する。VHRP の「active session は connection context に束縛」規定をそのまま体現する。
 
-- REST 用 JSON `ObjectMapper` とは分ける
-- `CBORFactory` を使った dedicated mapper を 1 つ持つ
-- DTO は sealed interface まで凝らず、flat POJO + validator で十分
-- top-level envelope は `type` ベース dispatch のほうが簡単
+### ワープ界面: `RealtimeAdapter.java`
 
-### event loop を塞がない
+Dart の [`RealtimeAdapter`](../../lib/feat/call/services/realtime/realtime_adapter.dart) と同型の Java interface。違いは非同期プリミティブが Mutiny になる点のみ。
 
-避けるべきもの:
+```text
+interface RealtimeAdapter {
+  RealtimeThread thread();
+  Multi<RealtimeThread> threadUpdates();
+  RealtimeAdapterConnectionState connectionState();
+  Multi<RealtimeAdapterConnectionState> connectionStateUpdates();
+  Multi<RealtimeAdapterError> errors();
 
-- WebSocket コールバック内での同期的 object storage upload
-- 同期 HTTP client での model 呼び出し
-- 巨大 byte array の繰り返し再コピー
+  Uni<Void> connect(RealtimeConnectParams params);   ; voice/instructions/model
+  Uni<Void> dispose();
 
-方針:
+  void pushLiveAudioChunk(byte[] pcm);   ; 判断6: Dart の bindAudioInput とは非同型
+  Uni<Void> setAudioTurnMode(RealtimeAudioTurnMode mode);
+  Multi<byte[]> assistantAudioStream();
+  Multi<Void> assistantAudioCompleted();
+  boolean isUserSpeaking();
+  Multi<Boolean> isUserSpeakingUpdates();
 
-- decode と軽い validation だけ event loop
-- それ以外は worker
-- PCM chunk は `byte[]` か `Buffer` で保持
+  Uni<Void> registerTools(List<ToolDefinition> tools);
+  Uni<Void> setInstructions(String instructions);
+  Uni<Boolean> applyProviderExtension(String extensionType, Map<String,Object> payload);
 
-### validation
+  Uni<String> sendAudioOneShot(byte[] audioBytes);
+  Uni<String> sendText(String text);
+  Uni<String> sendImage(byte[] imageBytes);
+  Uni<String> sendFunctionOutput(String callId, String output, RealtimeToolOutputDisposition disposition, String errorMessage);
+  void cancelFunctionCalls(Set<String> itemIds, Set<String> callIds);
 
-必須 validation:
+  Uni<Void> interrupt();
+}
+```
 
-- 最初の application message が `session.open` であること
-- `session.open.token` が JWT として妥当であること
-- message size limit
-- audio format
-- image magic bytes
-- `callId` が session 内 pending call を指すこと
-- extension key / payload shape
+注意: assistantAudioStream は Dart では `Uint8List`、Java では生 `byte[]` の PCM。VHRP の `assistant.audio.chunk` は CBOR `bstr` で運ぶので、Dart 版で必要だった base64 decode が server 側では発生しない。
 
-unknown field を厳格 reject しすぎる必要はないが、`type` と `op` は厳格に扱う。
+### OAI翻訳本体: `oai/` パッケージ
 
-gap recovery では validation も追加で必要になる。
+Dart `oai/` の逐語ミラー。standalone で動いていた翻訳ロジックをそのまま持ち込む。唯一の改変は判断4 (mutation helper のラップによる op 発行) のために、thread 変異が `VhrpSession` の mutation sink 経由になる点。
 
-- `afterStreamSeq` が未来を指していないこと
-- `knownThreadRevision` が整数であること
-- replay 不能時は snapshot fallback すること
-- `session.open.token` が存在し、policy に合致すること
+## 判断7: ドライバスワップは modelId レジストリで吸収する
 
-## Tool Call Contract
+この設計は最初から **複数 provider driver 前提** である。Flutter 側が [`RealtimeAdapterFactory`](../../lib/feat/call/services/realtime/realtime_adapter_factory.dart) で `providerType` を switch するのと同型に、server 側は `RealtimeDriverFactory` が `modelId` から driver を解決する。
 
-### outbound
+### Flutter との対称性と、それを超える隠蔽
 
-backend は model の tool request を次の順で thread に反映する。
+| | Flutter (selfhosted) | Quarkus (hosted) |
+| --- | --- | --- |
+| 界面 | `RealtimeAdapter` | `RealtimeAdapter.java` (同型) |
+| 実装群 | `OaiRealtimeAdapter` / `OaiCcRealtimeAdapter` / Gemini… | `oai/OaiRealtimeAdapter.java` / `oai_cc/…` / `gemini/…` |
+| 選択点 | `RealtimeAdapterFactory.create()` が `providerType` で分岐 | `RealtimeDriverFactory.create()` が `modelId` で分岐 |
+| 駆動側が見るもの | `RealtimeService` は界面しか見ない | `VhrpEndpoint` は界面しか見ない |
+| provider の所在 | **client が知る** (`SelfhostedVoiceAgentApiConfig.providerType`) | **server に閉じる** (`HostedVoiceAgentApiConfig` は `modelId` のみ) |
 
-1. `add_item(type=functionCall)`
-2. `set_field(callId)`
-3. `set_field(name)`
-4. `set_field(arguments)`
-5. `set_status(completed)`
+決定的な違いは最終行である。Flutter selfhosted では client が provider を知っているが、hosted では client が送るのは [`HostedVoiceAgentApiConfig`](../../lib/feat/call/models/voice_agent_api_config.dart) ＝ `modelId` だけで `providerType` を持たない。したがって **どの vendor が裏で動くかを client は永遠に知らなくてよい**。これは 01 の「backend は vendor translation layer を内部に閉じる」をそのまま体現する。
 
-### inbound
+```mermaid
+graph LR
+    C[Flutter HostedVoiceAgentApiConfig modelId のみ] -->|session.open modelId| EP[VhrpEndpoint]
+    EP --> REG[RealtimeDriverFactory modelId から解決]
+    REG -->|voice-agent-prod| OA[OaiRealtimeAdapter]
+    REG -->|voice-agent-flash| GA[GeminiRealtimeAdapter]
+    REG -->|voice-agent-cc| CA[OaiCcRealtimeAdapter]
+    OA --> JRA[RealtimeAdapter 界面]
+    GA --> JRA
+    CA --> JRA
+```
 
-client から `tool.result.submit` を受けたら:
+### VhrpEndpoint を汚さずに driver を足せる
 
-1. `callId` を pending call に照合
-2. `clientItemId` があればそれを item ID として `functionCallOutput` item を追加
-3. `output`, `toolOutputDisposition`, `toolErrorMessage` を設定
-4. 同一 generation の pending tool queue が 0 なら assistant generation を再開
+新しい provider の追加手順は次の 2 つだけであり、`VhrpEndpoint` / VHRP wire / Flutter のいずれにも変更が要らない。
 
-これは v1 の server policy である。incremental resume は採らない。
+1. `xxx/XxxRealtimeAdapter.java implements RealtimeAdapter` を 1 つ追加 (該当 vendor の翻訳本体)
+2. `RealtimeDriverFactory` の解決表に `modelId -> XxxRealtimeAdapter` を登録
 
-## Session Mutation Policy
+`VhrpEndpoint` は `RealtimeDriverFactory.create(modelId)` の戻り値を `RealtimeAdapter` 型でしか触らないため、driver の増減から完全に隔離される。OpenAI から Gemini への切替も **server 設定だけで無停止スワップ**でき、Flutter 再ビルドも wire 変更も不要。
 
-### `session.instructions.set`
+### modelId レジストリの設定スキーマ
 
-- subsequent responses にだけ適用する
-- in-flight generation を遡及的に書き換えない
+`modelId -> (provider, baseUrl, apiKey, default voice/instructions, capabilities)` を server 設定に持つ。既存の `application.properties` + `@ConfigProperty` 規約に沿って、例えば次の形を想定する。
 
-### `session.extension.apply(session.voice_selection)`
+```properties
+# modelId ごとの driver 解決とダウンストリーム接続情報
+vagina.realtime.models.voice-agent-prod.provider=oai
+vagina.realtime.models.voice-agent-prod.base-url=${OAI_REALTIME_BASE_URL:}
+vagina.realtime.models.voice-agent-prod.api-key=${OAI_REALTIME_API_KEY:}
+vagina.realtime.models.voice-agent-prod.transcription-model=gpt-4o-mini-transcribe
 
-- voice 変更は explicit adapter API ではなく extension key 経由で扱う
-- unsupported backend は `applied=false` または recoverable `error` を返してよい
+vagina.realtime.models.voice-agent-flash.provider=gemini
+vagina.realtime.models.voice-agent-flash.base-url=${GEMINI_REALTIME_BASE_URL:}
+vagina.realtime.models.voice-agent-flash.api-key=${GEMINI_API_KEY:}
+```
 
-## Image Handling
+未知の `modelId` には `error(session.unknown_model)` を返す (02 の推奨 error code)。
 
-`sendImage()` が bytes しか持たないので、backend は必ず content sniffing を行う。
+### capabilities による provider 差異の吸収
 
-受理対象例:
+provider ごとの能力差は VHRP に既に組み込まれている。driver は対応する拡張だけを [`session.ready.capabilities.extensions`](./02_vhrp_wire_protocol.md) で広告し、非対応の `session.extension.apply` には `error(extension.unsupported)` を返す (論点C の機構)。これにより、例えば Gemini が `reasoning_effort_selection` 非対応でも、Flutter 側 `applyProviderExtension` が `false` を受けて自然に縮退する。client も wire も driver 差を意識しない。
 
-- JPEG
-- PNG
-- WebP
+## C2S ディスパッチ表
 
-非受理:
+`VhrpEndpoint` が VHRP メッセージを `RealtimeAdapter` メソッドへ写す対応。
 
-- SVG
-- PDF
-- arbitrary binary renamed as image
+| VHRP C2S | RealtimeAdapter 呼び出し | 応答 |
+| --- | --- | --- |
+| `session.open` | `connect(params)` | `session.ready` / `session.resumed` |
+| `audio.turn.mode.set` | `setAudioTurnMode(mode)` | なし |
+| `session.instructions.set` | `setInstructions(text)` | `ack` |
+| `live.audio.chunk` | bound audio stream へ push | なし |
+| `turn.audio.submit` | `sendAudioOneShot(pcm)` | `ack` (clientItemId 反映) |
+| `turn.text.submit` | `sendText(text)` | `ack` |
+| `turn.image.submit` | `sendImage(bytes)` | `ack` |
+| `tools.set` | `registerTools(tools)` | `ack` |
+| `session.extension.apply` | `applyProviderExtension(type, payload)` | `ack` / `error(extension.unsupported)` |
+| `tool.result.submit` | `sendFunctionOutput(...)` | `ack` |
+| `assistant.interrupt` | `interrupt()` + `cancelFunctionCalls(...)` | なし |
+| `thread.sync.request` | (VhrpSession が直接処理) | `thread.snapshot` / replay |
 
-保存後、thread には URL を入れる。URL は public permanent URL である必要はなく、signed URL でも internal asset handle URL でもよい。ただし Flutter UI から文字列として識別できること。
+`clientItemId` の扱い: VHRP は client 先行採番を許す。Java 側 `send*` は局所 ID を返すが、`session.open` 以降の `turn.*.submit` では client 提示の `clientItemId` を優先採用し、`thread.patch` の `add_item` でその ID を尊重する (02 の idempotency rule)。
 
-## Persistence
+## S2C 投影マッピング
 
-v1 で永続化が必要なのは次だけでよい。
+`RealtimeAdapter` の観測点を VHRP S2C へ写す。
 
-- session state store
-- replay log
-- latest thread checkpoint
-- image asset store
-- observability log
+| 観測点 (Multi) | VHRP S2C |
+| --- | --- |
+| `threadUpdates` (flush 単位) | `thread.patch` (op 列) |
+| 初期 / resync | `thread.snapshot` |
+| `assistantAudioStream` | `assistant.audio.chunk` |
+| `assistantAudioCompleted` | `assistant.audio.done` |
+| `isUserSpeakingUpdates` | `vad.state` |
+| `errors` | `error` |
+| `connectionStateUpdates` | wire なし (client 側で局所導出) |
 
-thread 全体の長期 durable persistence は必須ではないが、少なくとも **resume retention window 中** は replay log と最新 checkpoint を持つ必要がある。現行 app も session detail には要約済み chat history を保存しており、backend に完全 event sourcing を要求していない。
+## 主要シーケンス
 
-## Horizontal Scaling
+### session.open から最初の応答まで
 
-素直な選択肢は 2 つ。
+```mermaid
+sequenceDiagram
+    participant C as Flutter VhrpRealtimeAdapter
+    participant E as VhrpEndpoint
+    participant A as OaiRealtimeAdapter.java
+    participant O as OpenAI
 
-1. sticky session
-2. 外部 session store + shared broker
+    C->>E: session.open token modelId voice instructions
+    E->>E: AuthService.authenticateFromJwt token
+    alt 認証失敗
+        E-->>C: error auth.invalid_jwt
+        E-->>C: close
+    else 認証成功
+        E->>A: connect params
+        A->>O: WS connect plus session.update
+        O-->>A: session.created
+        A-->>E: connected state
+        E-->>C: session.ready streamSeq 1 capabilities
+        Note over E,C: 接続前 buffer の tools/extensions を flush
+        E->>A: registerTools / applyProviderExtension
+    end
+```
 
-短い reconnect だけなら sticky session でもよい。ただし resume を node 越しに成立させたいなら、少なくとも checkpoint と replay log は外部化する必要がある。
+### user text と assistant 応答 (判断4の patch 発行)
 
-## Security Checklist
+```mermaid
+sequenceDiagram
+    participant C as Flutter
+    participant E as VhrpEndpoint
+    participant A as OaiRealtimeAdapter.java
+    participant O as OpenAI
 
-- unauthenticated socket open 自体は protocol 上許容する
-- 最初の `session.open` 以外は close する
-- `session.open.token` に載る JWT だけを application-layer credential として扱う
-- message size limit を設定する
-- image sniffing を必須にする
-- tool result を string として扱い、server 側で危険な再解釈をしない
-- interrupted generation の late event を必ず捨てる
-- structured log に raw audio/image を出さない
+    C->>E: turn.text.submit clientItemId text
+    E->>A: sendText text
+    A->>O: conversation.item.create plus response.create
+    E-->>C: ack clientItemId
+    A->>E: addItem user message completed (mutation sink)
+    E->>E: op を buffer して thread.patch に flush, streamSeq n 採番
+    E-->>C: thread.patch add_item
+    O-->>A: response.output_item.added assistant
+    A->>E: addItem assistant in_progress (mutation sink)
+    E-->>C: thread.patch
+    loop text delta
+        O-->>A: response.output_text.delta
+        A->>E: appendTextDelta (mutation sink)
+        E-->>C: thread.patch append_text
+    end
+    O-->>A: response.output_text.done
+    A->>E: markDone plus setStatus completed (mutation sink)
+    E-->>C: thread.patch
+```
+
+### tool call ラウンドトリップ
+
+02 の barrier 規則 (同一 generation の pending tool queue が 0 になるまで assistant 再開を defer) を server 側で保持する。client は `functionCall` item が `completed` になった時点で実行可能とみなし、`tool.result.submit` を返す。
+
+```mermaid
+sequenceDiagram
+    participant C as Flutter
+    participant E as VhrpEndpoint
+    participant A as OaiRealtimeAdapter.java
+    participant O as OpenAI
+
+    O-->>A: function_call_arguments delta then done
+    A->>E: thread.patch functionCall completed callId
+    E-->>C: thread.patch
+    C->>C: tool 実行
+    C->>E: tool.result.submit callId output
+    E->>A: sendFunctionOutput callId output
+    A->>O: function_call_output plus response.create
+    E-->>C: ack
+    A->>E: thread.patch functionCallOutput completed
+    E-->>C: thread.patch
+```
+
+### interrupt
+
+```mermaid
+sequenceDiagram
+    participant C as Flutter
+    participant E as VhrpEndpoint
+    participant A as OaiRealtimeAdapter.java
+    participant O as OpenAI
+
+    C->>E: assistant.interrupt reason barge_in
+    E->>A: interrupt
+    A->>O: response.cancel
+    Note over A,E: 以降 旧世代の audio/text/tool を client へ流さない (識別手段は実装の自由)
+```
+
+## streamSeq と revision の採番規則
+
+`VhrpSession` が次を一元管理する。
+
+- `streamSeq`: session ごとに 1 始まりの単調増加。`thread.snapshot` / `thread.patch` / `assistant.audio.chunk` / `assistant.audio.done` / `vad.state` / `error` / `session.ready` / `session.resumed` に付与
+- `threadRevision`: canonical thread 全体の revision。1 つの `thread.patch` は `baseThreadRevision -> targetThreadRevision` を 1 進める
+
+flush 単位 = Dart で `_emitThreadUpdate()` を呼んでいた境界。複数 op を 1 patch にまとめ、`baseThreadRevision` には flush 直前の revision、`targetThreadRevision` には flush 後の revision を入れる。
+
+## 監査で確定した論点の server 側決着 (01/02 由来)
+
+### 論点A: connectionState は wire に出さない
+
+client 側で WebSocket transport 状態 + `session.ready` 受信から局所導出する。server は `session.ready` / `session.resumed` を送ることで `connected` 相当の境界だけ通知する。standalone OAI と同様に `connected` は session 確立 (session.ready) に対応させる。
+
+### 論点B: pre-connect バッファリングは client 側責務
+
+`session.open` には tools/extensions フィールドが無い。client の `VhrpRealtimeAdapter` が接続前の `registerTools` / `applyProviderExtension` を局所 buffer し、`session.ready` 直後に `tools.set` / `session.extension.apply` として自動 flush する。server はそれらを通常メッセージとして受ければよく、特別扱いしない。
+
+### 論点C: applyProviderExtension の bool 意味づけ
+
+server は `applyProviderExtension` を解釈できれば `ack(accepted=true)`、できなければ `error(extension.unsupported)` を返す。client はこの往復で `Future<bool>` を解決する。standalone OAI 実装の現挙動を忠実にミラーし、`session.voice_selection` は v1 では未対応扱い (capabilities に含めない) とする。
+
+## resume / gap recovery の server 責務
+
+01 の方針通り、resume/resync は adapter 境界の外 (wire + session 内部状態) で吸収する。前提として、Qua-Oai 間 (server-server link) は安定で切れにくいのに対し、Cli-Qua 間は基地局ハンドオーバ等で頻繁に reconnect しうる。したがって resume の主対象は Cli-Qua の再接続境界であり、resume が甦らせるのは canonical thread の投影 (transcript 履歴) だけで、OAI 側の生成セッションそのものの復元は狙わない。v1 server は最低限:
+
+- retention window 内で `thread.patch` の replay log を保持
+- `thread.sync.request(delta_or_snapshot)` に対し replay 可能なら replay、不能なら `thread.snapshot`
+- `thread.sync.request(snapshot_only)` には常に最新 I-frame
+- `session.open.resume` 付きには `session.resumed` を返し、直後に replay 群か snapshot
+
+audio の歴史的 PCM 全量再送は非目標。snapshot の audio part は transcript のみ保持し `audioChunks` 空でよい。
+
+## 実装フェーズ計画
+
+ユーザ宣言の「まずサーバから」「トランスポート骨組み先行 → OAIドライバ写経」に従い、2 フェーズで進める。
+
+### フェーズ1: トランスポート骨組み (OAI なしで動く echo/stub)
+
+目的: VHRP の口が開き、CBOR が往復し、thread.patch が出る骨格を先に通す。
+
+1. build 依存確認 (`quarkus-websockets-next`, `jackson-dataformat-cbor` は導入済み)
+2. `model/` の thread / state / error を Dart からミラー
+3. `VhrpMessage` + `VhrpCborCodec` (encode/decode)
+4. `VhrpEndpoint` + `VhrpSession` で session.open -> session.ready まで
+5. `VhrpSession` で streamSeq/revision 採番と op flush
+6. stub adapter: sendText を受けたら固定の assistant message を thread.patch で返す echo 実装
+7. Flutter `VhrpRealtimeAdapter` の最小版と疎通 (別フェーズだが結合確認用)
+
+### フェーズ2: OAI ドライバ写経
+
+目的: stub adapter を本物の OAI 翻訳本体に差し替える。
+
+1. `oai/OaiRealtimeClient` + event/command を Dart から写経
+2. `oai/OaiRealtimeTransport` で OpenAI へ Vertx WebClient/WS 接続
+3. `oai/OaiRealtimeAdapter` を写経し、thread 変異を `VhrpSession` の mutation sink 経由に置換 (判断4)
+4. config に OAI baseUrl/apiKey/model マッピングを追加
+5. tool call barrier、interrupt 後に旧世代 output を流さない振る舞いを移植
+6. 結合テストで standalone と同じ会話フローを VHRP 越しに再現
+
+## 非目標 (この設計の範囲外)
+
+- 複数 assistant 音声ストリームの同時多重化
+- retention window を超えた長期履歴 replay
+- 既送 assistant PCM の sample-accurate 再送
+- 動画 / arbitrary file transfer
+- OAI 以外の provider driver (gemini 等) の同時実装
+- 運用・スケール設計 (session affinity / replay log のメモリ上限・eviction / 音声 backpressure・flow control) はこのクリーンルーム設計の範囲外とし、別途定める
