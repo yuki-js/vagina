@@ -109,12 +109,12 @@ backend は `callId` を session 内で一意に保つ必要がある。
 
 thread は semi-mutable だが、正規形は backend が持つ。adapter は patch を適用してローカル投影を保つだけにする。
 
-この設計だと、local state が壊れたり event の一部を取りこぼしても server 正規形から回復できるべきである。したがって wire protocol には少なくとも次が必要になる。
+この設計だと、local state が壊れたり event の一部を取りこぼしても server 正規形から回復できるべきである。回復は単一経路に集約する。したがって wire protocol に必要なのは次の 2 つだけである。
 
-- server 送信列の単調増加番号 `streamSeq`
-- canonical thread 全体の revision `threadRevision`
-- 差分再送の `thread.patch`
-- 正規全体像の `thread.snapshot`
+- ライブ差分の `thread.patch` (fire-and-forget。番号も revision も持たない)
+- 正規全体像の `thread.snapshot` (唯一の回復プリミティブ。常に最新の full 状態)
+
+差分が届かなかったり投影がズレた場合の回復は、`thread.patch` の照合や再送ではなく、reconnect + 最新 `thread.snapshot` の取り直し一本道で行う。したがって server 送信列の番号 (`streamSeq`) や thread の revision は持たない。
 
 なお active な session 自体は WebSocket connection context で一意に識別できる。したがって in-band message に毎回 `sessionId` を載せる必要はない。`sessionId` は resume handshake のための handle としてだけ使えばよい。
 

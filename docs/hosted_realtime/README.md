@@ -14,8 +14,8 @@
 - wire encoding は JSON ではなく CBOR とする。
 - 音声と画像は CBOR の `bstr` に載せ、base64 化しない。
 - thread 反映は provider 由来の event 名ではなく、`RealtimeThread` に対する patch 操作として定義する。
-- thread 同期は `thread.patch` を P-frame、`thread.snapshot` を I-frame とみなす。
-- server からの stateful message には `streamSeq` と revision を付け、resume と gap recovery を可能にする。
+- thread 同期は 2 形式だけにする。`thread.patch` はライブ差分 (fire-and-forget・番号なし)、`thread.snapshot` は唯一の回復プリミティブ (常に最新の full 状態)。
+- 投影がズレうる事象 (reconnect・配信失敗・op 適用不能) はすべて reconnect + 最新 `thread.snapshot` 取り直しの単一経路に畳み込む。`streamSeq` や thread revision は持たない。
 - active session は WebSocket connection context に束縛し、`sessionId` は resume 用 handle に限定する。
 - `messageId` は request/response 相関が必要なときだけ使う。
 - 認証は `session.open.token` に載る JWT だけで行う。
