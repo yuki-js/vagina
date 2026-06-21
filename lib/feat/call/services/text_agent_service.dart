@@ -40,10 +40,8 @@ final class TextAgentService extends SubService {
   /// Must be called before [start]. Required for dynamic tool filtering.
   void setNotepadService(NotepadService notepadService) {
     if (isStarted) {
-      logger.warning('Attempt to set NotepadService after service started');
       throw StateError('setNotepadService() must be called before start().');
     }
-    logger.fine('NotepadService injected');
     _notepadService = notepadService;
   }
 
@@ -69,10 +67,8 @@ final class TextAgentService extends SubService {
   /// between [TextAgentService] and [ToolRunner].
   void setToolRunner(ToolRunner toolRunner) {
     if (isStarted) {
-      logger.warning('Attempt to set ToolRunner after service started');
       throw StateError('setToolRunner() must be called before start().');
     }
-    logger.fine('ToolRunner injected');
     _toolRunner = toolRunner;
   }
 
@@ -190,21 +186,17 @@ final class TextAgentService extends SubService {
 
     if (apiConfig is SelfhostedTextAgentApiConfig) {
       if (apiConfig.provider == 'azure') {
-        logger.fine('Using Azure transport');
         return AzureTextAgentTransport(config: apiConfig);
       }
-      logger.warning('Unsupported provider: ${apiConfig.provider}');
       throw UnsupportedError(
         'Provider not supported yet: ${apiConfig.provider}',
       );
     }
 
     if (apiConfig is HostedTextAgentApiConfig) {
-      logger.warning('Hosted text agents not supported yet');
       throw UnsupportedError('Hosted text agents not supported yet');
     }
 
-    logger.warning('Unknown API config type: ${apiConfig.runtimeType}');
     throw UnsupportedError('Unknown API config type');
   }
 
@@ -243,11 +235,9 @@ final class TextAgentService extends SubService {
   }
 
   void _registerAgents(Iterable<TextAgentInfo> agents) {
-    logger.fine('Registering ${agents.length} text agents');
     for (final agent in agents) {
       final existing = _agentsById[agent.id];
       if (existing != null) {
-        logger.warning('Duplicate text agent id: ${agent.id}');
         throw ArgumentError.value(
           agent.id,
           'agents',
@@ -255,7 +245,6 @@ final class TextAgentService extends SubService {
         );
       }
       _agentsById[agent.id] = agent;
-      logger.fine('Registered agent: ${agent.id} (${agent.name})');
     }
   }
 

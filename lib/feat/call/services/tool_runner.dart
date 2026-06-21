@@ -103,14 +103,10 @@ final class ToolRunner extends SubService {
     }
 
     logger.info('Executing tool: $toolKey');
-    logger.fine('Tool arguments: $argumentsJson');
 
     final tool = _tools[toolKey];
     if (tool == null) {
-      logger.warning('Unknown tool requested: $toolKey');
-      return jsonEncode({
-        'error': 'Unknown tool: $toolKey',
-      });
+      throw StateError('Unknown tool: $toolKey');
     }
 
     final Map<String, dynamic> args;
@@ -118,7 +114,7 @@ final class ToolRunner extends SubService {
       final decoded = jsonDecode(argumentsJson);
       args = decoded is Map<String, dynamic> ? decoded : <String, dynamic>{};
     } catch (e, stackTrace) {
-      logger.warning('Invalid JSON arguments for tool $toolKey', e, stackTrace);
+      logger.info('Invalid JSON arguments for tool $toolKey', e, stackTrace);
       return jsonEncode({
         'error': 'Invalid JSON arguments for tool $toolKey.',
       });
@@ -126,8 +122,6 @@ final class ToolRunner extends SubService {
 
     try {
       final result = await tool.execute(args);
-      logger.info('Tool execution completed: $toolKey');
-      logger.fine('Tool result length: ${result.length} chars');
       return result;
     } catch (e, stackTrace) {
       logger.severe('Tool execution failed: $toolKey', e, stackTrace);

@@ -128,7 +128,6 @@ final class TimerService extends SubService {
     ensureNotDisposed();
 
     if (timeout.isNegative) {
-      logger.warning('Attempt to set negative silence timeout: $timeout');
       throw ArgumentError.value(
         timeout,
         'timeout',
@@ -137,8 +136,6 @@ final class TimerService extends SubService {
     }
 
     if (timeout < minSilenceTimeout) {
-      logger.warning(
-          'Attempt to set silence timeout below minimum: $timeout (min: $minSilenceTimeout)');
       throw ArgumentError.value(
         timeout,
         'timeout',
@@ -249,7 +246,7 @@ final class TimerService extends SubService {
     // Check for silence timeout
     final timeSinceActivity = DateTime.now().difference(lastActivityAt);
     if (timeSinceActivity >= _silenceTimeout) {
-      logger.warning(
+      logger.info(
           'Silence timeout detected: ${timeSinceActivity.inSeconds}s >= ${_silenceTimeout.inSeconds}s, ending call');
       if (!_timeoutController.isClosed) {
         _timeoutController.add(null);

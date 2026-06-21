@@ -83,11 +83,7 @@ final class VirtualFilesystemService extends SubService {
     final normalizedPath = _validateFilePath(file.path);
     final contentSize = _byteSize(file.content);
 
-    logger.info('Writing file: $normalizedPath ($contentSize bytes)');
-
     if (contentSize > _maxFileSizeBytes) {
-      logger.warning(
-          'File too large: $normalizedPath ($contentSize > $_maxFileSizeBytes bytes)');
       throw VirtualFilesystemException(
         'File too large (max $_maxFileSizeBytes bytes)',
       );
@@ -99,8 +95,6 @@ final class VirtualFilesystemService extends SubService {
     final nextTotalSize = totalSize - currentSize + contentSize;
 
     if (nextTotalSize > _maxTotalSizeBytes) {
-      logger.warning(
-          'Filesystem quota exceeded: $nextTotalSize > $_maxTotalSizeBytes bytes');
       throw VirtualFilesystemException(
         'Filesystem quota exceeded (max $_maxTotalSizeBytes bytes)',
       );
@@ -134,7 +128,6 @@ final class VirtualFilesystemService extends SubService {
 
     final fromFile = await _repository.read(normalizedFromPath);
     if (fromFile == null) {
-      logger.warning('Source file not found: $normalizedFromPath');
       throw VirtualFilesystemException(
         'Source file not found: $normalizedFromPath',
       );
@@ -142,7 +135,6 @@ final class VirtualFilesystemService extends SubService {
 
     final toFile = await _repository.read(normalizedToPath);
     if (toFile != null) {
-      logger.warning('Destination already exists: $normalizedToPath');
       throw VirtualFilesystemException(
         'Destination already exists: $normalizedToPath',
       );
@@ -197,14 +189,12 @@ final class VirtualFilesystemService extends SubService {
 
   String _normalizeAndValidatePath(String path) {
     if (path.length > _maxPathLength) {
-      logger.warning('Path too long: ${path.length} > $_maxPathLength chars');
       throw VirtualFilesystemException(
         'Path too long (max $_maxPathLength chars)',
       );
     }
 
     if (path.contains('\x00')) {
-      logger.warning('Path contains null byte: $path');
       throw VirtualFilesystemException('Path contains null byte');
     }
 
@@ -214,7 +204,6 @@ final class VirtualFilesystemService extends SubService {
 
   String _normalizePath(String path) {
     if (!path.startsWith('/')) {
-      logger.warning('Path must be absolute: $path');
       throw VirtualFilesystemException('Path must be absolute: $path');
     }
 
@@ -252,7 +241,6 @@ final class VirtualFilesystemService extends SubService {
         path.startsWith('/system/') ||
         path == '/tmp' ||
         path.startsWith('/tmp/')) {
-      logger.warning('Access denied to reserved path: $path');
       throw VirtualFilesystemException('Access denied: reserved path');
     }
   }

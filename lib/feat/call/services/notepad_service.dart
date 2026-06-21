@@ -31,7 +31,6 @@ final class NotepadService extends SubService {
   /// - Contains null characters
   void _validatePath(String path, String paramName) {
     if (path.isEmpty) {
-      logger.warning('Path validation failed: empty path for $paramName');
       throw ArgumentError.value(
         path,
         paramName,
@@ -40,8 +39,6 @@ final class NotepadService extends SubService {
     }
 
     if (path.contains('\x00')) {
-      logger.warning(
-          'Path validation failed: null character in $paramName: $path');
       throw ArgumentError.value(
         path,
         paramName,
@@ -82,7 +79,6 @@ final class NotepadService extends SubService {
     _validatePath(path, 'path');
 
     if (!_activeFiles.containsKey(path)) {
-      logger.warning('Update failed: file not active: $path');
       throw Exception('File is not active: $path');
     }
 
