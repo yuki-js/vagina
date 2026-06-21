@@ -91,7 +91,6 @@ final class PlaybackService extends SubService {
       return;
     }
 
-    logger.info('Starting PlaybackService');
     await _player.openPlayer();
     _playerOpened = true;
     _emitMetrics();
@@ -102,7 +101,6 @@ final class PlaybackService extends SubService {
     await start();
     await unbindInputStream();
 
-    logger.info('Binding input stream');
     _inputSubscription = audioStream.listen(
       (chunk) {
         unawaited(_handleInputChunk(chunk));
@@ -117,9 +115,6 @@ final class PlaybackService extends SubService {
   }
 
   Future<void> unbindInputStream() async {
-    if (_inputSubscription != null) {
-      logger.info('Unbinding input stream');
-    }
     await _inputSubscription?.cancel();
     _inputSubscription = null;
     _metrics = _metrics.copyWith(isInputBound: false);
@@ -131,13 +126,11 @@ final class PlaybackService extends SubService {
     await start();
 
     if (_bufferQueue.isEmpty && !isPlaying) {
-      logger.fine('Response complete with empty buffer and not playing');
       _metrics = _metrics.copyWith(isResponseComplete: false);
       _emitMetrics();
       return;
     }
 
-    logger.info('Response marked complete, draining remaining buffer');
     _metrics = _metrics.copyWith(isResponseComplete: true);
     _emitMetrics();
     _ensureDrainLoop();
@@ -146,13 +139,11 @@ final class PlaybackService extends SubService {
 
   Future<void> interrupt() async {
     ensureNotDisposed();
-    logger.info('Interrupting playback');
     await _resetPlaybackState(waitForDrain: false);
   }
 
   Future<void> stop() async {
     ensureNotDisposed();
-    logger.info('Stopping playback');
     await _resetPlaybackState(waitForDrain: false);
   }
 
@@ -163,7 +154,6 @@ final class PlaybackService extends SubService {
     }
 
     _isMuted = muted;
-    logger.info('Mute state changed: ${_isMuted ? "muted" : "unmuted"}');
 
     if (!_muteStateController.isClosed) {
       _muteStateController.add(_isMuted);
@@ -176,7 +166,6 @@ final class PlaybackService extends SubService {
 
   @override
   Future<void> dispose() async {
-    logger.info('Disposing PlaybackService');
     await super.dispose();
 
     _generation += 1;
@@ -203,8 +192,6 @@ final class PlaybackService extends SubService {
     await _playingStateController.close();
     await _muteStateController.close();
     await _metricsController.close();
-
-    logger.info('PlaybackService disposed successfully');
   }
 
   Future<void> _handleInputChunk(Uint8List chunk) async {
@@ -215,12 +202,10 @@ final class PlaybackService extends SubService {
     await start();
 
     if (_isMuted) {
-      logger.fine('Dropping audio chunk while muted');
       return;
     }
 
     if (_bufferQueue.isEmpty && !_isPlaying) {
-      logger.fine('First audio chunk received, starting buffering');
       _metrics = _metrics.copyWith(isResponseComplete: false);
     }
 
@@ -245,11 +230,9 @@ final class PlaybackService extends SubService {
   }
 
   Future<void> _drainBufferedAudio(int generation) async {
-    logger.fine('Starting buffer drain loop (generation: $generation)');
     while (generation == _generation && !isDisposed && !_isMuted) {
       if (_bufferQueue.isEmpty) {
         if (_metrics.isResponseComplete) {
-          logger.fine('Buffer drain complete, returning to idle');
           _setPlayingState(false);
           _metrics = _metrics.copyWith(isResponseComplete: false);
           _emitMetrics();
@@ -261,8 +244,6 @@ final class PlaybackService extends SubService {
           _bufferedBytes >= AppConfig.minAudioBufferSizeBeforeStart ||
               _metrics.isResponseComplete;
       if (!shouldStartPlayback) {
-        logger.fine(
-            'Buffering: $_bufferedBytes/${AppConfig.minAudioBufferSizeBeforeStart} bytes');
         _emitMetrics();
         return;
       }
@@ -289,7 +270,6 @@ final class PlaybackService extends SubService {
   Future<void> _resetPlaybackState({bool waitForDrain = false}) async {
     await start();
 
-    logger.fine('Resetting playback state');
     final pendingDrain = _drainFuture;
     _generation += 1;
     _drainFuture = null;
@@ -318,8 +298,6 @@ final class PlaybackService extends SubService {
       return;
     }
 
-    logger.info(
-        'Starting audio player stream: sampleRate=${AppConfig.sampleRate}, channels=${AppConfig.channels}');
     _playerStreaming = true;
     try {
       await _player.startPlayerFromStream(
@@ -341,7 +319,6 @@ final class PlaybackService extends SubService {
       return;
     }
 
-    logger.fine('Stopping audio player');
     try {
       await _player.stopPlayer();
     } catch (e, stackTrace) {
@@ -355,9 +332,7 @@ final class PlaybackService extends SubService {
     if (_isPlaying == isPlaying) {
       return;
     }
-    final previous = _isPlaying;
     _isPlaying = isPlaying;
-    logger.info('Playing state: $previous → $isPlaying');
     if (!_playingStateController.isClosed) {
       _playingStateController.add(_isPlaying);
     }

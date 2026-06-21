@@ -45,7 +45,6 @@ final class ToolRunner extends SubService {
   /// Returns a fresh list of tool definitions on each call.
   List<ToolDefinition> computeAvailableTools(Set<String> activeExtensions) {
     if (!isStarted) {
-      logger.fine('computeAvailableTools called before service started');
       return const [];
     }
 
@@ -53,26 +52,18 @@ final class ToolRunner extends SubService {
     final normalizedExtensions =
         activeExtensions.map((ext) => ext.toLowerCase()).toSet();
 
-    final availableTools = _tools.values
+    return _tools.values
         .where((tool) {
           final activation = tool.definition.activation;
-
-          // Filter by extension activation rules
           return activation.isEnabledForExtensions(normalizedExtensions);
         })
         .map((tool) => tool.definition)
         .toList(growable: false);
-
-    logger.fine(
-        'Computed available tools: ${availableTools.length}/${_tools.length} (extensions: ${normalizedExtensions.join(", ")})');
-    return availableTools;
   }
 
   @override
   Future<void> start() async {
     await super.start();
-
-    logger.info('Starting ToolRunner with ${_toolbox.tools.length} tools');
 
     for (final tool in _toolbox.tools) {
       final key = tool.definition.toolKey;
@@ -82,12 +73,9 @@ final class ToolRunner extends SubService {
         filesystemApi: _filesystemApi,
         textAgentApi: _textAgentApi,
       );
-      logger.fine('Initializing tool: $key');
       await tool.init(context);
       _tools[key] = tool;
     }
-
-    logger.info('ToolRunner started successfully with ${_tools.length} tools');
   }
 
   /// Execute a tool by its key with JSON-encoded arguments.
@@ -101,8 +89,6 @@ final class ToolRunner extends SubService {
           .severe('Tool execution attempted before service started: $toolKey');
       throw StateError('ToolRunner has not been started.');
     }
-
-    logger.info('Executing tool: $toolKey');
 
     final tool = _tools[toolKey];
     if (tool == null) {
@@ -131,9 +117,7 @@ final class ToolRunner extends SubService {
 
   @override
   Future<void> dispose() async {
-    logger.info('Disposing ToolRunner (${_tools.length} tools)');
     await super.dispose();
     _tools.clear();
-    logger.info('ToolRunner disposed successfully');
   }
 }

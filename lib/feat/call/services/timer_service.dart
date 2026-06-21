@@ -64,9 +64,6 @@ final class TimerService extends SubService {
   @override
   Future<void> start() async {
     await super.start();
-
-    logger.info(
-        'Starting TimerService with silence timeout: ${_silenceTimeout.inSeconds}s');
     _subscribeToCallServiceEvents();
   }
 
@@ -75,11 +72,9 @@ final class TimerService extends SubService {
     ensureNotDisposed();
 
     if (_isTracking) {
-      logger.fine('Tracking already active');
       return;
     }
 
-    logger.info('Starting time tracking');
     _isTracking = true;
 
     final now = DateTime.now();
@@ -96,11 +91,9 @@ final class TimerService extends SubService {
     ensureNotDisposed();
 
     if (!_isTracking) {
-      logger.fine('Tracking already stopped');
       return;
     }
 
-    logger.info('Stopping time tracking (elapsed: ${elapsed.inSeconds}s)');
     _timer?.cancel();
     _timer = null;
     _isTracking = false;
@@ -117,7 +110,6 @@ final class TimerService extends SubService {
       return;
     }
 
-    logger.fine('Resetting silence timer');
     _lastActivityAt = DateTime.now();
   }
 
@@ -143,13 +135,11 @@ final class TimerService extends SubService {
       );
     }
 
-    logger.info('Setting silence timeout: ${timeout.inSeconds}s');
     _silenceTimeout = timeout;
   }
 
   @override
   Future<void> dispose() async {
-    logger.info('Disposing TimerService (elapsed: ${elapsed.inSeconds}s)');
     await super.dispose();
 
     _timer?.cancel();
@@ -161,29 +151,21 @@ final class TimerService extends SubService {
 
     await _durationController.close();
     await _timeoutController.close();
-
-    logger.info('TimerService disposed successfully');
   }
 
   /// Subscribe to CallService event streams for automatic timer reset and tracking.
   void _subscribeToCallServiceEvents() {
-    logger.fine('Subscribing to call service events');
-
     // Auto-start tracking when call becomes active
     _callStateSubscription = _callService.states.listen((callState) {
       if (callState == CallState.active && !_isTracking) {
-        logger.fine('Call became active, auto-starting tracking');
         startTracking();
       } else if (callState == CallState.disposing && _isTracking) {
-        logger.fine('Call disposing, auto-stopping tracking');
         stopTracking();
       }
     });
 
     final realtimeService = _callService.realtimeService;
     if (realtimeService == null) {
-      logger
-          .fine('No realtime service available, skipping event subscriptions');
       return;
     }
 
@@ -213,7 +195,6 @@ final class TimerService extends SubService {
 
   /// Unsubscribe from CallService event streams.
   Future<void> _unsubscribeFromCallServiceEvents() async {
-    logger.fine('Unsubscribing from call service events');
     await _callStateSubscription?.cancel();
     _callStateSubscription = null;
     await _threadSubscription?.cancel();

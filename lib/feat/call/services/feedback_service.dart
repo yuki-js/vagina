@@ -48,11 +48,8 @@ final class FeedbackService extends SubService {
     CallState previousState,
     CallState currentState,
   ) async {
-    logger.info('Call state changed: $previousState → $currentState');
-
     if (previousState != CallState.connecting &&
         currentState == CallState.connecting) {
-      logger.info('Starting dial tone and enabling wake lock');
       await playDialTone();
       await _enableWakeLock();
       return;
@@ -60,13 +57,11 @@ final class FeedbackService extends SubService {
 
     if (previousState == CallState.connecting &&
         currentState != CallState.connecting) {
-      logger.info('Stopping dial tone');
       await stopDialTone();
     }
 
     if (previousState == CallState.active &&
         currentState == CallState.disposing) {
-      logger.info('Playing call end tone');
       await playCallEndTone();
     }
   }
@@ -100,20 +95,14 @@ final class FeedbackService extends SubService {
   void onToolExecutionStarted(String callId) {
     final wasEmpty = _executingToolCallIds.isEmpty;
     final added = _executingToolCallIds.add(callId);
-    logger.info(
-        'Tool execution started: $callId (total executing: ${_executingToolCallIds.length})');
     if (added && wasEmpty) {
-      logger.fine('Starting tool executing sound');
       unawaited(playToolExecuting());
     }
   }
 
   void onToolExecutionCompleted(String callId) {
     _executingToolCallIds.remove(callId);
-    logger.info(
-        'Tool execution completed: $callId (remaining: ${_executingToolCallIds.length})');
     if (_executingToolCallIds.isEmpty) {
-      logger.fine('Stopping tool executing sound');
       unawaited(stopToolExecuting());
     }
   }
@@ -123,22 +112,17 @@ final class FeedbackService extends SubService {
     logger.warning(
         'Tool execution failed: $callId (remaining: ${_executingToolCallIds.length})');
     if (_executingToolCallIds.isEmpty) {
-      logger.fine('Stopping tool executing sound');
       unawaited(stopToolExecuting());
     }
-    logger.fine('Playing tool error sound');
     unawaited(playToolError());
   }
 
   void onToolExecutionsCancelled({required bool playSound}) {
     final hadPendingToolCalls = _executingToolCallIds.isNotEmpty;
-    logger.info(
-        'Tool executions cancelled (count: ${_executingToolCallIds.length}, playSound: $playSound)');
     _executingToolCallIds.clear();
     unawaited(stopToolExecuting());
 
     if (playSound && hadPendingToolCalls) {
-      logger.fine('Playing tool cancelled sound');
       unawaited(playToolCancelled());
     }
   }
@@ -150,7 +134,6 @@ final class FeedbackService extends SubService {
   Future<void> _enableWakeLock() async {
     try {
       await WakelockPlus.enable();
-      logger.fine('Wake lock enabled');
     } catch (e, stackTrace) {
       logger.warning('Failed to enable wake lock', e, stackTrace);
     }
@@ -159,7 +142,6 @@ final class FeedbackService extends SubService {
   Future<void> _disableWakeLock() async {
     try {
       await WakelockPlus.disable();
-      logger.fine('Wake lock disabled');
     } catch (e, stackTrace) {
       logger.warning('Failed to disable wake lock', e, stackTrace);
     }
@@ -306,9 +288,8 @@ final class FeedbackService extends SubService {
   Future<void> heavyImpact() async {
     try {
       await HapticFeedback.heavyImpact();
-    } catch (e) {
+    } catch (_) {
       // Ignore errors (no platform channels in tests)
-      logger.fine('Haptic feedback not available: heavyImpact');
     }
   }
 
@@ -320,9 +301,8 @@ final class FeedbackService extends SubService {
   Future<void> selectionClick() async {
     try {
       await HapticFeedback.selectionClick();
-    } catch (e) {
+    } catch (_) {
       // Ignore errors (no platform channels in tests)
-      logger.fine('Haptic feedback not available: selectionClick');
     }
   }
 
@@ -342,14 +322,11 @@ final class FeedbackService extends SubService {
   Future<void> start() async {
     await super.start();
 
-    logger.info('Starting FeedbackService');
-
     // Initialize state tracking
     _lastObservedState = _callService.state;
     _lastPlayingState = _callService.playbackService.isPlaying;
 
     // Play dial tone on start
-    logger.fine('Playing initial dial tone');
     unawaited(playDialTone());
 
     // Start listening to CallService and PlaybackService state changes
@@ -363,14 +340,11 @@ final class FeedbackService extends SubService {
         .listen(_handlePlayingStateChanged);
 
     // Bind RealtimeService-dependent feedback
-    logger.fine('Binding realtime feedback');
     await _bindRealtimeFeedback();
   }
 
   @override
   Future<void> dispose() async {
-    logger.info(
-        'Disposing FeedbackService (${_executingToolCallIds.length} pending tool calls)');
     await super.dispose();
 
     await _pendingOneShotAudio;
@@ -392,7 +366,5 @@ final class FeedbackService extends SubService {
       clearPlayer: () => _endTonePlayer = null,
       stopFirst: false,
     );
-
-    logger.info('FeedbackService disposed successfully');
   }
 }

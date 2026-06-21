@@ -37,45 +37,31 @@ final class VirtualFilesystemService extends SubService {
   @override
   Future<void> start() async {
     await super.start();
-    logger.info(
-        'Starting VirtualFilesystemService (maxFile: ${_maxFileSizeBytes ~/ 1024}KB, maxTotal: ${_maxTotalSizeBytes ~/ 1024 ~/ 1024}MB)');
     await _repository.initialize();
   }
 
   @override
   Future<void> dispose() async {
-    logger.info(
-        'Disposing VirtualFilesystemService (${_systemPaths.length} reserved paths)');
     await super.dispose();
     _systemPaths.clear();
-    logger.info('VirtualFilesystemService disposed successfully');
   }
 
   void reservePath(String path) {
     _ensureReady();
     final normalizedPath = _normalizeAndValidatePath(path);
-    logger.fine('Reserving path: $normalizedPath');
     _systemPaths.add(normalizedPath);
   }
 
   void unreservePath(String path) {
     _ensureReady();
     final normalizedPath = _normalizeAndValidatePath(path);
-    logger.fine('Unreserving path: $normalizedPath');
     _systemPaths.remove(normalizedPath);
   }
 
   Future<VirtualFile?> read(String path) async {
     _ensureReady();
     final normalizedPath = _validateFilePath(path);
-    logger.fine('Reading file: $normalizedPath');
-    final file = await _repository.read(normalizedPath);
-    if (file != null) {
-      logger.fine('File read: $normalizedPath (${file.content.length} chars)');
-    } else {
-      logger.fine('File not found: $normalizedPath');
-    }
-    return file;
+    return _repository.read(normalizedPath);
   }
 
   Future<void> write(VirtualFile file) async {
@@ -103,15 +89,12 @@ final class VirtualFilesystemService extends SubService {
     await _repository.write(
       VirtualFile(path: normalizedPath, content: file.content),
     );
-    logger.fine('File written successfully: $normalizedPath');
   }
 
   Future<void> delete(String path) async {
     _ensureReady();
     final normalizedPath = _validateFilePath(path);
-    logger.info('Deleting file: $normalizedPath');
     await _repository.delete(normalizedPath);
-    logger.fine('File deleted successfully: $normalizedPath');
   }
 
   Future<void> move(String fromPath, String toPath) async {
@@ -119,10 +102,7 @@ final class VirtualFilesystemService extends SubService {
     final normalizedFromPath = _validateFilePath(fromPath);
     final normalizedToPath = _validateFilePath(toPath);
 
-    logger.info('Moving file: $normalizedFromPath → $normalizedToPath');
-
     if (normalizedFromPath == normalizedToPath) {
-      logger.fine('Source and destination are the same, no-op');
       return;
     }
 
@@ -141,17 +121,12 @@ final class VirtualFilesystemService extends SubService {
     }
 
     await _repository.move(normalizedFromPath, normalizedToPath);
-    logger.fine(
-        'File moved successfully: $normalizedFromPath → $normalizedToPath');
   }
 
   Future<List<String>> list(String path, {bool recursive = false}) async {
     _ensureReady();
     final normalizedPath = _validatePath(path);
-    logger.fine('Listing directory: $normalizedPath (recursive: $recursive)');
-    final files = await _repository.list(normalizedPath, recursive: recursive);
-    logger.fine('Found ${files.length} files in $normalizedPath');
-    return files;
+    return _repository.list(normalizedPath, recursive: recursive);
   }
 
   int _byteSize(String value) => utf8.encode(value).length;

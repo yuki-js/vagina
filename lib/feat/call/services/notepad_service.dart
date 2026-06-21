@@ -63,7 +63,6 @@ final class NotepadService extends SubService {
     ensureNotDisposed();
     _validatePath(path, 'path');
 
-    logger.info('Opening file: $path (${content.length} chars)');
     _activeFiles[path] = content;
     _emitChanged();
   }
@@ -82,8 +81,6 @@ final class NotepadService extends SubService {
       throw Exception('File is not active: $path');
     }
 
-    logger.info(
-        'Updating file: $path (${content.length} chars, persist: $persist)');
     _activeFiles[path] = content;
     _emitChanged();
 
@@ -100,7 +97,6 @@ final class NotepadService extends SubService {
     ensureNotDisposed();
     _validatePath(path, 'path');
 
-    logger.info('Closing file: $path');
     _activeFiles.remove(path);
     _emitChanged();
   }
@@ -113,15 +109,7 @@ final class NotepadService extends SubService {
     ensureNotDisposed();
     _validatePath(path, 'path');
 
-    logger.fine('Reading file from VFS: $path');
-    final file = await _vfs.read(path);
-    if (file != null) {
-      logger
-          .fine('File read successfully: $path (${file.content.length} chars)');
-    } else {
-      logger.fine('File not found: $path');
-    }
-    return file?.content;
+    return (await _vfs.read(path))?.content;
   }
 
   /// Get active file content by path.
@@ -139,7 +127,6 @@ final class NotepadService extends SubService {
     ensureNotDisposed();
     _validatePath(path, 'path');
 
-    logger.info('Writing file to VFS: $path (${content.length} chars)');
     await _vfs.write(VirtualFile(path: path, content: content));
   }
 
@@ -150,7 +137,6 @@ final class NotepadService extends SubService {
     ensureNotDisposed();
     _validatePath(path, 'path');
 
-    logger.info('Deleting file from VFS: $path');
     await _vfs.delete(path);
   }
 
@@ -162,7 +148,6 @@ final class NotepadService extends SubService {
     _validatePath(fromPath, 'fromPath');
     _validatePath(toPath, 'toPath');
 
-    logger.info('Moving file in VFS: $fromPath → $toPath');
     await _vfs.move(fromPath, toPath);
   }
 
@@ -171,10 +156,7 @@ final class NotepadService extends SubService {
     ensureNotDisposed();
     _validatePath(path, 'path');
 
-    logger.fine('Listing VFS directory: $path (recursive: $recursive)');
-    final files = await _vfs.list(path, recursive: recursive);
-    logger.fine('Found ${files.length} files in $path');
-    return files;
+    return _vfs.list(path, recursive: recursive);
   }
 
   /// Export active files as SessionNotepadTabs for session persistence.
@@ -189,22 +171,14 @@ final class NotepadService extends SubService {
   Future<void> persistAll() async {
     ensureNotDisposed();
 
-    logger.info('Persisting all active files (${_activeFiles.length} files)');
-    int succeeded = 0;
-    int failed = 0;
-
     for (final entry in _activeFiles.entries) {
       try {
         await _vfs.write(VirtualFile(path: entry.key, content: entry.value));
-        succeeded++;
       } catch (e, stackTrace) {
-        failed++;
         logger.severe('Failed to persist file: ${entry.key}', e, stackTrace);
         rethrow;
       }
     }
-
-    logger.info('Persist complete: $succeeded succeeded, $failed failed');
   }
 
   /// Emit active files changed event.
@@ -217,18 +191,14 @@ final class NotepadService extends SubService {
   @override
   Future<void> start() async {
     await super.start();
-    logger.info('Starting NotepadService');
     // Emit initial empty state
     _emitChanged();
   }
 
   @override
   Future<void> dispose() async {
-    logger
-        .info('Disposing NotepadService (${_activeFiles.length} active files)');
     await super.dispose();
     await _activeFilesController.close();
     _activeFiles.clear();
-    logger.info('NotepadService disposed successfully');
   }
 }

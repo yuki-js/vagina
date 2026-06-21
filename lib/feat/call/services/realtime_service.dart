@@ -47,17 +47,12 @@ final class RealtimeService extends SubService {
   Future<void> start() async {
     await super.start();
 
-    logger.info(
-        'Starting RealtimeService for provider: ${voiceAgent.apiConfig.runtimeType}');
-
     try {
-      logger.info('Connecting to realtime API with voice: ${voiceAgent.voice}');
       await _adapter.connect(
         voiceAgent.apiConfig,
         voice: voiceAgent.voice,
         instructions: voiceAgent.prompt,
       );
-      logger.info('Successfully connected to realtime API');
     } catch (e, stackTrace) {
       logger.severe('Failed to connect to realtime API', e, stackTrace);
       // Reset _started flag on connection failure
@@ -72,19 +67,14 @@ final class RealtimeService extends SubService {
 
   /// Bind or unbind a live PCM audio stream to the realtime adapter.
   Future<void> bindAudioInput(Stream<Uint8List>? audioStream) {
-    logger.info(audioStream == null
-        ? 'Unbinding audio input stream from realtime adapter'
-        : 'Binding audio input stream to realtime adapter');
     return _adapter.bindAudioInput(audioStream);
   }
 
   Future<void> setAudioTurnMode(RealtimeAudioTurnMode mode) {
-    logger.info('Setting audio turn mode to: $mode');
     return _adapter.setAudioTurnMode(mode);
   }
 
   void projectManualAudioTurnSpeakingState(bool isSpeaking) {
-    logger.fine('Projecting manual audio turn speaking state: $isSpeaking');
     _manualAudioTurnSpeaking = isSpeaking;
     _refreshUserSpeakingProjection();
   }
@@ -107,13 +97,10 @@ final class RealtimeService extends SubService {
   // ---------------------------------------------------------------------------
 
   Future<void> registerTools(List<ToolDefinition> tools) {
-    logger.info('Registering ${tools.length} tools with realtime adapter');
-    logger.fine('Tool names: ${tools.map((t) => t.toolKey).join(", ")}');
     return _adapter.registerTools(tools);
   }
 
   Future<void> setInstructions(String? instructions) {
-    logger.info('Updating realtime instructions');
     return _adapter.setInstructions(instructions);
   }
 
@@ -121,7 +108,6 @@ final class RealtimeService extends SubService {
     String extensionType,
     Map<String, dynamic> payload,
   ) {
-    logger.info('Applying realtime provider extension: $extensionType');
     return _adapter.applyProviderExtension(extensionType, payload);
   }
 
@@ -130,19 +116,14 @@ final class RealtimeService extends SubService {
   // ---------------------------------------------------------------------------
 
   Future<String> sendAudioOneShot(Uint8List audioBytes) {
-    logger.info('Sending completed manual audio turn (${audioBytes.length} bytes)');
     return _adapter.sendAudioOneShot(audioBytes);
   }
 
   Future<String> sendText(String text) {
-    logger.info('Sending text message (${text.length} chars)');
-    logger.fine(
-        'Text content: ${text.length > 100 ? "${text.substring(0, 100)}..." : text}');
     return _adapter.sendText(text);
   }
 
   Future<String> sendImage(Uint8List imageBytes) {
-    logger.info('Sending image (${imageBytes.length} bytes)');
     return _adapter.sendImage(imageBytes);
   }
 
@@ -153,11 +134,6 @@ final class RealtimeService extends SubService {
         RealtimeToolOutputDisposition.success,
     String? errorMessage,
   }) {
-    logger.info(
-        'Sending function output for call: $callId, disposition: $disposition');
-    if (errorMessage != null) {
-      logger.warning('Function output contains error: $errorMessage');
-    }
     return _adapter.sendFunctionOutput(
       callId: callId,
       output: output,
@@ -170,8 +146,6 @@ final class RealtimeService extends SubService {
     Set<String> itemIds = const <String>{},
     Set<String> callIds = const <String>{},
   }) {
-    logger.info(
-        'Cancelling function calls: ${itemIds.length} items, ${callIds.length} calls');
     _adapter.cancelFunctionCalls(itemIds: itemIds, callIds: callIds);
   }
 
@@ -181,7 +155,6 @@ final class RealtimeService extends SubService {
 
   /// Interrupt the model's current response.
   Future<void> interrupt() {
-    logger.info('Interrupting current response');
     return _adapter.interrupt();
   }
 
@@ -191,13 +164,11 @@ final class RealtimeService extends SubService {
 
   @override
   Future<void> dispose() async {
-    logger.info('Disposing RealtimeService');
     await _adapterUserSpeakingSubscription?.cancel();
     _adapterUserSpeakingSubscription = null;
     await _adapter.dispose();
     await _userSpeakingProjectionController.close();
     await super.dispose();
-    logger.info('RealtimeService disposed successfully');
   }
 
   void _refreshUserSpeakingProjection() {
@@ -219,8 +190,6 @@ final class RealtimeService extends SubService {
   // ---------------------------------------------------------------------------
 
   RealtimeAdapter _createAdapter(VoiceAgentApiConfig apiConfig) {
-    logger.fine(
-        'Creating realtime adapter for config type: ${apiConfig.runtimeType}');
     return RealtimeAdapterFactory.create(apiConfig);
   }
 }

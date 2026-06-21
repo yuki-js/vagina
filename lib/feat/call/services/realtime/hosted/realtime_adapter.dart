@@ -33,8 +33,7 @@ import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
 
-import 'package:flutter/foundation.dart' show debugPrint, kDebugMode;
-import 'package:logging/logging.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:vagina/core/config/app_config.dart';
 import 'package:vagina/feat/call/models/realtime/realtime_adapter_models.dart';
 import 'package:vagina/feat/call/models/realtime/realtime_thread.dart';
@@ -43,7 +42,6 @@ import 'package:vagina/feat/call/services/realtime/realtime_adapter.dart';
 import 'package:vagina/services/tools_runtime/tool_definition.dart';
 
 import 'vhrp_cbor_codec.dart';
-import 'vhrp_debug_format.dart';
 import 'vhrp_messages.dart';
 import 'vhrp_thread_projector.dart';
 import 'vhrp_transport.dart';
@@ -93,18 +91,6 @@ final class _ConnectConfig {
 ///   - Transport [failed]        → adapter [failed].
 ///   - Unrecoverable error from server → adapter [failed].
 final class VhrpRealtimeAdapter implements RealtimeAdapter {
-  // ── Logger ───────────────────────────────────────────────────────────────
-
-  static final Logger _logger = Logger('VhrpRealtimeAdapter');
-
-  // Temporary diagnostic accumulator for the hosted user-audio transcript bug.
-  // Debug-only: records compact tx/rx/projector facts during a call and dumps
-  // one copyable block on dispose/hang-up. Remove after the root cause is fixed.
-  final List<String> _diagnosticLog = <String>[];
-  final Set<String> _diagnosticLocalAudioItemIds = <String>{};
-  int _diagnosticSeq = 0;
-  bool _diagnosticDumped = false;
-
   // ── Dependencies ────────────────────────────────────────────────────────────
 
   final VhrpRealtimeTransport _transport;
@@ -463,8 +449,6 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
     if (_disposed) return;
     _disposed = true;
 
-    _dumpVhrpDiagnosticLog();
-
     // Cancel live audio input subscription first so no more PCM is forwarded.
     await _audioInputSubscription?.cancel();
     _audioInputSubscription = null;
@@ -710,12 +694,6 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
       content: [RealtimeThreadAudioPart()],
     );
     _thread.addItem(item);
-    _diagnosticLocalAudioItemIds.add(clientItemId);
-    _recordVhrpDiagnostic(
-      'local optimistic audio item added: itemId=$clientItemId '
-      'role=user status=in_progress content[0]=audio transcript=<empty> '
-      'audioBytes=${audioBytes.length}',
-    );
     _emitThreadUpdate();
 
     // Send turn.audio.submit — pcm is CBOR bstr (raw bytes, never base64).
@@ -1028,14 +1006,6 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
       );
       return;
     }
-    // ── rx debug log ────────────────────────────────────────────────────────
-    // assistant.audio.chunk fires once per PCM chunk (~every 20–100 ms) and
-    // would flood the log with no additional diagnostic value.
-    if (kDebugMode && msg is! AssistantAudioChunkMsg) {
-      final formatted = VhrpDebugFormat.formatS2c(msg);
-      _logger.fine('VHRP rx: $formatted');
-      _recordVhrpDiagnostic('rx $formatted');
-    }
     _dispatchMessage(msg);
   }
 
@@ -1126,24 +1096,7 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
   // ── thread.patch ────────────────────────────────────────────────────────────
 
   void _onThreadPatch(ThreadPatchMsg msg) {
-    final focusItemIds = _diagnosticFocusItemIds(msg);
-    if (focusItemIds.isNotEmpty) {
-      _recordVhrpDiagnostic(
-        'before projector transcript-targets=${focusItemIds.join(', ')} '
-        'localAudioIds=${_diagnosticLocalAudioItemIds.join(', ')} '
-        'state=${_diagnosticThreadAudioState(focusItemIds)}',
-      );
-    }
-
     final result = _projector.applyPatch(msg, _thread);
-
-    if (focusItemIds.isNotEmpty) {
-      _recordVhrpDiagnostic(
-        'after projector desync=${result.desync} '
-        'reason=${result.desyncReason ?? '<none>'} '
-        'state=${_diagnosticThreadAudioState(focusItemIds)}',
-      );
-    }
 
     if (result.desync) {
       // One or more ops could not be applied — request a fresh snapshot (§5.5,
@@ -1495,105 +1448,6 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
     }
   }
 
-  // ── Temporary VHRP diagnostics ─────────────────────────────────────────────
-
-  void _recordVhrpDiagnostic(String message) {
-    if (!kDebugMode) return;
-    final seq = (++_diagnosticSeq).toString().padLeft(4, '0');
-    _diagnosticLog.add('$seq ${DateTime.now().toIso8601String()} $message');
-  }
-
-  Set<String> _diagnosticFocusItemIds(ThreadPatchMsg msg) {
-    final ids = <String>{};
-    for (final op in msg.ops) {
-      switch (op) {
-        case AppendTranscriptOp o:
-          ids.add(o.itemId);
-        case ReplaceTranscriptOp o:
-          ids.add(o.itemId);
-        case PutPartOp o:
-          final type = o.part['type'];
-          if (type == 'audio') ids.add(o.itemId);
-        case AddItemOp o:
-          final itemId = o.item['id'];
-          final content = o.item['content'];
-          final hasAudio =
-              content is List &&
-              content.any(
-                (part) =>
-                    part is Map<String, Object?> && part['type'] == 'audio',
-              );
-          if (itemId is String && hasAudio) ids.add(itemId);
-        default:
-          break;
-      }
-    }
-    return ids;
-  }
-
-  String _diagnosticThreadAudioState(Set<String> focusItemIds) {
-    final rows = <String>[];
-    final ids = {...focusItemIds, ..._diagnosticLocalAudioItemIds};
-    for (final item in _thread.items) {
-      final hasAudio = item.content.any(
-        (part) => part is RealtimeThreadAudioPart,
-      );
-      if (!ids.contains(item.id) && !hasAudio) continue;
-      final parts = <String>[];
-      for (var i = 0; i < item.content.length; i++) {
-        final part = item.content[i];
-        if (part is RealtimeThreadAudioPart) {
-          final transcript = part.transcript;
-          final transcriptInfo = transcript == null
-              ? 'null'
-              : transcript.isEmpty
-              ? 'empty'
-              : 'len=${transcript.length} "${_diagnosticTruncate(transcript)}"';
-          parts.add(
-            '[$i]=audio(done=${part.isDone}, transcript=$transcriptInfo, '
-            'chunks=${part.audioChunks.length})',
-          );
-        } else if (part is RealtimeThreadTextPart) {
-          parts.add('[$i]=text(len=${part.text.length}, done=${part.isDone})');
-        } else if (part is RealtimeThreadImagePart) {
-          parts.add('[$i]=image');
-        } else {
-          parts.add('[$i]=${part.type}');
-        }
-      }
-      rows.add(
-        '{id=${item.id}, role=${item.role?.name}, status=${item.status.name}, '
-        'parts=${parts.join('; ')}}',
-      );
-    }
-    return rows.isEmpty ? '<no focused/audio items>' : rows.join(' | ');
-  }
-
-  String _diagnosticTruncate(String value) {
-    const max = 120;
-    return value.length <= max ? value : '${value.substring(0, max)}…';
-  }
-
-  void _dumpVhrpDiagnosticLog() {
-    if (!kDebugMode || _diagnosticDumped) return;
-    _diagnosticDumped = true;
-    if (_diagnosticLog.isEmpty) return;
-
-    _recordVhrpDiagnostic(
-      'final audio state before dispose: ${_diagnosticThreadAudioState(<String>{})}',
-    );
-
-    final payload = <String, Object?>{
-      'type': 'vhrp_user_audio_transcript_diag',
-      'formatVersion': 1,
-      'localOptimisticAudioItemIds': _diagnosticLocalAudioItemIds.toList(),
-      'events': List<String>.of(_diagnosticLog),
-    };
-    final text = 'VHRP_USER_AUDIO_TRANSCRIPT_DIAG_JSON=${jsonEncode(payload)}';
-    _logger.warning(text);
-    debugPrint(text, wrapWidth: 1000000);
-  }
-
   // ── Wire send helpers ─────────────────────────────────────────────────────
 
   /// Encodes [message] and sends it via the transport.
@@ -1602,13 +1456,6 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
   /// [_logger] at FINE level.  Production builds are not affected because the
   /// format string is never evaluated when [kDebugMode] is false.
   void _sendMsg(VhrpC2sMessage message) {
-    // live.audio.chunk is suppressed: it fires ~every 100 ms and would
-    // produce extreme log volume with no diagnostic value beyond the first few.
-    if (kDebugMode && message is! LiveAudioChunkMsg) {
-      final formatted = VhrpDebugFormat.formatC2s(message);
-      _logger.fine('VHRP tx: $formatted');
-      _recordVhrpDiagnostic('tx $formatted');
-    }
     _transport.sendBytes(_codec.encode(message));
   }
 

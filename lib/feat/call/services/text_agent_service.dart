@@ -111,20 +111,14 @@ final class TextAgentService extends SubService {
     String? threadId,
   }) async {
     if (!isStarted) {
-      logger.severe('Attempt to send query before service started');
       throw StateError('TextAgentService has not been started.');
     }
-
-    logger.info('Sending query to agent: $agentId (${prompt.length} chars)');
-    logger.fine(
-        'Query prompt: ${prompt.length > 100 ? "${prompt.substring(0, 100)}..." : prompt}');
 
     // Get agent
     final agent = getAgent(agentId);
 
     // Get or create thread
     final thread = getOrCreateThread(agentId, threadId: threadId);
-    logger.fine('Using thread: ${thread.id} (${thread.length} items)');
 
     // Add user message to thread
     final userItem = TextAgentThreadItem(
@@ -147,8 +141,6 @@ final class TextAgentService extends SubService {
         transport: transport,
       );
 
-      logger.info(
-          'Query completed successfully (response: ${result.length} chars)');
       return result;
     } catch (e, stackTrace) {
       // Check for context length errors and retry
@@ -181,9 +173,6 @@ final class TextAgentService extends SubService {
   TextAgentTransport _createTransport(TextAgentInfo agent) {
     final apiConfig = agent.apiConfig;
 
-    logger.fine(
-        'Creating transport for agent: ${agent.id}, config type: ${apiConfig.runtimeType}');
-
     if (apiConfig is SelfhostedTextAgentApiConfig) {
       if (apiConfig.provider == 'azure') {
         return AzureTextAgentTransport(config: apiConfig);
@@ -210,8 +199,6 @@ final class TextAgentService extends SubService {
 
     // If agent's enabledTools is empty, all extension-filtered tools are enabled
     if (agent.enabledTools.isEmpty) {
-      logger.fine(
-          'Agent ${agent.id}: ${extensionFilteredTools.length} tools available (no agent-level filtering)');
       return extensionFilteredTools;
     }
 
@@ -220,8 +207,6 @@ final class TextAgentService extends SubService {
       return agent.enabledTools[tool.toolKey] ?? true;
     }).toList();
 
-    logger.fine(
-        'Agent ${agent.id}: ${filtered.length}/${extensionFilteredTools.length} tools available after agent filtering');
     return filtered;
   }
 
@@ -260,20 +245,15 @@ final class TextAgentService extends SubService {
     const maxTurns = 10;
     int turnCount = 0;
 
-    logger.fine('Starting query execution loop for agent: ${agent.id}');
-
     while (turnCount < maxTurns) {
       turnCount++;
-      logger.fine('Executing turn $turnCount/$maxTurns');
 
       // Recompute available tools based on current active file extensions
       final activeExtensions = _getCurrentActiveExtensions();
-      logger.fine('Active file extensions: ${activeExtensions.join(", ")}');
       final availableTools =
           _getAvailableToolsForAgent(agent, activeExtensions);
 
       // Send request via transport (transport handles tool format conversion)
-      logger.fine('Sending API request with ${availableTools.length} tools');
       final responseJson = await transport.sendRequest(
         thread: thread,
         systemPrompt: agent.prompt,
@@ -309,9 +289,6 @@ final class TextAgentService extends SubService {
           final toolName = function['name'] as String;
           final argumentsStr = function['arguments'] as String;
 
-          logger.info('Tool call: $toolName (id: $toolCallId)');
-          logger.fine('Tool arguments: $argumentsStr');
-
           domainToolCalls.add(TextAgentToolCall(
             id: toolCallId,
             name: toolName,
@@ -333,10 +310,8 @@ final class TextAgentService extends SubService {
         for (final toolCall in domainToolCalls) {
           String toolResult;
           try {
-            logger.fine('Executing tool: ${toolCall.name}');
             toolResult =
                 await _toolRunner.execute(toolCall.name, toolCall.arguments);
-            logger.fine('Tool execution succeeded: ${toolCall.name}');
           } catch (e, stackTrace) {
             logger.severe(
                 'Tool execution failed: ${toolCall.name}', e, stackTrace);
@@ -369,8 +344,6 @@ final class TextAgentService extends SubService {
         throw Exception('No content in final response');
       }
 
-      logger.info('Query loop completed in $turnCount turns');
-
       // Add final assistant message item to thread
       final textPart = TextAgentThreadTextPart(text: content, isDone: true);
       final assistantItem = TextAgentThreadItem(
@@ -401,11 +374,8 @@ final class TextAgentService extends SubService {
 
   @override
   Future<void> dispose() async {
-    logger.info(
-        'Disposing TextAgentService (${_agentsById.length} agents, ${_threadsByAgent.length} threads)');
     await super.dispose();
     _agentsById.clear();
     _threadsByAgent.clear();
-    logger.info('TextAgentService disposed successfully');
   }
 }
