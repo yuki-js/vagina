@@ -290,13 +290,25 @@
   "@oobeAuthenticationTermsNotice": {
     "description": "Small legal notice near the bottom of the OOBE authentication screen."
   },
-  "oobeManualSetupTitle": "OpenAI setup",
+  "oobeManualSetupTitle": "You're all set",
   "@oobeManualSetupTitle": {
-    "description": "Main heading on the OOBE manual setup screen for entering OpenAI Realtime API credentials."
+    "description": "Main heading on the OOBE hosted-setup screen confirming the hosted voice agent will be used."
   },
-  "oobeManualSetupSubtitle": "Enter your OpenAI Realtime API connection details.",
+  "oobeManualSetupSubtitle": "VAGINA will connect to the hosted voice agent on your behalf.",
   "@oobeManualSetupSubtitle": {
-    "description": "Introductory text on the OOBE manual setup screen explaining that the user should enter OpenAI Realtime API connection information."
+    "description": "Introductory text on the OOBE hosted-setup screen describing the hosted realtime connection."
+  },
+  "oobeManualSetupHostedBadge": "Hosted Voice Agent",
+  "@oobeManualSetupHostedBadge": {
+    "description": "Badge label inside the info card on the OOBE hosted-setup screen."
+  },
+  "oobeManualSetupHostedDescription": "Your voice conversations are powered by VAGINA's cloud infrastructure. No API keys required.",
+  "@oobeManualSetupHostedDescription": {
+    "description": "Description shown in the info card on the OOBE hosted-setup screen explaining the hosted setup."
+  },
+  "oobeManualSetupHostedNote": "The model can be changed later in Settings.",
+  "@oobeManualSetupHostedNote": {
+    "description": "Small note at the bottom of the OOBE hosted-setup screen pointing the user to Settings."
   },
   "settingsLanguageSectionTitle": "Language",
   "@settingsLanguageSectionTitle": {
@@ -416,6 +428,10 @@
   "@settingsOpenAiConnectionTypeOpenAiCc": {
     "description": "Dropdown item label for the OpenAI Chat Completions adapter."
   },
+  "settingsOpenAiConnectionTypeHosted": "Hosted (VAGINA Cloud)",
+  "@settingsOpenAiConnectionTypeHosted": {
+    "description": "Dropdown item label for the VAGINA hosted realtime voice API."
+  },
   "settingsOpenAiConnectionTypeGemini": "Gemini API (Under Construction)",
   "@settingsOpenAiConnectionTypeGemini": {
     "description": "Dropdown item label for the Gemini API connection option."
@@ -423,6 +439,22 @@
   "settingsOpenAiConnectionTypeGeminiWarning": "※ Gemini API connection is currently under construction. Please wait for future updates.",
   "@settingsOpenAiConnectionTypeGeminiWarning": {
     "description": "Warning message shown when the Gemini API connection type is selected."
+  },
+  "settingsHostedModelIdLabel": "Model ID",
+  "@settingsHostedModelIdLabel": {
+    "description": "Field label above the hosted voice-agent model ID input on the settings screen."
+  },
+  "settingsHostedModelIdHint": "voice-agent-prod",
+  "@settingsHostedModelIdHint": {
+    "description": "Placeholder text inside the hosted model ID input field."
+  },
+  "settingsHostedModelIdHelper": "The hosted model to connect to. Must match a model registered on the server.",
+  "@settingsHostedModelIdHelper": {
+    "description": "Helper text below the hosted model ID field explaining what value to enter."
+  },
+  "settingsHostedModelIdRequired": "Enter the model ID",
+  "@settingsHostedModelIdRequired": {
+    "description": "Validation message shown when the hosted model ID field is empty."
   },
   "settingsOpenAiModalityLabel": "Modality",
   "@settingsOpenAiModalityLabel": {

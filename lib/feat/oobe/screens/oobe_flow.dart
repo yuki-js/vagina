@@ -8,6 +8,8 @@ import 'package:vagina/api/auth_service.dart';
 import 'package:vagina/core/app/app_container.dart';
 import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/feat/announcement/services/announcement_service.dart';
+import 'package:vagina/feat/call/models/hosted_voice_agent_defaults.dart';
+import 'package:vagina/feat/call/models/voice_agent_api_config.dart';
 import 'package:vagina/feat/home/screens/home.dart';
 import 'package:vagina/feat/oobe/screens/authentication.dart';
 import 'package:vagina/feat/oobe/screens/dive_in.dart';
@@ -195,6 +197,21 @@ class _OobeFlowScreenState extends State<OobeFlowScreen> {
         return;
       }
 
+      // Ensure a voice-agent config exists before skipping ManualSetupScreen.
+      // Only write the default when there is no saved config – never overwrite
+      // a config the user may have set previously.
+      if (_currentPageIndex <= 1) {
+        final existingConfig = await AppContainer.config.getVoiceAgentApiConfig();
+        if (existingConfig == null) {
+          await AppContainer.config.saveVoiceAgentApiConfig(
+            const HostedVoiceAgentApiConfig(
+              modelId: HostedVoiceAgentDefaults.defaultModelId,
+            ),
+          );
+        }
+        if (!mounted) return;
+      }
+
       setState(() {
         _isSignedIn = true;
         _isAuthenticating = false;
@@ -236,6 +253,19 @@ class _OobeFlowScreenState extends State<OobeFlowScreen> {
       });
       return;
     }
+
+    // Safety net: guarantee a voice-agent config exists before leaving OOBE,
+    // regardless of which path the user took through the flow.
+    final existingConfig = await AppContainer.config.getVoiceAgentApiConfig();
+    if (existingConfig == null) {
+      await AppContainer.config.saveVoiceAgentApiConfig(
+        const HostedVoiceAgentApiConfig(
+          modelId: HostedVoiceAgentDefaults.defaultModelId,
+        ),
+      );
+    }
+
+    if (!mounted) return;
 
     // Mark first launch as completed using preferencesRepositoryProvider
     final preferences = AppContainer.preferences;

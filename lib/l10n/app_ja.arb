@@ -290,13 +290,25 @@
   "@oobeAuthenticationTermsNotice": {
     "description": "OOBE 認証画面の下部に表示する小さな法的同意文。"
   },
-  "oobeManualSetupTitle": "OpenAIの設定",
+  "oobeManualSetupTitle": "準備完了",
   "@oobeManualSetupTitle": {
-    "description": "OpenAI Realtime API の認証情報を入力する OOBE 手動設定画面のメイン見出し。"
+    "description": "ホステッドセットアップ画面のメイン見出し。ホステッド音声エージェントを使用することを確認する。"
   },
-  "oobeManualSetupSubtitle": "OpenAI Realtime APIの接続情報を入力してください",
+  "oobeManualSetupSubtitle": "VAGINAのホステッド音声エージェントに自動で接続します。",
   "@oobeManualSetupSubtitle": {
-    "description": "OOBE 手動設定画面で、OpenAI Realtime API の接続情報入力を案内する導入文。"
+    "description": "OOBE ホステッドセットアップ画面で、ホステッド接続を説明する導入文。"
+  },
+  "oobeManualSetupHostedBadge": "ホステッド音声エージェント",
+  "@oobeManualSetupHostedBadge": {
+    "description": "OOBE ホステッドセットアップ画面のインフォカード内バッジラベル。"
+  },
+  "oobeManualSetupHostedDescription": "音声会話は VAGINA のクラウドインフラで動作します。API キーは不要です。",
+  "@oobeManualSetupHostedDescription": {
+    "description": "OOBE ホステッドセットアップ画面のインフォカードに表示される説明文。"
+  },
+  "oobeManualSetupHostedNote": "モデルは後から設定画面で変更できます。",
+  "@oobeManualSetupHostedNote": {
+    "description": "OOBE ホステッドセットアップ画面下部のメモ。設定画面へ誘導する。"
   },
   "settingsLanguageSectionTitle": "言語",
   "@settingsLanguageSectionTitle": {
@@ -416,6 +428,10 @@
   "@settingsOpenAiConnectionTypeOpenAiCc": {
     "description": "OpenAI Chat Completions アダプターのドロップダウン項目ラベル。"
   },
+  "settingsOpenAiConnectionTypeHosted": "ホステッド (VAGINA クラウド)",
+  "@settingsOpenAiConnectionTypeHosted": {
+    "description": "VAGINA ホステッド Realtime 音声 API のドロップダウン項目ラベル。"
+  },
   "settingsOpenAiConnectionTypeGemini": "Gemini API (準備中)",
   "@settingsOpenAiConnectionTypeGemini": {
     "description": "Gemini API 接続オプションのドロップダウン項目ラベル。"
@@ -423,6 +439,22 @@
   "settingsOpenAiConnectionTypeGeminiWarning": "※ Gemini API 接続は現在工事中です。今後のアップデートをお待ちください。",
   "@settingsOpenAiConnectionTypeGeminiWarning": {
     "description": "Gemini API 接続タイプが選択されたときに表示される警告メッセージ。"
+  },
+  "settingsHostedModelIdLabel": "モデル ID",
+  "@settingsHostedModelIdLabel": {
+    "description": "設定画面のホステッド音声エージェントモデル ID 入力欄上ラベル。"
+  },
+  "settingsHostedModelIdHint": "voice-agent-prod",
+  "@settingsHostedModelIdHint": {
+    "description": "ホステッドモデル ID 入力欄のプレースホルダーテキスト。"
+  },
+  "settingsHostedModelIdHelper": "接続するホステッドモデルを入力してください。サーバーに登録されているモデル名と一致させる必要があります。",
+  "@settingsHostedModelIdHelper": {
+    "description": "ホステッドモデル ID フィールドの下に表示するヘルパーテキスト。"
+  },
+  "settingsHostedModelIdRequired": "モデル ID を入力してください",
+  "@settingsHostedModelIdRequired": {
+    "description": "ホステッドモデル ID フィールドが空のときに表示するバリデーションメッセージ。"
   },
   "settingsOpenAiModalityLabel": "モダリティ",
   "@settingsOpenAiModalityLabel": {

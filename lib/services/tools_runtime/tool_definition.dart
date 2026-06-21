@@ -144,13 +144,51 @@ class ToolDefinition {
     return const ToolActivation.always();
   }
 
+  /// Returns a parameters schema that is guaranteed to be a valid JSON Schema
+  /// object (`{"type":"object","properties":{...}}`).
+  ///
+  /// Rules (no strict-ification — only filling missing structure):
+  /// - Empty map `{}` → `{"type":"object","properties":{}}`
+  /// - Missing `type` field → `type` set to `"object"`
+  /// - `type` present but not `"object"` → left as-is (caller's intent)
+  /// - Missing `properties` field when `type == "object"` → `properties` set to `{}`
+  ///
+  /// This is used by both the standalone OAI path ([toRealtimeJson]) and the
+  /// hosted CBOR path ([_sendToolsSet] in the realtime adapter) to guarantee
+  /// warp-transparent behaviour.
+  Map<String, dynamic> get realtimeParametersSchema {
+    final schema = parametersSchema;
+    // Empty schema: supply minimal valid object schema.
+    if (schema.isEmpty) {
+      return {'type': 'object', 'properties': <String, dynamic>{}};
+    }
+    final type = schema['type'];
+    // If type is missing, treat as object schema.
+    if (type == null) {
+      final result = Map<String, dynamic>.from(schema);
+      result['type'] = 'object';
+      if (!result.containsKey('properties')) {
+        result['properties'] = <String, dynamic>{};
+      }
+      return result;
+    }
+    // If type is 'object' and properties is missing, add empty properties.
+    if (type == 'object' && !schema.containsKey('properties')) {
+      final result = Map<String, dynamic>.from(schema);
+      result['properties'] = <String, dynamic>{};
+      return result;
+    }
+    // Schema already valid — return as-is (preserves existing args schemas).
+    return schema;
+  }
+
   /// Realtime API compatible tool definition (function tool).
   Map<String, Object> toRealtimeJson() {
     return {
       'type': 'function',
       'name': toolKey,
       'description': description,
-      'parameters': parametersSchema,
+      'parameters': realtimeParametersSchema,
     };
   }
 }

@@ -2,12 +2,17 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vagina/core/app/app_container.dart';
+import 'package:vagina/feat/call/models/hosted_voice_agent_defaults.dart';
 import 'package:vagina/feat/call/models/voice_agent_api_config.dart';
-import 'package:vagina/feat/call/services/realtime/realtime_adapter_factory.dart';
 import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/l10n/app_localizations.dart';
 
-/// Third OOBE screen - Manual AI API configuration
+/// Third OOBE screen – Hosted voice-agent setup.
+///
+/// Self-hosted OpenAI URL/API-key manual input has been removed.
+/// OOBE now defaults to [HostedVoiceAgentApiConfig] with
+/// [HostedVoiceAgentDefaults.defaultModelId].  The user simply taps
+/// "Continue" and the config is saved before advancing.
 class ManualSetupScreen extends ConsumerStatefulWidget {
   final VoidCallback onContinue;
   final VoidCallback onBack;
@@ -23,126 +28,33 @@ class ManualSetupScreen extends ConsumerStatefulWidget {
 }
 
 class _ManualSetupScreenState extends ConsumerState<ManualSetupScreen> {
-  final _realtimeUrlController = TextEditingController();
-  final _apiKeyController = TextEditingController();
-  bool _isApiKeyVisible = false;
   bool _isSaving = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _loadSettings();
-  }
-
-  @override
-  void dispose() {
-    _realtimeUrlController.dispose();
-    _apiKeyController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _loadSettings() async {
-    try {
-      final config = AppContainer.config;
-
-      final apiConfig = await config.getVoiceAgentApiConfig();
-      if (apiConfig case SelfhostedVoiceAgentApiConfig selfhostedConfig) {
-        _realtimeUrlController.text = selfhostedConfig.baseUrl;
-        _apiKeyController.text = selfhostedConfig.apiKey;
-      }
-    } catch (e) {
-      if (!mounted) return;
-      final l10n = AppLocalizations.of(context);
-      _showSnackBar(l10n.settingsOpenAiLoadFailed, isError: true);
-    }
-  }
-
-  void _showSnackBar(String message, {bool isError = false}) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: isError ? AppTheme.errorColor : AppTheme.successColor,
-        duration: const Duration(seconds: 3),
-      ),
-    );
-  }
-
-  bool _hasValidRealtimeBaseUri(String value) {
-    final uri = Uri.tryParse(value);
-    return uri != null && uri.scheme.isNotEmpty && uri.host.isNotEmpty;
-  }
-
   Future<void> _saveAndContinue() async {
-    final l10n = AppLocalizations.of(context);
-
-    if (_realtimeUrlController.text.trim().isEmpty) {
-      _showSnackBar(l10n.settingsOpenAiUrlRequired, isError: true);
-      return;
-    }
-
-    if (!_hasValidRealtimeBaseUri(_realtimeUrlController.text.trim())) {
-      _showSnackBar(l10n.settingsOpenAiUrlInvalid, isError: true);
-      return;
-    }
-
-    if (_apiKeyController.text.trim().isEmpty) {
-      _showSnackBar(l10n.settingsOpenAiApiKeyRequired, isError: true);
-      return;
-    }
-
     setState(() => _isSaving = true);
 
-    // Test connection before saving
     try {
-      final testConfig = SelfhostedVoiceAgentApiConfig(
-        providerType: VoiceAgentProviderType.openai,
-        baseUrl: _realtimeUrlController.text.trim(),
-        apiKey: _apiKeyController.text.trim(),
-        modality: VoiceAgentModality.audio,
+      await AppContainer.config.saveVoiceAgentApiConfig(
+        const HostedVoiceAgentApiConfig(
+          modelId: HostedVoiceAgentDefaults.defaultModelId,
+        ),
       );
-      await RealtimeAdapterFactory.testConnection(testConfig);
-
-      // Connection successful, save the config
-      final config = AppContainer.config;
-      final existingConfig = await config.getVoiceAgentApiConfig();
-      final nextConfig = switch (existingConfig) {
-        SelfhostedVoiceAgentApiConfig selfhostedConfig =>
-          selfhostedConfig.copyWith(
-            providerType: VoiceAgentProviderType.openai,
-            baseUrl: _realtimeUrlController.text.trim(),
-            apiKey: _apiKeyController.text.trim(),
-          ),
-        HostedVoiceAgentApiConfig() => SelfhostedVoiceAgentApiConfig(
-            providerType: VoiceAgentProviderType.openai,
-            baseUrl: _realtimeUrlController.text.trim(),
-            apiKey: _apiKeyController.text.trim(),
-          ),
-        null => SelfhostedVoiceAgentApiConfig(
-            providerType: VoiceAgentProviderType.openai,
-            baseUrl: _realtimeUrlController.text.trim(),
-            apiKey: _apiKeyController.text.trim(),
-          ),
-        _ => SelfhostedVoiceAgentApiConfig(
-            providerType: VoiceAgentProviderType.openai,
-            baseUrl: _realtimeUrlController.text.trim(),
-            apiKey: _apiKeyController.text.trim(),
-          ),
-      };
-      await config.saveVoiceAgentApiConfig(nextConfig);
 
       if (mounted) {
         widget.onContinue();
       }
     } catch (e) {
-      _showSnackBar(
-        l10n.settingsOpenAiConnectionTestFailed(e.toString()),
-        isError: true,
+      if (!mounted) return;
+      final l10n = AppLocalizations.of(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l10n.settingsOpenAiSaveFailed(e.toString())),
+          backgroundColor: AppTheme.errorColor,
+          duration: const Duration(seconds: 3),
+        ),
       );
     } finally {
-      if (mounted) {
-        setState(() => _isSaving = false);
-      }
+      if (mounted) setState(() => _isSaving = false);
     }
   }
 
@@ -153,7 +65,6 @@ class _ManualSetupScreenState extends ConsumerState<ManualSetupScreen> {
     return SafeArea(
       child: Stack(
         children: [
-          // メインコンテンツ - 中央寄せ
           Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 480),
@@ -166,7 +77,7 @@ class _ManualSetupScreenState extends ConsumerState<ManualSetupScreen> {
                     Text(
                       l10n.oobeManualSetupTitle,
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
@@ -184,104 +95,56 @@ class _ManualSetupScreenState extends ConsumerState<ManualSetupScreen> {
 
                     const SizedBox(height: 32),
 
-                    // Realtime URL field
-                    Text(
-                      l10n.settingsOpenAiUrlLabel,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white.withValues(alpha: 0.9),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _realtimeUrlController,
-                      style: const TextStyle(color: Colors.white),
-                      decoration: InputDecoration(
-                        hintText: l10n.settingsOpenAiUrlHint,
-                        hintStyle: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.3),
-                        ),
-                        filled: true,
-                        fillColor: Colors.white.withValues(alpha: 0.1),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(
-                            color: Colors.white.withValues(alpha: 0.3),
-                          ),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(
-                            color: Colors.white.withValues(alpha: 0.3),
-                          ),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                            color: AppTheme.primaryColor,
-                            width: 2,
-                          ),
+                    // Hosted-mode info card
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: AppTheme.primaryColor.withValues(alpha: 0.4),
                         ),
                       ),
-                      keyboardType: TextInputType.url,
-                      maxLines: 3,
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // API Key field
-                    Text(
-                      l10n.settingsOpenAiApiKeyLabel,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white.withValues(alpha: 0.9),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _apiKeyController,
-                      obscureText: !_isApiKeyVisible,
-                      style: const TextStyle(color: Colors.white),
-                      decoration: InputDecoration(
-                        hintText: l10n.settingsOpenAiApiKeyHint,
-                        hintStyle: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.3),
-                        ),
-                        filled: true,
-                        fillColor: Colors.white.withValues(alpha: 0.1),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(
-                            color: Colors.white.withValues(alpha: 0.3),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.cloud_done_rounded,
+                                color: AppTheme.primaryColor,
+                                size: 24,
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                l10n.oobeManualSetupHostedBadge,
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(
-                            color: Colors.white.withValues(alpha: 0.3),
+                          const SizedBox(height: 12),
+                          Text(
+                            l10n.oobeManualSetupHostedDescription,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.white.withValues(alpha: 0.8),
+                              height: 1.5,
+                            ),
                           ),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                            color: AppTheme.primaryColor,
-                            width: 2,
+                          const SizedBox(height: 8),
+                          Text(
+                            '${l10n.settingsHostedModelIdLabel}: ${HostedVoiceAgentDefaults.defaultModelId}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontFamily: 'monospace',
+                              color: AppTheme.primaryColor.withValues(alpha: 0.9),
+                            ),
                           ),
-                        ),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _isApiKeyVisible
-                                ? Icons.visibility_off
-                                : Icons.visibility,
-                            color: Colors.white.withValues(alpha: 0.6),
-                          ),
-                          onPressed: () {
-                            setState(
-                                () => _isApiKeyVisible = !_isApiKeyVisible);
-                          },
-                        ),
+                        ],
                       ),
                     ),
 
@@ -321,9 +184,8 @@ class _ManualSetupScreenState extends ConsumerState<ManualSetupScreen> {
 
                     const SizedBox(height: 16),
 
-                    // Security notice
                     Text(
-                      l10n.settingsOpenAiCredentialsStorageNote,
+                      l10n.oobeManualSetupHostedNote,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 12,
@@ -337,7 +199,7 @@ class _ManualSetupScreenState extends ConsumerState<ManualSetupScreen> {
               ),
             ),
           ),
-          // 戻るボタン - 常に左上に固定
+          // Back button – always top-left
           Positioned(
             top: 0,
             left: 0,

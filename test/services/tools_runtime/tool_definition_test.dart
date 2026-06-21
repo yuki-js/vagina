@@ -53,4 +53,88 @@ void main() {
       expect(restored.activation.extensions, ['.md']);
     });
   });
+
+  group('ToolDefinition.realtimeParametersSchema normalizer (Fix 2)', () {
+    ToolDefinition makeDef(Map<String, dynamic> schema) => ToolDefinition(
+          toolKey: 'test',
+          displayName: 'T',
+          displayDescription: 'd',
+          categoryKey: 'c',
+          iconKey: 'i',
+          sourceKey: 's',
+          publishedBy: 'p',
+          description: 'desc',
+          parametersSchema: schema,
+        );
+
+    test('empty schema {} → {type:object, properties:{}}', () {
+      final def = makeDef({});
+      final result = def.realtimeParametersSchema;
+      expect(result['type'], equals('object'));
+      expect(result['properties'], isA<Map>());
+      expect((result['properties'] as Map).isEmpty, isTrue);
+    });
+
+    test('schema with no type → type set to object', () {
+      final def = makeDef({'properties': {'x': {'type': 'string'}}});
+      final result = def.realtimeParametersSchema;
+      expect(result['type'], equals('object'));
+      expect(result['properties'], isNotNull);
+    });
+
+    test('type=object with no properties → properties:{} added', () {
+      final def = makeDef({'type': 'object'});
+      final result = def.realtimeParametersSchema;
+      expect(result['type'], equals('object'));
+      expect(result['properties'], isA<Map>());
+      expect((result['properties'] as Map).isEmpty, isTrue);
+    });
+
+    test('type=object with empty properties const map → preserved as-is', () {
+      // This is the fs_active_files case: parametersSchema already has both keys
+      const schema = <String, dynamic>{
+        'type': 'object',
+        'properties': <String, dynamic>{},
+      };
+      final def = makeDef(schema);
+      final result = def.realtimeParametersSchema;
+      expect(result['type'], equals('object'));
+      expect(result['properties'], isA<Map>());
+      expect((result['properties'] as Map).isEmpty, isTrue);
+    });
+
+    test('valid schema with properties is returned as-is (no mutation)', () {
+      final schema = <String, dynamic>{
+        'type': 'object',
+        'properties': {
+          'city': {'type': 'string'},
+        },
+        'required': ['city'],
+      };
+      final def = makeDef(schema);
+      final result = def.realtimeParametersSchema;
+      expect(result['type'], equals('object'));
+      expect((result['properties'] as Map).containsKey('city'), isTrue);
+      expect(result['required'], equals(['city']));
+    });
+
+    test('type != object is returned as-is (no strict-ification)', () {
+      final schema = <String, dynamic>{
+        'type': 'string',
+      };
+      final def = makeDef(schema);
+      final result = def.realtimeParametersSchema;
+      expect(result['type'], equals('string'));
+      // should NOT add properties to a non-object schema
+      expect(result.containsKey('properties'), isFalse);
+    });
+
+    test('toRealtimeJson uses normalized schema', () {
+      final def = makeDef({});
+      final json = def.toRealtimeJson();
+      final params = json['parameters'] as Map;
+      expect(params['type'], equals('object'));
+      expect(params['properties'], isA<Map>());
+    });
+  });
 }

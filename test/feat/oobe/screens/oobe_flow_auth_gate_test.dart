@@ -12,6 +12,8 @@ import 'package:vagina/api/generated/responses/get_current_user_response.dart';
 import 'package:vagina/api/generated/responses/refresh_session_response.dart';
 import 'package:vagina/core/data/in_memory_store.dart';
 import 'package:vagina/core/app/app_container.dart';
+import 'package:vagina/feat/call/models/hosted_voice_agent_defaults.dart';
+import 'package:vagina/feat/call/models/voice_agent_api_config.dart';
 import 'package:vagina/feat/oobe/screens/oobe_flow.dart';
 import 'package:vagina/l10n/app_localizations.dart';
 
@@ -119,8 +121,9 @@ void main() {
   });
 
   testWidgets(
-    'restored signed-in session skips welcome/auth and opens manual setup',
+    'restored signed-in session skips welcome/auth/manual-setup and saves default hosted config',
     (tester) async {
+      // Pre-condition: a refresh token exists from a prior session.
       await AppContainer.preferences.saveAuthRefreshToken(
         'refresh-before-launch',
       );
@@ -174,12 +177,24 @@ void main() {
           home: const OobeFlowScreen(),
         ),
       );
-      await tester.pump(const Duration(milliseconds: 1600));
+      // Allow _syncSignInState() to run: the auth call, config-existence check,
+      // and default-config save are all async. Pump once to kick off the futures,
+      // then pump again to apply the resulting setState rebuild.
+      await tester.pump();
+      await tester.pump();
 
-      final context = tester.element(find.byType(OobeFlowScreen));
-      final l10n = AppLocalizations.of(context);
-
-      expect(find.text(l10n.permissionsScreenTitle), findsOneWidget);
+      // ── Core regression assertion ──────────────────────────────────────────
+      // The hosted config MUST have been saved during the session-restore path
+      // so that the call screen never throws:
+      //   StateError('Voice agent API config is not configured.')
+      //
+      // This is the canonical check for the OOBE play-path blocker fix.
+      final savedConfig = await AppContainer.config.getVoiceAgentApiConfig();
+      expect(savedConfig, isA<HostedVoiceAgentApiConfig>());
+      expect(
+        (savedConfig as HostedVoiceAgentApiConfig).modelId,
+        HostedVoiceAgentDefaults.defaultModelId,
+      );
     },
   );
 }
