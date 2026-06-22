@@ -36,11 +36,12 @@ import 'vhrp_messages.dart';
 /// **Never** call these methods in production code paths — guard with
 /// `kDebugMode` at the call site.
 abstract final class VhrpDebugFormat {
-  /// Maximum length for string field values before truncation.
+  /// Maximum length for non-transcript operational strings before truncation.
   ///
-  /// Chosen to keep log lines manageable while showing enough context.
-  /// A transcript delta of 200 chars is readable; longer is noise.
-  static const int maxStringLength = 200;
+  /// Transcript/text fields are intentionally not truncated: this diagnostic is
+  /// used to inspect exact user/assistant text projection. Audio/image bytes are
+  /// summarised structurally instead of string-truncated.
+  static const int maxOperationalStringLength = 200;
 
   // ── C2S ───────────────────────────────────────────────────────────────────
 
@@ -85,7 +86,7 @@ abstract final class VhrpDebugFormat {
         'assistant.audio.done {itemId: ${m.itemId}, contentIndex: ${m.contentIndex}}',
       VadStateMsg m => 'vad.state {isSpeaking: ${m.isSpeaking}}',
       ErrorMsg m =>
-        'error {replyTo: ${m.replyTo}, code: ${m.code}, recoverable: ${m.recoverable}, message: ${_truncateStr(m.message)}}',
+        'error {replyTo: ${m.replyTo}, code: ${m.code}, recoverable: ${m.recoverable}, message: ${_truncateOperationalStr(m.message)}}',
       UnknownTypeS2cMsg m => 'unknown {type: ${m.unknownType}}',
     };
   }
@@ -100,14 +101,15 @@ abstract final class VhrpDebugFormat {
     sb.write(', audioTurnMode: ${m.audioTurnMode}');
     if (m.resume != null) sb.write(', resumeSessionId: ${m.resume!.sessionId}');
     if (m.instructions != null) {
-      sb.write(', instructions: ${_truncateStr(m.instructions!)}');
+      sb.write(', instructions: ${_truncateOperationalStr(m.instructions!)}');
     }
     sb.write('}');
     return sb.toString();
   }
 
   static String _formatSessionInstructionsSet(SessionInstructionsSetMsg m) {
-    final instr = m.instructions != null ? _truncateStr(m.instructions!) : 'null';
+    final instr =
+        m.instructions != null ? _truncateOperationalStr(m.instructions!) : 'null';
     return 'session.instructions.set {messageId: ${m.messageId}, instructions: $instr}';
   }
 
@@ -118,7 +120,7 @@ abstract final class VhrpDebugFormat {
 
   static String _formatTurnTextSubmit(TurnTextSubmitMsg m) =>
       'turn.text.submit {messageId: ${m.messageId}, clientItemId: ${m.clientItemId}'
-      ', text: ${_truncateStr(m.text)}}';
+      ', text: ${_verbatimText(m.text)}}';
 
   static String _formatTurnImageSubmit(TurnImageSubmitMsg m) =>
       'turn.image.submit {messageId: ${m.messageId}, clientItemId: ${m.clientItemId}'
@@ -130,8 +132,10 @@ abstract final class VhrpDebugFormat {
     sb.write(', clientItemId: ${m.clientItemId}');
     sb.write(', callId: ${m.callId}');
     sb.write(', disposition: ${m.disposition}');
-    sb.write(', output: ${_truncateStr(m.output)}');
-    if (m.errorMessage != null) sb.write(', errorMessage: ${_truncateStr(m.errorMessage!)}');
+    sb.write(', output: ${_verbatimText(m.output)}');
+    if (m.errorMessage != null) {
+      sb.write(', errorMessage: ${_truncateOperationalStr(m.errorMessage!)}');
+    }
     sb.write('}');
     return sb.toString();
   }
@@ -168,19 +172,39 @@ abstract final class VhrpDebugFormat {
 
   static String _formatOp(ThreadPatchOp op) {
     return switch (op) {
-      AddItemOp o => 'add_item(${_sanitiseMap(o.item)['id'] ?? '?'})',
+      AddItemOp o => _formatAddItem(o),
       RemoveItemOp o => 'remove_item(${o.itemId})',
       SetStatusOp o => 'set_status(${o.itemId}, ${o.status})',
       SetRoleOp o => 'set_role(${o.itemId}, ${o.role})',
       SetFieldOp o => 'set_field(${o.itemId}, ${o.field}=${_sanitiseValue(o.value)})',
       PutPartOp o => 'put_part(${o.itemId}, ci=${o.contentIndex}, type=${_sanitiseMap(o.part)['type'] ?? '?'})',
-      AppendTextOp o => 'append_text(${o.itemId}, ci=${o.contentIndex}, delta=${_truncateStr(o.delta)})',
-      ReplaceTextOp o => 'replace_text(${o.itemId}, ci=${o.contentIndex}, text=${_truncateStr(o.text)})',
-      AppendTranscriptOp o => 'append_transcript(${o.itemId}, ci=${o.contentIndex}, delta=${_truncateStr(o.delta)})',
-      ReplaceTranscriptOp o => 'replace_transcript(${o.itemId}, ci=${o.contentIndex}, text=${_truncateStr(o.text)})',
+      AppendTextOp o => 'append_text(${o.itemId}, ci=${o.contentIndex}, delta=${_verbatimText(o.delta)})',
+      ReplaceTextOp o => 'replace_text(${o.itemId}, ci=${o.contentIndex}, text=${_verbatimText(o.text)})',
+      AppendTranscriptOp o => 'append_transcript(${o.itemId}, ci=${o.contentIndex}, delta=${_verbatimText(o.delta)})',
+      ReplaceTranscriptOp o => 'replace_transcript(${o.itemId}, ci=${o.contentIndex}, text=${_verbatimText(o.text)})',
       SetConversationIdOp o => 'set_conversation_id(${o.conversationId})',
       UnknownOp o => 'unknown_op(${o.unknownOp})',
     };
+  }
+
+  static String _formatAddItem(AddItemOp op) {
+    final item = _sanitiseMap(op.item);
+    final content = item['content'];
+    final firstPart = content is List<Object?> && content.isNotEmpty
+        ? content.first
+        : null;
+    final firstPartMap = firstPart is Map<String, Object?> ? firstPart : null;
+    return 'add_item('
+        'id=${item['id'] ?? '?'}, '
+        'type=${item['type'] ?? '?'}, '
+        'role=${item['role']}, '
+        'status=${item['status']}, '
+        'displayState=${item['displayState']}, '
+        'contentCount=${content is List<Object?> ? content.length : 0}, '
+        'firstPart.type=${firstPartMap?['type']}, '
+        'firstPart.text=${firstPartMap?['text']}, '
+        'firstPart.transcript=${firstPartMap?['transcript']}'
+        ')';
   }
 
   // ── Shared sanitisation helpers ───────────────────────────────────────────
@@ -191,10 +215,13 @@ abstract final class VhrpDebugFormat {
   /// base64 encoding is explicitly forbidden per the requirements.
   static String _blobSummary(Uint8List data) => '<bytes: ${data.length}>';
 
-  /// Truncates [value] at [maxStringLength], appending `…` if cut.
-  static String _truncateStr(String value) {
-    if (value.length <= maxStringLength) return value;
-    return '${value.substring(0, maxStringLength)}…';
+  /// Keeps actual text/transcript payloads verbatim.
+  static String _verbatimText(String value) => value;
+
+  /// Truncates operational strings only: errors, instructions, identifiers, etc.
+  static String _truncateOperationalStr(String value) {
+    if (value.length <= maxOperationalStringLength) return value;
+    return '${value.substring(0, maxOperationalStringLength)}…';
   }
 
   /// Recursively sanitises [map] so that:
@@ -202,7 +229,7 @@ abstract final class VhrpDebugFormat {
   ///   - [List<int>] values become `<bytes: N>`.
   ///   - Nested [Map<String, Object?>] values are recursively sanitised.
   ///   - Nested [List<Object?>] items are recursively sanitised.
-  ///   - [String] values are truncated.
+  ///   - [String] values are preserved verbatim.
   ///
   /// Returns a new Map; the original is not mutated.
   static Map<String, Object?> _sanitiseMap(Map<String, Object?> map) {
@@ -218,7 +245,7 @@ abstract final class VhrpDebugFormat {
       Uint8List v => '<bytes: ${v.length}>',
       // List<int> from CBOR decoder on some platforms
       List<int> v => '<bytes: ${v.length}>',
-      String v => _truncateStr(v),
+      String v => _verbatimText(v),
       Map<String, Object?> v => _sanitiseMap(v),
       List<Object?> v => v.map(_sanitiseValue).toList(),
       _ => value,

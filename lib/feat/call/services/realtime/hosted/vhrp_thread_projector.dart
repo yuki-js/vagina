@@ -153,6 +153,7 @@ final class VhrpThreadProjector {
       if (incoming.toolErrorMessage != null) {
         existing.toolErrorMessage = incoming.toolErrorMessage;
       }
+      existing.displayState = incoming.displayState;
       // Add content parts only if the existing item has none.
       if (existing.content.isEmpty && incoming.content.isNotEmpty) {
         for (final part in incoming.content) {
@@ -223,6 +224,9 @@ final class VhrpThreadProjector {
             _mapToolOutputDisposition(op.value as String?);
       case 'toolErrorMessage':
         item.toolErrorMessage = op.value as String?;
+      case 'displayState':
+        item.displayState =
+            RealtimeThreadItemDisplayState.fromWireValue(op.value as String?);
       default:
         // Unknown field — silently ignore (forward-compatible, not a desync).
         break;
@@ -359,6 +363,9 @@ final class VhrpThreadProjector {
       type: type,
       role: role,
       status: status,
+      displayState: RealtimeThreadItemDisplayState.fromWireValue(
+        map['displayState'] as String?,
+      ),
       callId: map['callId'] as String?,
       name: map['name'] as String?,
       arguments: map['arguments'] as String?,

@@ -304,6 +304,9 @@ class _ChatMessageList extends StatelessWidget {
       itemCount: items.length,
       itemBuilder: (context, index) {
         final item = items[index];
+        if (!item.isVisible) {
+          return const SizedBox.shrink();
+        }
 
         // ツール呼び出しはバッジで表示
         if (item.type == RealtimeThreadItemType.functionCall) {

@@ -44,6 +44,7 @@ import 'package:vagina/services/tools_runtime/tool_definition.dart';
 
 import 'vhrp_cbor_codec.dart';
 import 'vhrp_messages.dart';
+import 'vhrp_debug_format.dart';
 import 'vhrp_thread_projector.dart';
 import 'vhrp_transport.dart';
 import 'websocket_vhrp_transport.dart';
@@ -915,6 +916,12 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
     final VhrpS2cMessage msg;
     try {
       msg = _codec.decode(bytes);
+      if (kDebugMode) {
+        _logger.info(
+          '[DIAG-VHRP-IN] frameBytes=${bytes.length} '
+          '${VhrpDebugFormat.formatS2c(msg)}',
+        );
+      }
     } catch (e) {
       _emitError(
         RealtimeAdapterError(
@@ -1409,7 +1416,14 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
   /// [_logger] at FINE level.  Production builds are not affected because the
   /// format string is never evaluated when [kDebugMode] is false.
   void _sendMsg(VhrpC2sMessage message) {
-    _transport.sendBytes(_codec.encode(message));
+    final bytes = _codec.encode(message);
+    if (kDebugMode) {
+      _logger.info(
+        '[DIAG-VHRP-OUT] frameBytes=${bytes.length} '
+        '${VhrpDebugFormat.formatC2s(message)}',
+      );
+    }
+    _transport.sendBytes(bytes);
   }
 
   /// Sends `tools.set` and awaits the server ack.

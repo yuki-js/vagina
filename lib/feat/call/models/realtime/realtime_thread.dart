@@ -36,6 +36,24 @@ enum RealtimeThreadItemStatus {
   }
 }
 
+enum RealtimeThreadItemDisplayState {
+  visible('visible'),
+  pending('pending'),
+  hidden('hidden');
+
+  final String wireValue;
+
+  const RealtimeThreadItemDisplayState(this.wireValue);
+
+  static RealtimeThreadItemDisplayState fromWireValue(String? value) {
+    return switch (value) {
+      'pending' => RealtimeThreadItemDisplayState.pending,
+      'hidden' => RealtimeThreadItemDisplayState.hidden,
+      _ => RealtimeThreadItemDisplayState.visible,
+    };
+  }
+}
+
 enum RealtimeToolOutputDisposition {
   success,
   error,
@@ -150,6 +168,7 @@ final class RealtimeThreadItem {
   final RealtimeThreadItemType type;
   RealtimeThreadItemRole? role;
   RealtimeThreadItemStatus status;
+  RealtimeThreadItemDisplayState displayState;
   final List<RealtimeThreadContentPart> content;
   String? callId;
   String? name;
@@ -163,6 +182,7 @@ final class RealtimeThreadItem {
     required this.type,
     this.role,
     this.status = RealtimeThreadItemStatus.inProgress,
+    this.displayState = RealtimeThreadItemDisplayState.visible,
     List<RealtimeThreadContentPart>? content,
     this.callId,
     this.name,
@@ -173,6 +193,8 @@ final class RealtimeThreadItem {
   }) : content = content ?? <RealtimeThreadContentPart>[];
 
   bool get isDone => status == RealtimeThreadItemStatus.completed;
+
+  bool get isVisible => displayState == RealtimeThreadItemDisplayState.visible;
 
   RealtimeThreadContentPart? findContentPart(int contentIndex) {
     final index = _normalizeContentIndex(contentIndex);
