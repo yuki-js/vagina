@@ -34,6 +34,7 @@ import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart' show kDebugMode;
+import 'package:logging/logging.dart';
 import 'package:vagina/core/config/app_config.dart';
 import 'package:vagina/feat/call/models/realtime/realtime_adapter_models.dart';
 import 'package:vagina/feat/call/models/realtime/realtime_thread.dart';
@@ -91,6 +92,8 @@ final class _ConnectConfig {
 ///   - Transport [failed]        → adapter [failed].
 ///   - Unrecoverable error from server → adapter [failed].
 final class VhrpRealtimeAdapter implements RealtimeAdapter {
+  static final Logger _logger = Logger('VhrpRealtimeAdapter');
+
   // ── Dependencies ────────────────────────────────────────────────────────────
 
   final VhrpRealtimeTransport _transport;
@@ -171,18 +174,6 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
   /// Stored connect() parameters so reconnect can rebuild session.open
   /// identically (apiConfig for modelId, voice, instructions).
   _ConnectConfig? _connectConfig;
-
-  // ── locally-cancelled function calls (Step 8 / OAI parity) ─────────────
-
-  /// Item IDs of function-call items that have been locally cancelled via
-  /// [cancelFunctionCalls].  Used to prevent re-marking already-incomplete
-  /// items and to re-apply cancel on reconnect snapshots.
-  final Set<String> _locallyCancelledFunctionItemIds = <String>{};
-
-  /// Call IDs of function calls that have been locally cancelled via
-  /// [cancelFunctionCalls].  Like [_locallyCancelledFunctionItemIds] but
-  /// keyed by callId for items where itemId may not be available.
-  final Set<String> _locallyCancelledFunctionCallIds = <String>{};
 
   // ── Thread model ─────────────────────────────────────────────────────────
 
@@ -449,6 +440,27 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
     if (_disposed) return;
     _disposed = true;
 
+    // ── Final thread snapshot probe ─────────────────────────────────────────
+    // Before tearing down the transport, request the authoritative final
+    // thread state from the server and log it as JSON.  This gives us a
+    // complete record of the conversation at hang-up time.
+    if (_connectionState.isConnected) {
+      try {
+        final snapshotReceived = Completer<void>();
+        final sub = _threadController.stream.listen((_) {
+          if (!snapshotReceived.isCompleted) snapshotReceived.complete();
+        });
+        _sendThreadSyncRequest('dispose');
+        await snapshotReceived.future
+            .timeout(const Duration(seconds: 3), onTimeout: () {});
+        await sub.cancel();
+      } catch (_) {
+        // Best-effort; teardown must not be blocked.
+      }
+      _logger.info(
+          'VHRP_FINAL_THREAD_JSON=${jsonEncode(_threadToJson(_thread))}');
+    }
+
     // Cancel live audio input subscription first so no more PCM is forwarded.
     await _audioInputSubscription?.cancel();
     _audioInputSubscription = null;
@@ -668,33 +680,17 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
 
   /// Send a one-shot audio turn (manual mode).
   ///
-  /// Optimistic local add: a user message item with an empty [RealtimeThreadAudioPart]
-  /// is inserted before the server echoes back the canonical item.  The empty
-  /// audio part is placed at contentIndex 0 so subsequent `append_transcript` /
-  /// `replace_transcript` ops from the server find and mutate the correct part.
-  ///
   /// Wire: [TurnAudioSubmitMsg] — pcm as CBOR bstr (raw bytes, not base64),
   /// sampleRate=24000, channels=1, bitDepth=16.
+  ///
+  /// The thread is updated when the server echoes back a canonical `add_item`
+  /// via `thread.patch`.
   @override
   Future<String> sendAudioOneShot(Uint8List audioBytes) async {
     _ensureNotDisposed();
     _ensureConnected();
 
     final clientItemId = _nextClientItemId();
-
-    // Optimistic local add: user message item with placeholder audio part.
-    // The empty audioChunks list ensures existing content is non-empty so
-    // add_item idempotency merge won't overwrite when the server echoes
-    // back the canonical item.
-    final item = RealtimeThreadItem(
-      id: clientItemId,
-      type: RealtimeThreadItemType.message,
-      role: RealtimeThreadItemRole.user,
-      status: RealtimeThreadItemStatus.inProgress,
-      content: [RealtimeThreadAudioPart()],
-    );
-    _thread.addItem(item);
-    _emitThreadUpdate();
 
     // Send turn.audio.submit — pcm is CBOR bstr (raw bytes, never base64).
     _sendMsg(
@@ -713,32 +709,16 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
 
   /// Send a text message from the user.
   ///
-  /// Optimistic local add: a user message item with an **empty** [RealtimeThreadTextPart]
-  /// at contentIndex 0 is inserted immediately.  The empty (not the full) text is
-  /// used so that subsequent `append_text` deltas from the server can accumulate
-  /// into the same part without doubling the content.
-  ///
   /// Wire: [TurnTextSubmitMsg] with clientItemId, text, and messageId.
+  ///
+  /// The thread is updated when the server echoes back a canonical `add_item`
+  /// via `thread.patch`.
   @override
   Future<String> sendText(String text) async {
     _ensureNotDisposed();
     _ensureConnected();
 
     final clientItemId = _nextClientItemId();
-
-    // Optimistic local add: user message item with a placeholder text part.
-    // We seed an EMPTY text part (not the full text) so:
-    //   1. content.isNotEmpty → add_item merge will not replace our part.
-    //   2. server's append_text at contentIndex 0 will find this text part.
-    final item = RealtimeThreadItem(
-      id: clientItemId,
-      type: RealtimeThreadItemType.message,
-      role: RealtimeThreadItemRole.user,
-      status: RealtimeThreadItemStatus.inProgress,
-      content: [RealtimeThreadTextPart()],
-    );
-    _thread.addItem(item);
-    _emitThreadUpdate();
 
     // Send turn.text.submit over CBOR transport.
     _sendMsg(
@@ -754,30 +734,16 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
 
   /// Send an image from the user.
   ///
-  /// Optimistic local add: a user message item with **no content** is inserted
-  /// immediately.  The server will later deliver the canonical image part via
-  /// `put_part` which the projector will place at the correct contentIndex.
-  /// (MIME detection is server-side; the client sends raw bytes only.)
-  ///
   /// Wire: [TurnImageSubmitMsg] — imageBytes as CBOR bstr (raw bytes, not base64).
+  ///
+  /// The thread is updated when the server echoes back a canonical `add_item`
+  /// via `thread.patch`.
   @override
   Future<String> sendImage(Uint8List imageBytes) async {
     _ensureNotDisposed();
     _ensureConnected();
 
     final clientItemId = _nextClientItemId();
-
-    // Optimistic local add: user message item with no content yet.
-    // The server delivers the image part via put_part; we do not pre-seed a
-    // placeholder because we do not have the canonical image URL client-side.
-    final item = RealtimeThreadItem(
-      id: clientItemId,
-      type: RealtimeThreadItemType.message,
-      role: RealtimeThreadItemRole.user,
-      status: RealtimeThreadItemStatus.inProgress,
-    );
-    _thread.addItem(item);
-    _emitThreadUpdate();
 
     // Send turn.image.submit — imageBytes is CBOR bstr (raw bytes, never base64).
     _sendMsg(
@@ -793,13 +759,11 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
 
   /// Return the result of a tool call the model requested.
   ///
-  /// Optimistic local add: a [RealtimeThreadItemType.functionCallOutput] item
-  /// is inserted immediately with the provided [callId], [output], [disposition],
-  /// and [errorMessage].  The item starts as [completed] because the tool result
-  /// is a terminal state on the client side.
-  ///
   /// Wire: [ToolResultSubmitMsg] with clientItemId, callId, output, disposition
   /// (enum → name string), errorMessage (omitted when null).
+  ///
+  /// The thread is updated when the server echoes back a canonical `add_item`
+  /// via `thread.patch`.
   @override
   Future<String> sendFunctionOutput({
     required String callId,
@@ -812,21 +776,6 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
     _ensureConnected();
 
     final clientItemId = _nextClientItemId();
-
-    // Optimistic local add: functionCallOutput item with full result state.
-    // Marked completed immediately (tool results are terminal on the client).
-    final item = RealtimeThreadItem(
-      id: clientItemId,
-      type: RealtimeThreadItemType.functionCallOutput,
-      role: RealtimeThreadItemRole.assistant,
-      status: RealtimeThreadItemStatus.completed,
-      callId: callId,
-      output: output,
-      toolOutputDisposition: disposition,
-      toolErrorMessage: errorMessage,
-    );
-    _thread.addItem(item);
-    _emitThreadUpdate();
 
     // Send tool.result.submit — output is opaque UTF-8 (not necessarily JSON).
     _sendMsg(
@@ -843,49 +792,19 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
     return clientItemId;
   }
 
-  /// Locally cancel in-progress function calls.
+  /// Cancel in-progress function calls.
   ///
-  /// VHRP/1 has **no dedicated wire message** for cancelling function calls
-  /// (confirmed by searching vhrp_messages.dart — no cancel C2S type exists).
-  /// This matches the OAI adapter pattern where cancellation is client-local:
-  ///
-  ///   1. Track the cancelled itemIds / callIds in sets so they survive
-  ///      reconnect snapshot re-application.
-  ///   2. Find matching `functionCall` items in the current thread and
-  ///      mark them `incomplete` (OAI parity: `item.markIncomplete()`).
-  ///   3. Emit a thread update so observers see the change immediately.
-  ///
-  /// On reconnect the snapshot replace may restore items to `completed`;
-  /// the locally-cancelled sets are intentionally not cleared here so that
-  /// subsequent `applySnapshot` calls (in [_onThreadSnapshot]) can re-apply
-  /// the cancel marking.  The sets are cleared only when the adapter is
-  /// disposed (along with all other state).
+  /// VHRP/1 has no dedicated cancel wire message — the server will emit
+  /// `set_status incomplete` ops via `thread.patch` after receiving
+  /// `assistant.interrupt`.  No local thread mutation is performed here;
+  /// the thread reflects only what the server authorises.
   @override
   void cancelFunctionCalls({
     Set<String> itemIds = const <String>{},
     Set<String> callIds = const <String>{},
   }) {
     _ensureNotDisposed();
-
-    // Track locally for re-application after snapshots.
-    _locallyCancelledFunctionItemIds.addAll(itemIds);
-    _locallyCancelledFunctionCallIds.addAll(callIds);
-
-    var hasChanges = false;
-    for (final item in _thread.items) {
-      if (item.type != RealtimeThreadItemType.functionCall) continue;
-      if (!_isLocallyCancelledFunctionCall(
-        itemId: item.id,
-        callId: item.callId,
-      )) {
-        continue;
-      }
-      // Skip items already marked incomplete — idempotent.
-      if (item.status == RealtimeThreadItemStatus.incomplete) continue;
-      item.markIncomplete();
-      hasChanges = true;
-    }
-    if (hasChanges) _emitThreadUpdate();
+    // No local thread mutation — server drives all state changes.
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -1071,24 +990,6 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
     // session.ready values on resume + resync).
     _threadId = _thread.id;
     _conversationId = _thread.conversationId;
-
-    // Re-apply locally-cancelled function calls so that cancelled items stay
-    // incomplete even after a full snapshot replacement (OAI parity).
-    if (_locallyCancelledFunctionItemIds.isNotEmpty ||
-        _locallyCancelledFunctionCallIds.isNotEmpty) {
-      for (final item in _thread.items) {
-        if (item.type != RealtimeThreadItemType.functionCall) continue;
-        if (!_isLocallyCancelledFunctionCall(
-          itemId: item.id,
-          callId: item.callId,
-        )) {
-          continue;
-        }
-        if (item.status != RealtimeThreadItemStatus.incomplete) {
-          item.markIncomplete();
-        }
-      }
-    }
 
     _emitThreadUpdate();
   }
@@ -1448,6 +1349,58 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
     }
   }
 
+  // ── Thread JSON serialization (probe/debug) ───────────────────────────────
+
+  /// Converts [thread] to a plain JSON-serializable map.
+  ///
+  /// Audio chunks are replaced with a byte-count summary to keep the log line
+  /// short.  All other text content is included verbatim.
+  Map<String, Object?> _threadToJson(RealtimeThread thread) {
+    return {
+      'id': thread.id,
+      'conversationId': thread.conversationId,
+      'items': thread.items.map((item) {
+        return {
+          'id': item.id,
+          'type': item.type.name,
+          'role': item.role?.name,
+          'status': item.status.wireValue,
+          'callId': item.callId,
+          'name': item.name,
+          'arguments': item.arguments,
+          'output': item.output,
+          'toolOutputDisposition': item.toolOutputDisposition?.name,
+          'toolErrorMessage': item.toolErrorMessage,
+          'content': item.content.map((part) {
+            if (part is RealtimeThreadTextPart) {
+              return {
+                'type': 'text',
+                'text': part.text,
+                'isDone': part.isDone,
+              };
+            } else if (part is RealtimeThreadAudioPart) {
+              return {
+                'type': 'audio',
+                'transcript': part.transcript,
+                'audioChunks': '<${part.audioChunks.length} chunks>',
+                'isDone': part.isDone,
+              };
+            } else if (part is RealtimeThreadImagePart) {
+              return {
+                'type': 'image',
+                'imageUrl': part.imageUrl,
+                'detail': part.detail,
+                'isDone': part.isDone,
+              };
+            } else {
+              return {'type': part.type, 'isDone': part.isDone};
+            }
+          }).toList(),
+        };
+      }).toList(),
+    };
+  }
+
   // ── Wire send helpers ─────────────────────────────────────────────────────
 
   /// Encodes [message] and sends it via the transport.
@@ -1577,20 +1530,6 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
   // ─────────────────────────────────────────────────────────────────────────
 
   /// Returns `true` if the item identified by [itemId] or [callId] has been
-  /// locally cancelled via [cancelFunctionCalls].
-  ///
-  /// Mirrors `OaiRealtimeAdapter._isLocallyCancelledFunctionCall`.
-  bool _isLocallyCancelledFunctionCall({
-    required String itemId,
-    String? callId,
-  }) {
-    if (_locallyCancelledFunctionItemIds.contains(itemId)) return true;
-    if (callId != null && _locallyCancelledFunctionCallIds.contains(callId)) {
-      return true;
-    }
-    return false;
-  }
-
   /// Starts the automatic reconnect loop in the background.
   ///
   /// Design:
