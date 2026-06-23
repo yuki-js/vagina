@@ -420,8 +420,8 @@ final class VhrpThreadProjector {
 
   RealtimeThreadItemType _mapItemType(String? value) {
     return switch (value) {
-      'function_call' => RealtimeThreadItemType.functionCall,
-      'function_call_output' => RealtimeThreadItemType.functionCallOutput,
+      'functionCall' => RealtimeThreadItemType.functionCall,
+      'functionCallOutput' => RealtimeThreadItemType.functionCallOutput,
       _ => RealtimeThreadItemType.message,
     };
   }

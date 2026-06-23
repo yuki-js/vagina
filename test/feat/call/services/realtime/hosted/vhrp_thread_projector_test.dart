@@ -61,7 +61,7 @@ Map<String, Object?> _userMsgMap(String id) => {
 /// Builds a minimal functionCall item map.
 Map<String, Object?> _functionCallMap(String id) => {
       'id': id,
-      'type': 'function_call',
+      'type': 'functionCall',
       'role': 'assistant',
       'status': 'in_progress',
       'content': <Object?>[],
@@ -70,7 +70,7 @@ Map<String, Object?> _functionCallMap(String id) => {
 /// Builds a minimal functionCallOutput item map.
 Map<String, Object?> _functionCallOutputMap(String id, String callId) => {
       'id': id,
-      'type': 'function_call_output',
+      'type': 'functionCallOutput',
       'role': 'assistant',
       'status': 'completed',
       'callId': callId,

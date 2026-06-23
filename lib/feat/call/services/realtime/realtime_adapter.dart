@@ -153,6 +153,13 @@ abstract interface class RealtimeAdapter {
   ///
   /// This is used when the current assistant turn is interrupted so stale tool
   /// work no longer appears executable in the projected thread state.
+  ///
+  /// TODO(realtime-cancel-contract): Re-evaluate whether cancellation belongs on
+  /// the provider-agnostic adapter boundary. Hosted realtime is
+  /// server-authoritative and currently treats this as a no-op, while standalone
+  /// adapters use it for local suppression/bookkeeping. Either remove this from
+  /// the shared interface or split the local-suppression concern out of
+  /// RealtimeAdapter before adding more implementations.
   void cancelFunctionCalls({
     Set<String> itemIds = const <String>{},
     Set<String> callIds = const <String>{},

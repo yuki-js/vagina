@@ -150,7 +150,7 @@ void _injectThreadSnapshot(FakeVhrpTransport fake) {
 
 /// Injects a `thread.patch` with an `add_item` op.
 void _injectPatchAddItem(FakeVhrpTransport fake, String itemId,
-    {String type = 'function_call', String status = 'in_progress'}) {
+    {String type = 'functionCall', String status = 'in_progress'}) {
   final frame = CborMap({
     CborString('type'): CborString('thread.patch'),
     CborString('body'): CborMap({
@@ -264,7 +264,7 @@ void main() {
 
         // Inject a functionCall item via thread.patch.
         const itemId = 'item-fc-001';
-        _injectPatchAddItem(fake, itemId, type: 'function_call');
+        _injectPatchAddItem(fake, itemId, type: 'functionCall');
         await Future<void>.delayed(Duration.zero);
 
         // Confirm item is in_progress before cancel.
@@ -307,7 +307,7 @@ void main() {
         await _connectAndReady(adapter, fake);
 
         const itemId = 'item-fc-snap-001';
-        _injectPatchAddItem(fake, itemId, type: 'function_call');
+        _injectPatchAddItem(fake, itemId, type: 'functionCall');
         await Future<void>.delayed(Duration.zero);
 
         adapter.cancelFunctionCalls(itemIds: {itemId});
@@ -321,7 +321,7 @@ void main() {
             CborString('items'): CborList([
               CborMap({
                 CborString('id'): CborString(itemId),
-                CborString('type'): CborString('function_call'),
+                CborString('type'): CborString('functionCall'),
                 CborString('role'): CborString('assistant'),
                 CborString('status'): CborString('in_progress'),
                 CborString('content'): CborList([]),

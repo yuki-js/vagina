@@ -184,6 +184,19 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
   /// because [RealtimeThread.id] is final (cannot be mutated in-place).
   RealtimeThread _thread = RealtimeThread(id: 'vhrp-local-thread');
 
+  /// Locally cancelled function-call item IDs.
+  ///
+  /// These are replayed after snapshot/patch projection so interrupted tool
+  /// work no longer appears executable while server-authoritative state catches
+  /// up.
+  final Set<String> _locallyCancelledFunctionItemIds = <String>{};
+
+  /// Locally cancelled function-call call IDs.
+  ///
+  /// `callId` is the stable correlation key between functionCall and
+  /// functionCallOutput items, so callers may cancel by either item ID or call ID.
+  final Set<String> _locallyCancelledFunctionCallIds = <String>{};
+
   // ── Audio turn mode ──────────────────────────────────────────────────────
 
   /// Current audio turn mode.  Defaults to [voiceActivity] to match the
@@ -712,14 +725,28 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
   ///
   /// Wire: [TurnTextSubmitMsg] with clientItemId, text, and messageId.
   ///
-  /// The thread is updated when the server echoes back a canonical `add_item`
-  /// via `thread.patch`.
+  /// A local user message item is staged immediately so callers get a stable
+  /// handle before the server echo. The later canonical `add_item` from
+  /// `thread.patch` merges onto the same clientItemId.
   @override
   Future<String> sendText(String text) async {
     _ensureNotDisposed();
     _ensureConnected();
 
     final clientItemId = _nextClientItemId();
+
+    _thread.addItem(
+      RealtimeThreadItem(
+        id: clientItemId,
+        type: RealtimeThreadItemType.message,
+        role: RealtimeThreadItemRole.user,
+        status: RealtimeThreadItemStatus.inProgress,
+        content: <RealtimeThreadContentPart>[
+          RealtimeThreadTextPart(),
+        ],
+      ),
+    );
+    _emitThreadUpdate();
 
     // Send turn.text.submit over CBOR transport.
     _sendMsg(
@@ -763,8 +790,9 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
   /// Wire: [ToolResultSubmitMsg] with clientItemId, callId, output, disposition
   /// (enum → name string), errorMessage (omitted when null).
   ///
-  /// The thread is updated when the server echoes back a canonical `add_item`
-  /// via `thread.patch`.
+  /// A local functionCallOutput item is staged immediately so callers can track
+  /// the submitted result without waiting for the server echo.  The later
+  /// canonical `add_item` from `thread.patch` merges onto the same clientItemId.
   @override
   Future<String> sendFunctionOutput({
     required String callId,
@@ -777,6 +805,20 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
     _ensureConnected();
 
     final clientItemId = _nextClientItemId();
+
+    _thread.addItem(
+      RealtimeThreadItem(
+        id: clientItemId,
+        type: RealtimeThreadItemType.functionCallOutput,
+        role: RealtimeThreadItemRole.assistant,
+        status: RealtimeThreadItemStatus.completed,
+        callId: callId,
+        output: output,
+        toolOutputDisposition: disposition,
+        toolErrorMessage: errorMessage,
+      ),
+    );
+    _emitThreadUpdate();
 
     // Send tool.result.submit — output is opaque UTF-8 (not necessarily JSON).
     _sendMsg(
@@ -795,17 +837,28 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
 
   /// Cancel in-progress function calls.
   ///
-  /// VHRP/1 has no dedicated cancel wire message — the server will emit
-  /// `set_status incomplete` ops via `thread.patch` after receiving
-  /// `assistant.interrupt`.  No local thread mutation is performed here;
-  /// the thread reflects only what the server authorises.
+  /// VHRP/1 has no dedicated cancel wire message.  This method performs local
+  /// suppression only: matching functionCall items are marked incomplete so
+  /// interrupted stale work no longer appears executable, while the server
+  /// remains authoritative for future patches/snapshots.
+  ///
+  /// TODO(realtime-cancel-contract): This method exists only because the shared
+  /// RealtimeAdapter interface currently exposes local function-call
+  /// cancellation. Decide in a follow-up whether this local-suppression concern
+  /// should remain on the provider-agnostic adapter boundary or move to a
+  /// CallService-owned layer.
   @override
   void cancelFunctionCalls({
     Set<String> itemIds = const <String>{},
     Set<String> callIds = const <String>{},
   }) {
     _ensureNotDisposed();
-    // No local thread mutation — server drives all state changes.
+    _locallyCancelledFunctionItemIds.addAll(itemIds);
+    _locallyCancelledFunctionCallIds.addAll(callIds);
+
+    if (_markLocallyCancelledFunctionCallsIncomplete()) {
+      _emitThreadUpdate();
+    }
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -993,6 +1046,7 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
   void _onThreadSnapshot(ThreadSnapshotMsg msg) {
     // Replace the local thread wholesale (§5.4 — snapshot is authoritative).
     _thread = _projector.applySnapshot(msg);
+    _markLocallyCancelledFunctionCallsIncomplete();
     // Keep the stored IDs in sync with the snapshot (may differ from
     // session.ready values on resume + resync).
     _threadId = _thread.id;
@@ -1021,7 +1075,37 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
       _sendThreadSyncRequest('patch_apply_failed');
       return;
     }
+    _markLocallyCancelledFunctionCallsIncomplete();
     _emitThreadUpdate();
+  }
+
+  bool _markLocallyCancelledFunctionCallsIncomplete() {
+    var hasChanges = false;
+    for (final item in _thread.items) {
+      if (item.type != RealtimeThreadItemType.functionCall) {
+        continue;
+      }
+      if (!_isLocallyCancelledFunctionCall(
+        itemId: item.id,
+        callId: item.callId,
+      )) {
+        continue;
+      }
+      if (item.status == RealtimeThreadItemStatus.incomplete) {
+        continue;
+      }
+      item.markIncomplete();
+      hasChanges = true;
+    }
+    return hasChanges;
+  }
+
+  bool _isLocallyCancelledFunctionCall({
+    required String itemId,
+    required String? callId,
+  }) {
+    return _locallyCancelledFunctionItemIds.contains(itemId) ||
+        (callId != null && _locallyCancelledFunctionCallIds.contains(callId));
   }
 
   /// Sends a `thread.sync.request` to the server requesting a full snapshot.

@@ -190,8 +190,8 @@ final class VhrpAdapterHarness implements AdapterHarness {
             'op': 'add_item',
             'item': {
               'id': functionCallItemId,
-              // Projector maps 'function_call' → RealtimeThreadItemType.functionCall
-              'type': 'function_call',
+              // Projector maps 'functionCall' → RealtimeThreadItemType.functionCall
+              'type': 'functionCall',
               'role': 'assistant',
               'status': 'in_progress',
               'content': <Object?>[],
