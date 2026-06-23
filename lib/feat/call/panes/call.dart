@@ -41,7 +41,7 @@ class CallPane extends StatefulWidget {
 class _CallPaneState extends State<CallPane> {
   _TalkMode _talkMode = _TalkMode.hf;
   _NoiseReductionMode _noiseReductionMode = _NoiseReductionMode.nearField;
-  _ReasoningEffortLevel _reasoningEffort = _ReasoningEffortLevel.high;
+  _ReasoningEffortLevel _reasoningEffort = _ReasoningEffortLevel.off;
   bool _toolChoiceRequired = false;
 
   CallService? get _activeCallService {
@@ -116,9 +116,7 @@ class _CallPaneState extends State<CallPane> {
         const SizedBox(height: 16),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            _buildInterruptControl(),
-          ],
+          children: [_buildInterruptControl()],
         ),
       ];
     }
@@ -211,9 +209,7 @@ class _CallPaneState extends State<CallPane> {
     unawaited(
       widget.callService.applyRealtimeProviderExtension(
         RealtimeProviderExtensions.inputNoiseReductionSelection,
-        <String, dynamic>{
-          RealtimeProviderExtensions.selectionKey: value.name,
-        },
+        <String, dynamic>{RealtimeProviderExtensions.selectionKey: value.name},
       ),
     );
   }
@@ -235,9 +231,7 @@ class _CallPaneState extends State<CallPane> {
     unawaited(
       widget.callService.applyRealtimeProviderExtension(
         RealtimeProviderExtensions.reasoningEffortSelection,
-        <String, dynamic>{
-          RealtimeProviderExtensions.selectionKey: selection,
-        },
+        <String, dynamic>{RealtimeProviderExtensions.selectionKey: selection},
       ),
     );
   }
@@ -254,9 +248,7 @@ class _CallPaneState extends State<CallPane> {
     unawaited(
       widget.callService.applyRealtimeProviderExtension(
         RealtimeProviderExtensions.toolChoiceRequired,
-        <String, dynamic>{
-          RealtimeProviderExtensions.requiredKey: value,
-        },
+        <String, dynamic>{RealtimeProviderExtensions.requiredKey: value},
       ),
     );
   }
@@ -361,10 +353,7 @@ class _CallPaneState extends State<CallPane> {
           ).animate(curvedAnimation),
           child: ScaleTransition(
             alignment: Alignment.center,
-            scale: Tween<double>(
-              begin: 0,
-              end: 1,
-            ).animate(curvedAnimation),
+            scale: Tween<double>(begin: 0, end: 1).animate(curvedAnimation),
             child: child,
           ),
         );
@@ -481,8 +470,9 @@ class _CallPaneState extends State<CallPane> {
                           child: Container(
                             padding: const EdgeInsets.all(20),
                             decoration: BoxDecoration(
-                              color:
-                                  AppTheme.surfaceColor.withValues(alpha: 0.6),
+                              color: AppTheme.surfaceColor.withValues(
+                                alpha: 0.6,
+                              ),
                               borderRadius: BorderRadius.circular(24),
                             ),
                             child: Column(
@@ -545,7 +535,7 @@ class _CallPaneState extends State<CallPane> {
                                           onPressCancel: _handlePttPressCancel,
                                         ),
                                       ),
-                                    ]
+                                    ],
                                   ],
                                 ),
                               ],
@@ -605,9 +595,10 @@ class _AudioLevelVisualizer extends StatelessWidget {
               color: isMuted
                   ? AppTheme.textSecondary.withValues(alpha: 0.3)
                   : (isConnected
-                      ? AppTheme.primaryColor
-                          .withValues(alpha: 0.8 + barLevel * 0.2)
-                      : AppTheme.textSecondary.withValues(alpha: 0.5)),
+                        ? AppTheme.primaryColor.withValues(
+                            alpha: 0.8 + barLevel * 0.2,
+                          )
+                        : AppTheme.textSecondary.withValues(alpha: 0.5)),
               borderRadius: BorderRadius.circular(3),
             ),
           );
@@ -664,10 +655,7 @@ class _CallHeaderIcon extends StatelessWidget {
     return IconButton(
       onPressed: onPressed,
       tooltip: tooltip,
-      icon: Icon(
-        icon,
-        color: AppTheme.textSecondary,
-      ),
+      icon: Icon(icon, color: AppTheme.textSecondary),
     );
   }
 }
@@ -704,8 +692,9 @@ class _ControlButton extends StatelessWidget {
             height: 56,
             decoration: BoxDecoration(
               color: isActive
-                  ? (activeColor ?? AppTheme.primaryColor)
-                      .withValues(alpha: 0.2)
+                  ? (activeColor ?? AppTheme.primaryColor).withValues(
+                      alpha: 0.2,
+                    )
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(16),
             ),
@@ -714,10 +703,7 @@ class _ControlButton extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             label,
-            style: TextStyle(
-              fontSize: 11,
-              color: color,
-            ),
+            style: TextStyle(fontSize: 11, color: color),
             textAlign: TextAlign.center,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -764,8 +750,9 @@ class _PttHoldButtonState extends State<_PttHoldButton> {
     final borderColor = _isPressed
         ? AppTheme.primaryColor
         : AppTheme.textSecondary.withValues(alpha: 0.16);
-    final contentColor =
-        _isPressed ? AppTheme.textPrimary : AppTheme.primaryColor;
+    final contentColor = _isPressed
+        ? AppTheme.textPrimary
+        : AppTheme.primaryColor;
 
     return SizedBox(
       height: 72,
@@ -1001,7 +988,8 @@ class _CallSettingsSheetState extends State<_CallSettingsSheet> {
                             Expanded(
                               child: _SettingsOptionButton(
                                 label: l10n.callSettingsNoiseReductionOff,
-                                isSelected: _noiseReductionMode ==
+                                isSelected:
+                                    _noiseReductionMode ==
                                     _NoiseReductionMode.off,
                                 onTap: () => _handleNoiseReductionModeChanged(
                                   _NoiseReductionMode.off,
@@ -1012,7 +1000,8 @@ class _CallSettingsSheetState extends State<_CallSettingsSheet> {
                             Expanded(
                               child: _SettingsOptionButton(
                                 label: l10n.callSettingsNoiseReductionNearField,
-                                isSelected: _noiseReductionMode ==
+                                isSelected:
+                                    _noiseReductionMode ==
                                     _NoiseReductionMode.nearField,
                                 onTap: () => _handleNoiseReductionModeChanged(
                                   _NoiseReductionMode.nearField,
@@ -1023,7 +1012,8 @@ class _CallSettingsSheetState extends State<_CallSettingsSheet> {
                             Expanded(
                               child: _SettingsOptionButton(
                                 label: l10n.callSettingsNoiseReductionFarField,
-                                isSelected: _noiseReductionMode ==
+                                isSelected:
+                                    _noiseReductionMode ==
                                     _NoiseReductionMode.farField,
                                 onTap: () => _handleNoiseReductionModeChanged(
                                   _NoiseReductionMode.farField,
@@ -1050,8 +1040,8 @@ class _CallSettingsSheetState extends State<_CallSettingsSheet> {
                                   labels: reasoningEffortLabels,
                                   onChanged: (index) =>
                                       _handleReasoningEffortChanged(
-                                    reasoningEffortValues[index],
-                                  ),
+                                        reasoningEffortValues[index],
+                                      ),
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
@@ -1093,10 +1083,7 @@ class _SettingsSection extends StatelessWidget {
   final String title;
   final Widget child;
 
-  const _SettingsSection({
-    required this.title,
-    required this.child,
-  });
+  const _SettingsSection({required this.title, required this.child});
 
   @override
   Widget build(BuildContext context) {
@@ -1122,10 +1109,7 @@ class _SettingsSubsection extends StatelessWidget {
   final String title;
   final Widget child;
 
-  const _SettingsSubsection({
-    required this.title,
-    required this.child,
-  });
+  const _SettingsSubsection({required this.title, required this.child});
 
   @override
   Widget build(BuildContext context) {
@@ -1271,8 +1255,9 @@ class _SettingsOptionButton extends StatelessWidget {
     final backgroundColor = isSelected
         ? AppTheme.primaryColor.withValues(alpha: 0.16)
         : Colors.white.withValues(alpha: 0.03);
-    final textColor =
-        isSelected ? AppTheme.textPrimary : AppTheme.textSecondary;
+    final textColor = isSelected
+        ? AppTheme.textPrimary
+        : AppTheme.textSecondary;
 
     return Material(
       color: Colors.transparent,
