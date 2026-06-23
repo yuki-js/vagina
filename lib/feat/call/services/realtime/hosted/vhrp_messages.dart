@@ -79,7 +79,7 @@ final class SessionOpenMsg extends VhrpC2sMessage {
   final String token;
   final String modelId;
   final String? voice;
-  final String? instructions;
+  final String instructions;
   final String audioTurnMode;
   final AudioFormat inputAudio;
   final AudioFormat outputAudio;
@@ -91,7 +91,7 @@ final class SessionOpenMsg extends VhrpC2sMessage {
     required this.token,
     required this.modelId,
     this.voice,
-    this.instructions,
+    required this.instructions,
     required this.audioTurnMode,
     required this.inputAudio,
     required this.outputAudio,
@@ -113,17 +113,17 @@ final class AudioTurnModeSetMsg extends VhrpC2sMessage {
 }
 
 /// `session.instructions.set`: mid-session instructions update.
-/// [instructions] is nullable.
+/// The empty string is the canonical clear/no-instructions value.
 final class SessionInstructionsSetMsg extends VhrpC2sMessage {
   @override
   String get type => 'session.instructions.set';
 
   final String messageId;
-  final String? instructions;
+  final String instructions;
 
   SessionInstructionsSetMsg({
     required this.messageId,
-    this.instructions,
+    required this.instructions,
   });
 }
 

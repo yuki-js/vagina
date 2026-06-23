@@ -146,10 +146,10 @@ void main() {
 
         // Start connect and immediately inject session.ready so the future
         // can complete.
+        await adapter.setInstructions('Be concise.');
         final connectFuture = adapter.connect(
           _testConfig,
           voice: 'coral',
-          instructions: 'Be concise.',
         );
 
         // Yield to let connect() reach its suspension point on _sessionReadyCompleter.

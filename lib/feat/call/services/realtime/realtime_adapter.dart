@@ -46,13 +46,13 @@ abstract interface class RealtimeAdapter {
   /// Open a connection.
   ///
   /// [apiConfig] carries routing and adapter-specific connection context.
-  /// [voice] and [instructions] are the only session-level knobs the caller
-  /// needs; everything else (audio format, VAD, transcription model) is owned
-  /// by the adapter's defaults.
+  /// [voice] is the only session-level knob accepted at connection time;
+  /// instructions are configured through [setInstructions] before or after
+  /// connecting. Everything else (audio format, VAD, transcription model) is
+  /// owned by the adapter's defaults.
   Future<void> connect(
     VoiceAgentApiConfig apiConfig, {
     String? voice,
-    String? instructions,
   });
 
   /// Gracefully close the connection and release all resources. Idempotent.
@@ -108,10 +108,11 @@ abstract interface class RealtimeAdapter {
 
   /// Replace the session instructions used for subsequent responses.
   ///
-  /// This is the only mid-session prompt mutation exposed by the current
-  /// adapter contract. Voice changes, if supported, should flow through
-  /// [applyProviderExtension].
-  Future<void> setInstructions(String? instructions);
+  /// The empty string is the canonical clear/no-instructions value. This is the
+  /// only prompt mutation exposed by the adapter contract; callers use it both
+  /// before and after [connect]. Voice changes, if supported, should flow
+  /// through [applyProviderExtension].
+  Future<void> setInstructions(String instructions);
 
   /// Apply a session-scoped opaque provider-extension update.
   ///

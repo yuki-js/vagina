@@ -48,10 +48,10 @@ final class RealtimeService extends SubService {
     await super.start();
 
     try {
+      await _adapter.setInstructions(voiceAgent.prompt);
       await _adapter.connect(
         voiceAgent.apiConfig,
         voice: voiceAgent.voice,
-        instructions: voiceAgent.prompt,
       );
     } catch (e, stackTrace) {
       logger.severe('Failed to connect to realtime API', e, stackTrace);
@@ -100,7 +100,7 @@ final class RealtimeService extends SubService {
     return _adapter.registerTools(tools);
   }
 
-  Future<void> setInstructions(String? instructions) {
+  Future<void> setInstructions(String instructions) {
     return _adapter.setInstructions(instructions);
   }
 

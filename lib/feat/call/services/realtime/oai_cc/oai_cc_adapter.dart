@@ -138,7 +138,7 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
   StreamSubscription<OaiCcEvent>? _responseStreamSubscription;
 
   OaiCcConnectConfig? _config;
-  String? _instructions;
+  String _instructions = '';
   String? _voice;
   RealtimeAdapterConnectionState _connectionState =
       const RealtimeAdapterConnectionState.idle();
@@ -199,7 +199,6 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
   Future<void> connect(
     VoiceAgentApiConfig apiConfig, {
     String? voice,
-    String? instructions,
   }) async {
     _ensureNotDisposed();
     _setConnectionState(const RealtimeAdapterConnectionState.connecting());
@@ -212,7 +211,6 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
       _setConnectionState(state);
       throw ArgumentError('Unsupported API configuration type.');
     }
-    _instructions = instructions;
     _voice = voice;
 
     final parsedUri = Uri.parse(apiConfig.baseUrl);
@@ -294,10 +292,10 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
   }
 
   @override
-  Future<void> setInstructions(String? instructions) async {
+  Future<void> setInstructions(String instructions) async {
     _ensureNotDisposed();
-    final normalized = instructions?.trim();
-    _instructions = normalized == null || normalized.isEmpty ? null : normalized;
+    final normalized = instructions.trim();
+    _instructions = normalized.isEmpty ? '' : normalized;
   }
 
   @override
@@ -454,8 +452,8 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
 
   List<OaiCcMessage> _buildMessages() {
     final messages = <OaiCcMessage>[
-      if (_instructions != null && _instructions!.isNotEmpty)
-        OaiCcTextMessage(role: 'system', content: _instructions!),
+      if (_instructions.isNotEmpty)
+        OaiCcTextMessage(role: 'system', content: _instructions),
     ];
 
     final processedCallIds = <String>{};

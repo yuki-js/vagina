@@ -383,54 +383,51 @@ void main() {
     },
   );
 
-  // ─── C6: setInstructions null ─────────────────────────────────────────────
+  // ─── C6: setInstructions empty clear ──────────────────────────────────────
 
   test(
-    'C6: setInstructions(null) sends session.instructions.set with null '
-    'instructions field',
+    'C6: setInstructions("") sends session.instructions.set with empty string',
     () async {
-      // Contract: null/blank instructions clears instructions;
-      // wire value is null.
+      // Contract: empty instructions clears instructions; wire value is ''.
       await _connectAndReady(adapter, fake);
+      final seedFuture = adapter.setInstructions('non-empty');
+      final seedFrame = _decodeFrame(fake, fake.sentBytes.length - 1);
+      _injectAck(fake, seedFrame['messageId'] as String);
+      await seedFuture;
       final before = fake.sentBytes.length;
 
-      final instrFuture = adapter.setInstructions(null);
+      final instrFuture = adapter.setInstructions('');
       final frame = _decodeFrame(fake, before);
       expect(frame['type'], 'session.instructions.set');
-      expect(frame['instructions'], isNull);
+      expect(frame['instructions'], '');
 
       _injectAck(fake, frame['messageId'] as String);
       await instrFuture;
     },
   );
 
-  // ─── C7: setInstructions pre-connect buffering ────────────────────────────
+  // ─── C7: setInstructions pre-connect state ────────────────────────────────
 
   test(
-    'C7: setInstructions before session.ready is buffered and flushed after',
+    'C7: setInstructions before connect is carried by session.open',
     () async {
-      // Contract: pre-connect setInstructions is buffered and sent post-ready.
+      // Contract: pre-connect setInstructions updates canonical session state;
+      // connect carries it in session.open without a post-ready override.
+      await adapter.setInstructions('Pre-connect instructions');
       final connectFuture = adapter.connect(_testConfig);
       await _pump();
-      final beforeCount = fake.sentBytes.length; // 1: session.open only
 
-      unawaited(adapter.setInstructions('Pre-connect instructions'));
-
-      expect(fake.sentBytes.length, beforeCount,
-          reason:
-              'session.instructions.set must not send before session.ready');
+      final frame = _decodeFrame(fake, 0);
+      expect(frame['type'], 'session.open');
+      expect(frame['instructions'], 'Pre-connect instructions');
+      final beforeReadyCount = fake.sentBytes.length;
 
       _injectSessionReady(fake);
       await _pump();
       await _pump();
 
-      // A session.instructions.set should have been sent.
-      expect(fake.sentBytes.length, greaterThan(beforeCount));
-      final frame = _decodeFrame(fake, beforeCount);
-      expect(frame['type'], 'session.instructions.set');
-      expect(frame['instructions'], 'Pre-connect instructions');
-
-      _injectAck(fake, frame['messageId'] as String);
+      expect(fake.sentBytes.length, beforeReadyCount,
+          reason: 'pre-connect instructions are absorbed into session.open');
       await connectFuture;
     },
   );

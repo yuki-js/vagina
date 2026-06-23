@@ -100,16 +100,13 @@ abstract final class VhrpDebugFormat {
     if (m.voice != null) sb.write(', voice: ${m.voice}');
     sb.write(', audioTurnMode: ${m.audioTurnMode}');
     if (m.resume != null) sb.write(', resumeSessionId: ${m.resume!.sessionId}');
-    if (m.instructions != null) {
-      sb.write(', instructions: ${_truncateOperationalStr(m.instructions!)}');
-    }
+    sb.write(', instructions: ${_truncateOperationalStr(m.instructions)}');
     sb.write('}');
     return sb.toString();
   }
 
   static String _formatSessionInstructionsSet(SessionInstructionsSetMsg m) {
-    final instr =
-        m.instructions != null ? _truncateOperationalStr(m.instructions!) : 'null';
+    final instr = _truncateOperationalStr(m.instructions);
     return 'session.instructions.set {messageId: ${m.messageId}, instructions: $instr}';
   }
 

@@ -136,6 +136,7 @@ void main() {
           messageId: 'open-001',
           token: 'eyJhbGciOiJFUzI1NiJ9.test.sig',
           modelId: 'voice-agent-prod',
+          instructions: '',
           audioTurnMode: 'voice_activity',
           inputAudio: AudioFormat(
             encoding: 'pcm_s16le',
@@ -159,6 +160,7 @@ void main() {
             'body': {
               'token': 'eyJhbGciOiJFUzI1NiJ9.test.sig',
               'modelId': 'voice-agent-prod',
+              'instructions': '',
               'audioTurnMode': 'voice_activity',
               'inputAudio': {
                 'encoding': 'pcm_s16le',
@@ -188,6 +190,7 @@ void main() {
           messageId: 'open-002',
           token: 'eyJhbGciOiJFUzI1NiJ9.test.sig',
           modelId: 'voice-agent-prod',
+          instructions: '',
           audioTurnMode: 'voice_activity',
           inputAudio: AudioFormat(
             encoding: 'pcm_s16le',
@@ -212,6 +215,7 @@ void main() {
             'body': {
               'token': 'eyJhbGciOiJFUzI1NiJ9.test.sig',
               'modelId': 'voice-agent-prod',
+              'instructions': '',
               'audioTurnMode': 'voice_activity',
               'inputAudio': {
                 'encoding': 'pcm_s16le',
@@ -345,23 +349,20 @@ void main() {
     );
 
     test(
-      // Contract C5: when instructions is null, the key must be absent from
-      // the CBOR body (not a CBOR null node).  Java's text() returns null for
-      // absent or non-textual nodes equally, so both would work; but a stray
-      // CBOR null could trip strict decoders in the future.
-      'session_instructions_set__null_instructions — absent key, not CBOR null',
+      // Contract C5: clear is represented as an empty tstr.
+      'session_instructions_set__empty_instructions',
       () {
         final msg = SessionInstructionsSetMsg(
           messageId: 'inst-002',
-          instructions: null,
+          instructions: '',
         );
         _writeFixture(
-          'session_instructions_set__null_instructions',
+          'session_instructions_set__empty_instructions',
           msg,
           {
             'type': 'session.instructions.set',
             'messageId': 'inst-002',
-            'body': <String, Object?>{},
+            'body': {'instructions': ''},
             // 'instructions' is intentionally absent from body
           },
         );

@@ -32,7 +32,8 @@ enum _OaiInputAudioNoiseReductionSelection {
 /// OpenAI Realtime protocol family implementation of [RealtimeAdapter].
 ///
 /// Owns all protocol-specific defaults (audio format, VAD, transcription model).
-/// The caller only provides voice + instructions at connect time.
+/// The caller provides voice at connect time and configures instructions through
+/// [setInstructions].
 final class OaiRealtimeAdapter implements RealtimeAdapter {
   static Future<void> testConnection(
     String baseUrl,
@@ -112,7 +113,7 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
   String? _reasoningEffort;
   bool _toolChoiceRequired = false;
   String? _sessionVoice;
-  String? _sessionInstructions;
+  String _sessionInstructions = '';
   String _transcriptionModel = 'gpt-4o-mini-transcribe';
   VoiceAgentModality _sessionModality = VoiceAgentModality.audio;
   final Set<String> _locallyCancelledFunctionItemIds = <String>{};
@@ -458,7 +459,6 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
   Future<void> connect(
     VoiceAgentApiConfig apiConfig, {
     String? voice,
-    String? instructions,
   }) async {
     _ensureNotDisposed();
     final selfHosted = apiConfig is SelfhostedVoiceAgentApiConfig
@@ -467,7 +467,6 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
             'OaiRealtimeAdapter only supports SelfhostedVoiceAgentApiConfig.',
           );
     _sessionVoice = voice;
-    _sessionInstructions = instructions;
     _sessionModality = selfHosted.modality;
     _transcriptionModel =
         selfHosted.transcriptionModel?.trim().isNotEmpty == true
@@ -563,11 +562,10 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
   }
 
   @override
-  Future<void> setInstructions(String? instructions) async {
+  Future<void> setInstructions(String instructions) async {
     _ensureNotDisposed();
-    final normalized = instructions?.trim();
-    final nextInstructions =
-        normalized == null || normalized.isEmpty ? null : normalized;
+    final normalized = instructions.trim();
+    final nextInstructions = normalized.isEmpty ? '' : normalized;
     if (_sessionInstructions == nextInstructions) {
       return;
     }
@@ -1125,9 +1123,7 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
         'reasoning': {
           'effort': _reasoningEffort,
         },
-      if (_sessionInstructions != null)
-        'instructions':
-            _sessionInstructions, // todo: make it dynamically updatable like tools.
+      'instructions': _sessionInstructions,
       'output_modalities':
           _sessionModality == VoiceAgentModality.audio ? ['audio'] : ['text'],
       'tools': _tools.map((tool) => tool.toRealtimeJson()).toList(),

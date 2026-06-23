@@ -149,7 +149,7 @@ class CallService {
     return _realtimeService.applyProviderExtension(extensionType, payload);
   }
 
-  Future<void> setRealtimeInstructions(String? instructions) async {
+  Future<void> setRealtimeInstructions(String instructions) async {
     if (state == CallState.uninitialized || state == CallState.disposed) {
       return;
     }

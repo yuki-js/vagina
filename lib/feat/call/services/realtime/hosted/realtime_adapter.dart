@@ -18,9 +18,9 @@
 //           - session.resumed path: tools/instructions/extensions NOT re-sent
 //             (session preserved server-side); liveAudioSequence reset; audio
 //             subscription kept alive.
-//           - resume.not_available → new session path: pre-connect buffers
-//             repopulated from _persistedTools / _persistedInstructions so that
-//             session.ready flush re-establishes session state identically.
+//           - resume.not_available → new session path: session.open carries the
+//             current canonical session state; buffers flush only state that is
+//             not part of session.open.
 //       • Single recovery path: both desync (patch_apply_failed via §5.5) and
 //         resume both resolve through thread.sync.request → thread.snapshot
 //         → _projector.applySnapshot — handled by the existing _onThreadSnapshot.
@@ -58,9 +58,8 @@ import 'websocket_vhrp_transport.dart';
 final class _ConnectConfig {
   final String modelId;
   final String? voice;
-  final String? instructions;
 
-  _ConnectConfig({required this.modelId, this.voice, this.instructions});
+  _ConnectConfig({required this.modelId, this.voice});
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -173,7 +172,9 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
   static const int _reconnectMaxMs = 16000;
 
   /// Stored connect() parameters so reconnect can rebuild session.open
-  /// identically (apiConfig for modelId, voice, instructions).
+  /// identically (apiConfig for modelId and voice). Instructions are kept in
+  /// [_sessionInstructions] because [setInstructions] is the sole prompt entry
+  /// point before and after connect.
   _ConnectConfig? _connectConfig;
 
   // ── Thread model ─────────────────────────────────────────────────────────
@@ -237,13 +238,10 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
   /// After [_onSessionReady] flushes this, it is set back to `null`.
   List<ToolDefinition>? _pendingTools;
 
-  /// Most-recent instructions passed to [setInstructions] before the session
-  /// was ready.  Represented as a `({bool hasValue, String? value})` record so
-  /// we can distinguish "not called" from "called with null".
-  ({bool hasValue, String? value}) _pendingInstructions = (
-    hasValue: false,
-    value: null,
-  );
+  /// Canonical session instructions. The empty string means cleared/no
+  /// instructions. This state is carried by session.open and by
+  /// session.instructions.set.
+  String _sessionInstructions = '';
 
   /// Queue of extension calls made before the session was ready.
   ///
@@ -348,7 +346,6 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
   Future<void> connect(
     VoiceAgentApiConfig apiConfig, {
     String? voice,
-    String? instructions,
   }) async {
     _ensureNotDisposed();
 
@@ -386,7 +383,6 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
     _connectConfig = _ConnectConfig(
       modelId: apiConfig.modelId,
       voice: voice,
-      instructions: instructions,
     );
 
     // Reset reconnect counters on each fresh connect().
@@ -414,16 +410,6 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
       channels: 1,
     );
 
-    // Determine effective instructions: prefer explicit connect() arg; fall
-    // back to any value stored by a pre-connect setInstructions() call.
-    final effectiveInstructions =
-        instructions ??
-        (_pendingInstructions.hasValue ? _pendingInstructions.value : null);
-
-    // Clear pending instructions: they are now carried by session.open.
-    // Any further setInstructions() calls after ready will send wire messages.
-    _pendingInstructions = (hasValue: false, value: null);
-
     // Reset capability extensions for this new session.
     _capabilityExtensions = const <String>[];
 
@@ -432,7 +418,7 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
       token: token,
       modelId: apiConfig.modelId,
       voice: voice,
-      instructions: effectiveInstructions,
+      instructions: _sessionInstructions,
       audioTurnMode: _audioTurnMode == RealtimeAudioTurnMode.voiceActivity
           ? 'voice_activity'
           : 'manual',
@@ -628,33 +614,30 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
     await _sendToolsSet(tools);
   }
 
-  /// Updates the session-level system instructions mid-session.
+  /// Updates the session-level system instructions.
   ///
-  /// Wire: `session.instructions.set` with nullable `instructions` field.
+  /// Wire: `session.instructions.set` with the canonical non-null instructions
+  /// string. The empty string clears instructions.
   ///
-  /// Pre-connect behaviour: the value is buffered and flushed after
-  /// `session.ready`.  If [connect] is called before `session.ready` arrives,
-  /// the `connect(instructions:)` argument takes precedence for `session.open`;
-  /// any remaining pre-connect [setInstructions] call is still sent post-ready
-  /// as a `session.instructions.set` override.
-  ///
-  /// Normalisation (OAI parity): blank strings are treated as `null`.
+  /// Pre-connect behaviour: the canonical value is stored in
+  /// [_sessionInstructions] and carried by `session.open`.
   @override
-  Future<void> setInstructions(String? instructions) async {
+  Future<void> setInstructions(String instructions) async {
     _ensureNotDisposed();
 
-    final normalised = instructions?.trim();
-    final effective = (normalised == null || normalised.isEmpty)
-        ? null
-        : normalised;
-
-    if (!_connectionState.isConnected) {
-      // Buffer: will be flushed post-ready.
-      _pendingInstructions = (hasValue: true, value: effective);
+    final normalised = instructions.trim();
+    final nextInstructions = normalised.isEmpty ? '' : normalised;
+    if (_sessionInstructions == nextInstructions) {
       return;
     }
 
-    await _sendInstructionsSet(effective);
+    _sessionInstructions = nextInstructions;
+
+    if (!_connectionState.isConnected) {
+      return;
+    }
+
+    await _sendInstructionsSet(_sessionInstructions);
   }
 
   /// Applies a provider-specific session extension.
@@ -1410,13 +1393,8 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
       await _sendToolsSet(tools);
     }
 
-    // 2. Instructions (only if a pre-connect setInstructions() was called and
-    //    it was NOT already absorbed into session.open.instructions in connect()).
-    if (_pendingInstructions.hasValue) {
-      final instructions = _pendingInstructions.value;
-      _pendingInstructions = (hasValue: false, value: null);
-      await _sendInstructionsSet(instructions);
-    }
+    // 2. Instructions are not flushed here: [setInstructions] owns the
+    // canonical state and [connect] carries that state in session.open.
 
     // 3. Extensions (FIFO queue; each extension awaits its ack/error before
     //    the next one is sent, maintaining order).
@@ -1545,7 +1523,7 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
   }
 
   /// Sends `session.instructions.set` and awaits the server ack.
-  Future<void> _sendInstructionsSet(String? instructions) async {
+  Future<void> _sendInstructionsSet(String instructions) async {
     final msgId = _nextMsgId('instr-set');
     final completer = Completer<AckMsg>();
     _pendingRequests[msgId] = completer;
@@ -1753,7 +1731,7 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
         token: token,
         modelId: config.modelId,
         voice: config.voice,
-        instructions: config.instructions,
+        instructions: _sessionInstructions,
         audioTurnMode: _audioTurnMode == RealtimeAudioTurnMode.voiceActivity
             ? 'voice_activity'
             : 'manual',
@@ -1827,7 +1805,7 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
           token: token,
           modelId: config.modelId,
           voice: config.voice,
-          instructions: config.instructions,
+          instructions: _sessionInstructions,
           audioTurnMode: _audioTurnMode == RealtimeAudioTurnMode.voiceActivity
               ? 'voice_activity'
               : 'manual',

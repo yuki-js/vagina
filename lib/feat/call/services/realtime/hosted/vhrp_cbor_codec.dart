@@ -50,7 +50,7 @@ class VhrpCborCodec {
         _putText(body, 'token', m.token);
         _putText(body, 'modelId', m.modelId);
         _putTextNullable(body, 'voice', m.voice);
-        _putTextNullable(body, 'instructions', m.instructions);
+        _putText(body, 'instructions', m.instructions);
         _putText(body, 'audioTurnMode', m.audioTurnMode);
         body[CborString('inputAudio')] = _encodeAudioFormat(m.inputAudio);
         body[CborString('outputAudio')] = _encodeAudioFormat(m.outputAudio);
@@ -70,7 +70,7 @@ class VhrpCborCodec {
       case SessionInstructionsSetMsg m:
         _putText(root, 'messageId', m.messageId);
         final body = CborMap({});
-        _putTextNullable(body, 'instructions', m.instructions);
+        _putText(body, 'instructions', m.instructions);
         root[CborString('body')] = body;
 
       case LiveAudioChunkMsg m:
