@@ -1,19 +1,18 @@
 import 'package:vagina/interfaces/key_value_store.dart';
 import 'package:vagina/interfaces/virtual_filesystem_repository.dart';
 import 'package:vagina/models/virtual_file.dart';
-import 'package:vagina/services/log_service.dart';
+import 'package:logging/logging.dart';
 
 /// JSON-backed virtual filesystem repository stored under a single key.
 class JsonVirtualFilesystemRepository implements VirtualFilesystemRepository {
-  static const _tag = 'VirtualFsRepo';
   static const _rootKey = 'virtual_fs_root';
   static const _version = '1.0';
 
-  final KeyValueStore _store;
-  final LogService _logService;
+  static final Logger _logger = Logger('JsonVirtualFilesystemRepository');
 
-  JsonVirtualFilesystemRepository(this._store, {LogService? logService})
-      : _logService = logService ?? LogService();
+  final KeyValueStore _store;
+
+  JsonVirtualFilesystemRepository(this._store);
 
   @override
   Future<void> initialize() async {
@@ -83,14 +82,14 @@ class JsonVirtualFilesystemRepository implements VirtualFilesystemRepository {
   }
 
   Map<String, dynamic> _emptyRoot() => {
-        'version': _version,
-        'files': <String, dynamic>{},
-      };
+    'version': _version,
+    'files': <String, dynamic>{},
+  };
 
   Future<Map<String, dynamic>> _loadRoot() async {
     final data = await _store.get(_rootKey);
     if (data is! Map) {
-      _logService.warn(_tag, 'Missing or invalid root data; reinitializing');
+      _logger.warning('Missing or invalid root data; reinitializing');
       final root = _emptyRoot();
       await _saveRoot(root);
       return root;

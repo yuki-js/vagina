@@ -31,7 +31,6 @@ import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart' show kDebugMode;
-import 'package:logging/logging.dart';
 import 'package:vagina/core/config/app_config.dart';
 import 'package:vagina/feat/call/models/realtime/realtime_adapter_models.dart';
 import 'package:vagina/feat/call/models/realtime/realtime_thread.dart';
@@ -41,7 +40,6 @@ import 'package:vagina/services/tools_runtime/tool_definition.dart';
 
 import 'vhrp_cbor_codec.dart';
 import 'vhrp_messages.dart';
-import 'vhrp_debug_format.dart';
 import 'vhrp_thread_projector.dart';
 import 'vhrp_transport.dart';
 import 'websocket_vhrp_transport.dart';
@@ -89,8 +87,6 @@ final class _ConnectConfig {
 ///   - Transport [failed]        → adapter [failed].
 ///   - Unrecoverable error from server → adapter [failed].
 final class VhrpRealtimeAdapter implements RealtimeAdapter {
-  static final Logger _logger = Logger('VhrpRealtimeAdapter');
-
   // ── Dependencies ────────────────────────────────────────────────────────────
 
   final VhrpRealtimeTransport _transport;
@@ -417,30 +413,6 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
   Future<void> dispose() async {
     if (_disposed) return;
     _disposed = true;
-
-    // ── Final thread snapshot probe ─────────────────────────────────────────
-    // Before tearing down the transport, request the authoritative final
-    // thread state from the server and log it as JSON.  This gives us a
-    // complete record of the conversation at hang-up time.
-    if (_connectionState.isConnected) {
-      try {
-        final snapshotReceived = Completer<void>();
-        final sub = _threadController.stream.listen((_) {
-          if (!snapshotReceived.isCompleted) snapshotReceived.complete();
-        });
-        _sendThreadSyncRequest('dispose');
-        await snapshotReceived.future.timeout(
-          const Duration(seconds: 3),
-          onTimeout: () {},
-        );
-        await sub.cancel();
-      } catch (_) {
-        // Best-effort; teardown must not be blocked.
-      }
-      _logger.info(
-        'VHRP_FINAL_THREAD_JSON=${jsonEncode(_threadToJson(_thread))}',
-      );
-    }
 
     // Cancel live audio input subscription first so no more PCM is forwarded.
     await _audioInputSubscription?.cancel();
@@ -871,12 +843,6 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
     final VhrpS2cMessage msg;
     try {
       msg = _codec.decode(bytes);
-      if (kDebugMode) {
-        _logger.info(
-          '[DIAG-VHRP-IN] frameBytes=${bytes.length} '
-          '${VhrpDebugFormat.formatS2c(msg)}',
-        );
-      }
     } catch (e) {
       _emitError(
         RealtimeAdapterError(
@@ -1306,69 +1272,11 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
     }
   }
 
-  // ── Thread JSON serialization (probe/debug) ───────────────────────────────
-
-  /// Converts [thread] to a plain JSON-serializable map.
-  ///
-  /// Audio chunks are replaced with a byte-count summary to keep the log line
-  /// short.  All other text content is included verbatim.
-  Map<String, Object?> _threadToJson(RealtimeThread thread) {
-    return {
-      'id': thread.id,
-      'conversationId': thread.conversationId,
-      'items': thread.items.map((item) {
-        return {
-          'id': item.id,
-          'type': item.type.name,
-          'role': item.role?.name,
-          'status': item.status.wireValue,
-          'callId': item.callId,
-          'name': item.name,
-          'arguments': item.arguments,
-          'output': item.output,
-          'toolOutputDisposition': item.toolOutputDisposition?.name,
-          'toolErrorMessage': item.toolErrorMessage,
-          'content': item.content.map((part) {
-            if (part is RealtimeThreadTextPart) {
-              return {'type': 'text', 'text': part.text, 'isDone': part.isDone};
-            } else if (part is RealtimeThreadAudioPart) {
-              return {
-                'type': 'audio',
-                'transcript': part.transcript,
-                'audioChunks': '<${part.audioChunks.length} chunks>',
-                'isDone': part.isDone,
-              };
-            } else if (part is RealtimeThreadImagePart) {
-              return {
-                'type': 'image',
-                'imageUrl': part.imageUrl,
-                'detail': part.detail,
-                'isDone': part.isDone,
-              };
-            } else {
-              return {'type': part.type, 'isDone': part.isDone};
-            }
-          }).toList(),
-        };
-      }).toList(),
-    };
-  }
-
   // ── Wire send helpers ─────────────────────────────────────────────────────
 
   /// Encodes [message] and sends it via the transport.
-  ///
-  /// In debug mode this also emits a human-readable tx log line via the
-  /// [_logger] at FINE level.  Production builds are not affected because the
-  /// format string is never evaluated when [kDebugMode] is false.
   void _sendMsg(VhrpC2sMessage message) {
     final bytes = _codec.encode(message);
-    if (kDebugMode) {
-      _logger.info(
-        '[DIAG-VHRP-OUT] frameBytes=${bytes.length} '
-        '${VhrpDebugFormat.formatC2s(message)}',
-      );
-    }
     _transport.sendBytes(bytes);
   }
 

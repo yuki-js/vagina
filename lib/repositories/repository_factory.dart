@@ -3,7 +3,6 @@ import 'package:vagina/core/data/json_file_store.dart';
 import 'package:vagina/interfaces/call_session_repository.dart';
 import 'package:vagina/interfaces/config_repository.dart';
 import 'package:vagina/interfaces/key_value_store.dart';
-import 'package:vagina/services/log_service.dart';
 
 import 'json_call_session_repository.dart';
 import 'json_config_repository.dart';
@@ -18,19 +17,13 @@ class RepositoryFactory {
   static CallSessionRepository? _callSessionRepo;
   static ConfigRepository? _configRepo;
   static PreferencesRepository? _preferencesRepo;
-  static LogService? _logService;
 
   /// Initialize the repositories with a key-value store.
   ///
   /// In widget/unit tests, file IO / platform channels can hang. When running
   /// under test (`bool.fromEnvironment('FLUTTER_TEST') == true`), we default to
   /// an in-memory store.
-  static Future<void> initialize({
-    LogService? logService,
-    KeyValueStore? store,
-  }) async {
-    _logService = logService ?? LogService();
-
+  static Future<void> initialize({KeyValueStore? store}) async {
     if (_store != null) return;
 
     const isFlutterTest = bool.fromEnvironment('FLUTTER_TEST');
@@ -44,7 +37,6 @@ class RepositoryFactory {
       _store = JsonFileStore(
         fileName: 'vagina_config.json',
         folderName: 'VAGINA',
-        logService: _logService,
       );
     }
 
@@ -54,31 +46,19 @@ class RepositoryFactory {
   /// Get the CallSession repository
   static CallSessionRepository get callSessions {
     _ensureInitialized();
-    return _callSessionRepo ??= JsonCallSessionRepository(
-      _store!,
-      logService: _logService,
-    );
+    return _callSessionRepo ??= JsonCallSessionRepository(_store!);
   }
 
   /// Get the Config repository
   static ConfigRepository get config {
     _ensureInitialized();
-    return _configRepo ??= JsonConfigRepository(
-      _store!,
-      logService: _logService,
-    );
+    return _configRepo ??= JsonConfigRepository(_store!);
   }
 
   /// Get the Preferences repository
   static PreferencesRepository get preferences {
     _ensureInitialized();
     return _preferencesRepo ??= PreferencesRepository(_store!);
-  }
-
-  /// Shared logger instance.
-  static LogService get logService {
-    _ensureInitialized();
-    return _logService ??= LogService();
   }
 
   /// Helper to ensure initialization
@@ -96,6 +76,5 @@ class RepositoryFactory {
     _callSessionRepo = null;
     _configRepo = null;
     _preferencesRepo = null;
-    _logService = null;
   }
 }

@@ -8,25 +8,22 @@ import 'package:vagina/api/generated/responses/vfs_rpc_response.dart';
 import 'package:vagina/api/vagina_api_client.dart';
 import 'package:vagina/interfaces/virtual_filesystem_repository.dart';
 import 'package:vagina/models/virtual_file.dart';
-import 'package:vagina/services/log_service.dart';
+import 'package:logging/logging.dart';
 
 class ApiVirtualFilesystemRepository implements VirtualFilesystemRepository {
-  static const _tag = 'ApiVirtualFsRepo';
   static const _rpcFileNotFoundCode = -32004;
 
+  static final Logger _logger = Logger('ApiVirtualFilesystemRepository');
+
   final VaginaApiClient _apiClient;
-  final LogService _logService;
   int _requestSequence = 0;
 
-  ApiVirtualFilesystemRepository({
-    required VaginaApiClient apiClient,
-    LogService? logService,
-  }) : _apiClient = apiClient,
-       _logService = logService ?? LogService();
+  ApiVirtualFilesystemRepository({required VaginaApiClient apiClient})
+    : _apiClient = apiClient;
 
   @override
   Future<void> initialize() async {
-    _logService.debug(_tag, 'Initializing remote VFS repository');
+    _logger.fine('Initializing remote VFS repository');
   }
 
   @override

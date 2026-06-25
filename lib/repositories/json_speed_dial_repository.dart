@@ -1,22 +1,21 @@
 import 'package:vagina/models/speed_dial.dart';
 import 'package:vagina/interfaces/speed_dial_repository.dart';
 import 'package:vagina/interfaces/key_value_store.dart';
-import 'package:vagina/services/log_service.dart';
+import 'package:logging/logging.dart';
 
 /// JSON-based implementation of SpeedDialRepository
 class JsonSpeedDialRepository implements SpeedDialRepository {
-  static const _tag = 'SpeedDialRepo';
   static const _speedDialsKey = 'speed_dials';
 
-  final KeyValueStore _store;
-  final LogService _logService;
+  static final Logger _logger = Logger('JsonSpeedDialRepository');
 
-  JsonSpeedDialRepository(this._store, {LogService? logService})
-      : _logService = logService ?? LogService();
+  final KeyValueStore _store;
+
+  JsonSpeedDialRepository(this._store);
 
   @override
   Future<void> save(SpeedDial speedDial) async {
-    _logService.debug(_tag, 'Saving speed dial: ${speedDial.id}');
+    _logger.fine('Saving speed dial: ${speedDial.id}');
 
     final speedDials = await getAll();
     speedDials.add(speedDial);
@@ -24,7 +23,7 @@ class JsonSpeedDialRepository implements SpeedDialRepository {
     final speedDialsJson = speedDials.map((s) => s.toJson()).toList();
     await _store.set(_speedDialsKey, speedDialsJson);
 
-    _logService.info(_tag, 'Speed dial saved: ${speedDial.id}');
+    _logger.info('Speed dial saved: ${speedDial.id}');
   }
 
   @override
@@ -34,7 +33,7 @@ class JsonSpeedDialRepository implements SpeedDialRepository {
     List<SpeedDial> speedDials;
     if (data == null || data is! List) {
       if (data != null && data is! List) {
-        _logService.warn(_tag, 'Invalid speed dials data type');
+        _logger.warning('Invalid speed dials data type');
       }
       speedDials = [];
     } else {
@@ -46,7 +45,7 @@ class JsonSpeedDialRepository implements SpeedDialRepository {
     // Ensure default speed dial always exists
     final hasDefault = speedDials.any((s) => s.id == SpeedDial.defaultId);
     if (!hasDefault) {
-      _logService.info(_tag, 'Default speed dial not found, creating it');
+      _logger.info('Default speed dial not found, creating it');
       speedDials.insert(0, SpeedDial.defaultSpeedDial);
       // Save the updated list with default
       final speedDialsJson = speedDials.map((s) => s.toJson()).toList();
@@ -68,13 +67,13 @@ class JsonSpeedDialRepository implements SpeedDialRepository {
 
   @override
   Future<bool> update(SpeedDial speedDial) async {
-    _logService.debug(_tag, 'Updating speed dial: ${speedDial.id}');
+    _logger.fine('Updating speed dial: ${speedDial.id}');
 
     // Prevent renaming the default speed dial
     if (speedDial.id == SpeedDial.defaultId) {
       final existing = await getById(SpeedDial.defaultId);
       if (existing != null && speedDial.name != existing.name) {
-        _logService.warn(_tag, 'Cannot rename default speed dial');
+        _logger.warning('Cannot rename default speed dial');
         return false;
       }
     }
@@ -83,8 +82,7 @@ class JsonSpeedDialRepository implements SpeedDialRepository {
     final index = speedDials.indexWhere((s) => s.id == speedDial.id);
 
     if (index == -1) {
-      _logService.warn(
-          _tag, 'Speed dial not found for update: ${speedDial.id}');
+      _logger.warning('Speed dial not found for update: ${speedDial.id}');
       return false;
     }
 
@@ -93,17 +91,17 @@ class JsonSpeedDialRepository implements SpeedDialRepository {
     final speedDialsJson = speedDials.map((s) => s.toJson()).toList();
     await _store.set(_speedDialsKey, speedDialsJson);
 
-    _logService.info(_tag, 'Speed dial updated: ${speedDial.id}');
+    _logger.info('Speed dial updated: ${speedDial.id}');
     return true;
   }
 
   @override
   Future<bool> delete(String id) async {
-    _logService.debug(_tag, 'Deleting speed dial: $id');
+    _logger.fine('Deleting speed dial: $id');
 
     // Prevent deletion of default speed dial
     if (id == SpeedDial.defaultId) {
-      _logService.warn(_tag, 'Cannot delete default speed dial');
+      _logger.warning('Cannot delete default speed dial');
       return false;
     }
 
@@ -112,14 +110,14 @@ class JsonSpeedDialRepository implements SpeedDialRepository {
     speedDials.removeWhere((s) => s.id == id);
 
     if (speedDials.length == initialLength) {
-      _logService.warn(_tag, 'Speed dial not found: $id');
+      _logger.warning('Speed dial not found: $id');
       return false;
     }
 
     final speedDialsJson = speedDials.map((s) => s.toJson()).toList();
     await _store.set(_speedDialsKey, speedDialsJson);
 
-    _logService.info(_tag, 'Speed dial deleted: $id');
+    _logger.info('Speed dial deleted: $id');
     return true;
   }
 }

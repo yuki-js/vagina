@@ -2,20 +2,17 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:vagina/utils/platform_compat.dart';
-import 'package:vagina/services/log_service.dart';
+import 'package:logging/logging.dart';
 import 'package:vagina/core/data/permission_manager.dart';
 
 /// Platform-specific storage path resolution
 class PlatformStorageService {
-  static const _tag = 'PlatformStorage';
-  final PermissionManager _permissionManager;
-  final LogService _logService;
+  static final Logger _logger = Logger('PlatformStorageService');
 
-  PlatformStorageService({
-    PermissionManager? permissionManager,
-    LogService? logService,
-  })  : _permissionManager = permissionManager ?? PermissionManager(),
-        _logService = logService ?? LogService();
+  final PermissionManager _permissionManager;
+
+  PlatformStorageService({PermissionManager? permissionManager})
+    : _permissionManager = permissionManager ?? PermissionManager();
 
   /// Get the appropriate storage directory for the platform
   ///
@@ -39,15 +36,13 @@ class PlatformStorageService {
           if (!await directory.exists()) {
             await directory.create(recursive: true);
           }
-          _logService.info(
-              _tag, 'Using Android external storage: ${directory.path}');
+          _logger.info('Using Android external storage: ${directory.path}');
           return directory;
         } catch (e) {
-          _logService.warn(_tag, 'Cannot access Android external storage: $e');
+          _logger.warning('Cannot access Android external storage: $e');
         }
       } else {
-        _logService.info(
-            _tag, 'Storage permission not granted, using app directory');
+        _logger.info('Storage permission not granted, using app directory');
       }
     }
 
@@ -62,7 +57,7 @@ class PlatformStorageService {
       }
     }
 
-    _logService.info(_tag, 'Using app directory: ${directory.path}');
+    _logger.info('Using app directory: ${directory.path}');
     return directory;
   }
 

@@ -8,23 +8,19 @@ import 'package:vagina/api/generated/responses/save_speed_dial_response.dart';
 import 'package:vagina/api/vagina_api_client.dart';
 import 'package:vagina/interfaces/speed_dial_repository.dart';
 import 'package:vagina/models/speed_dial.dart';
-import 'package:vagina/services/log_service.dart';
+import 'package:logging/logging.dart';
 
 class ApiSpeedDialRepository implements SpeedDialRepository {
-  static const _tag = 'ApiSpeedDialRepo';
+  static final Logger _logger = Logger('ApiSpeedDialRepository');
 
   final VaginaApiClient _apiClient;
-  final LogService _logService;
 
-  ApiSpeedDialRepository({
-    required VaginaApiClient apiClient,
-    LogService? logService,
-  }) : _apiClient = apiClient,
-       _logService = logService ?? LogService();
+  ApiSpeedDialRepository({required VaginaApiClient apiClient})
+    : _apiClient = apiClient;
 
   @override
   Future<void> save(SpeedDial speedDial) async {
-    _logService.debug(_tag, 'Saving speed dial: ${speedDial.id}');
+    _logger.fine('Saving speed dial: ${speedDial.id}');
     final response = await _apiClient.speedDials.saveSpeedDial(
       speedDialId: speedDial.id,
       body: _toApiModel(speedDial),
@@ -54,7 +50,7 @@ class ApiSpeedDialRepository implements SpeedDialRepository {
 
   @override
   Future<List<SpeedDial>> getAll() async {
-    _logService.debug(_tag, 'Loading all speed dials');
+    _logger.fine('Loading all speed dials');
     final response = await _apiClient.speedDials.listSpeedDials();
 
     switch (response) {
@@ -76,7 +72,7 @@ class ApiSpeedDialRepository implements SpeedDialRepository {
 
   @override
   Future<SpeedDial?> getById(String id) async {
-    _logService.debug(_tag, 'Loading speed dial by id: $id');
+    _logger.fine('Loading speed dial by id: $id');
     final response = await _apiClient.speedDials.getSpeedDial(speedDialId: id);
 
     switch (response) {
@@ -106,7 +102,7 @@ class ApiSpeedDialRepository implements SpeedDialRepository {
 
   @override
   Future<bool> delete(String id) async {
-    _logService.debug(_tag, 'Deleting speed dial: $id');
+    _logger.fine('Deleting speed dial: $id');
     final response = await _apiClient.speedDials.deleteSpeedDial(
       speedDialId: id,
     );

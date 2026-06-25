@@ -11,7 +11,6 @@ import 'package:vagina/repositories/api_speed_dial_repository.dart';
 import 'package:vagina/repositories/api_virtual_filesystem_repository.dart';
 import 'package:vagina/repositories/preferences_repository.dart';
 import 'package:vagina/repositories/repository_factory.dart';
-import 'package:vagina/services/log_service.dart';
 
 /// Application composition root.
 ///
@@ -30,11 +29,8 @@ class AppContainer {
   static SpeedDialRepository? _speedDialRepositoryOverride;
   static VirtualFilesystemRepository? _filesystemRepositoryOverride;
 
-  static Future<void> initialize({
-    LogService? logService,
-    KeyValueStore? store,
-  }) async {
-    await RepositoryFactory.initialize(logService: logService, store: store);
+  static Future<void> initialize({KeyValueStore? store}) async {
+    await RepositoryFactory.initialize(store: store);
     _initialized = true;
   }
 
@@ -51,11 +47,6 @@ class AppContainer {
   static PreferencesRepository get preferences {
     _ensureInitialized();
     return RepositoryFactory.preferences;
-  }
-
-  static LogService get logService {
-    _ensureInitialized();
-    return RepositoryFactory.logService;
   }
 
   static AuthService get auth {
@@ -86,7 +77,6 @@ class AppContainer {
     }
     return _speedDialRepository ??= ApiSpeedDialRepository(
       apiClient: auth.apiClient,
-      logService: RepositoryFactory.logService,
     );
   }
 
@@ -98,7 +88,6 @@ class AppContainer {
     }
     return _filesystemRepository ??= ApiVirtualFilesystemRepository(
       apiClient: auth.apiClient,
-      logService: RepositoryFactory.logService,
     );
   }
 

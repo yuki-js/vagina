@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:logging/logging.dart';
 import 'package:vagina/core/app/app_container.dart';
 import 'package:vagina/models/call_session.dart';
 import 'package:vagina/models/speed_dial.dart';
@@ -9,6 +10,8 @@ import 'package:vagina/l10n/app_localizations.dart';
 
 /// Session detail segment - info/details view.
 class SessionDetailInfoSegment extends ConsumerWidget {
+  static final Logger _logger = Logger('SessionDetailInfoSegment');
+
   final CallSession session;
 
   const SessionDetailInfoSegment({super.key, required this.session});
@@ -120,10 +123,7 @@ class SessionDetailInfoSegment extends ConsumerWidget {
     try {
       return await repository.getById(session.speedDialId);
     } catch (e) {
-      AppContainer.logService.warn(
-        'SessionInfo',
-        'SpeedDial load failed for ${session.speedDialId}: $e',
-      );
+      _logger.warning('SpeedDial load failed for ${session.speedDialId}: $e');
       return null;
     }
   }

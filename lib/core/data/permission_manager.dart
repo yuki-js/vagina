@@ -1,17 +1,15 @@
 import 'package:permission_handler/permission_handler.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:vagina/utils/platform_compat.dart';
-import 'package:vagina/services/log_service.dart';
+import 'package:logging/logging.dart';
 
 /// Handles storage and other permissions
 class PermissionManager {
-  static const _tag = 'PermissionManager';
+  static final Logger _logger = Logger('PermissionManager');
 
-  final LogService _logService;
   int? _androidSdkVersion;
 
-  PermissionManager({LogService? logService})
-      : _logService = logService ?? LogService();
+  PermissionManager();
 
   /// Get Android SDK version
   Future<int> _getAndroidSdkVersion() async {
@@ -21,7 +19,7 @@ class PermissionManager {
       final deviceInfo = DeviceInfoPlugin();
       final androidInfo = await deviceInfo.androidInfo;
       _androidSdkVersion = androidInfo.version.sdkInt;
-      _logService.info(_tag, 'Android SDK version: $_androidSdkVersion');
+      _logger.info('Android SDK version: $_androidSdkVersion');
       return _androidSdkVersion!;
     }
     return 0;
@@ -29,7 +27,7 @@ class PermissionManager {
 
   /// Request storage permission for writing to user's Documents directory
   Future<bool> requestStoragePermission() async {
-    _logService.info(_tag, 'Requesting storage permission');
+    _logger.info('Requesting storage permission');
 
     if (PlatformCompat.isAndroid) {
       final sdkVersion = await _getAndroidSdkVersion();
@@ -37,13 +35,12 @@ class PermissionManager {
       if (sdkVersion >= 30) {
         // Android 11+ (API 30+): Request MANAGE_EXTERNAL_STORAGE
         final status = await Permission.manageExternalStorage.request();
-        _logService.info(
-            _tag, 'Manage external storage permission status: $status');
+        _logger.info('Manage external storage permission status: $status');
         return status.isGranted;
       } else {
         // Android 10 and below: Request standard storage permission
         final status = await Permission.storage.request();
-        _logService.info(_tag, 'Storage permission status: $status');
+        _logger.info('Storage permission status: $status');
         return status.isGranted;
       }
     }

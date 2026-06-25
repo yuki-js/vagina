@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:vagina/interfaces/key_value_store.dart';
-import 'package:vagina/services/log_service.dart';
+import 'package:logging/logging.dart';
 import 'package:vagina/services/platform/platform_storage_service.dart';
 
 // Conditional import for web support
@@ -10,12 +10,11 @@ import 'web_storage_stub.dart' if (dart.library.html) 'dart:html' as html;
 
 /// File-based JSON key-value store implementation
 class JsonFileStore implements KeyValueStore {
-  static const _tag = 'JsonFileStore';
-
   final String fileName;
   final String? folderName;
+  static final Logger _logger = Logger('JsonFileStore');
+
   final PlatformStorageService _storageService;
-  final LogService _logService;
   File? _file;
   Map<String, dynamic> _cache = {};
   bool _initialized = false;
@@ -24,9 +23,7 @@ class JsonFileStore implements KeyValueStore {
     required this.fileName,
     this.folderName,
     PlatformStorageService? storageService,
-    LogService? logService,
-  })  : _storageService = storageService ?? PlatformStorageService(),
-        _logService = logService ?? LogService();
+  }) : _storageService = storageService ?? PlatformStorageService();
 
   @override
   Future<void> initialize() async {
@@ -36,7 +33,7 @@ class JsonFileStore implements KeyValueStore {
     _cache = await _loadFromFile();
     _initialized = true;
 
-    _logService.debug(_tag, 'Initialized with ${_cache.keys.length} keys');
+    _logger.fine('Initialized with ${_cache.keys.length} keys');
   }
 
   Future<File> _getFile() async {
@@ -45,10 +42,11 @@ class JsonFileStore implements KeyValueStore {
       return File('');
     }
 
-    final directory =
-        await _storageService.getStorageDirectory(folderName: folderName);
+    final directory = await _storageService.getStorageDirectory(
+      folderName: folderName,
+    );
     final file = File('${directory.path}/$fileName');
-    _logService.info(_tag, 'Storage file: ${file.path}');
+    _logger.info('Storage file: ${file.path}');
     return file;
   }
 
@@ -66,10 +64,10 @@ class JsonFileStore implements KeyValueStore {
       if (contents.isEmpty) return {};
 
       final data = jsonDecode(contents) as Map<String, dynamic>;
-      _logService.debug(_tag, 'Loaded ${data.keys.length} keys from file');
+      _logger.fine('Loaded ${data.keys.length} keys from file');
       return data;
     } catch (e) {
-      _logService.error(_tag, 'Error loading file: $e');
+      _logger.severe('Error loading file: $e');
       return {};
     }
   }
@@ -85,9 +83,9 @@ class JsonFileStore implements KeyValueStore {
     try {
       final json = jsonEncode(data);
       await _file!.writeAsString(json);
-      _logService.debug(_tag, 'Saved ${data.keys.length} keys to file');
+      _logger.fine('Saved ${data.keys.length} keys to file');
     } catch (e) {
-      _logService.error(_tag, 'Error saving file: $e');
+      _logger.severe('Error saving file: $e');
       rethrow;
     }
   }
@@ -101,16 +99,15 @@ class JsonFileStore implements KeyValueStore {
       final value = storage[key];
 
       if (value == null || value.isEmpty) {
-        _logService.debug(_tag, 'No web storage data found');
+        _logger.fine('No web storage data found');
         return {};
       }
 
       final data = jsonDecode(value) as Map<String, dynamic>;
-      _logService.debug(
-          _tag, 'Loaded ${data.keys.length} keys from web storage');
+      _logger.fine('Loaded ${data.keys.length} keys from web storage');
       return data;
     } catch (e) {
-      _logService.error(_tag, 'Error loading from web storage: $e');
+      _logger.severe('Error loading from web storage: $e');
       return {};
     }
   }
@@ -124,9 +121,9 @@ class JsonFileStore implements KeyValueStore {
       final json = jsonEncode(data);
       storage[key] = json;
 
-      _logService.debug(_tag, 'Saved ${data.keys.length} keys to web storage');
+      _logger.fine('Saved ${data.keys.length} keys to web storage');
     } catch (e) {
-      _logService.error(_tag, 'Error saving to web storage: $e');
+      _logger.severe('Error saving to web storage: $e');
       rethrow;
     }
   }
