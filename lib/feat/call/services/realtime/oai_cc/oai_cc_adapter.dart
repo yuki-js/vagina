@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:convert' show base64Decode;
+import 'dart:convert' show base64Decode, jsonEncode;
 import 'dart:typed_data';
 
 import 'package:vagina/feat/call/models/realtime/realtime_adapter_models.dart';
@@ -38,8 +38,9 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
       if (modelFromQuery != null && modelFromQuery.isNotEmpty) {
         extractedModel = modelFromQuery;
       }
-      final newQueryParameters =
-          Map<String, String>.from(parsedUri.queryParameters)..remove('model');
+      final newQueryParameters = Map<String, String>.from(
+        parsedUri.queryParameters,
+      )..remove('model');
       cleanUri = parsedUri.replace(
         queryParameters: newQueryParameters.isEmpty ? null : newQueryParameters,
       );
@@ -56,17 +57,12 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
 
     final request = OaiCcRequest(
       model: extractedModel,
-      messages: [
-        const OaiCcTextMessage(role: 'user', content: 'ping'),
-      ],
+      messages: [const OaiCcTextMessage(role: 'user', content: 'ping')],
       stream: true,
       modalities: isAudioModel ? ['text', 'audio'] : null,
       additionalParams: isAudioModel
           ? {
-              'audio': {
-                'voice': 'alloy',
-                'format': 'pcm16',
-              }
+              'audio': {'voice': 'alloy', 'format': 'pcm16'},
             }
           : null,
     );
@@ -147,15 +143,15 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
   final Map<String, String> _assistantAudioIds = {};
   final Map<String, String> _toolCallIdToItemId = {};
   final Map<int, String> _activeToolCallIndexToItemId = {};
+  final Set<String> _activeResponseFunctionItemIds = <String>{};
+  final Set<String> _activeResponseFunctionCallIds = <String>{};
   List<ToolDefinition> _tools = const <ToolDefinition>[];
 
-  OaiCcRealtimeAdapter({
-    OaiCcClient? client,
-    String? threadId,
-  })  : _client = client ?? OaiCcClient(),
-        _thread = RealtimeThread(
-            id: threadId ??
-                'thread_cc_${DateTime.now().millisecondsSinceEpoch}');
+  OaiCcRealtimeAdapter({OaiCcClient? client, String? threadId})
+    : _client = client ?? OaiCcClient(),
+      _thread = RealtimeThread(
+        id: threadId ?? 'thread_cc_${DateTime.now().millisecondsSinceEpoch}',
+      );
 
   // ---------------------------------------------------------------------------
   // State
@@ -196,10 +192,7 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
   // ---------------------------------------------------------------------------
 
   @override
-  Future<void> connect(
-    VoiceAgentApiConfig apiConfig, {
-    String? voice,
-  }) async {
+  Future<void> connect(VoiceAgentApiConfig apiConfig, {String? voice}) async {
     _ensureNotDisposed();
     _setConnectionState(const RealtimeAdapterConnectionState.connecting());
 
@@ -222,8 +215,9 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
       if (modelFromQuery != null && modelFromQuery.isNotEmpty) {
         extractedModel = modelFromQuery;
       }
-      final newQueryParameters =
-          Map<String, String>.from(parsedUri.queryParameters)..remove('model');
+      final newQueryParameters = Map<String, String>.from(
+        parsedUri.queryParameters,
+      )..remove('model');
       cleanUri = parsedUri.replace(
         queryParameters: newQueryParameters.isEmpty ? null : newQueryParameters,
       );
@@ -300,7 +294,9 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
 
   @override
   Future<bool> applyProviderExtension(
-      String extensionType, Map<String, dynamic> payload) async {
+    String extensionType,
+    Map<String, dynamic> payload,
+  ) async {
     return false; // Extension config not supported in v1
   }
 
@@ -338,7 +334,8 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
   Future<String> sendImage(Uint8List imageBytes) async {
     _ensureNotDisposed();
     throw UnimplementedError(
-        'Image input is not supported in OaiCcRealtimeAdapter v1.');
+      'Image input is not supported in OaiCcRealtimeAdapter v1.',
+    );
   }
 
   @override
@@ -390,11 +387,6 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
     return toolCallIds.every((id) => toolOutputIds.contains(id));
   }
 
-  @override
-  void cancelFunctionCalls(
-      {Set<String> itemIds = const <String>{},
-      Set<String> callIds = const <String>{}}) {}
-
   // ---------------------------------------------------------------------------
   // Response Control
   // ---------------------------------------------------------------------------
@@ -403,6 +395,10 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
   Future<void> interrupt() async {
     _ensureNotDisposed();
     await _cleanupActiveCalls();
+    _resolveCompletedPendingFunctionCallsAsInterrupted();
+    if (_markPendingFunctionCallsIncomplete()) {
+      _emitThreadUpdate();
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -415,6 +411,83 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
     _client.cancelOngoingRequest();
   }
 
+  void _resolveCompletedPendingFunctionCallsAsInterrupted() {
+    const errorMessage = 'Tool call cancelled by user interrupt.';
+    for (final callId in _completedPendingFunctionCallIds()) {
+      _thread.addItem(
+        RealtimeThreadItem(
+          id: _nextLocalId(),
+          type: RealtimeThreadItemType.functionCallOutput,
+          role: RealtimeThreadItemRole.assistant,
+          status: RealtimeThreadItemStatus.completed,
+          callId: callId,
+          output: jsonEncode({'error': errorMessage}),
+          toolOutputDisposition: RealtimeToolOutputDisposition.error,
+          toolErrorMessage: errorMessage,
+        ),
+      );
+    }
+  }
+
+  List<String> _completedPendingFunctionCallIds() {
+    final outputCallIds = _outputCallIds();
+
+    return _thread.items
+        .where(
+          (item) =>
+              item.type == RealtimeThreadItemType.functionCall &&
+              item.status == RealtimeThreadItemStatus.completed &&
+              item.callId != null &&
+              item.callId!.isNotEmpty &&
+              !outputCallIds.contains(item.callId) &&
+              _isActiveResponseFunctionCall(item),
+        )
+        .map((item) => item.callId!)
+        .toList();
+  }
+
+  Set<String> _outputCallIds() {
+    return _thread.items
+        .where((item) => item.type == RealtimeThreadItemType.functionCallOutput)
+        .map((item) => item.callId)
+        .whereType<String>()
+        .toSet();
+  }
+
+  bool _markPendingFunctionCallsIncomplete() {
+    final outputCallIds = _outputCallIds();
+    var hasChanges = false;
+    for (final item in _thread.items) {
+      final callId = item.callId;
+      if (item.type != RealtimeThreadItemType.functionCall ||
+          item.status == RealtimeThreadItemStatus.incomplete ||
+          !_isActiveResponseFunctionCall(item) ||
+          (callId != null && outputCallIds.contains(callId))) {
+        continue;
+      }
+      item.markIncomplete();
+      hasChanges = true;
+    }
+    return hasChanges;
+  }
+
+  void _trackActiveFunctionCall(RealtimeThreadItem item) {
+    if (item.type != RealtimeThreadItemType.functionCall) {
+      return;
+    }
+    _activeResponseFunctionItemIds.add(item.id);
+    final callId = item.callId;
+    if (callId != null && callId.isNotEmpty) {
+      _activeResponseFunctionCallIds.add(callId);
+    }
+  }
+
+  bool _isActiveResponseFunctionCall(RealtimeThreadItem item) {
+    final callId = item.callId;
+    return _activeResponseFunctionItemIds.contains(item.id) ||
+        (callId != null && _activeResponseFunctionCallIds.contains(callId));
+  }
+
   Future<void> _cancelAudioInput() async {
     await _audioInputSubscription?.cancel();
     _audioInputSubscription = null;
@@ -422,10 +495,7 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
 
   Future<String> _sendAudioTurn(String wavBase64) async {
     final userItemId = _nextLocalId();
-    final audioPart = RealtimeThreadAudioPart(
-      transcript: null,
-      isDone: true,
-    );
+    final audioPart = RealtimeThreadAudioPart(transcript: null, isDone: true);
     audioPart.replaceAudio(wavBase64);
 
     final userItem = RealtimeThreadItem(
@@ -511,10 +581,12 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
               }
             }
             if (outputItem != null && outputItem.output != null) {
-              messages.add(OaiCcToolResultMessage(
-                callId: tc.callId!,
-                content: outputItem.output!,
-              ));
+              messages.add(
+                OaiCcToolResultMessage(
+                  callId: tc.callId!,
+                  content: outputItem.output!,
+                ),
+              );
             }
           }
         }
@@ -537,13 +609,15 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
           continue;
         }
       } else if (roleStr == 'user') {
-        final audioPart =
-            item.content.whereType<RealtimeThreadAudioPart>().firstOrNull;
+        final audioPart = item.content
+            .whereType<RealtimeThreadAudioPart>()
+            .firstOrNull;
         if (audioPart != null) {
           final audioBase64 = audioPart.fullAudioBase64;
           if (audioBase64.isNotEmpty) {
             messages.add(
-                OaiCcAudioMessage(role: roleStr, audioBase64: audioBase64));
+              OaiCcAudioMessage(role: roleStr, audioBase64: audioBase64),
+            );
             continue;
           }
         }
@@ -573,6 +647,8 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
     if (_config == null) return;
 
     _activeToolCallIndexToItemId.clear();
+    _activeResponseFunctionItemIds.clear();
+    _activeResponseFunctionCallIds.clear();
 
     final assistantItemId = _nextLocalId();
     final assistantTextPart = RealtimeThreadTextPart(text: '', isDone: false);
@@ -606,10 +682,7 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
       modalities: isAudioModel ? ['text', 'audio'] : null,
       additionalParams: {
         if (isAudioModel)
-          'audio': {
-            'voice': _voice ?? 'alloy',
-            'format': 'pcm16',
-          },
+          'audio': {'voice': _voice ?? 'alloy', 'format': 'pcm16'},
         if (requestTools.isNotEmpty) ...{
           'tools': requestTools,
           'tool_choice': 'auto',
@@ -632,6 +705,7 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
         } else if (event is OaiCcToolCallDeltaEvent) {
           hasToolCalls = true;
           final item = _findOrCreateToolCallItem(event);
+          _trackActiveFunctionCall(item);
           if (event.name != null) {
             item.name = event.name;
           }
@@ -671,6 +745,7 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
             if (item.type == RealtimeThreadItemType.functionCall &&
                 item.status == RealtimeThreadItemStatus.inProgress) {
               item.status = RealtimeThreadItemStatus.completed;
+              _trackActiveFunctionCall(item);
             }
           }
           _assistantAudioCompletedController.add(null);
@@ -694,10 +769,7 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
         assistantItem.markIncomplete();
         _emitThreadUpdate();
         _errorController.add(
-          RealtimeAdapterError(
-            code: 'stream_error',
-            message: err.toString(),
-          ),
+          RealtimeAdapterError(code: 'stream_error', message: err.toString()),
         );
       },
       cancelOnError: true,

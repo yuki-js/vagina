@@ -167,8 +167,9 @@ void main() {
         if (body.containsKey('conversationId')) {
           expect(ready.conversationId, body['conversationId']);
         }
-        final exts = (body['capabilities'] as Map<String, dynamic>)['extensions']
-            as List<dynamic>;
+        final exts =
+            (body['capabilities'] as Map<String, dynamic>)['extensions']
+                as List<dynamic>;
         expect(ready.capabilityExtensions, containsAll(exts.cast<String>()));
         if (f.expected.containsKey('replyTo')) {
           expect(ready.replyTo, f.expected['replyTo']);
@@ -363,8 +364,11 @@ void main() {
           final op = patch.ops[i];
           final expectedOp = ops[i] as Map<String, dynamic>;
           if (op is AppendTextOp && expectedOp['op'] == 'append_text') {
-            expect(op.delta, expectedOp['delta'],
-                reason: 'Japanese delta must survive CBOR round-trip');
+            expect(
+              op.delta,
+              expectedOp['delta'],
+              reason: 'Japanese delta must survive CBOR round-trip',
+            );
             break;
           }
         }

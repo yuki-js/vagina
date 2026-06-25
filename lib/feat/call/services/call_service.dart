@@ -6,6 +6,7 @@ import 'package:vagina/core/config/app_config.dart';
 import 'package:vagina/feat/call/models/active_file.dart';
 import 'package:vagina/feat/call/models/realtime/realtime_adapter_models.dart';
 import 'package:vagina/feat/call/models/realtime/realtime_thread.dart';
+import 'package:vagina/feat/call/models/realtime/tool_call_resolution.dart';
 import 'package:vagina/feat/call/models/text_agent_info.dart';
 import 'package:vagina/feat/call/models/voice_agent_api_config.dart';
 import 'package:vagina/feat/call/models/voice_agent_info.dart';
@@ -66,7 +67,6 @@ class CallService {
   /// Item IDs for function-call items that have already been dispatched
   /// (or are currently being executed). Prevents double-dispatch.
   final Set<String> _dispatchedToolCallIds = <String>{};
-  final Set<String> _cancelledToolCallIds = <String>{};
 
   StreamSubscription<RealtimeThread>? _threadSubscription;
   StreamSubscription<void>? _assistantAudioCompletedSubscription;
@@ -87,11 +87,11 @@ class CallService {
   int _pushToTalkGeneration = 0;
   Future<void>? _pendingPushToTalkRelease;
 
-  CallService(
-      {required VirtualFilesystemRepository filesystemRepository,
-      required CallSessionRepository sessionRepository})
-      : _filesystemRepository = filesystemRepository,
-        _sessionRepository = sessionRepository;
+  CallService({
+    required VirtualFilesystemRepository filesystemRepository,
+    required CallSessionRepository sessionRepository,
+  }) : _filesystemRepository = filesystemRepository,
+       _sessionRepository = sessionRepository;
 
   CallState get state => _state;
 
@@ -277,7 +277,8 @@ class CallService {
   Future<void> startCall() async {
     if (state != CallState.uninitialized) {
       throw StateError(
-          'startCall() can only be called from uninitialized state.');
+        'startCall() can only be called from uninitialized state.',
+      );
     }
 
     // 1. サービスインスタンス生成
@@ -316,9 +317,7 @@ class CallService {
     _realtimeService = RealtimeService(voiceAgent: _voiceAgent!);
     _recorderService = RecorderService();
     _manualAudioTurnBuffer = ManualAudioTurnBuffer();
-    _textAgentService = TextAgentService(
-      agents: _textAgents!,
-    );
+    _textAgentService = TextAgentService(agents: _textAgents!);
 
     _toolRunner = ToolRunner(
       filesystemApi: CallFilesystemApi(notepadService: _notepadService),
@@ -369,8 +368,9 @@ class CallService {
       _toolRunner.start(),
     ]);
 
-    _activeFilesSubscription =
-        _notepadService.activeFiles.listen(_onActiveFilesChanged);
+    _activeFilesSubscription = _notepadService.activeFiles.listen(
+      _onActiveFilesChanged,
+    );
 
     final initialDefinitions = _computeExposedTools(<String>{});
 
@@ -384,25 +384,29 @@ class CallService {
     await _realtimeService.start();
     await _recorderService.startRecordingSession();
     await _realtimeService.bindAudioInput(_recorderService.audioStream);
-    _manualAudioTurnInputSubscription =
-        _recorderService.audioStream.listen(_manualAudioTurnBuffer.append);
-    await _playbackService
-        .bindInputStream(_realtimeService.assistantAudioStream);
+    _manualAudioTurnInputSubscription = _recorderService.audioStream.listen(
+      _manualAudioTurnBuffer.append,
+    );
+    await _playbackService.bindInputStream(
+      _realtimeService.assistantAudioStream,
+    );
 
     // 2. Subscribe to thread updates and watch for completed function calls.
-    _threadSubscription =
-        _realtimeService.threadUpdates.listen(_onThreadUpdate);
-    _assistantAudioCompletedSubscription =
-        _realtimeService.assistantAudioCompleted.listen((_) {
-      unawaited(_playbackService.markResponseComplete());
-    });
-    _userSpeakingStateSubscription =
-        _realtimeService.isUserSpeakingUpdates.listen((isSpeaking) {
-      if (!isSpeaking || _pushToTalkEnabled) {
-        return;
-      }
-      unawaited(_interruptAssistantOutput());
-    });
+    _threadSubscription = _realtimeService.threadUpdates.listen(
+      _onThreadUpdate,
+    );
+    _assistantAudioCompletedSubscription = _realtimeService
+        .assistantAudioCompleted
+        .listen((_) {
+          unawaited(_playbackService.markResponseComplete());
+        });
+    _userSpeakingStateSubscription = _realtimeService.isUserSpeakingUpdates
+        .listen((isSpeaking) {
+          if (!isSpeaking || _pushToTalkEnabled) {
+            return;
+          }
+          unawaited(_interruptAssistantOutput());
+        });
     _errorSubscription = _realtimeService.errors.listen((error) {
       // Emit simplified message to UI for critical errors
       _emitError(error.message);
@@ -448,7 +452,6 @@ class CallService {
   }
 
   Future<void> _interruptAssistantOutput() async {
-    _cancelPendingToolWork(playSound: true);
     await _playbackService.interrupt();
     if (_realtimeService.connectionState.isConnected) {
       await _realtimeService.interrupt();
@@ -464,12 +467,10 @@ class CallService {
     if (callId == null || callId.isEmpty) {
       return;
     }
-    if (_shouldSuppressToolResult(callId)) {
-      return;
-    }
     if (name == null || name.isEmpty) {
       const errorMessage = 'Missing tool name.';
-      await _realtimeService.sendFunctionOutput(
+      await _sendFunctionOutputIfAccepted(
+        functionCallItemId: item.id,
         callId: callId,
         output: jsonEncode({'error': errorMessage}),
         disposition: RealtimeToolOutputDisposition.error,
@@ -478,36 +479,20 @@ class CallService {
       return;
     }
 
-    _feedbackService.onToolExecutionStarted(callId);
-
     try {
-      final result = await _toolRunner.execute(
-        name,
-        arguments ?? '{}',
-      );
-      if (_shouldSuppressToolResult(callId)) {
-        return;
-      }
+      final result = await _toolRunner.execute(name, arguments ?? '{}');
       final outputMetadata = _deriveToolOutputMetadata(result);
-      await _realtimeService.sendFunctionOutput(
+      await _sendFunctionOutputIfAccepted(
+        functionCallItemId: item.id,
         callId: callId,
         output: result,
         disposition: outputMetadata.disposition,
         errorMessage: outputMetadata.errorMessage,
       );
-
-      if (outputMetadata.disposition == RealtimeToolOutputDisposition.error) {
-        _feedbackService.onToolExecutionFailed(callId);
-      } else {
-        _feedbackService.onToolExecutionCompleted(callId);
-      }
     } catch (e) {
-      if (_shouldSuppressToolResult(callId)) {
-        return;
-      }
-      _feedbackService.onToolExecutionFailed(callId);
       final errorMessage = e.toString();
-      await _realtimeService.sendFunctionOutput(
+      await _sendFunctionOutputIfAccepted(
+        functionCallItemId: item.id,
         callId: callId,
         output: jsonEncode({'error': errorMessage}),
         disposition: RealtimeToolOutputDisposition.error,
@@ -516,69 +501,33 @@ class CallService {
     }
   }
 
-  void _cancelPendingToolWork({required bool playSound}) {
-    final pendingToolCalls = _collectPendingToolCalls(_realtimeService.thread);
-    if (pendingToolCalls.isEmpty) {
-      _feedbackService.onToolExecutionsCancelled(playSound: playSound);
+  Future<void> _sendFunctionOutputIfAccepted({
+    required String functionCallItemId,
+    required String callId,
+    required String output,
+    required RealtimeToolOutputDisposition disposition,
+    String? errorMessage,
+  }) async {
+    if (!_isFunctionCallAcceptingOutput(functionCallItemId, callId)) {
       return;
     }
-
-    final itemIds = <String>{};
-    final callIds = <String>{};
-    for (final pendingToolCall in pendingToolCalls) {
-      itemIds.add(pendingToolCall.itemId);
-      callIds.add(pendingToolCall.callId);
-      _cancelledToolCallIds.add(pendingToolCall.callId);
-    }
-
-    _realtimeService.cancelFunctionCalls(itemIds: itemIds, callIds: callIds);
-    _feedbackService.onToolExecutionsCancelled(playSound: playSound);
+    await _realtimeService.sendFunctionOutput(
+      callId: callId,
+      output: output,
+      disposition: disposition,
+      errorMessage: errorMessage,
+    );
   }
 
-  List<_PendingToolCall> _collectPendingToolCalls(RealtimeThread thread) {
-    final matchedCallItemIds = <String>{};
-    final pendingCallItemIdsByCallId = <String, List<String>>{};
-
-    for (final item in thread.items) {
-      final callId = item.callId;
-      if (callId == null || callId.isEmpty) {
-        continue;
-      }
-
-      if (item.type == RealtimeThreadItemType.functionCall) {
-        pendingCallItemIdsByCallId.putIfAbsent(callId, () => <String>[]).add(
-              item.id,
-            );
-        continue;
-      }
-
-      if (item.type == RealtimeThreadItemType.functionCallOutput) {
-        final pendingCallItemIds = pendingCallItemIdsByCallId[callId];
-        if (pendingCallItemIds != null && pendingCallItemIds.isNotEmpty) {
-          matchedCallItemIds.add(pendingCallItemIds.removeAt(0));
-        }
-      }
-    }
-
-    final pendingToolCalls = <_PendingToolCall>[];
-    for (final item in thread.items) {
-      final callId = item.callId;
-      if (item.type != RealtimeThreadItemType.functionCall ||
-          callId == null ||
-          callId.isEmpty ||
-          item.status == RealtimeThreadItemStatus.incomplete ||
-          matchedCallItemIds.contains(item.id)) {
-        continue;
-      }
-      pendingToolCalls.add(_PendingToolCall(itemId: item.id, callId: callId));
-    }
-    return pendingToolCalls;
-  }
-
-  bool _shouldSuppressToolResult(String callId) {
-    return _cancelledToolCallIds.contains(callId) ||
-        state == CallState.disposing ||
-        state == CallState.disposed;
+  bool _isFunctionCallAcceptingOutput(
+    String functionCallItemId,
+    String callId,
+  ) {
+    return isRealtimeFunctionCallAcceptingOutput(
+      _realtimeService.thread.items,
+      functionCallItemId: functionCallItemId,
+      callId: callId,
+    );
   }
 
   _ToolOutputMetadata _deriveToolOutputMetadata(String output) {
@@ -646,7 +595,6 @@ class CallService {
     }
 
     await cancelPushToTalk();
-    _cancelPendingToolWork(playSound: false);
     state = CallState.disposing;
 
     try {
@@ -700,7 +648,6 @@ class CallService {
     _manualAudioTurnInputSubscription = null;
     _manualAudioTurnBuffer.cancel();
     _dispatchedToolCallIds.clear();
-    _cancelledToolCallIds.clear();
     _pushToTalkActive = false;
     _pushToTalkGeneration += 1;
     _pendingPushToTalkRelease = null;
@@ -744,38 +691,24 @@ class CallService {
 
     // Include both messages and function calls
     final allItems = thread.items
-        .where((item) =>
-            item.type == RealtimeThreadItemType.message ||
-            item.type == RealtimeThreadItemType.functionCall)
+        .where(
+          (item) =>
+              item.type == RealtimeThreadItemType.message ||
+              item.type == RealtimeThreadItemType.functionCall,
+        )
         .toList(growable: false);
     if (allItems.isEmpty) {
       return const <String>[];
     }
 
-    // Match tool outputs with their calls
-    final matchedToolOutputIndices = <int, int>{};
-    final pendingCallIndicesByCallId = <String, List<int>>{};
-
-    for (int i = 0; i < thread.items.length; i++) {
-      final item = thread.items[i];
-      if (item.type == RealtimeThreadItemType.functionCall &&
-          item.callId != null) {
-        pendingCallIndicesByCallId
-            .putIfAbsent(item.callId!, () => <int>[])
-            .add(i);
-      }
-      if (item.type == RealtimeThreadItemType.functionCallOutput &&
-          item.callId != null) {
-        final pendingCalls = pendingCallIndicesByCallId[item.callId!];
-        if (pendingCalls != null && pendingCalls.isNotEmpty) {
-          matchedToolOutputIndices[pendingCalls.removeAt(0)] = i;
-        }
-      }
-    }
+    final matchedToolOutputIndices = matchCompletedToolOutputIndices(
+      thread.items,
+    );
 
     final totalMilliseconds = endTime.difference(startTime).inMilliseconds;
-    final timestampStep =
-        allItems.length <= 1 ? 0 : (totalMilliseconds ~/ allItems.length);
+    final timestampStep = allItems.length <= 1
+        ? 0
+        : (totalMilliseconds ~/ allItems.length);
     final chatMessages = <String>[];
 
     for (var index = 0; index < allItems.length; index++) {
@@ -787,14 +720,16 @@ class CallService {
       // Handle function calls
       if (item.type == RealtimeThreadItemType.functionCall) {
         final itemIndex = thread.items.indexOf(item);
-        final outputIndex = matchedToolOutputIndices[itemIndex];
-        final outputItem =
-            outputIndex != null ? thread.items[outputIndex] : null;
+        final resolved = ResolvedRealtimeToolCall.fromThread(
+          thread.items,
+          itemIndex,
+          matchedToolOutputIndices,
+        );
+        final outputItem = resolved.outputItem;
 
-        final status = _getToolCallStatus(item, outputItem);
         final toolCallData = <String, dynamic>{
           'name': item.name ?? 'unknown',
-          'status': status,
+          'status': resolved.statusName,
         };
 
         if (item.arguments?.isNotEmpty ?? false) {
@@ -838,23 +773,6 @@ class CallService {
     return chatMessages;
   }
 
-  String _getToolCallStatus(
-    RealtimeThreadItem callItem,
-    RealtimeThreadItem? outputItem,
-  ) {
-    if (outputItem?.toolOutputDisposition ==
-        RealtimeToolOutputDisposition.error) {
-      return 'error';
-    }
-    if (outputItem != null) {
-      return 'completed';
-    }
-    if (callItem.status == RealtimeThreadItemStatus.incomplete) {
-      return 'cancelled';
-    }
-    return 'completed';
-  }
-
   String? _sessionRoleForItem(RealtimeThreadItem item) {
     return switch (item.role) {
       RealtimeThreadItemRole.user => 'user',
@@ -882,18 +800,5 @@ final class _ToolOutputMetadata {
   final RealtimeToolOutputDisposition disposition;
   final String? errorMessage;
 
-  const _ToolOutputMetadata({
-    required this.disposition,
-    this.errorMessage,
-  });
-}
-
-final class _PendingToolCall {
-  final String itemId;
-  final String callId;
-
-  const _PendingToolCall({
-    required this.itemId,
-    required this.callId,
-  });
+  const _ToolOutputMetadata({required this.disposition, this.errorMessage});
 }

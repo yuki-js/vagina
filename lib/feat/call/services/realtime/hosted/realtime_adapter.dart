@@ -1,12 +1,9 @@
-// VhrpRealtimeAdapter — Step 8: interrupt, cancelFunctionCalls, resume reconnect.
+// VhrpRealtimeAdapter — Step 8: interrupt, resume reconnect.
 //
 // Scope of this file (cumulative):
 //   - Steps 3–7 (connection, thread projection, user content, audio I/O, tools).
 //   - Step 8 additions:
 //       • interrupt()             → assistant.interrupt (one-way, reason:"barge_in")
-//       • cancelFunctionCalls()   → local-only marking (no VHRP wire message exists;
-//                                   OAI parity: mark matched functionCall items as
-//                                   incomplete and track locally-cancelled sets).
 //       • Resume reconnect loop:
 //           - disconnected/failed while _sessionId != null → auto-reconnect
 //           - session.open + resume.sessionId (§6.1 step 2)
@@ -185,19 +182,6 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
   /// because [RealtimeThread.id] is final (cannot be mutated in-place).
   RealtimeThread _thread = RealtimeThread(id: 'vhrp-local-thread');
 
-  /// Locally cancelled function-call item IDs.
-  ///
-  /// These are replayed after snapshot/patch projection so interrupted tool
-  /// work no longer appears executable while server-authoritative state catches
-  /// up.
-  final Set<String> _locallyCancelledFunctionItemIds = <String>{};
-
-  /// Locally cancelled function-call call IDs.
-  ///
-  /// `callId` is the stable correlation key between functionCall and
-  /// functionCallOutput items, so callers may cancel by either item ID or call ID.
-  final Set<String> _locallyCancelledFunctionCallIds = <String>{};
-
   // ── Audio turn mode ──────────────────────────────────────────────────────
 
   /// Current audio turn mode.  Defaults to [voiceActivity] to match the
@@ -343,10 +327,7 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
   /// If [apiConfig] is not [HostedVoiceAgentApiConfig], emits an error on
   /// [errors], transitions to [failed], and throws [ArgumentError].
   @override
-  Future<void> connect(
-    VoiceAgentApiConfig apiConfig, {
-    String? voice,
-  }) async {
+  Future<void> connect(VoiceAgentApiConfig apiConfig, {String? voice}) async {
     _ensureNotDisposed();
 
     // ── Guard: correct config type ──────────────────────────────────────────
@@ -380,10 +361,7 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
     }
 
     // ── Step 3: Freeze connect config for reconnect loop ───────────────────
-    _connectConfig = _ConnectConfig(
-      modelId: apiConfig.modelId,
-      voice: voice,
-    );
+    _connectConfig = _ConnectConfig(modelId: apiConfig.modelId, voice: voice);
 
     // Reset reconnect counters on each fresh connect().
     _reconnectAttempt = 0;
@@ -451,14 +429,17 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
           if (!snapshotReceived.isCompleted) snapshotReceived.complete();
         });
         _sendThreadSyncRequest('dispose');
-        await snapshotReceived.future
-            .timeout(const Duration(seconds: 3), onTimeout: () {});
+        await snapshotReceived.future.timeout(
+          const Duration(seconds: 3),
+          onTimeout: () {},
+        );
         await sub.cancel();
       } catch (_) {
         // Best-effort; teardown must not be blocked.
       }
       _logger.info(
-          'VHRP_FINAL_THREAD_JSON=${jsonEncode(_threadToJson(_thread))}');
+        'VHRP_FINAL_THREAD_JSON=${jsonEncode(_threadToJson(_thread))}',
+      );
     }
 
     // Cancel live audio input subscription first so no more PCM is forwarded.
@@ -724,9 +705,7 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
         type: RealtimeThreadItemType.message,
         role: RealtimeThreadItemRole.user,
         status: RealtimeThreadItemStatus.inProgress,
-        content: <RealtimeThreadContentPart>[
-          RealtimeThreadTextPart(),
-        ],
+        content: <RealtimeThreadContentPart>[RealtimeThreadTextPart()],
       ),
     );
     _emitThreadUpdate();
@@ -818,32 +797,6 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
     return clientItemId;
   }
 
-  /// Cancel in-progress function calls.
-  ///
-  /// VHRP/1 has no dedicated cancel wire message.  This method performs local
-  /// suppression only: matching functionCall items are marked incomplete so
-  /// interrupted stale work no longer appears executable, while the server
-  /// remains authoritative for future patches/snapshots.
-  ///
-  /// TODO(realtime-cancel-contract): This method exists only because the shared
-  /// RealtimeAdapter interface currently exposes local function-call
-  /// cancellation. Decide in a follow-up whether this local-suppression concern
-  /// should remain on the provider-agnostic adapter boundary or move to a
-  /// CallService-owned layer.
-  @override
-  void cancelFunctionCalls({
-    Set<String> itemIds = const <String>{},
-    Set<String> callIds = const <String>{},
-  }) {
-    _ensureNotDisposed();
-    _locallyCancelledFunctionItemIds.addAll(itemIds);
-    _locallyCancelledFunctionCallIds.addAll(callIds);
-
-    if (_markLocallyCancelledFunctionCallsIncomplete()) {
-      _emitThreadUpdate();
-    }
-  }
-
   // ─────────────────────────────────────────────────────────────────────────
   // RealtimeAdapter — Response control  (Step 8)
   // ─────────────────────────────────────────────────────────────────────────
@@ -854,18 +807,15 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
   /// Wire: one-way `assistant.interrupt` (§4.11) — no messageId, no ack.
   ///
   /// Local state: [isUserSpeaking] is NOT changed here (VAD-driven state).
-  /// The OAI adapter delegates to `_client.cancelResponse()` which also does
-  /// not touch local thread items synchronously.  We follow the same pattern:
-  /// the server will emit `generation.interrupted` and `thread.patch` ops that
-  /// the projector will apply normally.
+  /// The server owns interrupt projection: it resolves completed pending tool
+  /// calls with cancellation/error outputs, marks unfinished function calls
+  /// incomplete, and emits the resulting `thread.patch` ops for the projector.
   @override
   Future<void> interrupt() async {
     _ensureNotDisposed();
 
     if (!_connectionState.isConnected) {
-      // Not connected — nothing to interrupt; silently ignore (OAI parity:
-      // OaiRealtimeAdapter also ignores cancel when not connected because the
-      // OaiRealtimeClient's cancelResponse() is a no-op when disconnected).
+      // Not connected — nothing to interrupt; silently ignore.
       return;
     }
 
@@ -1029,7 +979,6 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
   void _onThreadSnapshot(ThreadSnapshotMsg msg) {
     // Replace the local thread wholesale (§5.4 — snapshot is authoritative).
     _thread = _projector.applySnapshot(msg);
-    _markLocallyCancelledFunctionCallsIncomplete();
     // Keep the stored IDs in sync with the snapshot (may differ from
     // session.ready values on resume + resync).
     _threadId = _thread.id;
@@ -1058,37 +1007,7 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
       _sendThreadSyncRequest('patch_apply_failed');
       return;
     }
-    _markLocallyCancelledFunctionCallsIncomplete();
     _emitThreadUpdate();
-  }
-
-  bool _markLocallyCancelledFunctionCallsIncomplete() {
-    var hasChanges = false;
-    for (final item in _thread.items) {
-      if (item.type != RealtimeThreadItemType.functionCall) {
-        continue;
-      }
-      if (!_isLocallyCancelledFunctionCall(
-        itemId: item.id,
-        callId: item.callId,
-      )) {
-        continue;
-      }
-      if (item.status == RealtimeThreadItemStatus.incomplete) {
-        continue;
-      }
-      item.markIncomplete();
-      hasChanges = true;
-    }
-    return hasChanges;
-  }
-
-  bool _isLocallyCancelledFunctionCall({
-    required String itemId,
-    required String? callId,
-  }) {
-    return _locallyCancelledFunctionItemIds.contains(itemId) ||
-        (callId != null && _locallyCancelledFunctionCallIds.contains(callId));
   }
 
   /// Sends a `thread.sync.request` to the server requesting a full snapshot.
@@ -1442,11 +1361,7 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
           'toolErrorMessage': item.toolErrorMessage,
           'content': item.content.map((part) {
             if (part is RealtimeThreadTextPart) {
-              return {
-                'type': 'text',
-                'text': part.text,
-                'isDone': part.isDone,
-              };
+              return {'type': 'text', 'text': part.text, 'isDone': part.isDone};
             } else if (part is RealtimeThreadAudioPart) {
               return {
                 'type': 'audio',

@@ -6,6 +6,7 @@ import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/l10n/app_localizations.dart';
 import 'package:vagina/feat/call/models/realtime/realtime_adapter_models.dart';
 import 'package:vagina/feat/call/models/realtime/realtime_thread.dart';
+import 'package:vagina/feat/call/models/realtime/tool_call_resolution.dart';
 import 'package:vagina/feat/call/services/call_service.dart';
 import 'package:vagina/feat/call/services/realtime_service.dart';
 
@@ -30,7 +31,7 @@ class _ChatPaneState extends State<ChatPane> {
   final ScrollController _scrollController = ScrollController();
   StreamSubscription<RealtimeThread>? _threadSubscription;
   StreamSubscription<RealtimeAdapterConnectionState>?
-      _connectionStateSubscription;
+  _connectionStateSubscription;
   List<RealtimeThreadItem> _items = const <RealtimeThreadItem>[];
   bool _isConnected = false;
   bool _isAtBottom = true;
@@ -82,7 +83,9 @@ class _ChatPaneState extends State<ChatPane> {
       });
     });
 
-    _connectionStateSubscription = service.connectionStateUpdates.listen((state) {
+    _connectionStateSubscription = service.connectionStateUpdates.listen((
+      state,
+    ) {
       if (!mounted) {
         return;
       }
@@ -296,7 +299,7 @@ class _ChatMessageList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final matchedToolOutputIndices = _matchCompletedToolOutputIndices(items);
+    final matchedToolOutputIndices = matchCompletedToolOutputIndices(items);
 
     return ListView.builder(
       controller: scrollController,
@@ -311,10 +314,12 @@ class _ChatMessageList extends StatelessWidget {
         // ツール呼び出しはバッジで表示
         if (item.type == RealtimeThreadItemType.functionCall) {
           return _ToolCallBubble(
-            details: _ResolvedToolCallDetails.fromThread(
-              items,
-              index,
-              matchedToolOutputIndices,
+            details: _ResolvedToolCallDetails(
+              ResolvedRealtimeToolCall.fromThread(
+                items,
+                index,
+                matchedToolOutputIndices,
+              ),
             ),
             onTap: () => onToolTap(item),
           );
@@ -337,10 +342,7 @@ class _ToolCallBubble extends StatelessWidget {
   final _ResolvedToolCallDetails details;
   final VoidCallback onTap;
 
-  const _ToolCallBubble({
-    required this.details,
-    required this.onTap,
-  });
+  const _ToolCallBubble({required this.details, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -386,19 +388,16 @@ class _RealtimeChatBubble extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
-        mainAxisAlignment:
-            _isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment: _isUser
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (!_isUser) ...[
             const CircleAvatar(
               radius: 16,
               backgroundColor: AppTheme.primaryColor,
-              child: Icon(
-                Icons.smart_toy,
-                size: 18,
-                color: Colors.white,
-              ),
+              child: Icon(Icons.smart_toy, size: 18, color: Colors.white),
             ),
             const SizedBox(width: 8),
           ],
@@ -446,10 +445,7 @@ class _RealtimeChatBubble extends StatelessWidget {
         widgets.add(
           SelectableText(
             part.text,
-            style: TextStyle(
-              color: _textColor,
-              fontSize: 15,
-            ),
+            style: TextStyle(color: _textColor, fontSize: 15),
           ),
         );
       } else if (part is RealtimeThreadAudioPart) {
@@ -459,10 +455,7 @@ class _RealtimeChatBubble extends StatelessWidget {
         widgets.add(
           SelectableText(
             displayTxt,
-            style: TextStyle(
-              color: _textColor,
-              fontSize: 15,
-            ),
+            style: TextStyle(color: _textColor, fontSize: 15),
           ),
         );
       } else if (part is RealtimeThreadImagePart) {
@@ -504,9 +497,7 @@ class _ToolBadge extends StatelessWidget {
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: color.withValues(alpha: 0.25),
-          ),
+          border: Border.all(color: color.withValues(alpha: 0.25)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -544,105 +535,29 @@ class _ToolBadge extends StatelessWidget {
   }
 }
 
-Map<int, int> _matchCompletedToolOutputIndices(List<RealtimeThreadItem> items) {
-  final matchedToolOutputIndices = <int, int>{};
-  final pendingCallIndicesByCallId = <String, List<int>>{};
-
-  for (int i = 0; i < items.length; i++) {
-    final item = items[i];
-    if (item.type == RealtimeThreadItemType.functionCall &&
-        item.callId != null) {
-      pendingCallIndicesByCallId
-          .putIfAbsent(item.callId!, () => <int>[])
-          .add(i);
-    }
-
-    if (item.type == RealtimeThreadItemType.functionCallOutput &&
-        item.callId != null) {
-      final pendingCalls = pendingCallIndicesByCallId[item.callId!];
-      if (pendingCalls != null && pendingCalls.isNotEmpty) {
-        matchedToolOutputIndices[pendingCalls.removeAt(0)] = i;
-      }
-    }
-  }
-
-  return matchedToolOutputIndices;
-}
-
 _ResolvedToolCallDetails? _resolveToolCallDetails(
   List<RealtimeThreadItem> items,
   String itemId,
 ) {
-  int? targetIndex;
-  for (int i = 0; i < items.length; i++) {
-    if (items[i].id == itemId) {
-      targetIndex = i;
-      break;
-    }
-  }
-
-  if (targetIndex == null) {
-    return null;
-  }
-
-  final callItem = items[targetIndex];
-  if (callItem.type != RealtimeThreadItemType.functionCall) {
-    return null;
-  }
-
-  final matchedToolOutputIndices = _matchCompletedToolOutputIndices(items);
-  return _ResolvedToolCallDetails.fromThread(
-    items,
-    targetIndex,
-    matchedToolOutputIndices,
-  );
-}
-
-enum _ResolvedToolStage {
-  generating,
-  executing,
-  completed,
-  error,
-  cancelled,
+  final resolved = resolveRealtimeToolCall(items, itemId);
+  return resolved == null ? null : _ResolvedToolCallDetails(resolved);
 }
 
 final class _ResolvedToolCallDetails {
-  final RealtimeThreadItem callItem;
-  final RealtimeThreadItem? outputItem;
-  final bool hasCompletedOutput;
+  final ResolvedRealtimeToolCall _resolved;
 
-  const _ResolvedToolCallDetails({
-    required this.callItem,
-    required this.outputItem,
-    required this.hasCompletedOutput,
-  });
+  const _ResolvedToolCallDetails(this._resolved);
 
-  factory _ResolvedToolCallDetails.fromThread(
-    List<RealtimeThreadItem> items,
-    int targetIndex,
-    Map<int, int>? matchedToolOutputIndices,
-  ) {
-    final callItem = items[targetIndex];
-    if (callItem.type != RealtimeThreadItemType.functionCall) {
-      throw ArgumentError.value(
-        callItem.type,
-        'callItem.type',
-        'Expected a function call item.',
-      );
-    }
+  RealtimeThreadItem get callItem => _resolved.callItem;
 
-    final outputIndex = matchedToolOutputIndices?[targetIndex];
-    return _ResolvedToolCallDetails(
-      callItem: callItem,
-      outputItem: outputIndex == null ? null : items[outputIndex],
-      hasCompletedOutput: outputIndex != null,
-    );
-  }
+  RealtimeThreadItem? get outputItem => _resolved.outputItem;
+
+  RealtimeToolStage get stage => _resolved.stage;
 
   String displayTitle(AppLocalizations l10n) =>
       callItem.name ?? l10n.callChatToolFallbackName;
 
-  String? get arguments => callItem.arguments;
+  String? get arguments => _resolved.arguments;
 
   bool get hasArguments => (arguments ?? '').isNotEmpty;
 
@@ -651,91 +566,68 @@ final class _ResolvedToolCallDetails {
       return arguments!;
     }
     return switch (stage) {
-      _ResolvedToolStage.generating => l10n.callChatToolArgumentsStreaming,
-      _ResolvedToolStage.executing ||
-      _ResolvedToolStage.completed ||
-      _ResolvedToolStage.error =>
-        l10n.callChatToolArgumentsNone,
-      _ResolvedToolStage.cancelled => l10n.callChatToolArgumentsCancelled,
+      RealtimeToolStage.generating => l10n.callChatToolArgumentsStreaming,
+      RealtimeToolStage.executing ||
+      RealtimeToolStage.completed ||
+      RealtimeToolStage.error => l10n.callChatToolArgumentsNone,
+      RealtimeToolStage.cancelled => l10n.callChatToolArgumentsCancelled,
     };
   }
 
   bool get argumentsPlaceholder => !hasArguments;
 
-  String? get result => outputItem?.output ?? callItem.output;
+  String? get result => _resolved.output;
 
-  bool get hasResult => (result ?? '').isNotEmpty;
+  bool get hasResult => _resolved.hasOutput;
 
-  String? get errorMessage =>
-      outputItem?.toolErrorMessage ?? callItem.toolErrorMessage;
+  String? get errorMessage => _resolved.errorMessage;
 
   String? get resultDisplayText => isError ? (errorMessage ?? result) : result;
 
-  _ResolvedToolStage get stage {
-    if (outputItem?.toolOutputDisposition ==
-        RealtimeToolOutputDisposition.error) {
-      return _ResolvedToolStage.error;
-    }
-    if (hasCompletedOutput) {
-      return _ResolvedToolStage.completed;
-    }
-    if (callItem.status == RealtimeThreadItemStatus.incomplete) {
-      return _ResolvedToolStage.cancelled;
-    }
-    if (callItem.status == RealtimeThreadItemStatus.completed) {
-      return _ResolvedToolStage.executing;
-    }
-    return _ResolvedToolStage.generating;
-  }
+  bool get isError => _resolved.isError;
 
-  bool get isError => stage == _ResolvedToolStage.error;
+  bool get isCancelled => _resolved.isCancelled;
 
-  bool get isCancelled => stage == _ResolvedToolStage.cancelled;
-
-  bool get showSpinner =>
-      stage == _ResolvedToolStage.generating ||
-      stage == _ResolvedToolStage.executing;
+  bool get showSpinner => _resolved.isRunning;
 
   Color get statusColor {
     return switch (stage) {
-      _ResolvedToolStage.generating ||
-      _ResolvedToolStage.executing =>
-        AppTheme.secondaryColor,
-      _ResolvedToolStage.completed => Colors.green,
-      _ResolvedToolStage.error => Colors.red,
-      _ResolvedToolStage.cancelled => Colors.grey,
+      RealtimeToolStage.generating ||
+      RealtimeToolStage.executing => AppTheme.secondaryColor,
+      RealtimeToolStage.completed => Colors.green,
+      RealtimeToolStage.error => Colors.red,
+      RealtimeToolStage.cancelled => Colors.grey,
     };
   }
 
   IconData get statusIcon {
     return switch (stage) {
-      _ResolvedToolStage.generating => Icons.download,
-      _ResolvedToolStage.executing => Icons.play_arrow,
-      _ResolvedToolStage.completed => Icons.check_circle,
-      _ResolvedToolStage.error => Icons.error,
-      _ResolvedToolStage.cancelled => Icons.cancel,
+      RealtimeToolStage.generating => Icons.download,
+      RealtimeToolStage.executing => Icons.play_arrow,
+      RealtimeToolStage.completed => Icons.check_circle,
+      RealtimeToolStage.error => Icons.error,
+      RealtimeToolStage.cancelled => Icons.cancel,
     };
   }
 
   IconData get badgeIcon {
     return switch (stage) {
-      _ResolvedToolStage.generating ||
-      _ResolvedToolStage.executing ||
-      _ResolvedToolStage.completed =>
-        Icons.build,
-      _ResolvedToolStage.error => Icons.error_outline,
-      _ResolvedToolStage.cancelled => Icons.cancel_outlined,
+      RealtimeToolStage.generating ||
+      RealtimeToolStage.executing ||
+      RealtimeToolStage.completed => Icons.build,
+      RealtimeToolStage.error => Icons.error_outline,
+      RealtimeToolStage.cancelled => Icons.cancel_outlined,
     };
   }
 
   String statusText(AppLocalizations l10n) {
     return switch (stage) {
-      _ResolvedToolStage.generating =>
+      RealtimeToolStage.generating =>
         l10n.callChatToolStatusGeneratingArguments,
-      _ResolvedToolStage.executing => l10n.callChatToolStatusExecuting,
-      _ResolvedToolStage.completed => l10n.callChatToolStatusCompleted,
-      _ResolvedToolStage.error => l10n.callChatToolStatusError,
-      _ResolvedToolStage.cancelled => l10n.callChatToolStatusCancelled,
+      RealtimeToolStage.executing => l10n.callChatToolStatusExecuting,
+      RealtimeToolStage.completed => l10n.callChatToolStatusCompleted,
+      RealtimeToolStage.error => l10n.callChatToolStatusError,
+      RealtimeToolStage.cancelled => l10n.callChatToolStatusCancelled,
     };
   }
 }
@@ -833,10 +725,7 @@ class _ToolDetailsSheet extends StatelessWidget {
         child: Center(
           child: Text(
             message,
-            style: const TextStyle(
-              fontSize: 14,
-              color: AppTheme.textSecondary,
-            ),
+            style: const TextStyle(fontSize: 14, color: AppTheme.textSecondary),
           ),
         ),
       ),
@@ -862,11 +751,7 @@ class _ToolDetailsHeader extends StatelessWidget {
             color: statusColor.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(
-            details.statusIcon,
-            color: statusColor,
-            size: 20,
-          ),
+          child: Icon(details.statusIcon, color: statusColor, size: 20),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -909,17 +794,11 @@ class _ToolDetailsStatusSection extends StatelessWidget {
       decoration: BoxDecoration(
         color: statusColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: statusColor.withValues(alpha: 0.3),
-        ),
+        border: Border.all(color: statusColor.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
-          Icon(
-            details.statusIcon,
-            size: 16,
-            color: statusColor,
-          ),
+          Icon(details.statusIcon, size: 16, color: statusColor),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -941,10 +820,7 @@ class _ToolDetailsSection extends StatelessWidget {
   final String title;
   final Widget child;
 
-  const _ToolDetailsSection({
-    required this.title,
-    required this.child,
-  });
+  const _ToolDetailsSection({required this.title, required this.child});
 
   @override
   Widget build(BuildContext context) {
@@ -1220,13 +1096,11 @@ class _ChatInputShell extends StatelessWidget {
           const SizedBox(width: 8),
           IconButton(
             onPressed: enabled ? onSend : null,
-            icon: const Icon(
-              Icons.send,
-              color: Colors.white,
-            ),
+            icon: const Icon(Icons.send, color: Colors.white),
             style: IconButton.styleFrom(
-              backgroundColor:
-                  enabled ? AppTheme.primaryColor : AppTheme.textSecondary,
+              backgroundColor: enabled
+                  ? AppTheme.primaryColor
+                  : AppTheme.textSecondary,
               padding: const EdgeInsets.all(12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(24),

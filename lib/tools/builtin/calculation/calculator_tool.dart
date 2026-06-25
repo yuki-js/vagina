@@ -10,32 +10,36 @@ class CalculatorTool extends Tool {
 
   @override
   ToolDefinition get definition => const ToolDefinition(
-        toolKey: toolKeyName,
-        displayName: '計算機',
-        displayDescription: '数式を計算します',
-        categoryKey: 'calculation',
-        iconKey: 'calculate',
-        sourceKey: 'builtin',
-        publishedBy: 'aokiapp',
-        description:
-            'Perform basic arithmetic calculations. Use this for mathematical operations.',
-        activation: ToolActivation.always(),
-        parametersSchema: {
-          'type': 'object',
-          'properties': {
-            'expression': {
-              'type': 'string',
-              'description':
-                  'Mathematical expression to evaluate (e.g., "2 + 3 * 4", "100 / 5")',
-            },
-          },
-          'required': ['expression'],
+    toolKey: toolKeyName,
+    displayName: '計算機',
+    displayDescription: '数式を計算します',
+    categoryKey: 'calculation',
+    iconKey: 'calculate',
+    sourceKey: 'builtin',
+    publishedBy: 'aokiapp',
+    description:
+        'Perform basic arithmetic calculations. Use this for mathematical operations.',
+    activation: ToolActivation.always(),
+    parametersSchema: {
+      'type': 'object',
+      'properties': {
+        'expression': {
+          'type': 'string',
+          'description':
+              'Mathematical expression to evaluate (e.g., "2 + 3 * 4", "100 / 5")',
         },
-      );
+      },
+      'required': ['expression'],
+    },
+  );
 
   @override
   Future<String> execute(Map<String, dynamic> args) async {
     final expression = args['expression'] as String;
+
+    // block 3 seconds
+
+    await Future.delayed(const Duration(seconds: 3));
 
     try {
       final result = _evaluator.evaluate(expression);

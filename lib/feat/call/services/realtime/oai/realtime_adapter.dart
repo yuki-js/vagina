@@ -14,6 +14,8 @@ import 'realtime_connect_config.dart';
 import 'realtime_connection_state.dart';
 import 'realtime_event.dart';
 
+enum _OaiResponseState { unknown, active, inactive }
+
 enum _OaiInputAudioNoiseReductionSelection {
   off,
   nearField,
@@ -71,10 +73,7 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
 
       final connectFuture = client.connect(config);
 
-      await Future.any([
-        completer.future,
-        connectFuture,
-      ]).timeout(
+      await Future.any([completer.future, connectFuture]).timeout(
         const Duration(seconds: 10),
         onTimeout: () {
           throw TimeoutException('Connection timeout');
@@ -116,44 +115,39 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
   String _sessionInstructions = '';
   String _transcriptionModel = 'gpt-4o-mini-transcribe';
   VoiceAgentModality _sessionModality = VoiceAgentModality.audio;
-  final Set<String> _locallyCancelledFunctionItemIds = <String>{};
-  final Set<String> _locallyCancelledFunctionCallIds = <String>{};
   int _localIdCounter = 0;
   bool _disposed = false;
   RealtimeAdapterConnectionState _connectionState =
       const RealtimeAdapterConnectionState.idle();
   bool _isUserSpeaking = false;
   RealtimeAudioTurnMode _audioTurnMode = RealtimeAudioTurnMode.voiceActivity;
+  _OaiResponseState _responseState = _OaiResponseState.unknown;
+  final Set<String> _activeResponseFunctionItemIds = <String>{};
+  final Set<String> _activeResponseFunctionCallIds = <String>{};
 
   OaiRealtimeAdapter({OaiRealtimeClient? client, String? threadId})
-      : _client = client ?? OaiRealtimeClient(),
-        _thread = RealtimeThread(
-          id: threadId ?? _makeThreadId(),
-        ) {
+    : _client = client ?? OaiRealtimeClient(),
+      _thread = RealtimeThread(id: threadId ?? _makeThreadId()) {
     _subscriptions.addAll([
       _client.connectionStateUpdates.listen((state) {
-        _setConnectionState(
-          switch (state.phase) {
-            OaiRealtimeConnectionPhase.idle =>
-              const RealtimeAdapterConnectionState.idle(),
-            OaiRealtimeConnectionPhase.connecting ||
-            OaiRealtimeConnectionPhase.reconnecting =>
-              const RealtimeAdapterConnectionState.connecting(),
-            OaiRealtimeConnectionPhase.connected =>
-              const RealtimeAdapterConnectionState.connected(),
-            OaiRealtimeConnectionPhase.disconnecting =>
-              const RealtimeAdapterConnectionState.disconnecting(),
-            OaiRealtimeConnectionPhase.disconnected =>
-              RealtimeAdapterConnectionState.disconnected(
-                message: state.message,
-              ),
-            OaiRealtimeConnectionPhase.failed =>
-              RealtimeAdapterConnectionState.failed(
-                message: state.message,
-                error: state.error,
-              ),
-          },
-        );
+        _setConnectionState(switch (state.phase) {
+          OaiRealtimeConnectionPhase.idle =>
+            const RealtimeAdapterConnectionState.idle(),
+          OaiRealtimeConnectionPhase.connecting ||
+          OaiRealtimeConnectionPhase.reconnecting =>
+            const RealtimeAdapterConnectionState.connecting(),
+          OaiRealtimeConnectionPhase.connected =>
+            const RealtimeAdapterConnectionState.connected(),
+          OaiRealtimeConnectionPhase.disconnecting =>
+            const RealtimeAdapterConnectionState.disconnecting(),
+          OaiRealtimeConnectionPhase.disconnected =>
+            RealtimeAdapterConnectionState.disconnected(message: state.message),
+          OaiRealtimeConnectionPhase.failed =>
+            RealtimeAdapterConnectionState.failed(
+              message: state.message,
+              error: state.error,
+            ),
+        });
       }),
       _client.connectionErrors.listen((error) {
         _errorController.add(
@@ -190,8 +184,9 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
           _emitThreadUpdate();
         }
       }),
-      _client.conversationItemInputAudioTranscriptionDeltaEvents
-          .listen((event) {
+      _client.conversationItemInputAudioTranscriptionDeltaEvents.listen((
+        event,
+      ) {
         final itemId = event.itemId;
         final delta = event.delta;
         if (itemId == null ||
@@ -208,8 +203,9 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
         audioPart.appendTranscriptDelta(delta);
         _emitThreadUpdate();
       }),
-      _client.conversationItemInputAudioTranscriptionCompletedEvents
-          .listen((event) {
+      _client.conversationItemInputAudioTranscriptionCompletedEvents.listen((
+        event,
+      ) {
         final itemId = event.itemId;
         final transcript = event.transcript;
         if (itemId == null ||
@@ -235,23 +231,22 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
       _client.inputAudioBufferSpeechStoppedEvents.listen((_) {
         _setUserSpeaking(false);
       }),
+      _client.responseCreatedEvents.listen((_) {
+        _responseState = _OaiResponseState.active;
+        _activeResponseFunctionItemIds.clear();
+        _activeResponseFunctionCallIds.clear();
+      }),
+      _client.responseDoneEvents.listen((_) {
+        _responseState = _OaiResponseState.inactive;
+      }),
       _client.responseOutputItemAddedEvents.listen((event) {
-        _upsertConversationItem(event.item);
+        final item = _upsertConversationItem(event.item);
+        _trackActiveFunctionCall(item);
         _emitThreadUpdate();
       }),
       _client.responseOutputItemDoneEvents.listen((event) {
         final item = _upsertConversationItem(event.item);
-        final nextStatus = RealtimeThreadItemStatus.fromWireValue(
-          event.item.status,
-        );
-        final isLocallyCancelled = _isLocallyCancelledFunctionCall(
-          itemId: item.id,
-          callId: item.callId,
-        );
-        if (!isLocallyCancelled ||
-            nextStatus == RealtimeThreadItemStatus.incomplete) {
-          item.status = nextStatus;
-        }
+        item.status = RealtimeThreadItemStatus.fromWireValue(event.item.status);
         _emitThreadUpdate();
       }),
       _client.responseContentPartAddedEvents.listen((event) {
@@ -394,6 +389,7 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
           return;
         }
         final item = _ensureFunctionCallItem(itemId, callId: event.callId);
+        _trackActiveFunctionCall(item);
         item.arguments = (item.arguments ?? '') + delta;
         _emitThreadUpdate();
       }),
@@ -410,6 +406,7 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
         item.callId = event.callId ?? item.callId;
         item.name = event.name ?? item.name;
         item.arguments = event.arguments ?? item.arguments;
+        _trackActiveFunctionCall(item);
         _emitThreadUpdate();
       }),
     ]);
@@ -456,10 +453,7 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
   // ---------------------------------------------------------------------------
 
   @override
-  Future<void> connect(
-    VoiceAgentApiConfig apiConfig, {
-    String? voice,
-  }) async {
+  Future<void> connect(VoiceAgentApiConfig apiConfig, {String? voice}) async {
     _ensureNotDisposed();
     final selfHosted = apiConfig is SelfhostedVoiceAgentApiConfig
         ? apiConfig
@@ -470,8 +464,8 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
     _sessionModality = selfHosted.modality;
     _transcriptionModel =
         selfHosted.transcriptionModel?.trim().isNotEmpty == true
-            ? selfHosted.transcriptionModel!.trim()
-            : 'gpt-4o-mini-transcribe';
+        ? selfHosted.transcriptionModel!.trim()
+        : 'gpt-4o-mini-transcribe';
 
     await _client.connect(_toOaiConnectConfig(selfHosted));
     await _client.updateSession(_buildSessionConfig());
@@ -660,7 +654,7 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
       return itemId;
     }
 
-     // One shot workaround start
+    // One shot workaround start
     // ワークアラウンドが必要
     // 確かにワンショットで音声を送り、サーバースレッドデータに積み上げる機能はリアルタイムAPIに存在する。
     // しかしながら、それで送ってしまうとトランスクリプションが出てこなくなる。
@@ -683,10 +677,7 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
         'type': 'message',
         'role': 'user',
         'content': [
-          {
-            'type': 'input_text',
-            'text': text,
-          },
+          {'type': 'input_text', 'text': text},
         ],
       },
     );
@@ -728,11 +719,7 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
         'type': 'message',
         'role': 'user',
         'content': [
-          {
-            'type': 'input_image',
-            'image_url': dataUri,
-            'detail': 'auto',
-          },
+          {'type': 'input_image', 'image_url': dataUri, 'detail': 'auto'},
         ],
       },
     );
@@ -769,35 +756,6 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
     return itemId;
   }
 
-  @override
-  void cancelFunctionCalls({
-    Set<String> itemIds = const <String>{},
-    Set<String> callIds = const <String>{},
-  }) {
-    _ensureNotDisposed();
-    _locallyCancelledFunctionItemIds.addAll(itemIds);
-    _locallyCancelledFunctionCallIds.addAll(callIds);
-
-    var hasChanges = false;
-    for (final item in _thread.items) {
-      if (item.type != RealtimeThreadItemType.functionCall) {
-        continue;
-      }
-      if (!_isLocallyCancelledFunctionCall(
-          itemId: item.id, callId: item.callId)) {
-        continue;
-      }
-      if (item.status == RealtimeThreadItemStatus.incomplete) {
-        continue;
-      }
-      item.markIncomplete();
-      hasChanges = true;
-    }
-    if (hasChanges) {
-      _emitThreadUpdate();
-    }
-  }
-
   // ---------------------------------------------------------------------------
   // Response control
   // ---------------------------------------------------------------------------
@@ -805,7 +763,13 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
   @override
   Future<void> interrupt() async {
     _ensureNotDisposed();
-    await _client.cancelResponse();
+    if (_responseState != _OaiResponseState.inactive) {
+      await _client.cancelResponse();
+    }
+    await _resolveCompletedPendingFunctionCallsAsInterrupted();
+    if (_markPendingFunctionCallsIncomplete()) {
+      _emitThreadUpdate();
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -846,14 +810,7 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
       existing.name = conversationItem.name ?? existing.name;
       existing.arguments = conversationItem.arguments ?? existing.arguments;
       existing.output = conversationItem.output ?? existing.output;
-      final isLocallyCancelled = _isLocallyCancelledFunctionCall(
-        itemId: existing.id,
-        callId: existing.callId,
-      );
-      if (!isLocallyCancelled ||
-          nextStatus == RealtimeThreadItemStatus.incomplete) {
-        existing.status = nextStatus;
-      }
+      existing.status = nextStatus;
       if (existing.content.isEmpty && conversationItem.content.isNotEmpty) {
         for (final part in conversationItem.content) {
           _mergeContentPart(existing, part, isDone: true);
@@ -868,13 +825,7 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
       id: conversationItem.id,
       type: itemType,
       role: _mapRole(conversationItem.role),
-      status: itemType == RealtimeThreadItemType.functionCall &&
-              _isLocallyCancelledFunctionCall(
-                itemId: conversationItem.id,
-                callId: itemCallId,
-              )
-          ? RealtimeThreadItemStatus.incomplete
-          : RealtimeThreadItemStatus.fromWireValue(conversationItem.status),
+      status: RealtimeThreadItemStatus.fromWireValue(conversationItem.status),
       callId: itemCallId,
       name: conversationItem.name,
       arguments: conversationItem.arguments,
@@ -927,34 +878,18 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
     if (existing != null) {
       existing.callId = callId ?? existing.callId;
       existing.name = name ?? existing.name;
-      if (_isLocallyCancelledFunctionCall(
-        itemId: existing.id,
-        callId: existing.callId,
-      )) {
-        existing.markIncomplete();
-      }
       return existing;
     }
     final item = RealtimeThreadItem(
       id: itemId,
       type: RealtimeThreadItemType.functionCall,
       role: RealtimeThreadItemRole.assistant,
-      status: _isLocallyCancelledFunctionCall(itemId: itemId, callId: callId)
-          ? RealtimeThreadItemStatus.incomplete
-          : RealtimeThreadItemStatus.inProgress,
+      status: RealtimeThreadItemStatus.inProgress,
       callId: callId,
       name: name,
     );
     _thread.addItem(item);
     return item;
-  }
-
-  bool _isLocallyCancelledFunctionCall({
-    required String itemId,
-    required String? callId,
-  }) {
-    return _locallyCancelledFunctionItemIds.contains(itemId) ||
-        (callId != null && _locallyCancelledFunctionCallIds.contains(callId));
   }
 
   void _stageLocalFunctionOutputItem(
@@ -989,6 +924,93 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
       ),
     );
     _emitThreadUpdate();
+  }
+
+  void _trackActiveFunctionCall(RealtimeThreadItem item) {
+    if (item.type != RealtimeThreadItemType.functionCall ||
+        _responseState == _OaiResponseState.inactive) {
+      return;
+    }
+    _activeResponseFunctionItemIds.add(item.id);
+    final callId = item.callId;
+    if (callId != null && callId.isNotEmpty) {
+      _activeResponseFunctionCallIds.add(callId);
+    }
+  }
+
+  Set<String> _outputCallIds() {
+    final outputCallIds = <String>{};
+    for (final item in _thread.items) {
+      if (item.type == RealtimeThreadItemType.functionCallOutput &&
+          item.callId != null) {
+        outputCallIds.add(item.callId!);
+      }
+    }
+    return outputCallIds;
+  }
+
+  Future<void> _resolveCompletedPendingFunctionCallsAsInterrupted() async {
+    const errorMessage = 'Tool call cancelled by user interrupt.';
+    final pendingCallIds = _completedPendingFunctionCallIds();
+    for (final callId in pendingCallIds) {
+      final outputItemId = _nextLocalId('tool');
+      _stageLocalFunctionOutputItem(
+        outputItemId,
+        callId: callId,
+        output: jsonEncode({'error': errorMessage}),
+        disposition: RealtimeToolOutputDisposition.error,
+        errorMessage: errorMessage,
+      );
+      await _client.createConversationItem(
+        item: {
+          'id': outputItemId,
+          'type': 'function_call_output',
+          'call_id': callId,
+          'output': jsonEncode({'error': errorMessage}),
+        },
+      );
+    }
+  }
+
+  List<String> _completedPendingFunctionCallIds() {
+    final outputCallIds = _outputCallIds();
+    final pendingCallIds = <String>[];
+    for (final item in _thread.items) {
+      final callId = item.callId;
+      if (item.type != RealtimeThreadItemType.functionCall ||
+          item.status != RealtimeThreadItemStatus.completed ||
+          callId == null ||
+          callId.isEmpty ||
+          outputCallIds.contains(callId) ||
+          !_isActiveResponseFunctionCall(item)) {
+        continue;
+      }
+      pendingCallIds.add(callId);
+    }
+    return pendingCallIds;
+  }
+
+  bool _markPendingFunctionCallsIncomplete() {
+    final outputCallIds = _outputCallIds();
+    var hasChanges = false;
+    for (final item in _thread.items) {
+      final callId = item.callId;
+      if (item.type != RealtimeThreadItemType.functionCall ||
+          item.status == RealtimeThreadItemStatus.incomplete ||
+          !_isActiveResponseFunctionCall(item) ||
+          (callId != null && outputCallIds.contains(callId))) {
+        continue;
+      }
+      item.markIncomplete();
+      hasChanges = true;
+    }
+    return hasChanges;
+  }
+
+  bool _isActiveResponseFunctionCall(RealtimeThreadItem item) {
+    final callId = item.callId;
+    return _activeResponseFunctionItemIds.contains(item.id) ||
+        (callId != null && _activeResponseFunctionCallIds.contains(callId));
   }
 
   T? _findContentPartOfType<T extends RealtimeThreadContentPart>(
@@ -1052,8 +1074,10 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
       case 'text':
       case 'input_text':
       case 'output_text':
-        final textPart =
-            _findOrCreateTextPart(item, contentIndex: contentIndex);
+        final textPart = _findOrCreateTextPart(
+          item,
+          contentIndex: contentIndex,
+        );
         if (part.text != null && part.text!.isNotEmpty) {
           textPart.replaceText(part.text!);
         }
@@ -1099,36 +1123,27 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
       'type': 'realtime',
       'audio': {
         'input': {
-          'format': {
-            'type': 'audio/pcm',
-            'rate': 24000,
-          },
+          'format': {'type': 'audio/pcm', 'rate': 24000},
           'noise_reduction': _buildInputAudioNoiseReductionConfig(
             _inputAudioNoiseReductionSelection,
           ),
-          'transcription': {
-            'model': _transcriptionModel,
-          },
+          'transcription': {'model': _transcriptionModel},
           'turn_detection': _buildTurnDetectionConfig(_audioTurnMode),
         },
         'output': {
-          'format': {
-            'type': 'audio/pcm',
-            'rate': 24000,
-          },
+          'format': {'type': 'audio/pcm', 'rate': 24000},
           if (_sessionVoice != null) 'voice': _sessionVoice,
         },
       },
-      if (_reasoningEffort != null)
-        'reasoning': {
-          'effort': _reasoningEffort,
-        },
+      if (_reasoningEffort != null) 'reasoning': {'effort': _reasoningEffort},
       'instructions': _sessionInstructions,
-      'output_modalities':
-          _sessionModality == VoiceAgentModality.audio ? ['audio'] : ['text'],
+      'output_modalities': _sessionModality == VoiceAgentModality.audio
+          ? ['audio']
+          : ['text'],
       'tools': _tools.map((tool) => tool.toRealtimeJson()).toList(),
-      'tool_choice':
-          _tools.isEmpty ? 'none' : (_toolChoiceRequired ? 'required' : 'auto'),
+      'tool_choice': _tools.isEmpty
+          ? 'none'
+          : (_toolChoiceRequired ? 'required' : 'auto'),
       // 'parallel_tool_calls':
       //     true, // todo: make it modifiable since a very few model supports this parameter.
     };
@@ -1221,16 +1236,14 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
     await _client.appendInputAudio(bytes);
   }
 
-  Map<String, dynamic>? _buildTurnDetectionConfig(
-    RealtimeAudioTurnMode mode,
-  ) {
+  Map<String, dynamic>? _buildTurnDetectionConfig(RealtimeAudioTurnMode mode) {
     return switch (mode) {
       RealtimeAudioTurnMode.voiceActivity => {
-          'type': 'semantic_vad',
-          'eagerness': 'low',
-          'create_response': true,
-          'interrupt_response': true,
-        },
+        'type': 'semantic_vad',
+        'eagerness': 'low',
+        'create_response': true,
+        'interrupt_response': true,
+      },
       RealtimeAudioTurnMode.manual => null,
     };
   }
@@ -1240,15 +1253,10 @@ final class OaiRealtimeAdapter implements RealtimeAdapter {
   ) {
     return switch (selection) {
       _OaiInputAudioNoiseReductionSelection.off => null,
-      _OaiInputAudioNoiseReductionSelection.nearField => {
-          'type': 'near_field',
-        },
-      _OaiInputAudioNoiseReductionSelection.farField => {
-          'type': 'far_field',
-        },
+      _OaiInputAudioNoiseReductionSelection.nearField => {'type': 'near_field'},
+      _OaiInputAudioNoiseReductionSelection.farField => {'type': 'far_field'},
     };
   }
-
 
   void _ensureNotDisposed() {
     if (_disposed) {

@@ -33,6 +33,7 @@ abstract interface class RealtimeAdapter {
 
   /// Current connection lifecycle state.
   RealtimeAdapterConnectionState get connectionState;
+
   /// Connection lifecycle state changes.
   Stream<RealtimeAdapterConnectionState> get connectionStateUpdates;
 
@@ -50,10 +51,7 @@ abstract interface class RealtimeAdapter {
   /// instructions are configured through [setInstructions] before or after
   /// connecting. Everything else (audio format, VAD, transcription model) is
   /// owned by the adapter's defaults.
-  Future<void> connect(
-    VoiceAgentApiConfig apiConfig, {
-    String? voice,
-  });
+  Future<void> connect(VoiceAgentApiConfig apiConfig, {String? voice});
 
   /// Gracefully close the connection and release all resources. Idempotent.
   Future<void> dispose();
@@ -150,27 +148,17 @@ abstract interface class RealtimeAdapter {
     String? errorMessage,
   });
 
-  /// Mark pending/running function calls as locally cancelled.
-  ///
-  /// This is used when the current assistant turn is interrupted so stale tool
-  /// work no longer appears executable in the projected thread state.
-  ///
-  /// TODO(realtime-cancel-contract): Re-evaluate whether cancellation belongs on
-  /// the provider-agnostic adapter boundary. Hosted realtime is
-  /// server-authoritative and currently treats this as a no-op, while standalone
-  /// adapters use it for local suppression/bookkeeping. Either remove this from
-  /// the shared interface or split the local-suppression concern out of
-  /// RealtimeAdapter before adding more implementations.
-  void cancelFunctionCalls({
-    Set<String> itemIds = const <String>{},
-    Set<String> callIds = const <String>{},
-  });
-
   // ---------------------------------------------------------------------------
   // Response control
   // ---------------------------------------------------------------------------
 
-  /// Interrupt the model's current response (cancel generation + clear any
-  /// buffered output audio).
+  /// Interrupt the model's current response.
+  ///
+  /// Implementations must cancel generation, clear any buffered output audio,
+  /// resolve provider-visible completed function calls that are still awaiting
+  /// output with a cancellation/error function output, and transition unfinished
+  /// function-call items that belong to the interrupted response to
+  /// [RealtimeThreadItemStatus.incomplete]. This keeps interrupt behavior
+  /// provider-independent for callers.
   Future<void> interrupt();
 }

@@ -106,8 +106,11 @@ void main() {
         expect(_textOf(root, 'type'), 'live.audio.chunk');
         // pcm field MUST be CBOR byte string, not a text string
         final pcmField = body[CborString('pcm')];
-        expect(pcmField, isA<CborBytes>(),
-            reason: 'pcm must be CBOR bstr (major type 2), not tstr');
+        expect(
+          pcmField,
+          isA<CborBytes>(),
+          reason: 'pcm must be CBOR bstr (major type 2), not tstr',
+        );
         // byte content must round-trip exactly
         expect((pcmField as CborBytes).bytes, equals(pcm));
         expect(body[CborString('sequence')], isA<CborInt>());
@@ -133,8 +136,11 @@ void main() {
 
         expect(_textOf(root, 'type'), 'turn.audio.submit');
         final pcmField = body[CborString('pcm')];
-        expect(pcmField, isA<CborBytes>(),
-            reason: 'pcm must be CBOR bstr for bandwidth efficiency');
+        expect(
+          pcmField,
+          isA<CborBytes>(),
+          reason: 'pcm must be CBOR bstr for bandwidth efficiency',
+        );
         expect((pcmField as CborBytes).bytes, equals(pcm));
         expect((body[CborString('sampleRate')] as CborInt).toInt(), 24000);
         expect((body[CborString('channels')] as CborInt).toInt(), 1);
@@ -160,8 +166,11 @@ void main() {
 
         expect(_textOf(root, 'type'), 'turn.image.submit');
         final imgField = body[CborString('imageBytes')];
-        expect(imgField, isA<CborBytes>(),
-            reason: 'imageBytes must be CBOR bstr so server can sniff MIME');
+        expect(
+          imgField,
+          isA<CborBytes>(),
+          reason: 'imageBytes must be CBOR bstr so server can sniff MIME',
+        );
         expect((imgField as CborBytes).bytes, equals(img));
       },
     );
@@ -204,7 +213,10 @@ void main() {
         // nested inputAudio
         final inputAudio = body[CborString('inputAudio')] as CborMap;
         expect(_textOf(inputAudio, 'encoding'), 'pcm_s16le');
-        expect((inputAudio[CborString('sampleRate')] as CborInt).toInt(), 24000);
+        expect(
+          (inputAudio[CborString('sampleRate')] as CborInt).toInt(),
+          24000,
+        );
       },
     );
 
@@ -218,11 +230,18 @@ void main() {
           messageId: 'open-002',
           token: 'jwt.token.here',
           modelId: 'voice-agent-prod',
+          instructions: '',
           audioTurnMode: 'voice_activity',
           inputAudio: AudioFormat(
-              encoding: 'pcm_s16le', sampleRate: 24000, channels: 1),
+            encoding: 'pcm_s16le',
+            sampleRate: 24000,
+            channels: 1,
+          ),
           outputAudio: AudioFormat(
-              encoding: 'pcm_s16le', sampleRate: 24000, channels: 1),
+            encoding: 'pcm_s16le',
+            sampleRate: 24000,
+            channels: 1,
+          ),
           client: {},
           resume: ResumeRequest(sessionId: 's_01'),
         );
@@ -321,21 +340,17 @@ void main() {
       // server supports — all of which are needed before the user can speak.
       'session.ready decodes sessionId, threadId, capabilityExtensions',
       () {
-        final msg = _decodeS2c(
-          'session.ready',
-          {
-            'sessionId': CborString('s_01'),
-            'threadId': CborString('t_01'),
-            'conversationId': CborString('c_01'),
-            'capabilities': CborMap({
-              CborString('extensions'): CborList([
-                CborString('session.voice_selection'),
-                CborString('session.reasoning_effort_selection'),
-              ]),
-            }),
-          },
-          replyTo: 'open-001',
-        );
+        final msg = _decodeS2c('session.ready', {
+          'sessionId': CborString('s_01'),
+          'threadId': CborString('t_01'),
+          'conversationId': CborString('c_01'),
+          'capabilities': CborMap({
+            CborString('extensions'): CborList([
+              CborString('session.voice_selection'),
+              CborString('session.reasoning_effort_selection'),
+            ]),
+          }),
+        }, replyTo: 'open-001');
 
         expect(msg, isA<SessionReadyMsg>());
         final ready = msg as SessionReadyMsg;
@@ -343,9 +358,13 @@ void main() {
         expect(ready.sessionId, 's_01');
         expect(ready.threadId, 't_01');
         expect(ready.conversationId, 'c_01');
-        expect(ready.capabilityExtensions,
-            containsAll(['session.voice_selection',
-              'session.reasoning_effort_selection']));
+        expect(
+          ready.capabilityExtensions,
+          containsAll([
+            'session.voice_selection',
+            'session.reasoning_effort_selection',
+          ]),
+        );
       },
     );
 
@@ -355,15 +374,11 @@ void main() {
       // snapshot to restore conversation state.
       'session.resumed decodes sessionId, threadId, conversationId',
       () {
-        final msg = _decodeS2c(
-          'session.resumed',
-          {
-            'sessionId': CborString('s_01'),
-            'threadId': CborString('t_01'),
-            'conversationId': CborString('c_01'),
-          },
-          replyTo: 'open-002',
-        );
+        final msg = _decodeS2c('session.resumed', {
+          'sessionId': CborString('s_01'),
+          'threadId': CborString('t_01'),
+          'conversationId': CborString('c_01'),
+        }, replyTo: 'open-002');
 
         expect(msg, isA<SessionResumedMsg>());
         final resumed = msg as SessionResumedMsg;
@@ -377,15 +392,11 @@ void main() {
       // was accepted by the server by checking the ack.
       'ack decodes accepted, applied, clientItemId',
       () {
-        final msg = _decodeS2c(
-          'ack',
-          {
-            'accepted': CborBool(true),
-            'clientItemId': CborString('item-001'),
-            'applied': CborBool(true),
-          },
-          replyTo: 'msg-001',
-        );
+        final msg = _decodeS2c('ack', {
+          'accepted': CborBool(true),
+          'clientItemId': CborString('item-001'),
+          'applied': CborBool(true),
+        }, replyTo: 'msg-001');
 
         expect(msg, isA<AckMsg>());
         final ack = msg as AckMsg;
@@ -402,21 +413,18 @@ void main() {
       // conversation history without losing any messages.
       'thread.snapshot decodes threadId, items list',
       () {
-        final msg = _decodeS2c(
-          'thread.snapshot',
-          {
-            'threadId': CborString('t_01'),
-            'conversationId': CborString('c_01'),
-            'items': CborList([
-              CborMap({
-                CborString('id'): CborString('item_a'),
-                CborString('type'): CborString('message'),
-                CborString('role'): CborString('assistant'),
-                CborString('status'): CborString('completed'),
-              }),
-            ]),
-          },
-        );
+        final msg = _decodeS2c('thread.snapshot', {
+          'threadId': CborString('t_01'),
+          'conversationId': CborString('c_01'),
+          'items': CborList([
+            CborMap({
+              CborString('id'): CborString('item_a'),
+              CborString('type'): CborString('message'),
+              CborString('role'): CborString('assistant'),
+              CborString('status'): CborString('completed'),
+            }),
+          ]),
+        });
 
         expect(msg, isA<ThreadSnapshotMsg>());
         final snap = msg as ThreadSnapshotMsg;
@@ -435,42 +443,39 @@ void main() {
       // the user sees the message appear and build up incrementally.
       'thread.patch decodes multiple op types',
       () {
-        final msg = _decodeS2c(
-          'thread.patch',
-          {
-            'ops': CborList([
-              CborMap({
-                CborString('op'): CborString('add_item'),
-                CborString('item'): CborMap({
-                  CborString('id'): CborString('item_a'),
-                  CborString('type'): CborString('message'),
-                  CborString('role'): CborString('assistant'),
-                  CborString('status'): CborString('in_progress'),
-                }),
+        final msg = _decodeS2c('thread.patch', {
+          'ops': CborList([
+            CborMap({
+              CborString('op'): CborString('add_item'),
+              CborString('item'): CborMap({
+                CborString('id'): CborString('item_a'),
+                CborString('type'): CborString('message'),
+                CborString('role'): CborString('assistant'),
+                CborString('status'): CborString('in_progress'),
               }),
-              CborMap({
-                CborString('op'): CborString('put_part'),
-                CborString('itemId'): CborString('item_a'),
-                CborString('contentIndex'): CborSmallInt(0),
-                CborString('part'): CborMap({
-                  CborString('type'): CborString('text'),
-                  CborString('isDone'): CborBool(false),
-                }),
+            }),
+            CborMap({
+              CborString('op'): CborString('put_part'),
+              CborString('itemId'): CborString('item_a'),
+              CborString('contentIndex'): CborSmallInt(0),
+              CborString('part'): CborMap({
+                CborString('type'): CborString('text'),
+                CborString('isDone'): CborBool(false),
               }),
-              CborMap({
-                CborString('op'): CborString('append_text'),
-                CborString('itemId'): CborString('item_a'),
-                CborString('contentIndex'): CborSmallInt(0),
-                CborString('delta'): CborString('こんにちは'),
-              }),
-              CborMap({
-                CborString('op'): CborString('set_status'),
-                CborString('itemId'): CborString('item_a'),
-                CborString('status'): CborString('completed'),
-              }),
-            ]),
-          },
-        );
+            }),
+            CborMap({
+              CborString('op'): CborString('append_text'),
+              CborString('itemId'): CborString('item_a'),
+              CborString('contentIndex'): CborSmallInt(0),
+              CborString('delta'): CborString('こんにちは'),
+            }),
+            CborMap({
+              CborString('op'): CborString('set_status'),
+              CborString('itemId'): CborString('item_a'),
+              CborString('status'): CborString('completed'),
+            }),
+          ]),
+        });
 
         expect(msg, isA<ThreadPatchMsg>());
         final patch = msg as ThreadPatchMsg;
@@ -510,50 +515,47 @@ void main() {
       // updates don't get silently dropped.
       'thread.patch decodes remaining op types',
       () {
-        final msg = _decodeS2c(
-          'thread.patch',
-          {
-            'ops': CborList([
-              CborMap({
-                CborString('op'): CborString('set_conversation_id'),
-                CborString('conversationId'): CborString('c_99'),
-              }),
-              CborMap({
-                CborString('op'): CborString('set_role'),
-                CborString('itemId'): CborString('item_b'),
-                CborString('role'): CborString('user'),
-              }),
-              CborMap({
-                CborString('op'): CborString('set_field'),
-                CborString('itemId'): CborString('item_b'),
-                CborString('field'): CborString('callId'),
-                CborString('value'): CborString('call_42'),
-              }),
-              CborMap({
-                CborString('op'): CborString('remove_item'),
-                CborString('itemId'): CborString('item_old'),
-              }),
-              CborMap({
-                CborString('op'): CborString('replace_text'),
-                CborString('itemId'): CborString('item_c'),
-                CborString('contentIndex'): CborSmallInt(0),
-                CborString('text'): CborString('Final text'),
-              }),
-              CborMap({
-                CborString('op'): CborString('append_transcript'),
-                CborString('itemId'): CborString('item_d'),
-                CborString('contentIndex'): CborSmallInt(1),
-                CborString('delta'): CborString('Hello'),
-              }),
-              CborMap({
-                CborString('op'): CborString('replace_transcript'),
-                CborString('itemId'): CborString('item_d'),
-                CborString('contentIndex'): CborSmallInt(1),
-                CborString('text'): CborString('Hello world'),
-              }),
-            ]),
-          },
-        );
+        final msg = _decodeS2c('thread.patch', {
+          'ops': CborList([
+            CborMap({
+              CborString('op'): CborString('set_conversation_id'),
+              CborString('conversationId'): CborString('c_99'),
+            }),
+            CborMap({
+              CborString('op'): CborString('set_role'),
+              CborString('itemId'): CborString('item_b'),
+              CborString('role'): CborString('user'),
+            }),
+            CborMap({
+              CborString('op'): CborString('set_field'),
+              CborString('itemId'): CborString('item_b'),
+              CborString('field'): CborString('callId'),
+              CborString('value'): CborString('call_42'),
+            }),
+            CborMap({
+              CborString('op'): CborString('remove_item'),
+              CborString('itemId'): CborString('item_old'),
+            }),
+            CborMap({
+              CborString('op'): CborString('replace_text'),
+              CborString('itemId'): CborString('item_c'),
+              CborString('contentIndex'): CborSmallInt(0),
+              CborString('text'): CborString('Final text'),
+            }),
+            CborMap({
+              CborString('op'): CborString('append_transcript'),
+              CborString('itemId'): CborString('item_d'),
+              CborString('contentIndex'): CborSmallInt(1),
+              CborString('delta'): CborString('Hello'),
+            }),
+            CborMap({
+              CborString('op'): CborString('replace_transcript'),
+              CborString('itemId'): CborString('item_d'),
+              CborString('contentIndex'): CborSmallInt(1),
+              CborString('text'): CborString('Hello world'),
+            }),
+          ]),
+        });
 
         final patch = msg as ThreadPatchMsg;
         expect(patch.ops[0], isA<SetConversationIdOp>());
@@ -589,23 +591,22 @@ void main() {
       'assistant.audio.chunk decodes pcm as raw Uint8List (no base64)',
       () {
         final pcmBytes = Uint8List.fromList([0x00, 0x01, 0xFF, 0x80]);
-        final msg = _decodeS2c(
-          'assistant.audio.chunk',
-          {
-            'itemId': CborString('item_a'),
-            'contentIndex': CborSmallInt(1),
-            'pcm': CborBytes(pcmBytes),
-          },
-        );
+        final msg = _decodeS2c('assistant.audio.chunk', {
+          'itemId': CborString('item_a'),
+          'contentIndex': CborSmallInt(1),
+          'pcm': CborBytes(pcmBytes),
+        });
 
         expect(msg, isA<AssistantAudioChunkMsg>());
         final chunk = msg as AssistantAudioChunkMsg;
         expect(chunk.itemId, 'item_a');
         expect(chunk.contentIndex, 1);
         // The decoded pcm must equal the original raw bytes exactly
-        expect(chunk.pcm, equals(pcmBytes),
-            reason:
-                'PCM bytes must survive CBOR bstr round-trip without base64');
+        expect(
+          chunk.pcm,
+          equals(pcmBytes),
+          reason: 'PCM bytes must survive CBOR bstr round-trip without base64',
+        );
         expect(chunk.pcm, isA<Uint8List>());
       },
     );
@@ -615,13 +616,10 @@ void main() {
       // fire assistantAudioCompleted and allow the user to speak again.
       'assistant.audio.done decodes itemId and contentIndex',
       () {
-        final msg = _decodeS2c(
-          'assistant.audio.done',
-          {
-            'itemId': CborString('item_a'),
-            'contentIndex': CborSmallInt(1),
-          },
-        );
+        final msg = _decodeS2c('assistant.audio.done', {
+          'itemId': CborString('item_a'),
+          'contentIndex': CborSmallInt(1),
+        });
 
         expect(msg, isA<AssistantAudioDoneMsg>());
         final done = msg as AssistantAudioDoneMsg;
@@ -635,12 +633,12 @@ void main() {
       // whether they are currently being heard (speaking indicator).
       'vad.state decodes isSpeaking',
       () {
-        final msgTrue =
-            _decodeS2c('vad.state', {'isSpeaking': CborBool(true)});
+        final msgTrue = _decodeS2c('vad.state', {'isSpeaking': CborBool(true)});
         expect((msgTrue as VadStateMsg).isSpeaking, isTrue);
 
-        final msgFalse =
-            _decodeS2c('vad.state', {'isSpeaking': CborBool(false)});
+        final msgFalse = _decodeS2c('vad.state', {
+          'isSpeaking': CborBool(false),
+        });
         expect((msgFalse as VadStateMsg).isSpeaking, isFalse);
       },
     );
@@ -652,15 +650,11 @@ void main() {
       // a meaningful error.
       'error decodes code, message, recoverable, optional replyTo',
       () {
-        final msg = _decodeS2c(
-          'error',
-          {
-            'code': CborString('media.unsupported_image'),
-            'message': CborString('Unsupported image format.'),
-            'recoverable': CborBool(true),
-          },
-          replyTo: 'msg-003',
-        );
+        final msg = _decodeS2c('error', {
+          'code': CborString('media.unsupported_image'),
+          'message': CborString('Unsupported image format.'),
+          'recoverable': CborBool(true),
+        }, replyTo: 'msg-003');
 
         expect(msg, isA<ErrorMsg>());
         final err = msg as ErrorMsg;
@@ -677,14 +671,11 @@ void main() {
       // handling before the WebSocket closes.
       'error with recoverable=false decodes correctly',
       () {
-        final msg = _decodeS2c(
-          'error',
-          {
-            'code': CborString('auth.invalid_jwt'),
-            'message': CborString('Token expired'),
-            'recoverable': CborBool(false),
-          },
-        );
+        final msg = _decodeS2c('error', {
+          'code': CborString('auth.invalid_jwt'),
+          'message': CborString('Token expired'),
+          'recoverable': CborBool(false),
+        });
 
         final err = msg as ErrorMsg;
         expect(err.recoverable, isFalse);
@@ -699,10 +690,9 @@ void main() {
       // simply ignore it — the user's session stays alive.
       'unknown type is decoded as UnknownTypeS2cMsg, not an exception',
       () {
-        final msg = _decodeS2c(
-          'future.unknown.type',
-          {'someField': CborString('someValue')},
-        );
+        final msg = _decodeS2c('future.unknown.type', {
+          'someField': CborString('someValue'),
+        });
 
         expect(msg, isA<UnknownTypeS2cMsg>());
         final unknown = msg as UnknownTypeS2cMsg;
@@ -718,22 +708,19 @@ void main() {
       // choose to send thread.sync.request for recovery.
       'thread.patch with unknown op is decoded as UnknownOp',
       () {
-        final msg = _decodeS2c(
-          'thread.patch',
-          {
-            'ops': CborList([
-              CborMap({
-                CborString('op'): CborString('future_op'),
-                CborString('itemId'): CborString('item_x'),
-              }),
-              CborMap({
-                CborString('op'): CborString('set_status'),
-                CborString('itemId'): CborString('item_a'),
-                CborString('status'): CborString('completed'),
-              }),
-            ]),
-          },
-        );
+        final msg = _decodeS2c('thread.patch', {
+          'ops': CborList([
+            CborMap({
+              CborString('op'): CborString('future_op'),
+              CborString('itemId'): CborString('item_x'),
+            }),
+            CborMap({
+              CborString('op'): CborString('set_status'),
+              CborString('itemId'): CborString('item_a'),
+              CborString('status'): CborString('completed'),
+            }),
+          ]),
+        });
 
         final patch = msg as ThreadPatchMsg;
         expect(patch.ops[0], isA<UnknownOp>());
@@ -769,7 +756,8 @@ void main() {
       'CBOR non-map throws VhrpCborDecodeException',
       () {
         final cborArray = Uint8List.fromList(
-            cbor.encode(CborList([CborString('hello')])));
+          cbor.encode(CborList([CborString('hello')])),
+        );
         expect(
           () => _codec.decode(cborArray),
           throwsA(isA<VhrpCborDecodeException>()),
@@ -782,9 +770,9 @@ void main() {
       // VhrpCborDecodeException.
       'missing type field throws VhrpCborDecodeException',
       () {
-        final noType = Uint8List.fromList(cbor.encode(CborMap({
-          CborString('body'): CborMap({}),
-        })));
+        final noType = Uint8List.fromList(
+          cbor.encode(CborMap({CborString('body'): CborMap({})})),
+        );
         expect(
           () => _codec.decode(noType),
           throwsA(isA<VhrpCborDecodeException>()),
@@ -797,9 +785,11 @@ void main() {
       // VhrpCborDecodeException.
       'missing body field throws VhrpCborDecodeException',
       () {
-        final noBody = Uint8List.fromList(cbor.encode(CborMap({
-          CborString('type'): CborString('session.ready'),
-        })));
+        final noBody = Uint8List.fromList(
+          cbor.encode(
+            CborMap({CborString('type'): CborString('session.ready')}),
+          ),
+        );
         expect(
           () => _codec.decode(noBody),
           throwsA(isA<VhrpCborDecodeException>()),
@@ -820,8 +810,14 @@ void main() {
       'audio bytes survive encode/re-decode byte-for-byte',
       () {
         // Create a buffer with a range of byte values including edge cases
-        final original = Uint8List.fromList(
-            [0x00, 0x7F, 0x80, 0xFF, 0x01, 0xFE]);
+        final original = Uint8List.fromList([
+          0x00,
+          0x7F,
+          0x80,
+          0xFF,
+          0x01,
+          0xFE,
+        ]);
         final msg = LiveAudioChunkMsg(pcm: original, sequence: 1);
         final bytes = _codec.encode(msg);
 
@@ -839,8 +835,16 @@ void main() {
       // to the MIME sniffer.
       'image bytes survive encode/re-decode byte-for-byte',
       () {
-        final original = Uint8List.fromList(
-            [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]);
+        final original = Uint8List.fromList([
+          0x89,
+          0x50,
+          0x4E,
+          0x47,
+          0x0D,
+          0x0A,
+          0x1A,
+          0x0A,
+        ]);
         final msg = TurnImageSubmitMsg(
           messageId: 'r-001',
           clientItemId: 'ci-001',
@@ -886,10 +890,7 @@ void main() {
       // After fix:  properties:{} encoded as CborMap({}).
       'const empty map {properties:{}} encodes as CBOR map, not string "{}"',
       () {
-        const schema = {
-          'type': 'object',
-          'properties': <String, dynamic>{},
-        };
+        const schema = {'type': 'object', 'properties': <String, dynamic>{}};
         final msg = ToolsSetMsg(
           messageId: 'regression-001',
           tools: [
@@ -976,33 +977,29 @@ void main() {
       },
     );
 
-    test(
-      'empty top-level map {} encodes as empty CBOR map',
-      () {
-        final msg = ToolsSetMsg(
-          messageId: 'regression-003',
-          tools: [
-            ToolSpec(
-              name: 'no_schema_tool',
-              description: 'test',
-              parameters: const <String, Object?>{},
-            ),
-          ],
-        );
-        final root = _encodeToCborMap(msg);
-        final body = root[CborString('body')] as CborMap;
-        final toolsList = body[CborString('tools')] as CborList;
-        final toolMap = toolsList[0] as CborMap;
-        final params = toolMap[CborString('parameters')];
+    test('empty top-level map {} encodes as empty CBOR map', () {
+      final msg = ToolsSetMsg(
+        messageId: 'regression-003',
+        tools: [
+          ToolSpec(
+            name: 'no_schema_tool',
+            description: 'test',
+            parameters: const <String, Object?>{},
+          ),
+        ],
+      );
+      final root = _encodeToCborMap(msg);
+      final body = root[CborString('body')] as CborMap;
+      final toolsList = body[CborString('tools')] as CborList;
+      final toolMap = toolsList[0] as CborMap;
+      final params = toolMap[CborString('parameters')];
 
-        expect(
-          params,
-          isA<CborMap>(),
-          reason:
-              'empty parameters map must be CBOR map, not string.',
-        );
-        expect((params as CborMap).isEmpty, isTrue);
-      },
-    );
+      expect(
+        params,
+        isA<CborMap>(),
+        reason: 'empty parameters map must be CBOR map, not string.',
+      );
+      expect((params as CborMap).isEmpty, isTrue);
+    });
   });
 }

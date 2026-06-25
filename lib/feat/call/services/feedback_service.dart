@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
+import 'package:vagina/feat/call/models/realtime/realtime_thread.dart';
+import 'package:vagina/feat/call/models/realtime/tool_call_resolution.dart';
 import 'package:vagina/feat/call/services/call_service.dart';
 import 'package:vagina/feat/call/services/subservice.dart';
 
@@ -11,11 +13,13 @@ import 'package:vagina/feat/call/services/subservice.dart';
 /// Provides multi-sensory user feedback for call lifecycle events.
 final class FeedbackService extends SubService {
   final CallService _callService;
-  final Set<String> _executingToolCallIds = <String>{};
+  final Map<String, RealtimeToolStage> _toolStagesByItemId =
+      <String, RealtimeToolStage>{};
   StreamSubscription<CallState>? _callStateSubscription;
   StreamSubscription<bool>? _playbackStateSubscription;
   StreamSubscription<void>? _assistantAudioCompletedSubscription;
   StreamSubscription<bool>? _userSpeakingStateSubscription;
+  StreamSubscription<RealtimeThread>? _threadSubscription;
   late CallState _lastObservedState;
   bool _lastPlayingState = false;
   bool _awaitingAssistantPlaybackCompletionFeedback = false;
@@ -42,6 +46,8 @@ final class FeedbackService extends SubService {
       }
       unawaited(selectionClick());
     });
+    _threadSubscription = realtimeService.threadUpdates.listen(_handleThreadUpdate);
+    _handleThreadUpdate(realtimeService.thread);
   }
 
   Future<void> _handleCallStateChanged(
@@ -92,39 +98,40 @@ final class FeedbackService extends SubService {
     }
   }
 
-  void onToolExecutionStarted(String callId) {
-    final wasEmpty = _executingToolCallIds.isEmpty;
-    final added = _executingToolCallIds.add(callId);
-    if (added && wasEmpty) {
-      unawaited(playToolExecuting());
-    }
-  }
+  void _handleThreadUpdate(RealtimeThread thread) {
+    final nextStages = resolveRealtimeToolStagesByItemId(thread.items);
 
-  void onToolExecutionCompleted(String callId) {
-    _executingToolCallIds.remove(callId);
-    if (_executingToolCallIds.isEmpty) {
+    var hasRunningTool = false;
+    for (final entry in nextStages.entries) {
+      final nextStage = entry.value;
+      if (nextStage == RealtimeToolStage.generating ||
+          nextStage == RealtimeToolStage.executing) {
+        hasRunningTool = true;
+      }
+
+      final previousStage = _toolStagesByItemId[entry.key];
+      if (previousStage == nextStage) {
+        continue;
+      }
+
+      if (nextStage == RealtimeToolStage.error) {
+        unawaited(playToolError());
+      } else if (nextStage == RealtimeToolStage.cancelled) {
+        unawaited(playToolCancelled());
+      }
+    }
+
+    if (hasRunningTool) {
+      if (_toolExecutingPlayer == null) {
+        unawaited(playToolExecuting());
+      }
+    } else {
       unawaited(stopToolExecuting());
     }
-  }
 
-  void onToolExecutionFailed(String callId) {
-    _executingToolCallIds.remove(callId);
-    logger.warning(
-        'Tool execution failed: $callId (remaining: ${_executingToolCallIds.length})');
-    if (_executingToolCallIds.isEmpty) {
-      unawaited(stopToolExecuting());
-    }
-    unawaited(playToolError());
-  }
-
-  void onToolExecutionsCancelled({required bool playSound}) {
-    final hadPendingToolCalls = _executingToolCallIds.isNotEmpty;
-    _executingToolCallIds.clear();
-    unawaited(stopToolExecuting());
-
-    if (playSound && hadPendingToolCalls) {
-      unawaited(playToolCancelled());
-    }
+    _toolStagesByItemId
+      ..clear()
+      ..addAll(nextStages);
   }
 
   // ==========================================================================
@@ -357,7 +364,9 @@ final class FeedbackService extends SubService {
     _assistantAudioCompletedSubscription = null;
     await _userSpeakingStateSubscription?.cancel();
     _userSpeakingStateSubscription = null;
-    _executingToolCallIds.clear();
+    await _threadSubscription?.cancel();
+    _threadSubscription = null;
+    _toolStagesByItemId.clear();
     _awaitingAssistantPlaybackCompletionFeedback = false;
     await stopDialTone();
     await stopToolExecuting();

@@ -142,13 +142,6 @@ final class RealtimeService extends SubService {
     );
   }
 
-  void cancelFunctionCalls({
-    Set<String> itemIds = const <String>{},
-    Set<String> callIds = const <String>{},
-  }) {
-    _adapter.cancelFunctionCalls(itemIds: itemIds, callIds: callIds);
-  }
-
   // ---------------------------------------------------------------------------
   // Response control
   // ---------------------------------------------------------------------------
