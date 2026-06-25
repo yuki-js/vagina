@@ -688,27 +688,13 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
   /// Send a text message from the user.
   ///
   /// Wire: [TurnTextSubmitMsg] with clientItemId, text, and messageId.
-  ///
-  /// A local user message item is staged immediately so callers get a stable
-  /// handle before the server echo. The later canonical `add_item` from
-  /// `thread.patch` merges onto the same clientItemId.
+  /// The thread is updated only by the server's canonical `thread.patch`.
   @override
   Future<String> sendText(String text) async {
     _ensureNotDisposed();
     _ensureConnected();
 
     final clientItemId = _nextClientItemId();
-
-    _thread.addItem(
-      RealtimeThreadItem(
-        id: clientItemId,
-        type: RealtimeThreadItemType.message,
-        role: RealtimeThreadItemRole.user,
-        status: RealtimeThreadItemStatus.inProgress,
-        content: <RealtimeThreadContentPart>[RealtimeThreadTextPart()],
-      ),
-    );
-    _emitThreadUpdate();
 
     // Send turn.text.submit over CBOR transport.
     _sendMsg(
@@ -751,10 +737,7 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
   ///
   /// Wire: [ToolResultSubmitMsg] with clientItemId, callId, output, disposition
   /// (enum → name string), errorMessage (omitted when null).
-  ///
-  /// A local functionCallOutput item is staged immediately so callers can track
-  /// the submitted result without waiting for the server echo.  The later
-  /// canonical `add_item` from `thread.patch` merges onto the same clientItemId.
+  /// The thread is updated only by the server's canonical `thread.patch`.
   @override
   Future<String> sendFunctionOutput({
     required String callId,
@@ -767,20 +750,6 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
     _ensureConnected();
 
     final clientItemId = _nextClientItemId();
-
-    _thread.addItem(
-      RealtimeThreadItem(
-        id: clientItemId,
-        type: RealtimeThreadItemType.functionCallOutput,
-        role: RealtimeThreadItemRole.assistant,
-        status: RealtimeThreadItemStatus.completed,
-        callId: callId,
-        output: output,
-        toolOutputDisposition: disposition,
-        toolErrorMessage: errorMessage,
-      ),
-    );
-    _emitThreadUpdate();
 
     // Send tool.result.submit — output is opaque UTF-8 (not necessarily JSON).
     _sendMsg(
