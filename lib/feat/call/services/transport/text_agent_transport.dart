@@ -1,6 +1,8 @@
 import 'package:vagina/feat/call/models/text_agent_thread.dart';
 import 'package:vagina/services/tools_runtime/tool_definition.dart';
 
+typedef TextAgentCancelHook = void Function() Function(void Function());
+
 /// Abstract transport for sending text-agent queries to provider-specific APIs.
 ///
 /// Implementations handle the conversion from domain-level [TextAgentThread]
@@ -16,6 +18,7 @@ abstract class TextAgentTransport {
     required TextAgentThread thread,
     required String systemPrompt,
     required List<ToolDefinition> availableTools,
+    TextAgentCancelHook? onCancel,
   });
 
   /// Dispose transport resources (e.g., HTTP client).

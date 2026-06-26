@@ -27,6 +27,7 @@ import 'package:vagina/feat/call/services/toolapi/text_agent_api.dart';
 import 'package:vagina/interfaces/call_session_repository.dart';
 import 'package:vagina/interfaces/virtual_filesystem_repository.dart';
 import 'package:vagina/models/call_session.dart';
+import 'package:vagina/services/tools_runtime/tool.dart';
 import 'package:vagina/services/tools_runtime/tool_definition.dart';
 
 /// One-way lifecycle state for a single call session.
@@ -67,6 +68,8 @@ class CallService {
   /// Item IDs for function-call items that have already been dispatched
   /// (or are currently being executed). Prevents double-dispatch.
   final Set<String> _dispatchedToolCallIds = <String>{};
+
+  final Map<String, _InFlightTool> _inFlightTools = <String, _InFlightTool>{};
 
   StreamSubscription<RealtimeThread>? _threadSubscription;
   StreamSubscription<void>? _assistantAudioCompletedSubscription;
@@ -434,6 +437,8 @@ class CallService {
   /// Called on every thread mutation. Scans for completed function-call items
   /// that have not yet been dispatched.
   void _onThreadUpdate(RealtimeThread thread) {
+    _cancelRejectedTools(thread);
+
     for (final item in thread.items) {
       if (item.type != RealtimeThreadItemType.functionCall) {
         continue;
@@ -442,6 +447,10 @@ class CallService {
         continue;
       }
       if (_dispatchedToolCallIds.contains(item.id)) {
+        continue;
+      }
+      if (resolveRealtimeToolCall(thread.items, item.id)?.isCancelled ??
+          false) {
         continue;
       }
       // Mark dispatched immediately to prevent duplicate execution.
@@ -455,6 +464,21 @@ class CallService {
     await _playbackService.interrupt();
     if (_realtimeService.connectionState.isConnected) {
       await _realtimeService.interrupt();
+    }
+  }
+
+  void _cancelRejectedTools(RealtimeThread thread) {
+    for (final tool in _inFlightTools.values) {
+      final resolved = resolveRealtimeToolCall(thread.items, tool.itemId);
+      if (resolved?.isCancelled ?? false) {
+        tool.cancellation.cancel();
+      }
+    }
+  }
+
+  void _cancelInFlightTools() {
+    for (final tool in _inFlightTools.values) {
+      tool.cancellation.cancel();
     }
   }
 
@@ -479,8 +503,22 @@ class CallService {
       return;
     }
 
+    final cancellation = ToolCancellation();
+    _inFlightTools[item.id] = _InFlightTool(
+      itemId: item.id,
+      callId: callId,
+      cancellation: cancellation,
+    );
+
     try {
-      final result = await _toolRunner.execute(name, arguments ?? '{}');
+      final result = await _toolRunner.execute(
+        name,
+        arguments ?? '{}',
+        cancellation: cancellation,
+      );
+      if (cancellation.isCancelled) {
+        return;
+      }
       final outputMetadata = _deriveToolOutputMetadata(result);
       await _sendFunctionOutputIfAccepted(
         functionCallItemId: item.id,
@@ -490,6 +528,9 @@ class CallService {
         errorMessage: outputMetadata.errorMessage,
       );
     } catch (e) {
+      if (cancellation.isCancelled) {
+        return;
+      }
       final errorMessage = e.toString();
       await _sendFunctionOutputIfAccepted(
         functionCallItemId: item.id,
@@ -498,6 +539,8 @@ class CallService {
         disposition: RealtimeToolOutputDisposition.error,
         errorMessage: errorMessage,
       );
+    } finally {
+      _inFlightTools.remove(item.id);
     }
   }
 
@@ -614,6 +657,8 @@ class CallService {
   }
 
   Future<void> _dispose() async {
+    _cancelInFlightTools();
+
     try {
       await Future.wait<void>([
         _realtimeService.dispose(),
@@ -648,6 +693,7 @@ class CallService {
     _manualAudioTurnInputSubscription = null;
     _manualAudioTurnBuffer.cancel();
     _dispatchedToolCallIds.clear();
+    _inFlightTools.clear();
     _pushToTalkActive = false;
     _pushToTalkGeneration += 1;
     _pendingPushToTalkRelease = null;
@@ -794,6 +840,18 @@ class CallService {
 
     return fragments.join('\n').trim();
   }
+}
+
+final class _InFlightTool {
+  final String itemId;
+  final String callId;
+  final ToolCancellation cancellation;
+
+  const _InFlightTool({
+    required this.itemId,
+    required this.callId,
+    required this.cancellation,
+  });
 }
 
 final class _ToolOutputMetadata {

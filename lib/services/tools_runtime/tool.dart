@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'tool_context.dart';
 import 'tool_definition.dart';
 
@@ -14,6 +16,73 @@ import 'tool_definition.dart';
 /// }
 /// ```
 typedef ToolDataLoader = Future<Map<String, dynamic>?> Function(dynamic config);
+
+/// Per-invocation cancellation hook for tools.
+///
+/// The tool runtime exposes cancellation as a single hook instead of separate
+/// guard/rollback/abort APIs. A tool that cares about cancellation reads
+/// [current] during [Tool.execute], registers [onCancel] callbacks, and owns any
+/// local flags, cleanup, or compensation it needs.
+final class ToolCancellation {
+  static final Object _zoneKey = Object();
+
+  final List<void Function()> _callbacks = <void Function()>[];
+  bool _isCancelled = false;
+
+  /// Cancellation associated with the currently running tool invocation.
+  static ToolCancellation? get current {
+    final value = Zone.current[_zoneKey];
+    return value is ToolCancellation ? value : null;
+  }
+
+  /// Runs [body] with [cancellation] exposed as [current].
+  static Future<T> run<T>(
+    ToolCancellation? cancellation,
+    Future<T> Function() body,
+  ) {
+    if (cancellation == null) {
+      return body();
+    }
+    return runZoned(body, zoneValues: <Object, Object>{_zoneKey: cancellation});
+  }
+
+  bool get isCancelled => _isCancelled;
+
+  /// Registers [callback] to run once when this invocation is cancelled.
+  ///
+  /// If cancellation has already happened, [callback] runs immediately. The
+  /// returned function unregisters the callback when it has not fired yet.
+  void Function() onCancel(void Function() callback) {
+    if (_isCancelled) {
+      callback();
+      return () {};
+    }
+
+    _callbacks.add(callback);
+    var removed = false;
+    return () {
+      if (removed || _isCancelled) {
+        return;
+      }
+      removed = true;
+      _callbacks.remove(callback);
+    };
+  }
+
+  /// Fires cancellation hooks once.
+  void cancel() {
+    if (_isCancelled) {
+      return;
+    }
+    _isCancelled = true;
+
+    final callbacks = List<void Function()>.from(_callbacks);
+    _callbacks.clear();
+    for (final callback in callbacks) {
+      callback();
+    }
+  }
+}
 
 /// Tool runtime interface.
 ///
@@ -47,10 +116,7 @@ abstract class Tool {
 
   /// Serialize tool metadata for transport over the sandbox protocol.
   Map<String, dynamic> toWireJson() {
-    return {
-      'toolKey': definition.toolKey,
-      'definition': definition.toJson(),
-    };
+    return {'toolKey': definition.toolKey, 'definition': definition.toJson()};
   }
 
   /// Deserialize a host-side tool reference from sandbox protocol payload.

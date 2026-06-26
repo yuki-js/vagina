@@ -10,9 +10,8 @@ import 'package:vagina/services/tools_runtime/apis/text_agent_api.dart';
 final class CallTextAgentApi implements TextAgentApi {
   final TextAgentService _textAgentService;
 
-  CallTextAgentApi({
-    required TextAgentService textAgentService,
-  }) : _textAgentService = textAgentService;
+  CallTextAgentApi({required TextAgentService textAgentService})
+    : _textAgentService = textAgentService;
 
   TextAgentService get textAgentService => _textAgentService;
 
@@ -43,7 +42,11 @@ final class CallTextAgentApi implements TextAgentApi {
   }
 
   @override
-  Future<String> sendQuery(String agentId, String prompt) async {
-    return _textAgentService.sendQuery(agentId, prompt);
+  Future<String> sendQuery(
+    String agentId,
+    String prompt, {
+    void Function() Function(void Function())? onCancel,
+  }) async {
+    return _textAgentService.sendQuery(agentId, prompt, onCancel: onCancel);
   }
 }

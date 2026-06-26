@@ -16,8 +16,9 @@ abstract class TextAgentApi {
   /// Sends a query and returns the response text with a fixed 30 second timeout.
   Future<String> sendQuery(
     String agentId,
-    String prompt,
-  );
+    String prompt, {
+    void Function() Function(void Function())? onCancel,
+  });
 
   /// List all available text agents
   ///
@@ -89,9 +90,7 @@ class WorkerTextAgent {
 
   /// Get request headers
   Map<String, String> getRequestHeaders() {
-    final headers = <String, String>{
-      'Content-Type': 'application/json',
-    };
+    final headers = <String, String>{'Content-Type': 'application/json'};
 
     switch (provider) {
       case 'openai':
@@ -152,7 +151,7 @@ class TextAgentApiClient implements TextAgentApi {
 
   // Tool execution support
   final Future<String> Function(String toolKey, Map<String, dynamic> args)?
-      _executeToolCallback;
+  _executeToolCallback;
   List<Map<String, dynamic>>? _availableTools;
 
   // Per-agent tool filtering configuration
@@ -166,9 +165,9 @@ class TextAgentApiClient implements TextAgentApi {
     dynamic initialData,
     Future<String> Function(String, Map<String, dynamic>)? executeToolCallback,
     List<Map<String, dynamic>>? availableTools,
-  })  : _httpClient = httpClient ?? http.Client(),
-        _executeToolCallback = executeToolCallback,
-        _availableTools = availableTools ?? [] {
+  }) : _httpClient = httpClient ?? http.Client(),
+       _executeToolCallback = executeToolCallback,
+       _availableTools = availableTools ?? [] {
     // Initialize agents if provided
     if (initialData is List) {
       try {
@@ -222,8 +221,9 @@ class TextAgentApiClient implements TextAgentApi {
   @override
   Future<String> sendQuery(
     String agentId,
-    String prompt,
-  ) async {
+    String prompt, {
+    void Function() Function(void Function())? onCancel,
+  }) async {
     final agent = _agents[agentId];
     if (agent == null) {
       throw Exception('Agent not found: $agentId');
@@ -240,7 +240,12 @@ class TextAgentApiClient implements TextAgentApi {
 
     try {
       // Execute query with 30-second timeout
-      return await _executeQuery(agent, thread, const Duration(seconds: 30));
+      return await _executeQuery(
+        agent,
+        thread,
+        const Duration(seconds: 30),
+        onCancel: onCancel,
+      );
     } catch (e) {
       // Handle context length errors with automatic retry
       if (_isContextLengthError(e) && thread.length > 0) {
@@ -254,7 +259,12 @@ class TextAgentApiClient implements TextAgentApi {
         _addUserMessage(thread, prompt);
 
         // Retry once with reduced history
-        return await _executeQuery(agent, thread, const Duration(seconds: 30));
+        return await _executeQuery(
+          agent,
+          thread,
+          const Duration(seconds: 30),
+          onCancel: onCancel,
+        );
       }
 
       // Re-throw if not a context length error or retry failed
@@ -279,8 +289,9 @@ class TextAgentApiClient implements TextAgentApi {
   Future<String> _executeQuery(
     WorkerTextAgent agent,
     TextAgentThread thread,
-    Duration timeout,
-  ) async {
+    Duration timeout, {
+    void Function() Function(void Function())? onCancel,
+  }) async {
     // Build URL
     final url = Uri.parse(agent.getEndpointUrl());
 
@@ -312,17 +323,24 @@ class TextAgentApiClient implements TextAgentApi {
       while (turnCount < maxTurns) {
         turnCount++;
 
-        final response = await _httpClient
-            .post(
-              url,
-              headers: headers,
-              body: jsonEncode(requestBody),
-            )
-            .timeout(timeout);
+        final client = onCancel == null ? _httpClient : http.Client();
+        final unregisterCancel = onCancel?.call(client.close);
+        final http.Response response;
+        try {
+          response = await client
+              .post(url, headers: headers, body: jsonEncode(requestBody))
+              .timeout(timeout);
+        } finally {
+          unregisterCancel?.call();
+          if (onCancel != null) {
+            client.close();
+          }
+        }
 
         if (response.statusCode != 200) {
           throw Exception(
-              'API error (${response.statusCode}): ${response.body}');
+            'API error (${response.statusCode}): ${response.body}',
+          );
         }
 
         final responseJson = jsonDecode(response.body) as Map<String, dynamic>;
@@ -395,7 +413,8 @@ class TextAgentApiClient implements TextAgentApi {
 
       // Max turns reached
       throw Exception(
-          'Max conversation turns ($maxTurns) reached without completion');
+        'Max conversation turns ($maxTurns) reached without completion',
+      );
     } on TimeoutException {
       throw Exception('Request timeout after ${timeout.inSeconds}s');
     } catch (e) {
@@ -449,13 +468,15 @@ class TextAgentApiClient implements TextAgentApi {
     final toolCalls = message['tool_calls'] as List?;
     if (toolCalls != null && toolCalls.isNotEmpty) {
       item.toolCalls = toolCalls
-          .map((tc) => TextAgentToolCall(
-                id: tc['id'] as String,
-                name:
-                    (tc['function'] as Map<String, dynamic>)['name'] as String,
-                arguments: (tc['function'] as Map<String, dynamic>)['arguments']
-                    as String,
-              ))
+          .map(
+            (tc) => TextAgentToolCall(
+              id: tc['id'] as String,
+              name: (tc['function'] as Map<String, dynamic>)['name'] as String,
+              arguments:
+                  (tc['function'] as Map<String, dynamic>)['arguments']
+                      as String,
+            ),
+          )
           .toList();
     }
 
@@ -486,9 +507,7 @@ class TextAgentApiClient implements TextAgentApi {
 
     for (final item in thread.items) {
       if (item.type == TextAgentThreadItemType.message) {
-        final message = <String, dynamic>{
-          'role': item.role!.name,
-        };
+        final message = <String, dynamic>{'role': item.role!.name};
 
         // Add text content
         final textParts = item.content.whereType<TextAgentThreadTextPart>();
@@ -499,14 +518,13 @@ class TextAgentApiClient implements TextAgentApi {
         // Add tool calls if present (assistant messages only)
         if (item.toolCalls != null && item.toolCalls!.isNotEmpty) {
           message['tool_calls'] = item.toolCalls!
-              .map((tc) => {
-                    'id': tc.id,
-                    'type': 'function',
-                    'function': {
-                      'name': tc.name,
-                      'arguments': tc.arguments,
-                    },
-                  })
+              .map(
+                (tc) => {
+                  'id': tc.id,
+                  'type': 'function',
+                  'function': {'name': tc.name, 'arguments': tc.arguments},
+                },
+              )
               .toList();
         }
 

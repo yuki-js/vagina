@@ -18,8 +18,8 @@ class AzureTextAgentTransport implements TextAgentTransport {
   AzureTextAgentTransport({
     required SelfhostedTextAgentApiConfig config,
     http.Client? httpClient,
-  })  : _config = config,
-        _httpClient = httpClient ?? http.Client() {
+  }) : _config = config,
+       _httpClient = httpClient ?? http.Client() {
     if (config.provider != 'azure') {
       throw ArgumentError(
         'AzureTextAgentTransport requires azure provider, got: ${config.provider}',
@@ -32,6 +32,7 @@ class AzureTextAgentTransport implements TextAgentTransport {
     required TextAgentThread thread,
     required String systemPrompt,
     required List<ToolDefinition> availableTools,
+    TextAgentCancelHook? onCancel,
   }) async {
     // Build URL
     final url = _buildChatCompletionsUrl();
@@ -58,21 +59,31 @@ class AzureTextAgentTransport implements TextAgentTransport {
       requestBody['tool_choice'] = 'auto';
     }
 
-    // Send request
-    final response = await _httpClient.post(
-      url,
-      headers: headers,
-      body: jsonEncode(requestBody),
-    );
+    final client = onCancel == null ? _httpClient : http.Client();
+    final unregisterCancel = onCancel?.call(client.close);
 
-    if (response.statusCode != 200) {
-      throw Exception(
-        'Azure API error (${response.statusCode}): ${response.body}',
+    try {
+      // Send request
+      final response = await client.post(
+        url,
+        headers: headers,
+        body: jsonEncode(requestBody),
       );
-    }
 
-    // Parse and return response
-    return jsonDecode(response.body) as Map<String, dynamic>;
+      if (response.statusCode != 200) {
+        throw Exception(
+          'Azure API error (${response.statusCode}): ${response.body}',
+        );
+      }
+
+      // Parse and return response
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    } finally {
+      unregisterCancel?.call();
+      if (onCancel != null) {
+        client.close();
+      }
+    }
   }
 
   @override
@@ -113,10 +124,7 @@ class AzureTextAgentTransport implements TextAgentTransport {
 
     // Add system prompt first only if not already in thread items
     if (!hasSystemInThread && systemPrompt.trim().isNotEmpty) {
-      messages.add({
-        'role': 'system',
-        'content': systemPrompt,
-      });
+      messages.add({'role': 'system', 'content': systemPrompt});
     }
 
     // Convert each item in order
@@ -137,8 +145,8 @@ class AzureTextAgentTransport implements TextAgentTransport {
 
     // Add text content if present
     if (item.content.isNotEmpty) {
-      final textPart =
-          item.findLatestContentPartOfType<TextAgentThreadTextPart>();
+      final textPart = item
+          .findLatestContentPartOfType<TextAgentThreadTextPart>();
       final content = textPart?.text ?? '';
       message['content'] = content;
     }
@@ -149,10 +157,7 @@ class AzureTextAgentTransport implements TextAgentTransport {
         return {
           'id': tc.id,
           'type': 'function',
-          'function': {
-            'name': tc.name,
-            'arguments': tc.arguments,
-          },
+          'function': {'name': tc.name, 'arguments': tc.arguments},
         };
       }).toList();
     }

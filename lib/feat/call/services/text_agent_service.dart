@@ -29,9 +29,7 @@ final class TextAgentService extends SubService {
   late final NotepadService _notepadService;
   late final ToolRunner _toolRunner;
 
-  TextAgentService({
-    Iterable<TextAgentInfo> agents = const <TextAgentInfo>[],
-  }) {
+  TextAgentService({Iterable<TextAgentInfo> agents = const <TextAgentInfo>[]}) {
     _registerAgents(agents);
   }
 
@@ -86,9 +84,7 @@ final class TextAgentService extends SubService {
 
     return agentThreads.putIfAbsent(
       effectiveThreadId,
-      () => TextAgentThread(
-        id: '${agentId}_$effectiveThreadId',
-      ),
+      () => TextAgentThread(id: '${agentId}_$effectiveThreadId'),
     );
   }
 
@@ -109,6 +105,7 @@ final class TextAgentService extends SubService {
     String agentId,
     String prompt, {
     String? threadId,
+    TextAgentCancelHook? onCancel,
   }) async {
     if (!isStarted) {
       throw StateError('TextAgentService has not been started.');
@@ -139,6 +136,7 @@ final class TextAgentService extends SubService {
         agent: agent,
         thread: thread,
         transport: transport,
+        onCancel: onCancel,
       );
 
       return result;
@@ -148,7 +146,8 @@ final class TextAgentService extends SubService {
         // Trim ~25% of oldest items
         final trimCount = (thread.length * 0.25).ceil().clamp(1, 10);
         logger.warning(
-            'Context length error detected, trimming $trimCount items from thread (${thread.length} → ${thread.length - trimCount})');
+          'Context length error detected, trimming $trimCount items from thread (${thread.length} → ${thread.length - trimCount})',
+        );
         thread.trimLeadingItems(trimCount);
 
         // Re-add user message
@@ -160,6 +159,7 @@ final class TextAgentService extends SubService {
           agent: agent,
           thread: thread,
           transport: transport,
+          onCancel: onCancel,
         );
       }
 
@@ -194,8 +194,9 @@ final class TextAgentService extends SubService {
     Set<String> activeExtensions,
   ) {
     // Get tools filtered by active file extensions
-    final extensionFilteredTools =
-        _toolRunner.computeAvailableTools(activeExtensions);
+    final extensionFilteredTools = _toolRunner.computeAvailableTools(
+      activeExtensions,
+    );
 
     // If agent's enabledTools is empty, all extension-filtered tools are enabled
     if (agent.enabledTools.isEmpty) {
@@ -241,6 +242,7 @@ final class TextAgentService extends SubService {
     required TextAgentInfo agent,
     required TextAgentThread thread,
     required TextAgentTransport transport,
+    TextAgentCancelHook? onCancel,
   }) async {
     const maxTurns = 10;
     int turnCount = 0;
@@ -250,14 +252,17 @@ final class TextAgentService extends SubService {
 
       // Recompute available tools based on current active file extensions
       final activeExtensions = _getCurrentActiveExtensions();
-      final availableTools =
-          _getAvailableToolsForAgent(agent, activeExtensions);
+      final availableTools = _getAvailableToolsForAgent(
+        agent,
+        activeExtensions,
+      );
 
       // Send request via transport (transport handles tool format conversion)
       final responseJson = await transport.sendRequest(
         thread: thread,
         systemPrompt: agent.prompt,
         availableTools: availableTools,
+        onCancel: onCancel,
       );
 
       // Parse response
@@ -289,11 +294,13 @@ final class TextAgentService extends SubService {
           final toolName = function['name'] as String;
           final argumentsStr = function['arguments'] as String;
 
-          domainToolCalls.add(TextAgentToolCall(
-            id: toolCallId,
-            name: toolName,
-            arguments: argumentsStr,
-          ));
+          domainToolCalls.add(
+            TextAgentToolCall(
+              id: toolCallId,
+              name: toolName,
+              arguments: argumentsStr,
+            ),
+          );
         }
 
         // Add assistant message with tool calls to thread
@@ -310,11 +317,16 @@ final class TextAgentService extends SubService {
         for (final toolCall in domainToolCalls) {
           String toolResult;
           try {
-            toolResult =
-                await _toolRunner.execute(toolCall.name, toolCall.arguments);
+            toolResult = await _toolRunner.execute(
+              toolCall.name,
+              toolCall.arguments,
+            );
           } catch (e, stackTrace) {
             logger.severe(
-                'Tool execution failed: ${toolCall.name}', e, stackTrace);
+              'Tool execution failed: ${toolCall.name}',
+              e,
+              stackTrace,
+            );
             toolResult = jsonEncode({
               'success': false,
               'error': 'Tool execution failed: $e',
@@ -359,8 +371,9 @@ final class TextAgentService extends SubService {
     }
 
     // Max turns reached
-    logger
-        .warning('Query loop reached max turns ($maxTurns) without completion');
+    logger.warning(
+      'Query loop reached max turns ($maxTurns) without completion',
+    );
     throw Exception('Max turns ($maxTurns) reached without completion');
   }
 

@@ -27,9 +27,9 @@ final class ToolRunner extends SubService {
     required FilesystemApi filesystemApi,
     required CallApi callApi,
     required TextAgentApi textAgentApi,
-  })  : _filesystemApi = filesystemApi,
-        _callApi = callApi,
-        _textAgentApi = textAgentApi;
+  }) : _filesystemApi = filesystemApi,
+       _callApi = callApi,
+       _textAgentApi = textAgentApi;
 
   /// Tool definitions registered for this session.
   List<ToolDefinition> get allDefinitions {
@@ -49,8 +49,9 @@ final class ToolRunner extends SubService {
     }
 
     // Normalize extensions to lowercase for comparison
-    final normalizedExtensions =
-        activeExtensions.map((ext) => ext.toLowerCase()).toSet();
+    final normalizedExtensions = activeExtensions
+        .map((ext) => ext.toLowerCase())
+        .toSet();
 
     return _tools.values
         .where((tool) {
@@ -82,11 +83,16 @@ final class ToolRunner extends SubService {
   ///
   /// Returns the tool result as a JSON string.
   /// Throws if the tool key is unknown or the tool throws.
-  Future<String> execute(String toolKey, String argumentsJson) async {
+  Future<String> execute(
+    String toolKey,
+    String argumentsJson, {
+    ToolCancellation? cancellation,
+  }) async {
     ensureNotDisposed();
     if (!isStarted) {
-      logger
-          .severe('Tool execution attempted before service started: $toolKey');
+      logger.severe(
+        'Tool execution attempted before service started: $toolKey',
+      );
       throw StateError('ToolRunner has not been started.');
     }
 
@@ -101,13 +107,14 @@ final class ToolRunner extends SubService {
       args = decoded is Map<String, dynamic> ? decoded : <String, dynamic>{};
     } catch (e, stackTrace) {
       logger.info('Invalid JSON arguments for tool $toolKey', e, stackTrace);
-      return jsonEncode({
-        'error': 'Invalid JSON arguments for tool $toolKey.',
-      });
+      return jsonEncode({'error': 'Invalid JSON arguments for tool $toolKey.'});
     }
 
     try {
-      final result = await tool.execute(args);
+      final result = await ToolCancellation.run(
+        cancellation,
+        () => tool.execute(args),
+      );
       return result;
     } catch (e, stackTrace) {
       logger.severe('Tool execution failed: $toolKey', e, stackTrace);

@@ -94,12 +94,21 @@ class QueryTextAgentTool extends Tool {
       });
     }
 
+    final cancellation = ToolCancellation.current;
+
     try {
       // Call the text agent API
-      final text = await context.textAgentApi.sendQuery(agentId, prompt);
+      final text = await context.textAgentApi.sendQuery(
+        agentId,
+        prompt,
+        onCancel: cancellation?.onCancel,
+      );
 
       return jsonEncode({'success': true, 'text': text});
     } catch (e) {
+      if (cancellation?.isCancelled ?? false) {
+        rethrow;
+      }
       return jsonEncode({'success': false, 'error': 'Query failed: $e'});
     }
   }
