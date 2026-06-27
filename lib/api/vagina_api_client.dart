@@ -1,13 +1,16 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import 'package:vagina/core/config/app_config.dart';
+import 'package:vagina/api/auth_exception.dart';
 import 'package:vagina/api/generated/clients/auth_api_client.dart';
 import 'package:vagina/api/generated/clients/speed_dials_api_client.dart';
 import 'package:vagina/api/generated/clients/vfs_api_client.dart';
+import 'package:vagina/core/config/app_config.dart';
+
+typedef AuthTokenSupplier = Future<String> Function({bool forceRefresh});
 
 /// Builds API clients backed by florval-generated clients and models.
 class VaginaApiClient {
-  static const String _retryFlagKey = 'auth_retry_attempted';
+  static const String _authRetryExtraKey = 'vagina.auth.retry';
 
   final Dio dio;
   final AuthApiClient auth;
@@ -22,8 +25,8 @@ class VaginaApiClient {
   });
 
   factory VaginaApiClient({
-    Future<String?> Function()? accessTokenProvider,
-    Future<String?> Function()? onUnauthorizedRefresh,
+    AuthTokenSupplier? getAccessToken,
+    Future<void> Function()? onAuthenticationFailure,
     Dio? dioOverride,
   }) {
     final dio =
@@ -37,52 +40,68 @@ class VaginaApiClient {
           ),
         );
 
-    if (accessTokenProvider != null) {
+    if (getAccessToken != null) {
+      final retryDio = _buildRetryDio(dio);
       dio.interceptors.add(
         InterceptorsWrapper(
           onRequest: (options, handler) async {
-            if (_shouldAttachAuthorization(options.path)) {
-              final token = await accessTokenProvider.call();
-              if (token != null && token.trim().isNotEmpty) {
-                options.headers['Authorization'] = 'Bearer ${token.trim()}';
-              }
-            }
-            handler.next(options);
-          },
-          onError: (error, handler) async {
-            if (onUnauthorizedRefresh == null ||
-                !_shouldRetryUnauthorized(error)) {
-              handler.next(error);
+            if (!_shouldAttachAuthorization(options.path)) {
+              handler.next(options);
               return;
             }
 
             try {
-              final refreshedToken = await onUnauthorizedRefresh.call();
-              final normalized = refreshedToken?.trim();
-              if (normalized == null || normalized.isEmpty) {
-                handler.next(error);
-                return;
-              }
-
-              final requestOptions = error.requestOptions;
-              final retryHeaders = Map<String, dynamic>.from(
-                requestOptions.headers,
+              final token = await getAccessToken.call();
+              _attachBearerToken(options, token);
+              handler.next(options);
+            } on AuthException catch (error) {
+              handler.reject(
+                DioException(
+                  requestOptions: options,
+                  type: DioExceptionType.unknown,
+                  error: error,
+                  message: error.message,
+                ),
               );
-              retryHeaders['Authorization'] = 'Bearer $normalized';
-
-              final retryExtra = Map<String, dynamic>.from(
-                requestOptions.extra,
-              );
-              retryExtra[_retryFlagKey] = true;
-
-              final retryRequest = requestOptions.copyWith(
-                headers: retryHeaders,
-                extra: retryExtra,
-              );
-              final retryResponse = await dio.fetch<dynamic>(retryRequest);
-              handler.resolve(retryResponse);
-            } catch (_) {
+            }
+          },
+          onError: (error, handler) async {
+            if (!_shouldRecoverFromUnauthorized(error)) {
               handler.next(error);
+              return;
+            }
+
+            final retryRequest = _cloneForAuthRetry(error.requestOptions);
+
+            try {
+              final token = await getAccessToken.call(forceRefresh: true);
+              _attachBearerToken(retryRequest, token);
+              final response = await retryDio.fetch<dynamic>(retryRequest);
+              handler.resolve(response);
+            } on AuthException catch (authError) {
+              await onAuthenticationFailure?.call();
+              handler.reject(
+                DioException(
+                  requestOptions: retryRequest,
+                  type: DioExceptionType.unknown,
+                  error: authError,
+                  message: authError.message,
+                ),
+              );
+            } on DioException catch (retryError) {
+              if (retryError.response?.statusCode == 401) {
+                await onAuthenticationFailure?.call();
+              }
+              handler.reject(retryError);
+            } catch (retryError) {
+              handler.reject(
+                DioException(
+                  requestOptions: retryRequest,
+                  type: DioExceptionType.unknown,
+                  error: retryError,
+                  message: retryError.toString(),
+                ),
+              );
             }
           },
         ),
@@ -97,17 +116,40 @@ class VaginaApiClient {
     );
   }
 
+  static Dio _buildRetryDio(Dio source) {
+    final retryDio = Dio(source.options.copyWith());
+    retryDio.httpClientAdapter = source.httpClientAdapter;
+    retryDio.transformer = source.transformer;
+    return retryDio;
+  }
+
+  static RequestOptions _cloneForAuthRetry(RequestOptions source) {
+    return source.copyWith(
+      headers: Map<String, dynamic>.from(source.headers),
+      extra: <String, dynamic>{...source.extra, _authRetryExtraKey: true},
+    );
+  }
+
   static bool _shouldAttachAuthorization(String path) {
     return !path.startsWith('/auth/oidc/') &&
         path != '/auth/refresh' &&
         path != '/auth/logout';
   }
 
-  static bool _shouldRetryUnauthorized(DioException error) {
-    final requestOptions = error.requestOptions;
-    return error.response?.statusCode == 401 &&
-        _shouldAttachAuthorization(requestOptions.path) &&
-        requestOptions.extra[_retryFlagKey] != true;
+  static bool _shouldRecoverFromUnauthorized(DioException error) {
+    final statusCode = error.response?.statusCode;
+    final request = error.requestOptions;
+    if (statusCode != 401) {
+      return false;
+    }
+    if (!_shouldAttachAuthorization(request.path)) {
+      return false;
+    }
+    return request.extra[_authRetryExtraKey] != true;
+  }
+
+  static void _attachBearerToken(RequestOptions options, String token) {
+    options.headers['Authorization'] = 'Bearer ${token.trim()}';
   }
 
   static String _resolveApiBaseUrl() {

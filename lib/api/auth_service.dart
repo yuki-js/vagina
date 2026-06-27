@@ -3,36 +3,39 @@ import 'dart:math';
 
 import 'package:crypto/crypto.dart' as crypto;
 import 'package:flutter/foundation.dart';
+import 'package:vagina/api/auth_exception.dart';
 import 'package:vagina/api/generated/models/auth_token_response.dart';
 import 'package:vagina/api/generated/models/exchange_oidc_login_body.dart';
 import 'package:vagina/api/generated/models/logout_body.dart';
 import 'package:vagina/api/generated/models/refresh_session_body.dart';
 import 'package:vagina/api/generated/models/start_oidc_login_body.dart';
-import 'package:vagina/api/generated/models/start_oidc_login_body_code_challenge_method.dart';
 import 'package:vagina/api/generated/models/start_oidc_login_body_client_type.dart';
+import 'package:vagina/api/generated/models/start_oidc_login_body_code_challenge_method.dart';
+import 'package:vagina/api/generated/models/user.dart';
 import 'package:vagina/api/generated/responses/exchange_oidc_login_response.dart';
 import 'package:vagina/api/generated/responses/get_current_user_response.dart';
 import 'package:vagina/api/generated/responses/logout_response.dart';
 import 'package:vagina/api/generated/responses/refresh_session_response.dart';
 import 'package:vagina/api/generated/responses/start_oidc_login_response.dart';
-import 'package:vagina/api/generated/models/user.dart';
 import 'package:vagina/api/vagina_api_client.dart';
 import 'package:vagina/core/config/app_config.dart';
 import 'package:vagina/repositories/preferences_repository.dart';
 import 'package:vagina/utils/platform_compat.dart';
 
-class AuthException implements Exception {
-  final String message;
+export 'package:vagina/api/auth_exception.dart';
 
-  const AuthException(this.message);
+enum AuthState { signedOut, authenticated }
 
-  @override
-  String toString() => message;
-}
+typedef AuthenticatedApiClientFactory =
+    VaginaApiClient Function(
+      AuthTokenSupplier getAccessToken,
+      Future<void> Function() discardSession,
+    );
 
-class AuthService {
+class AuthService extends ChangeNotifier {
   static final String callbackUrl = AppConfig.callbackUrl;
   static const String defaultProvider = 'github';
+  static const Duration accessTokenRefreshLeeway = Duration(seconds: 60);
 
   final PreferencesRepository _preferencesRepository;
   final Random _random;
@@ -55,17 +58,13 @@ class AuthService {
   String? _accessToken;
   String _tokenType = 'Bearer';
   DateTime? _accessTokenExpiresAtUtc;
-  Future<String?>? _refreshInFlight;
-  void Function()? onSignedOut;
+  Future<_RefreshAttempt>? _refreshInFlight;
+  AuthState _authState = AuthState.signedOut;
 
   AuthService({
     required PreferencesRepository preferencesRepository,
     Random? random,
-    VaginaApiClient Function(
-      Future<String?> Function() accessTokenProvider,
-      Future<String?> Function() onUnauthorizedRefresh,
-    )?
-    apiClientFactory,
+    AuthenticatedApiClientFactory? apiClientFactory,
     Future<StartOidcLoginResponse> Function(
       String provider,
       StartOidcLoginBody body,
@@ -84,7 +83,7 @@ class AuthService {
        _random = random ?? Random.secure() {
     _apiClient = (apiClientFactory ?? _defaultApiClientFactory)(
       getAccessToken,
-      refreshAccessTokenAfterUnauthorized,
+      discardSession,
     );
     _startOidcLoginCall =
         startOidcLoginCall ??
@@ -103,16 +102,18 @@ class AuthService {
   }
 
   static VaginaApiClient _defaultApiClientFactory(
-    Future<String?> Function() accessTokenProvider,
-    Future<String?> Function() onUnauthorizedRefresh,
+    AuthTokenSupplier getAccessToken,
+    Future<void> Function() discardSession,
   ) {
     return VaginaApiClient(
-      accessTokenProvider: accessTokenProvider,
-      onUnauthorizedRefresh: onUnauthorizedRefresh,
+      getAccessToken: getAccessToken,
+      onAuthenticationFailure: discardSession,
     );
   }
 
   VaginaApiClient get apiClient => _apiClient;
+
+  AuthState get authState => _authState;
 
   String? get tokenType => _accessToken == null ? null : _tokenType;
 
@@ -167,9 +168,8 @@ class AuthService {
       throw const AuthException('OIDC provider is required.');
     }
     if (codeVerifier == null) {
-      throw const AuthException(
-        'Sign-in session expired. Please start sign-in again.',
-      );
+      await discardSession();
+      throw const AuthException.authRequired();
     }
 
     final response = await _exchangeOidcLoginCall(
@@ -187,7 +187,8 @@ class AuthService {
       case ExchangeOidcLoginResponseBadRequest(:final data):
         throw AuthException(data.message);
       case ExchangeOidcLoginResponseUnauthorized(:final data):
-        throw AuthException(data.message);
+        await discardSession();
+        throw AuthException(data.message, code: AuthException.authRequiredCode);
       case ExchangeOidcLoginResponseStatus501(:final data):
         throw AuthException(data.message);
       case ExchangeOidcLoginResponseBadGateway(:final data):
@@ -203,9 +204,13 @@ class AuthService {
   }
 
   Future<User?> getCurrentUser() async {
-    final token = await getAccessToken();
-    if (token == null) {
-      return null;
+    try {
+      await getAccessToken();
+    } on AuthException catch (error) {
+      if (error.code == AuthException.authRequiredCode) {
+        return null;
+      }
+      rethrow;
     }
 
     final response = await _getCurrentUserCall();
@@ -226,52 +231,52 @@ class AuthService {
 
   Future<void> logout() async {
     final refreshToken = await _preferencesRepository.getAuthRefreshToken();
-    if (refreshToken == null) {
-      _clearAccessToken();
-      await _preferencesRepository.clearPendingPkceVerifier();
-      await _preferencesRepository.clearPendingOidcProvider();
-      _notifySignedOut();
-      return;
+    if (refreshToken != null) {
+      final response = await _logoutCall(
+        LogoutBody(refreshToken: refreshToken),
+      );
+      switch (response) {
+        case LogoutResponseNoContent():
+        case LogoutResponseUnknown(:final statusCode) when statusCode == 204:
+          break;
+        case LogoutResponseUnknown(:final statusCode):
+          throw AuthException('Logout failed (status: $statusCode).');
+        case LogoutResponseServerError(:final data):
+          throw AuthException(data.message);
+      }
     }
 
-    final response = await _logoutCall(LogoutBody(refreshToken: refreshToken));
-
-    switch (response) {
-      case LogoutResponseNoContent():
-        await _clearSessionAndNotifySignedOut();
-      case LogoutResponseUnknown(:final statusCode):
-        if (statusCode == 204) {
-          await _clearSessionAndNotifySignedOut();
-          return;
-        }
-        throw AuthException('Logout failed (status: $statusCode).');
-      case LogoutResponseServerError(:final data):
-        throw AuthException(data.message);
-    }
+    await discardSession();
   }
 
-  Future<String?> getAccessToken() async {
-    if (_hasValidAccessToken()) {
-      return _accessToken;
+  Future<String> getAccessToken({bool forceRefresh = false}) async {
+    if (!forceRefresh && _hasUsableCachedAccessToken()) {
+      return _requireAccessToken(_accessToken);
     }
 
-    return _runRefreshSingleFlight();
+    final attempt = await _runRefreshSingleFlight();
+    return switch (attempt) {
+      _RefreshSuccess(:final accessToken) => _requireAccessToken(accessToken),
+      _RefreshSignedOut() => throw const AuthException.authRequired(),
+    };
   }
 
-  Future<String?> refreshAccessTokenAfterUnauthorized() async {
+  Future<void> discardSession() async {
+    await _preferencesRepository.clearAuthRefreshToken();
+    await _preferencesRepository.clearPendingPkceVerifier();
+    await _preferencesRepository.clearPendingOidcProvider();
     _clearAccessToken();
-    return _runRefreshSingleFlight();
+    _setAuthState(AuthState.signedOut);
   }
 
-  Future<String?> _runRefreshSingleFlight() async {
+  Future<_RefreshAttempt> _runRefreshSingleFlight() async {
     final inFlight = _refreshInFlight;
     if (inFlight != null) {
       return inFlight;
     }
 
-    final future = _refreshAccessTokenInternal();
+    final future = _refreshAccessTokenWithRefreshToken();
     _refreshInFlight = future;
-
     try {
       return await future;
     } finally {
@@ -281,11 +286,11 @@ class AuthService {
     }
   }
 
-  Future<String?> _refreshAccessTokenInternal() async {
+  Future<_RefreshAttempt> _refreshAccessTokenWithRefreshToken() async {
     final refreshToken = await _preferencesRepository.getAuthRefreshToken();
     if (refreshToken == null) {
-      _clearAccessToken();
-      return null;
+      await discardSession();
+      return const _RefreshSignedOut();
     }
 
     final response = await _refreshSessionCall(
@@ -295,40 +300,45 @@ class AuthService {
     switch (response) {
       case RefreshSessionResponseSuccess(:final data):
         await _applyAuthTokenResponse(data);
-        return _accessToken;
+        return _RefreshSuccess(_requireAccessToken(_accessToken));
       case RefreshSessionResponseUnauthorized():
-        await _clearSessionAndNotifySignedOut();
-        return null;
+        await discardSession();
+        return const _RefreshSignedOut();
       case RefreshSessionResponseServerError(:final data):
         throw AuthException(data.message);
       case RefreshSessionResponseUnknown(:final statusCode):
         if (statusCode == 401 || statusCode == 403) {
-          await _clearSessionAndNotifySignedOut();
-          return null;
+          await discardSession();
+          return const _RefreshSignedOut();
         }
         throw AuthException('Refresh session failed (status: $statusCode).');
     }
   }
 
   Future<void> _applyAuthTokenResponse(AuthTokenResponse response) async {
-    _accessToken = response.accessToken;
+    _accessToken = response.accessToken.trim();
     _tokenType = response.tokenType;
     _accessTokenExpiresAtUtc = DateTime.now().toUtc().add(
       Duration(seconds: response.expiresIn),
     );
     await _preferencesRepository.saveAuthRefreshToken(response.refreshToken);
+    _setAuthState(AuthState.authenticated);
   }
 
-  Future<void> _clearSessionAndNotifySignedOut() async {
-    await _preferencesRepository.clearAuthRefreshToken();
-    await _preferencesRepository.clearPendingPkceVerifier();
-    await _preferencesRepository.clearPendingOidcProvider();
-    _clearAccessToken();
-    _notifySignedOut();
+  String _requireAccessToken(String? token) {
+    final normalized = token?.trim();
+    if (normalized == null || normalized.isEmpty) {
+      throw const AuthException.authRequired();
+    }
+    return normalized;
   }
 
-  void _notifySignedOut() {
-    onSignedOut?.call();
+  void _setAuthState(AuthState next) {
+    if (_authState == next) {
+      return;
+    }
+    _authState = next;
+    notifyListeners();
   }
 
   void _clearAccessToken() {
@@ -337,14 +347,15 @@ class AuthService {
     _accessTokenExpiresAtUtc = null;
   }
 
-  bool _hasValidAccessToken() {
+  bool _hasUsableCachedAccessToken() {
     final token = _accessToken;
     final expiresAt = _accessTokenExpiresAtUtc;
-    if (token == null || token.isEmpty || expiresAt == null) {
+    if (token == null || token.trim().isEmpty || expiresAt == null) {
       return false;
     }
 
-    return DateTime.now().toUtc().isBefore(expiresAt);
+    final latestSafeUseUtc = expiresAt.subtract(accessTokenRefreshLeeway);
+    return DateTime.now().toUtc().isBefore(latestSafeUseUtc);
   }
 
   StartOidcLoginBodyClientType _resolveClientType() {
@@ -382,6 +393,20 @@ class AuthService {
     }
     return fallback;
   }
+}
+
+sealed class _RefreshAttempt {
+  const _RefreshAttempt();
+}
+
+final class _RefreshSuccess extends _RefreshAttempt {
+  final String accessToken;
+
+  const _RefreshSuccess(this.accessToken);
+}
+
+final class _RefreshSignedOut extends _RefreshAttempt {
+  const _RefreshSignedOut();
 }
 
 class _PkcePair {

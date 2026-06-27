@@ -11,6 +11,7 @@ import 'core/state/locale_providers.dart';
 import 'feat/home/screens/home.dart';
 import 'feat/oobe/screens/oobe_flow.dart';
 import 'core/theme/app_theme.dart';
+import 'api/auth_service.dart';
 
 /// Setup logging configuration based on build mode
 void _setupLogging() {
@@ -92,32 +93,26 @@ class VaginaApp extends ConsumerStatefulWidget {
 class _VaginaAppState extends ConsumerState<VaginaApp> {
   bool _isFirstLaunch = true;
   bool _isLoading = true;
-  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
+
+  AuthService get _auth => AppContainer.auth;
 
   @override
   void initState() {
     super.initState();
-    AppContainer.auth.onSignedOut = _handleSignedOut;
+    _auth.addListener(_handleAuthStateChanged);
     _bootstrapAppState();
   }
 
   @override
   void dispose() {
-    if (AppContainer.auth.onSignedOut == _handleSignedOut) {
-      AppContainer.auth.onSignedOut = null;
-    }
+    _auth.removeListener(_handleAuthStateChanged);
     super.dispose();
   }
 
-  void _handleSignedOut() {
-    final navigator = _navigatorKey.currentState;
-    if (navigator == null) {
-      return;
+  void _handleAuthStateChanged() {
+    if (mounted) {
+      setState(() {});
     }
-    navigator.pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const OobeFlowScreen()),
-      (_) => false,
-    );
   }
 
   Future<void> _bootstrapAppState() async {
@@ -126,6 +121,10 @@ class _VaginaAppState extends ConsumerState<VaginaApp> {
     final preferredLocaleCode = await preferences.getPreferredLocaleCode();
 
     ref.read(appLocaleCodeProvider.notifier).setLocaleCode(preferredLocaleCode);
+
+    if (!isFirst) {
+      await AppContainer.auth.getCurrentUser();
+    }
 
     if (mounted) {
       setState(() {
@@ -161,9 +160,9 @@ class _VaginaAppState extends ConsumerState<VaginaApp> {
   @override
   Widget build(BuildContext context) {
     final localeCode = ref.watch(appLocaleCodeProvider);
+    final authState = _auth.authState;
 
     return MaterialApp(
-      navigatorKey: _navigatorKey,
       onGenerateTitle: (context) =>
           AppLocalizations.of(context).appTitle(AppConfig.appName),
       debugShowCheckedModeBanner: false,
@@ -180,7 +179,7 @@ class _VaginaAppState extends ConsumerState<VaginaApp> {
               backgroundColor: Colors.black,
               body: Center(child: CircularProgressIndicator()),
             )
-          : _isFirstLaunch
+          : _isFirstLaunch || authState == AuthState.signedOut
           ? const OobeFlowScreen()
           : const HomeScreen(),
     );

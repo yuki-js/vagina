@@ -70,9 +70,9 @@ final class _ConnectConfig {
 ///   - [transport]      : the WebSocket transport (inject [FakeVhrpTransport]
 ///                        in tests; defaults to [WebSocketVhrpTransport]).
 ///   - [tokenProvider]  : async supplier of the JWT placed in
-///                        `session.open.body.token`.  If it returns `null`,
-///                        [connect] emits [RealtimeAdapterError] on [errors],
-///                        transitions to [failed], and throws [StateError].
+///                        `session.open.body.token`.  If it fails, [connect]
+///                        emits [RealtimeAdapterError] on [errors], transitions
+///                        to [failed], and rethrows the failure.
 ///   - [urlResolver]    : optional override for URL resolution (test seam).
 ///                        Defaults to [AppConfig.resolveApiBaseUrl] +
 ///                        scheme/path rewrite.
@@ -90,7 +90,7 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
   // ── Dependencies ────────────────────────────────────────────────────────────
 
   final VhrpRealtimeTransport _transport;
-  final Future<String?> Function() _tokenProvider;
+  final Future<String> Function() _tokenProvider;
 
   /// Optional URL resolver seam.  Receives [isDebugMode] and returns the
   /// WebSocket URI to connect to.  Defaults to production logic.
@@ -268,9 +268,9 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
     VhrpRealtimeTransport? transport,
 
     /// Async supplier of the JWT placed in `session.open.body.token`.
-    /// Must not be null — inject a real token provider (e.g. from
-    /// AuthService.getAccessToken) in production.
-    required Future<String?> Function() tokenProvider,
+    /// Must return a non-empty token or throw — inject a required token provider
+    /// (e.g. from AuthService.getAccessToken) in production.
+    required Future<String> Function() tokenProvider,
 
     /// Optional URL resolver seam for testing.
     Uri Function(bool isDebugMode)? urlResolver,
@@ -314,7 +314,7 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
   /// Flow:
   ///   1. Resolve the WebSocket URL from [AppConfig.resolveApiBaseUrl].
   ///   2. Obtain the JWT via [tokenProvider].
-  ///      If `null` → emit error, transition to [failed], throw [StateError].
+  ///      If acquisition fails → emit error, transition to [failed], rethrow.
   ///   3. Connect the underlying transport (`vhrp.cbor.v1` subprotocol).
   ///   4. Subscribe to [inboundBytes] to start the dispatch loop.
   ///   5. Send `session.open` with model / voice / instructions / audio fmt.
@@ -341,19 +341,15 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
     final wsUri = _resolveWsUri(kDebugMode);
 
     // ── Step 2: Token acquisition ───────────────────────────────────────────
-    final token = await _tokenProvider();
-    if (token == null) {
-      const code = 'auth.missing_token';
-      const msg =
-          'VhrpRealtimeAdapter: tokenProvider returned null. '
-          'A valid JWT is required to open a VHRP session.';
-      _emitError(const RealtimeAdapterError(code: code, message: msg));
-      _setConnectionState(
-        const RealtimeAdapterConnectionState.failed(message: msg),
-      );
-      // Throw so the caller receives synchronous failure feedback, mirroring
-      // the contract that connect() fails fast when preconditions are unmet.
-      throw StateError(msg);
+    late final String token;
+    try {
+      token = await _tokenProvider();
+    } catch (e) {
+      const code = 'auth.token_unavailable';
+      final msg = 'VhrpRealtimeAdapter: token acquisition failed: $e';
+      _emitError(RealtimeAdapterError(code: code, message: msg, cause: e));
+      _setConnectionState(RealtimeAdapterConnectionState.failed(message: msg));
+      rethrow;
     }
 
     // ── Step 3: Freeze connect config for reconnect loop ───────────────────
@@ -1477,25 +1473,21 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
       _setConnectionState(const RealtimeAdapterConnectionState.connecting());
 
       // Acquire a fresh JWT for the reconnect session.open.
-      String? token;
+      final String token;
       try {
         token = await _tokenProvider();
-      } catch (_) {
-        token = null;
-      }
-
-      if (_disposed) break;
-
-      if (token == null) {
+      } catch (e) {
         // Cannot reconnect without a valid token — give up immediately.
         _isReconnecting = false;
         _setConnectionState(
-          const RealtimeAdapterConnectionState.failed(
-            message: 'Reconnect aborted: tokenProvider returned null.',
+          RealtimeAdapterConnectionState.failed(
+            message: 'Reconnect aborted: token acquisition failed: $e',
           ),
         );
         return;
       }
+
+      if (_disposed) break;
 
       // Open a new WebSocket connection.
       try {
