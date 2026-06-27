@@ -12,7 +12,7 @@
 // 1. Binary payloads (PCM, image bytes) are CBOR `bstr` — never base64.
 // 2. Text strings are CBOR `tstr`.
 // 3. Each WebSocket message is exactly one top-level CBOR map.
-// 4. Unknown S2C `type` → [UnknownTypeS2cMsg] (not an exception).
+// 4. Unknown S2C `type` is a protocol error and fails decode.
 // 5. Unknown `thread.patch` `op` → [UnknownOp] inside [ThreadPatchMsg].
 //
 // The `cbor` package (^6.5.1) is used for encode/decode.
@@ -147,11 +147,10 @@ class VhrpCborCodec {
 
   /// Deserialises one inbound binary [frame] into a typed [VhrpS2cMessage].
   ///
-  /// Returns [UnknownTypeS2cMsg] if the `type` field is not in the known S2C
-  /// set — the adapter layer decides whether to trigger recovery.
-  ///
   /// Throws [VhrpCborDecodeException] if the frame is not a valid CBOR map,
-  /// or if the mandatory `type` / `body` fields are absent.
+  /// if mandatory `type` / `body` fields are absent, or if the S2C `type` is
+  /// not implemented by this client. Treating unknown types as decode failures
+  /// prevents implemented protocol messages from being silently stubbed out.
   VhrpS2cMessage decode(Uint8List frame) {
     final CborValue decoded;
     try {
@@ -194,10 +193,9 @@ class VhrpCborCodec {
       'assistant.audio.done' => _decodeAssistantAudioDone(bodyVal),
       'vad.state' => _decodeVadState(bodyVal),
       'error' => _decodeError(replyTo, bodyVal),
-      _ => UnknownTypeS2cMsg(
-          unknownType: type,
-          rawEnvelope: _cborMapTodart(root),
-        ),
+      _ => throw VhrpCborDecodeException(
+        "Unsupported VHRP S2C message type '$type'",
+      ),
     };
   }
 
@@ -232,11 +230,11 @@ class VhrpCborCodec {
       );
 
   AckMsg _decodeAck(String? replyTo, CborMap body) => AckMsg(
-        replyTo: replyTo,
-        accepted: _getBool(body, 'accepted') ?? false,
-        clientItemId: _getText(body, 'clientItemId'),
-        applied: _getBool(body, 'applied') ?? false,
-      );
+    replyTo: replyTo,
+    accepted: _getBool(body, 'accepted') ?? false,
+    clientItemId: _getText(body, 'clientItemId'),
+    applied: _getBool(body, 'applied') ?? false,
+  );
 
   ThreadSnapshotMsg _decodeThreadSnapshot(CborMap body) {
     final itemsVal = body[CborString('items')];
@@ -271,58 +269,58 @@ class VhrpCborCodec {
     }
     return switch (opVal) {
       'add_item' => AddItemOp(
-          item: _cborMapTodart(
-            raw[CborString('item')] is CborMap
-                ? raw[CborString('item')] as CborMap
-                : CborMap({}),
-          ),
+        item: _cborMapTodart(
+          raw[CborString('item')] is CborMap
+              ? raw[CborString('item')] as CborMap
+              : CborMap({}),
         ),
+      ),
       'remove_item' => RemoveItemOp(itemId: _requireTextMap(raw, 'itemId')),
       'set_status' => SetStatusOp(
-          itemId: _requireTextMap(raw, 'itemId'),
-          status: _requireTextMap(raw, 'status'),
-        ),
+        itemId: _requireTextMap(raw, 'itemId'),
+        status: _requireTextMap(raw, 'status'),
+      ),
       'set_role' => SetRoleOp(
-          itemId: _requireTextMap(raw, 'itemId'),
-          role: _requireTextMap(raw, 'role'),
-        ),
+        itemId: _requireTextMap(raw, 'itemId'),
+        role: _requireTextMap(raw, 'role'),
+      ),
       'set_field' => SetFieldOp(
-          itemId: _requireTextMap(raw, 'itemId'),
-          field: _requireTextMap(raw, 'field'),
-          value: _cborValueTodart(raw[CborString('value')]),
-        ),
+        itemId: _requireTextMap(raw, 'itemId'),
+        field: _requireTextMap(raw, 'field'),
+        value: _cborValueTodart(raw[CborString('value')]),
+      ),
       'put_part' => PutPartOp(
-          itemId: _requireTextMap(raw, 'itemId'),
-          contentIndex: _getInt(raw, 'contentIndex') ?? 0,
-          part: _cborMapTodart(
-            raw[CborString('part')] is CborMap
-                ? raw[CborString('part')] as CborMap
-                : CborMap({}),
-          ),
+        itemId: _requireTextMap(raw, 'itemId'),
+        contentIndex: _getInt(raw, 'contentIndex') ?? 0,
+        part: _cborMapTodart(
+          raw[CborString('part')] is CborMap
+              ? raw[CborString('part')] as CborMap
+              : CborMap({}),
         ),
+      ),
       'append_text' => AppendTextOp(
-          itemId: _requireTextMap(raw, 'itemId'),
-          contentIndex: _getInt(raw, 'contentIndex') ?? 0,
-          delta: _requireTextMap(raw, 'delta'),
-        ),
+        itemId: _requireTextMap(raw, 'itemId'),
+        contentIndex: _getInt(raw, 'contentIndex') ?? 0,
+        delta: _requireTextMap(raw, 'delta'),
+      ),
       'replace_text' => ReplaceTextOp(
-          itemId: _requireTextMap(raw, 'itemId'),
-          contentIndex: _getInt(raw, 'contentIndex') ?? 0,
-          text: _requireTextMap(raw, 'text'),
-        ),
+        itemId: _requireTextMap(raw, 'itemId'),
+        contentIndex: _getInt(raw, 'contentIndex') ?? 0,
+        text: _requireTextMap(raw, 'text'),
+      ),
       'append_transcript' => AppendTranscriptOp(
-          itemId: _requireTextMap(raw, 'itemId'),
-          contentIndex: _getInt(raw, 'contentIndex') ?? 0,
-          delta: _requireTextMap(raw, 'delta'),
-        ),
+        itemId: _requireTextMap(raw, 'itemId'),
+        contentIndex: _getInt(raw, 'contentIndex') ?? 0,
+        delta: _requireTextMap(raw, 'delta'),
+      ),
       'replace_transcript' => ReplaceTranscriptOp(
-          itemId: _requireTextMap(raw, 'itemId'),
-          contentIndex: _getInt(raw, 'contentIndex') ?? 0,
-          text: _requireTextMap(raw, 'text'),
-        ),
+        itemId: _requireTextMap(raw, 'itemId'),
+        contentIndex: _getInt(raw, 'contentIndex') ?? 0,
+        text: _requireTextMap(raw, 'text'),
+      ),
       'set_conversation_id' => SetConversationIdOp(
-          conversationId: _requireTextMap(raw, 'conversationId'),
-        ),
+        conversationId: _requireTextMap(raw, 'conversationId'),
+      ),
       _ => UnknownOp(unknownOp: opVal, rawOp: _cborMapTodart(raw)),
     };
   }
@@ -349,25 +347,25 @@ class VhrpCborCodec {
       VadStateMsg(isSpeaking: _getBool(body, 'isSpeaking') ?? false);
 
   ErrorMsg _decodeError(String? replyTo, CborMap body) => ErrorMsg(
-        replyTo: replyTo,
-        code: _requireText(body, 'code'),
-        message: _requireText(body, 'message'),
-        recoverable: _getBool(body, 'recoverable') ?? true,
-      );
+    replyTo: replyTo,
+    code: _requireText(body, 'code'),
+    message: _requireText(body, 'message'),
+    recoverable: _getBool(body, 'recoverable') ?? true,
+  );
 
   // ── Encode helpers ────────────────────────────────────────────────────────
 
   CborMap _encodeAudioFormat(AudioFormat fmt) => CborMap({
-        CborString('encoding'): CborString(fmt.encoding),
-        CborString('sampleRate'): CborSmallInt(fmt.sampleRate),
-        CborString('channels'): CborSmallInt(fmt.channels),
-      });
+    CborString('encoding'): CborString(fmt.encoding),
+    CborString('sampleRate'): CborSmallInt(fmt.sampleRate),
+    CborString('channels'): CborSmallInt(fmt.channels),
+  });
 
   CborMap _encodeToolSpec(ToolSpec spec) => CborMap({
-        CborString('name'): CborString(spec.name),
-        CborString('description'): CborString(spec.description),
-        CborString('parameters'): _mapToCbor(spec.parameters),
-      });
+    CborString('name'): CborString(spec.name),
+    CborString('description'): CborString(spec.description),
+    CborString('parameters'): _mapToCbor(spec.parameters),
+  });
 
   // ── CBOR ↔ Dart map conversion ─────────────────────────────────────────
 
@@ -478,9 +476,9 @@ class VhrpCborCodec {
 /// Thrown when an inbound CBOR frame cannot be parsed into a valid VHRP
 /// envelope (missing mandatory fields, wrong top-level type, etc.).
 ///
-/// Protocol-level unknown `type` / `op` values are NOT exceptions; they
-/// surface as [UnknownTypeS2cMsg] / [UnknownOp] so the adapter can decide
-/// recovery strategy.
+/// Unknown S2C `type` values fail decode immediately. Unknown `thread.patch`
+/// `op` values still surface as [UnknownOp] so the adapter can trigger
+/// sync-request recovery for a malformed live patch without masking the frame.
 class VhrpCborDecodeException implements Exception {
   final String message;
   final Object? cause;

@@ -13,8 +13,8 @@
 //   • Tool results the user triggered reach the server intact.
 //   • The app correctly reacts to each server message type, because decoding
 //     produces the right typed value with the right field values.
-//   • The app does not crash on a server message with an unknown type; instead
-//     it surfaces the raw envelope so the adapter can trigger recovery.
+//   • Unknown server message types fail decode instead of being silently
+//     ignored as implicit stubs.
 //   • The app does not crash on an unknown patch op; instead it surfaces the
 //     raw op so the adapter can trigger sync-request recovery.
 
@@ -684,20 +684,24 @@ void main() {
     );
 
     test(
-      // Contract: if the server adds a new message type in a future protocol
-      // version, the client must not crash.  Instead, the raw envelope is
-      // preserved so the adapter layer can decide to trigger recovery or
-      // simply ignore it — the user's session stays alive.
-      'unknown type is decoded as UnknownTypeS2cMsg, not an exception',
+      // Contract: if the server sends a message type this client does not
+      // implement, the frame must fail loudly. Silently converting it to an
+      // ignored placeholder would make implemented protocol messages behave as
+      // implicit stubs and hide compatibility bugs from the user.
+      'unknown type fails decode instead of becoming a silent stub',
       () {
-        final msg = _decodeS2c('future.unknown.type', {
-          'someField': CborString('someValue'),
-        });
-
-        expect(msg, isA<UnknownTypeS2cMsg>());
-        final unknown = msg as UnknownTypeS2cMsg;
-        expect(unknown.unknownType, 'future.unknown.type');
-        expect(unknown.rawEnvelope['type'], 'future.unknown.type');
+        expect(
+          () => _decodeS2c('future.unknown.type', {
+            'someField': CborString('someValue'),
+          }),
+          throwsA(
+            isA<VhrpCborDecodeException>().having(
+              (e) => e.message,
+              'message',
+              contains('Unsupported VHRP S2C message type'),
+            ),
+          ),
+        );
       },
     );
 

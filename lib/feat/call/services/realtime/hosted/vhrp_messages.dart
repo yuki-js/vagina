@@ -398,10 +398,7 @@ final class AssistantAudioDoneMsg extends VhrpS2cMessage {
   final String itemId;
   final int contentIndex;
 
-  AssistantAudioDoneMsg({
-    required this.itemId,
-    required this.contentIndex,
-  });
+  AssistantAudioDoneMsg({required this.itemId, required this.contentIndex});
 }
 
 /// `vad.state`: server-side VAD speaking state.
@@ -434,8 +431,10 @@ final class ErrorMsg extends VhrpS2cMessage {
 }
 
 /// Received a `type` the client does not recognise.
-/// Per forward-compatibility rules, the codec surfaces it here rather than
-/// throwing so the adapter layer can decide whether to trigger recovery.
+///
+/// Normal CBOR decode rejects unknown S2C types before this reaches the
+/// adapter. This type remains as an explicit sentinel for tests or manually
+/// constructed messages so unsupported protocol messages are never silent.
 final class UnknownTypeS2cMsg extends VhrpS2cMessage {
   @override
   String get type => unknownType;
@@ -443,10 +442,7 @@ final class UnknownTypeS2cMsg extends VhrpS2cMessage {
   final String unknownType;
   final Map<String, Object?> rawEnvelope;
 
-  UnknownTypeS2cMsg({
-    required this.unknownType,
-    required this.rawEnvelope,
-  });
+  UnknownTypeS2cMsg({required this.unknownType, required this.rawEnvelope});
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -514,11 +510,7 @@ final class SetFieldOp extends ThreadPatchOp {
   final String field;
   final Object? value;
 
-  SetFieldOp({
-    required this.itemId,
-    required this.field,
-    required this.value,
-  });
+  SetFieldOp({required this.itemId, required this.field, required this.value});
 }
 
 /// `put_part`: upserts a content part at [contentIndex].

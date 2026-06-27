@@ -868,8 +868,8 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
 
   /// Routes decoded S2C messages to their handlers.
   ///
-  /// Step 3 handles: session.ready, session.resumed, error.
-  /// All other types are left as TODO stubs for subsequent steps.
+  /// Unknown wire `type` values fail during CBOR decode before reaching this
+  /// dispatcher, so a known protocol message cannot be silently stubbed out.
   void _dispatchMessage(VhrpS2cMessage msg) {
     switch (msg) {
       case SessionReadyMsg m:
@@ -902,10 +902,19 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
       case AckMsg m:
         _onAckMsg(m);
 
-      case UnknownTypeS2cMsg _:
-        // Forward-compatibility: unknown types are silently ignored per spec.
-        // Log if needed; do not trigger recovery here.
-        break;
+      case UnknownTypeS2cMsg m:
+        _emitError(
+          RealtimeAdapterError(
+            code: 'protocol.unsupported_message_type',
+            message: "Unsupported VHRP S2C message type '${m.unknownType}'.",
+            cause: m,
+          ),
+        );
+        _setConnectionState(
+          RealtimeAdapterConnectionState.failed(
+            message: "Unsupported VHRP S2C message type '${m.unknownType}'.",
+          ),
+        );
     }
   }
 
