@@ -48,9 +48,7 @@ class _SpreadsheetContentState extends State<SpreadsheetContent> {
           try {
             final serialized = newData.serialize(widget.extension);
             widget.onContentChanged?.call(serialized);
-          } catch (e) {
-            debugPrint('Error serializing data: $e');
-          }
+          } catch (_) {}
         }
       },
     );

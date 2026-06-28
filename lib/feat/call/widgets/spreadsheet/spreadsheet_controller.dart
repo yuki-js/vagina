@@ -102,8 +102,7 @@ class SpreadsheetController extends ChangeNotifier {
       editingValue = null;
 
       notifyListeners();
-    } catch (e) {
-      debugPrint('Error committing edit: $e');
+    } catch (_) {
       cancelEdit();
     }
   }
