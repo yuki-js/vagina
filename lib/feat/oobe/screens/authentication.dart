@@ -23,7 +23,6 @@ class AuthenticationScreen extends StatelessWidget {
   final AnnouncementService announcementService;
   final Future<void> Function(AuthProvider provider) onProviderTap;
   final bool isAuthenticating;
-  final VoidCallback onManualSetup;
   final VoidCallback onBack;
 
   const AuthenticationScreen({
@@ -31,7 +30,6 @@ class AuthenticationScreen extends StatelessWidget {
     required this.announcementService,
     required this.onProviderTap,
     this.isAuthenticating = false,
-    required this.onManualSetup,
     required this.onBack,
   });
 
@@ -137,65 +135,6 @@ class AuthenticationScreen extends StatelessWidget {
                         ],
                       ),
                     ],
-
-                    const SizedBox(height: 32),
-
-                    // Divider
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Container(
-                            height: 1,
-                            color: Colors.white.withValues(alpha: 0.2),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Text(
-                            l10n.oobeAuthenticationOr,
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.6),
-                              fontSize: 14,
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          child: Container(
-                            height: 1,
-                            color: Colors.white.withValues(alpha: 0.2),
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 32),
-
-                    // Manual setup button
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: isAuthenticating ? null : onManualSetup,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white.withValues(alpha: 0.1),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            side: BorderSide(
-                              color: Colors.white.withValues(alpha: 0.3),
-                              width: 1,
-                            ),
-                          ),
-                        ),
-                        child: Text(
-                          l10n.oobeAuthenticationManualSetup,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
 
                     const SizedBox(height: 32),
 

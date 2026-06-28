@@ -258,37 +258,9 @@
   "@oobeAuthenticationSignInRequired": {
     "description": "Snackbar message shown when the user attempts to proceed in OOBE without completing GitHub sign-in."
   },
-  "oobeAuthenticationOr": "or",
-  "@oobeAuthenticationOr": {
-    "description": "Divider label between third-party sign-in buttons and manual setup on the OOBE authentication screen."
-  },
-  "oobeAuthenticationManualSetup": "Set up manually",
-  "@oobeAuthenticationManualSetup": {
-    "description": "Secondary button label on the OOBE authentication screen that takes the user to manual OpenAI configuration instead of provider sign-in."
-  },
   "oobeAuthenticationTermsNotice": "By continuing, you agree to the Terms of Service and Privacy Policy.",
   "@oobeAuthenticationTermsNotice": {
     "description": "Small legal notice near the bottom of the OOBE authentication screen."
-  },
-  "oobeManualSetupTitle": "You're all set",
-  "@oobeManualSetupTitle": {
-    "description": "Main heading on the OOBE hosted-setup screen confirming the hosted voice agent will be used."
-  },
-  "oobeManualSetupSubtitle": "VAGINA will connect to the hosted voice agent on your behalf.",
-  "@oobeManualSetupSubtitle": {
-    "description": "Introductory text on the OOBE hosted-setup screen describing the hosted realtime connection."
-  },
-  "oobeManualSetupHostedBadge": "Hosted Voice Agent",
-  "@oobeManualSetupHostedBadge": {
-    "description": "Badge label inside the info card on the OOBE hosted-setup screen."
-  },
-  "oobeManualSetupHostedDescription": "Your voice conversations are powered by VAGINA's cloud infrastructure. No API keys required.",
-  "@oobeManualSetupHostedDescription": {
-    "description": "Description shown in the info card on the OOBE hosted-setup screen explaining the hosted setup."
-  },
-  "oobeManualSetupHostedNote": "The model can be changed later in Settings.",
-  "@oobeManualSetupHostedNote": {
-    "description": "Small note at the bottom of the OOBE hosted-setup screen pointing the user to Settings."
   },
   "settingsLanguageSectionTitle": "Language",
   "@settingsLanguageSectionTitle": {
@@ -350,65 +322,9 @@
   "@settingsCallIdleDisconnectTimeout30Minutes": {
     "description": "Dropdown label for a 30 minute idle auto-disconnect timeout."
   },
-  "settingsOpenAiConfigSectionTitle": "Voice Agent API Settings",
-  "@settingsOpenAiConfigSectionTitle": {
-    "description": "Section header for the Voice Agent API configuration card on the settings screen."
-  },
   "settingsSetupSectionTitle": "Setup",
   "@settingsSetupSectionTitle": {
     "description": "Section header for the setup card on the settings screen."
-  },
-  "settingsOpenAiLoadFailed": "Failed to load settings",
-  "@settingsOpenAiLoadFailed": {
-    "description": "Snackbar shown when the saved OpenAI settings cannot be loaded."
-  },
-  "settingsOpenAiUrlRequired": "Enter the API URL",
-  "@settingsOpenAiUrlRequired": {
-    "description": "Validation message shown when the OpenAI API URL field is empty."
-  },
-  "settingsOpenAiUrlInvalid": "The API URL format is invalid",
-  "@settingsOpenAiUrlInvalid": {
-    "description": "Validation message shown when the OpenAI API URL cannot be parsed."
-  },
-  "settingsOpenAiApiKeyRequired": "Enter the API key",
-  "@settingsOpenAiApiKeyRequired": {
-    "description": "Validation message shown when the OpenAI API key field is empty."
-  },
-  "settingsOpenAiSaveSuccess": "Settings saved",
-  "@settingsOpenAiSaveSuccess": {
-    "description": "Snackbar shown after the OpenAI settings are saved successfully."
-  },
-  "settingsOpenAiSaveFailed": "Failed to save settings: {error}",
-  "@settingsOpenAiSaveFailed": {
-    "description": "Snackbar shown when saving the OpenAI settings fails.",
-    "placeholders": {
-      "error": {
-        "type": "String",
-        "description": "Error details from the failed save operation."
-      }
-    }
-  },
-  "settingsOpenAiConnectionTestSuccess": "Connection test succeeded",
-  "@settingsOpenAiConnectionTestSuccess": {
-    "description": "Snackbar shown when the OpenAI connection test succeeds."
-  },
-  "settingsOpenAiConnectionTestFailed": "Connection test failed: {error}",
-  "@settingsOpenAiConnectionTestFailed": {
-    "description": "Snackbar shown when the OpenAI connection test fails.",
-    "placeholders": {
-      "error": {
-        "type": "String",
-        "description": "Error details from the failed connection test."
-      }
-    }
-  },
-  "settingsOpenAiClearDialogTitle": "Clear settings?",
-  "@settingsOpenAiClearDialogTitle": {
-    "description": "Confirmation dialog title before deleting the saved OpenAI settings."
-  },
-  "settingsOpenAiClearDialogBody": "Delete all saved API settings?",
-  "@settingsOpenAiClearDialogBody": {
-    "description": "Confirmation dialog body before deleting the saved OpenAI settings."
   },
   "settingsCommonCancel": "Cancel",
   "@settingsCommonCancel": {
@@ -418,115 +334,13 @@
   "@settingsCommonDelete": {
     "description": "Destructive delete action used in the settings screen confirmation dialog."
   },
-  "settingsOpenAiClearSuccess": "Settings cleared",
-  "@settingsOpenAiClearSuccess": {
-    "description": "Snackbar shown after the saved OpenAI settings are cleared."
-  },
-  "settingsOpenAiClearFailed": "Failed to clear settings: {error}",
-  "@settingsOpenAiClearFailed": {
-    "description": "Snackbar shown when clearing the saved OpenAI settings fails.",
-    "placeholders": {
-      "error": {
-        "type": "String",
-        "description": "Error details from the failed clear operation."
-      }
-    }
-  },
-  "settingsOpenAiConnectionType": "API Connection Type",
-  "@settingsOpenAiConnectionType": {
-    "description": "Field label for the API Connection Type dropdown in OpenAI settings."
-  },
-  "settingsOpenAiConnectionTypeOpenAi": "OpenAI Realtime API (WebSocket)",
-  "@settingsOpenAiConnectionTypeOpenAi": {
-    "description": "Dropdown item label for the standard OpenAI Realtime API."
-  },
-  "settingsOpenAiConnectionTypeOpenAiCc": "OpenAI Chat Completions (HTTP)",
-  "@settingsOpenAiConnectionTypeOpenAiCc": {
-    "description": "Dropdown item label for the OpenAI Chat Completions adapter."
-  },
-  "settingsOpenAiConnectionTypeHosted": "Hosted (VAGINA Cloud)",
-  "@settingsOpenAiConnectionTypeHosted": {
-    "description": "Dropdown item label for the VAGINA hosted realtime voice API."
-  },
-  "settingsOpenAiConnectionTypeGemini": "Gemini API (Under Construction)",
-  "@settingsOpenAiConnectionTypeGemini": {
-    "description": "Dropdown item label for the Gemini API connection option."
-  },
-  "settingsOpenAiConnectionTypeGeminiWarning": "※ Gemini API connection is currently under construction. Please wait for future updates.",
-  "@settingsOpenAiConnectionTypeGeminiWarning": {
-    "description": "Warning message shown when the Gemini API connection type is selected."
-  },
-  "settingsHostedModelIdLabel": "Model ID",
-  "@settingsHostedModelIdLabel": {
-    "description": "Field label above the hosted voice-agent model ID input on the settings screen."
-  },
-  "settingsHostedModelIdHint": "voice-agent-prod",
-  "@settingsHostedModelIdHint": {
-    "description": "Placeholder text inside the hosted model ID input field."
-  },
-  "settingsHostedModelIdHelper": "The hosted model to connect to. Must match a model registered on the server.",
-  "@settingsHostedModelIdHelper": {
-    "description": "Helper text below the hosted model ID field explaining what value to enter."
-  },
-  "settingsHostedModelIdRequired": "Enter the model ID",
-  "@settingsHostedModelIdRequired": {
-    "description": "Validation message shown when the hosted model ID field is empty."
-  },
-  "settingsOpenAiModalityLabel": "Modality",
-  "@settingsOpenAiModalityLabel": {
-    "description": "Label for the modality selection dropdown in OpenAI settings."
-  },
-  "settingsOpenAiUrlLabel": "OpenAI API URL (Base)",
-  "@settingsOpenAiUrlLabel": {
-    "description": "Field label above the OpenAI API base URL input on the settings screen."
-  },
-  "settingsOpenAiUrlHint": "https://api.openai.com/v1",
-  "@settingsOpenAiUrlHint": {
-    "description": "Placeholder text inside the OpenAI API URL input."
-  },
-  "settingsOpenAiUrlExample": "Example: https://api.openai.com/v1 (Realtime appends /realtime suffix automatically)",
-  "@settingsOpenAiUrlExample": {
-    "description": "Helper text below the OpenAI API URL field showing an example endpoint."
-  },
-  "settingsOpenAiApiKeyLabel": "API key",
-  "@settingsOpenAiApiKeyLabel": {
-    "description": "Field label above the OpenAI API key input on the settings screen."
-  },
-  "settingsOpenAiApiKeyHint": "Enter the API key",
-  "@settingsOpenAiApiKeyHint": {
-    "description": "Placeholder text inside the OpenAI API key input."
-  },
-  "settingsOpenAiTranscriptionModelLabel": "Transcription model",
-  "@settingsOpenAiTranscriptionModelLabel": {
-    "description": "Field label above the realtime transcription model selector on the settings screen."
-  },
-  "settingsOpenAiTranscriptionModelHint": "Select a transcription model",
-  "@settingsOpenAiTranscriptionModelHint": {
-    "description": "Placeholder text inside the transcription model preset selector."
-  },
-  "settingsOpenAiTranscriptionModelHelper": "Used for speech-to-text on microphone input. Presets are provided, or you can enter any model name.",
-  "@settingsOpenAiTranscriptionModelHelper": {
-    "description": "Helper text below the transcription model controls explaining what the setting affects."
-  },
-  "settingsOpenAiTranscriptionModelRequired": "Enter the transcription model",
-  "@settingsOpenAiTranscriptionModelRequired": {
-    "description": "Validation message shown when the transcription model field is empty."
-  },
   "settingsCommonSave": "Save",
   "@settingsCommonSave": {
     "description": "Primary save button label used on the settings screen."
   },
-  "settingsOpenAiTestConnectionButton": "Test connection",
-  "@settingsOpenAiTestConnectionButton": {
-    "description": "Button label that runs the OpenAI connection test."
-  },
   "settingsCommonClear": "Clear",
   "@settingsCommonClear": {
     "description": "Button label that clears the saved OpenAI settings."
-  },
-  "settingsOpenAiCredentialsStorageNote": "Credentials are stored securely on this device.",
-  "@settingsOpenAiCredentialsStorageNote": {
-    "description": "Small note below the OpenAI settings buttons explaining where credentials are stored."
   },
   "settingsSetupRestartOobeTitle": "Run initial setup again",
   "@settingsSetupRestartOobeTitle": {

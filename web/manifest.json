@@ -5,7 +5,7 @@
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "VAGINA: Voice AGI Notepad Agent - A voice assistant powered by OpenAI Realtime API",
+    "description": "VAGINA: Voice AGI Notepad Agent - a hosted voice assistant client",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

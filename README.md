@@ -6,7 +6,7 @@
 
 ## 特徴
 
-- 🎤 **リアルタイム音声会話** - Azure OpenAI Realtime APIによる自然な対話
+- 🎤 **リアルタイム音声会話** - サーバーホスト型 Voice Agent による自然な対話
 - 🤖 **汎用人工知能** - GPT-4oによる高度な推論と応答
 - 📒 **ノートパッド機能** - ハンズフリー文書作成・編集
 - 🧠 **テキストエージェント** - 深い分析と長文生成に特化したAIアシスタント (NEW)
@@ -22,7 +22,7 @@
 ## 必要条件
 
 - Flutter SDK 3.27.1 (fvm 経由で管理)
-- Azure OpenAI API キー (Realtime API アクセス権限付き)
+- VAGINA server API への接続設定
 
 ### Flutter バージョン管理 (fvm)
 
@@ -99,13 +99,9 @@ flutter pub get
 flutter run
 ```
 
-## API キーの設定
+## Voice Agent の設定
 
-1. アプリを起動
-2. 右上の設定アイコン (⚙️) をタップ
-3. Azure OpenAI Realtime URL と API キーを入力して保存
-
-> ⚠️ API キーは端末内のセキュアストレージに保存されます。GitHub にコミットしないでください。
+音声エージェントはサーバー側 registry で管理されます。クライアントは provider 名、base URL、API キーを保持せず、Speed Dial ごとに server registry の Voice Agent を選択します。
 
 ## プロジェクト構造
 
@@ -366,5 +362,4 @@ fvm use 3.27.1
 
 ## 参考
 
-- [Azure OpenAI Realtime API](https://learn.microsoft.com/en-us/azure/ai-services/openai/realtime-audio-quickstart)
 - [ANL-enpit (Web版サンプル)](https://github.com/yuki-js/ANL-enpit)

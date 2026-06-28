@@ -258,37 +258,9 @@
   "@oobeAuthenticationSignInRequired": {
     "description": "GitHub サインイン前に OOBE を進めようとしたときのスナックバー文言。"
   },
-  "oobeAuthenticationOr": "または",
-  "@oobeAuthenticationOr": {
-    "description": "OOBE 認証画面で外部ログインボタン群と手動設定ボタンの間に表示する区切りラベル。"
-  },
-  "oobeAuthenticationManualSetup": "自分で設定する",
-  "@oobeAuthenticationManualSetup": {
-    "description": "OOBE 認証画面で、外部ログインではなく OpenAI の手動設定へ進む副ボタンラベル。"
-  },
   "oobeAuthenticationTermsNotice": "続行することで、利用規約とプライバシーポリシーに同意したものとみなされます",
   "@oobeAuthenticationTermsNotice": {
     "description": "OOBE 認証画面の下部に表示する小さな法的同意文。"
-  },
-  "oobeManualSetupTitle": "準備完了",
-  "@oobeManualSetupTitle": {
-    "description": "ホステッドセットアップ画面のメイン見出し。ホステッド音声エージェントを使用することを確認する。"
-  },
-  "oobeManualSetupSubtitle": "VAGINAのホステッド音声エージェントに自動で接続します。",
-  "@oobeManualSetupSubtitle": {
-    "description": "OOBE ホステッドセットアップ画面で、ホステッド接続を説明する導入文。"
-  },
-  "oobeManualSetupHostedBadge": "ホステッド音声エージェント",
-  "@oobeManualSetupHostedBadge": {
-    "description": "OOBE ホステッドセットアップ画面のインフォカード内バッジラベル。"
-  },
-  "oobeManualSetupHostedDescription": "音声会話は VAGINA のクラウドインフラで動作します。API キーは不要です。",
-  "@oobeManualSetupHostedDescription": {
-    "description": "OOBE ホステッドセットアップ画面のインフォカードに表示される説明文。"
-  },
-  "oobeManualSetupHostedNote": "モデルは後から設定画面で変更できます。",
-  "@oobeManualSetupHostedNote": {
-    "description": "OOBE ホステッドセットアップ画面下部のメモ。設定画面へ誘導する。"
   },
   "settingsLanguageSectionTitle": "言語",
   "@settingsLanguageSectionTitle": {
@@ -350,65 +322,9 @@
   "@settingsCallIdleDisconnectTimeout30Minutes": {
     "description": "アイドル時の自動切断時間 30 分のドロップダウン表示。"
   },
-  "settingsOpenAiConfigSectionTitle": "音声エージェント API 設定",
-  "@settingsOpenAiConfigSectionTitle": {
-    "description": "設定画面で音声エージェントのAPI設定カードをまとめるセクション見出し。"
-  },
   "settingsSetupSectionTitle": "セットアップ",
   "@settingsSetupSectionTitle": {
     "description": "設定画面でセットアップ関連カードをまとめるセクション見出し。"
-  },
-  "settingsOpenAiLoadFailed": "設定の読み込みに失敗しました",
-  "@settingsOpenAiLoadFailed": {
-    "description": "保存済みの OpenAI 設定を読み込めなかったときに表示するスナックバー文言。"
-  },
-  "settingsOpenAiUrlRequired": "API URLを入力してください",
-  "@settingsOpenAiUrlRequired": {
-    "description": "OpenAI API URL 入力欄が空のときに表示するバリデーション文言。"
-  },
-  "settingsOpenAiUrlInvalid": "API URLの形式が正しくありません",
-  "@settingsOpenAiUrlInvalid": {
-    "description": "OpenAI API URL を解析できないときに表示するバリデーション文言。"
-  },
-  "settingsOpenAiApiKeyRequired": "APIキーを入力してください",
-  "@settingsOpenAiApiKeyRequired": {
-    "description": "OpenAI API キー入力欄が空のときに表示するバリデーション文言。"
-  },
-  "settingsOpenAiSaveSuccess": "設定を保存しました",
-  "@settingsOpenAiSaveSuccess": {
-    "description": "OpenAI 設定の保存に成功したあとに表示するスナックバー文言。"
-  },
-  "settingsOpenAiSaveFailed": "保存に失敗しました: {error}",
-  "@settingsOpenAiSaveFailed": {
-    "description": "OpenAI 設定の保存に失敗したときに表示するスナックバー文言。",
-    "placeholders": {
-      "error": {
-        "type": "String",
-        "description": "保存失敗の詳細を示すエラー文字列。"
-      }
-    }
-  },
-  "settingsOpenAiConnectionTestSuccess": "接続テスト成功",
-  "@settingsOpenAiConnectionTestSuccess": {
-    "description": "OpenAI 接続テストが成功したときに表示するスナックバー文言。"
-  },
-  "settingsOpenAiConnectionTestFailed": "接続テスト失敗: {error}",
-  "@settingsOpenAiConnectionTestFailed": {
-    "description": "OpenAI 接続テストが失敗したときに表示するスナックバー文言。",
-    "placeholders": {
-      "error": {
-        "type": "String",
-        "description": "接続テスト失敗の詳細を示すエラー文字列。"
-      }
-    }
-  },
-  "settingsOpenAiClearDialogTitle": "設定をクリア?",
-  "@settingsOpenAiClearDialogTitle": {
-    "description": "保存済みの OpenAI 設定を削除する前に表示する確認ダイアログのタイトル。"
-  },
-  "settingsOpenAiClearDialogBody": "保存済みのAPI設定をすべて削除しますか？",
-  "@settingsOpenAiClearDialogBody": {
-    "description": "保存済みの OpenAI 設定を削除する前に表示する確認ダイアログの本文。"
   },
   "settingsCommonCancel": "キャンセル",
   "@settingsCommonCancel": {
@@ -418,115 +334,13 @@
   "@settingsCommonDelete": {
     "description": "設定画面の確認ダイアログで使う削除操作ラベル。"
   },
-  "settingsOpenAiClearSuccess": "設定をクリアしました",
-  "@settingsOpenAiClearSuccess": {
-    "description": "保存済みの OpenAI 設定をクリアしたあとに表示するスナックバー文言。"
-  },
-  "settingsOpenAiClearFailed": "設定のクリアに失敗しました: {error}",
-  "@settingsOpenAiClearFailed": {
-    "description": "保存済みの OpenAI 設定のクリアに失敗したときに表示するスナックバー文言。",
-    "placeholders": {
-      "error": {
-        "type": "String",
-        "description": "クリア失敗の詳細を示すエラー文字列。"
-      }
-    }
-  },
-  "settingsOpenAiConnectionType": "API接続タイプ",
-  "@settingsOpenAiConnectionType": {
-    "description": "設定画面の OpenAI 設定における API接続タイプ ドロップダウンのラベル。"
-  },
-  "settingsOpenAiConnectionTypeOpenAi": "OpenAI Realtime API (WebSocket)",
-  "@settingsOpenAiConnectionTypeOpenAi": {
-    "description": "標準の OpenAI Realtime API ドロップダウン項目ラベル。"
-  },
-  "settingsOpenAiConnectionTypeOpenAiCc": "OpenAI Chat Completions (HTTP)",
-  "@settingsOpenAiConnectionTypeOpenAiCc": {
-    "description": "OpenAI Chat Completions アダプターのドロップダウン項目ラベル。"
-  },
-  "settingsOpenAiConnectionTypeHosted": "ホステッド (VAGINA クラウド)",
-  "@settingsOpenAiConnectionTypeHosted": {
-    "description": "VAGINA ホステッド Realtime 音声 API のドロップダウン項目ラベル。"
-  },
-  "settingsOpenAiConnectionTypeGemini": "Gemini API (準備中)",
-  "@settingsOpenAiConnectionTypeGemini": {
-    "description": "Gemini API 接続オプションのドロップダウン項目ラベル。"
-  },
-  "settingsOpenAiConnectionTypeGeminiWarning": "※ Gemini API 接続は現在工事中です。今後のアップデートをお待ちください。",
-  "@settingsOpenAiConnectionTypeGeminiWarning": {
-    "description": "Gemini API 接続タイプが選択されたときに表示される警告メッセージ。"
-  },
-  "settingsHostedModelIdLabel": "モデル ID",
-  "@settingsHostedModelIdLabel": {
-    "description": "設定画面のホステッド音声エージェントモデル ID 入力欄上ラベル。"
-  },
-  "settingsHostedModelIdHint": "voice-agent-prod",
-  "@settingsHostedModelIdHint": {
-    "description": "ホステッドモデル ID 入力欄のプレースホルダーテキスト。"
-  },
-  "settingsHostedModelIdHelper": "接続するホステッドモデルを入力してください。サーバーに登録されているモデル名と一致させる必要があります。",
-  "@settingsHostedModelIdHelper": {
-    "description": "ホステッドモデル ID フィールドの下に表示するヘルパーテキスト。"
-  },
-  "settingsHostedModelIdRequired": "モデル ID を入力してください",
-  "@settingsHostedModelIdRequired": {
-    "description": "ホステッドモデル ID フィールドが空のときに表示するバリデーションメッセージ。"
-  },
-  "settingsOpenAiModalityLabel": "モダリティ",
-  "@settingsOpenAiModalityLabel": {
-    "description": "設定画面の OpenAI 設定におけるモダリティ選択ドロップダウンのラベル。"
-  },
-  "settingsOpenAiUrlLabel": "OpenAI API 接続URL (Base)",
-  "@settingsOpenAiUrlLabel": {
-    "description": "設定画面の OpenAI API ベースURL入力欄の上に表示するラベル。"
-  },
-  "settingsOpenAiUrlHint": "https://api.openai.com/v1",
-  "@settingsOpenAiUrlHint": {
-    "description": "OpenAI API URL 入力欄のプレースホルダー。"
-  },
-  "settingsOpenAiUrlExample": "例: https://api.openai.com/v1 (Realtime接続時は末尾に /realtime が自動追加されます)",
-  "@settingsOpenAiUrlExample": {
-    "description": "OpenAI API URL 欄の下に表示する補助テキスト。"
-  },
-  "settingsOpenAiApiKeyLabel": "APIキー",
-  "@settingsOpenAiApiKeyLabel": {
-    "description": "設定画面の OpenAI API キー入力欄の上に表示するラベル。"
-  },
-  "settingsOpenAiApiKeyHint": "APIキーを入力",
-  "@settingsOpenAiApiKeyHint": {
-    "description": "OpenAI API キー入力欄のプレースホルダー。"
-  },
-  "settingsOpenAiTranscriptionModelLabel": "文字起こしモデル",
-  "@settingsOpenAiTranscriptionModelLabel": {
-    "description": "設定画面の realtime 文字起こしモデル選択欄の上に表示するラベル。"
-  },
-  "settingsOpenAiTranscriptionModelHint": "文字起こしモデルを選択",
-  "@settingsOpenAiTranscriptionModelHint": {
-    "description": "文字起こしモデルのプリセット選択欄に表示するプレースホルダー。"
-  },
-  "settingsOpenAiTranscriptionModelHelper": "マイク入力の音声認識に使われます。プリセットを選ぶか、任意のモデル名を入力できます。",
-  "@settingsOpenAiTranscriptionModelHelper": {
-    "description": "文字起こしモデル設定が何に使われるかを説明する補助文。"
-  },
-  "settingsOpenAiTranscriptionModelRequired": "文字起こしモデルを入力してください",
-  "@settingsOpenAiTranscriptionModelRequired": {
-    "description": "文字起こしモデルが空のときに表示するバリデーション文言。"
-  },
   "settingsCommonSave": "保存",
   "@settingsCommonSave": {
     "description": "設定画面で使う主要な保存ボタンのラベル。"
   },
-  "settingsOpenAiTestConnectionButton": "接続テスト",
-  "@settingsOpenAiTestConnectionButton": {
-    "description": "OpenAI Realtime の接続テストを実行するボタンのラベル。"
-  },
   "settingsCommonClear": "クリア",
   "@settingsCommonClear": {
     "description": "保存済みの OpenAI 設定をクリアするボタンのラベル。"
-  },
-  "settingsOpenAiCredentialsStorageNote": "認証情報はデバイス上に安全に保存されます。",
-  "@settingsOpenAiCredentialsStorageNote": {
-    "description": "OpenAI 設定ボタンの下に表示する、認証情報の保存先に関する補足文。"
   },
   "settingsSetupRestartOobeTitle": "初期設定をやり直す",
   "@settingsSetupRestartOobeTitle": {

@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vagina/core/config/app_config.dart';
 import 'package:vagina/core/state/locale_providers.dart';
 import 'package:vagina/core/app/app_container.dart';
-import 'package:vagina/feat/settings/widgets/openai_config_section.dart';
 import 'package:vagina/feat/settings/widgets/setup_section.dart';
 import 'package:vagina/feat/settings/widgets/settings_card.dart';
 import 'package:vagina/l10n/app_localizations.dart';
@@ -37,12 +36,6 @@ class SettingsScreen extends StatelessWidget {
                 SectionHeader(title: l10n.settingsCallSectionTitle),
                 const SizedBox(height: 12),
                 const _CallPreferencesCard(),
-                const SizedBox(height: 24),
-
-                // OpenAI configuration section
-                SectionHeader(title: l10n.settingsOpenAiConfigSectionTitle),
-                const SizedBox(height: 12),
-                const OpenAiConfigSection(),
                 const SizedBox(height: 24),
 
                 // Setup Section

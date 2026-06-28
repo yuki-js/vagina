@@ -2,12 +2,10 @@ import 'package:vagina/interfaces/config_repository.dart';
 import 'package:vagina/interfaces/key_value_store.dart';
 import 'package:logging/logging.dart';
 import 'package:vagina/feat/call/models/text_agent_info.dart';
-import 'package:vagina/feat/call/models/voice_agent_api_config.dart';
 
 /// JSON-based implementation of ConfigRepository
 class JsonConfigRepository implements ConfigRepository {
   // Config keys
-  static const _voiceAgentApiConfigKey = 'voice_agent_api_config';
   static const _textAgentsKey = 'text_agents';
 
   static final Logger _logger = Logger('JsonConfigRepository');
@@ -15,34 +13,6 @@ class JsonConfigRepository implements ConfigRepository {
   final KeyValueStore _store;
 
   JsonConfigRepository(this._store);
-
-  // Voice agent API configuration
-
-  @override
-  Future<void> saveVoiceAgentApiConfig(VoiceAgentApiConfig config) async {
-    _logger.fine('Saving voice agent API config: ${config.runtimeType}');
-    await _store.set(_voiceAgentApiConfigKey, config.toJson());
-  }
-
-  @override
-  Future<VoiceAgentApiConfig?> getVoiceAgentApiConfig() async {
-    final data = await _store.get(_voiceAgentApiConfigKey);
-    if (data == null) {
-      return null;
-    }
-
-    if (data is! Map) {
-      _logger.warning('Invalid voice agent api config data type');
-      return null;
-    }
-
-    try {
-      return VoiceAgentApiConfig.fromJson(Map<String, dynamic>.from(data));
-    } catch (e) {
-      _logger.severe('Error parsing voice agent api config: $e');
-      return null;
-    }
-  }
 
   // Text Agent Configuration
 

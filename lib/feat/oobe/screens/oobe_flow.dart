@@ -8,12 +8,9 @@ import 'package:vagina/api/auth_service.dart';
 import 'package:vagina/core/app/app_container.dart';
 import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/feat/announcement/services/announcement_service.dart';
-import 'package:vagina/feat/call/models/hosted_voice_agent_defaults.dart';
-import 'package:vagina/feat/call/models/voice_agent_api_config.dart';
 import 'package:vagina/feat/home/screens/home.dart';
 import 'package:vagina/feat/oobe/screens/authentication.dart';
 import 'package:vagina/feat/oobe/screens/dive_in.dart';
-import 'package:vagina/feat/oobe/screens/manual_setup.dart';
 import 'package:vagina/feat/oobe/screens/permissions.dart';
 import 'package:vagina/feat/oobe/screens/welcome.dart';
 import 'package:vagina/feat/oobe/widgets/oobe_background.dart';
@@ -197,26 +194,11 @@ class _OobeFlowScreenState extends State<OobeFlowScreen> {
         return;
       }
 
-      // Ensure a voice-agent config exists before skipping ManualSetupScreen.
-      // Only write the default when there is no saved config – never overwrite
-      // a config the user may have set previously.
-      if (_currentPageIndex <= 1) {
-        final existingConfig = await AppContainer.config.getVoiceAgentApiConfig();
-        if (existingConfig == null) {
-          await AppContainer.config.saveVoiceAgentApiConfig(
-            const HostedVoiceAgentApiConfig(
-              modelId: HostedVoiceAgentDefaults.defaultModelId,
-            ),
-          );
-        }
-        if (!mounted) return;
-      }
-
       setState(() {
         _isSignedIn = true;
         _isAuthenticating = false;
         if (_currentPageIndex <= 1) {
-          _currentPageIndex = 3;
+          _currentPageIndex = 2;
         }
       });
     } catch (_) {
@@ -232,18 +214,6 @@ class _OobeFlowScreenState extends State<OobeFlowScreen> {
     }
   }
 
-  Future<void> _goToManualSetup() async {
-    final l10n = AppLocalizations.of(context);
-    if (!_isSignedIn) {
-      await _syncSignInState();
-    }
-    if (!_isSignedIn) {
-      _showSnackBar(l10n.oobeAuthenticationSignInRequired, isWarning: true);
-      return;
-    }
-    _goToNextPage();
-  }
-
   void _completeOOBE() async {
     final l10n = AppLocalizations.of(context);
     if (!_isSignedIn) {
@@ -253,19 +223,6 @@ class _OobeFlowScreenState extends State<OobeFlowScreen> {
       });
       return;
     }
-
-    // Safety net: guarantee a voice-agent config exists before leaving OOBE,
-    // regardless of which path the user took through the flow.
-    final existingConfig = await AppContainer.config.getVoiceAgentApiConfig();
-    if (existingConfig == null) {
-      await AppContainer.config.saveVoiceAgentApiConfig(
-        const HostedVoiceAgentApiConfig(
-          modelId: HostedVoiceAgentDefaults.defaultModelId,
-        ),
-      );
-    }
-
-    if (!mounted) return;
 
     // Mark first launch as completed using preferencesRepositoryProvider
     final preferences = AppContainer.preferences;
@@ -338,24 +295,15 @@ class _OobeFlowScreenState extends State<OobeFlowScreen> {
           announcementService: _announcementService,
           onProviderTap: _handleProviderTap,
           isAuthenticating: _isAuthenticating,
-          onManualSetup: () {
-            unawaited(_goToManualSetup());
-          },
           onBack: _goToPreviousPage,
         );
       case 2:
-        return ManualSetupScreen(
-          key: const ValueKey('setup'),
-          onContinue: _goToNextPage,
-          onBack: _goToPreviousPage,
-        );
-      case 3:
         return PermissionsScreen(
           key: const ValueKey('permissions'),
           onContinue: _goToNextPage,
           onBack: _goToPreviousPage,
         );
-      case 4:
+      case 3:
         return DiveInScreen(
           key: const ValueKey('divein'),
           onStart: _completeOOBE,

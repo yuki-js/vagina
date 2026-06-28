@@ -8,7 +8,6 @@ import 'package:vagina/feat/call/models/realtime/realtime_adapter_models.dart';
 import 'package:vagina/feat/call/models/realtime/realtime_thread.dart';
 import 'package:vagina/feat/call/models/realtime/tool_call_resolution.dart';
 import 'package:vagina/feat/call/models/text_agent_info.dart';
-import 'package:vagina/feat/call/models/voice_agent_api_config.dart';
 import 'package:vagina/feat/call/models/voice_agent_info.dart';
 import 'package:vagina/feat/call/services/feedback_service.dart';
 import 'package:vagina/feat/call/services/manual_audio_turn_buffer.dart';
@@ -354,13 +353,6 @@ class CallService {
     // Voice agent設定検証
     if (_voiceAgent == null) {
       throw StateError('Voice agent not set');
-    }
-
-    final config = _voiceAgent!.apiConfig;
-    if (config is SelfhostedVoiceAgentApiConfig) {
-      if (config.baseUrl.isEmpty || config.apiKey.isEmpty) {
-        throw Exception('Realtime APIの設定が不完全です');
-      }
     }
 
     // マイク権限検証

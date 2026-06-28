@@ -119,13 +119,13 @@ class AppConfig {
   // Audio Configuration
   // ==========================================================================
 
-  /// Audio sample rate (Hz) - OpenAI Realtime API uses 24kHz
+  /// Audio sample rate (Hz) used by the hosted realtime voice transport.
   static const int sampleRate = 24000;
 
-  /// Audio channels - OpenAI Realtime API uses mono
+  /// Audio channels used by the hosted realtime voice transport.
   static const int channels = 1;
 
-  /// Audio bit depth - OpenAI Realtime API uses 16-bit PCM
+  /// Audio bit depth used by the hosted realtime voice transport.
   static const int bitDepth = 16;
 
   /// Minimum audio buffer size (bytes) before starting playback

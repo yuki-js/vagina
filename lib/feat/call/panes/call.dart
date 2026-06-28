@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:vagina/core/config/app_config.dart';
 import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/l10n/app_localizations.dart';
-import 'package:vagina/feat/call/models/voice_agent_api_config.dart';
 import 'package:vagina/feat/call/services/call_service.dart';
 import 'package:vagina/feat/call/services/realtime/realtime_provider_extensions.dart';
 import 'package:vagina/models/speed_dial.dart';
@@ -58,7 +57,9 @@ class _CallPaneState extends State<CallPane> {
     }
 
     setState(() {
-      _talkMode = widget.initialPushToTalkEnabled ? _TalkMode.ptt : _TalkMode.hf;
+      _talkMode = widget.initialPushToTalkEnabled
+          ? _TalkMode.ptt
+          : _TalkMode.hf;
     });
   }
 
@@ -99,10 +100,7 @@ class _CallPaneState extends State<CallPane> {
     return _talkMode == _TalkMode.ptt;
   }
 
-  bool get _showsNoiseReductionSettings {
-    final voiceAgent = widget.callService.configuredVoiceAgent;
-    return voiceAgent?.apiConfig is SelfhostedVoiceAgentApiConfig;
-  }
+  bool get _showsNoiseReductionSettings => false;
 
   List<Widget> _buildPrimaryControls({
     required bool isSpeakerMuted,
@@ -198,9 +196,7 @@ class _CallPaneState extends State<CallPane> {
     setState(() {
       _talkMode = value;
     });
-    unawaited(
-      widget.onPushToTalkPreferenceChanged(value == _TalkMode.ptt),
-    );
+    unawaited(widget.onPushToTalkPreferenceChanged(value == _TalkMode.ptt));
 
     final callService = _activeCallService;
     if (callService == null) {
