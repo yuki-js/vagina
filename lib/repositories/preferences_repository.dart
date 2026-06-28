@@ -10,6 +10,8 @@ class PreferencesRepository {
   static const String _keyPreferredLocaleCode = 'preferred_locale_code';
   static const String _keyDismissedAnnouncementTopicIds =
       'dismissed_announcement_topic_ids';
+  static const String _keyPreferredCallPushToTalkEnabled =
+      'preferred_call_push_to_talk_enabled';
   static const String _keyAuthRefreshToken = 'auth_refresh_token';
   static const String _keyLegacyAuthSession = 'auth_session';
   static const String _keyPendingPkceVerifier = 'pending_pkce_verifier';
@@ -130,6 +132,19 @@ class PreferencesRepository {
   /// Clears all dismissed announcement topic ids.
   Future<void> clearDismissedAnnouncementTopicIds() async {
     await _store.delete(_keyDismissedAnnouncementTopicIds);
+  }
+
+  /// Returns whether push-to-talk should be the default call talk mode.
+  ///
+  /// A missing or invalid value falls back to hands-free.
+  Future<bool> getPreferredCallPushToTalkEnabled() async {
+    final enabled = await _store.get(_keyPreferredCallPushToTalkEnabled);
+    return enabled == true;
+  }
+
+  /// Persists the app-wide default call talk mode.
+  Future<void> setPreferredCallPushToTalkEnabled(bool enabled) async {
+    await _store.set(_keyPreferredCallPushToTalkEnabled, enabled);
   }
 
   /// Returns the persisted authentication refresh token, if present.

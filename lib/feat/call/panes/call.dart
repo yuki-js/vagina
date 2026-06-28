@@ -19,6 +19,8 @@ enum _NoiseReductionMode { off, nearField, farField }
 class CallPane extends StatefulWidget {
   final SpeedDial speedDial;
   final CallService callService;
+  final bool initialPushToTalkEnabled;
+  final Future<void> Function(bool enabled) onPushToTalkPreferenceChanged;
   final VoidCallback onChatPressed;
   final VoidCallback onNotepadPressed;
   final bool hideNavigationButtons;
@@ -27,6 +29,8 @@ class CallPane extends StatefulWidget {
     super.key,
     required this.speedDial,
     required this.callService,
+    required this.initialPushToTalkEnabled,
+    required this.onPushToTalkPreferenceChanged,
     required this.onChatPressed,
     required this.onNotepadPressed,
     this.hideNavigationButtons = false,
@@ -37,8 +41,26 @@ class CallPane extends StatefulWidget {
 }
 
 class _CallPaneState extends State<CallPane> {
-  _TalkMode _talkMode = _TalkMode.hf;
+  late _TalkMode _talkMode;
   _NoiseReductionMode _noiseReductionMode = _NoiseReductionMode.nearField;
+
+  @override
+  void initState() {
+    super.initState();
+    _talkMode = widget.initialPushToTalkEnabled ? _TalkMode.ptt : _TalkMode.hf;
+  }
+
+  @override
+  void didUpdateWidget(covariant CallPane oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialPushToTalkEnabled == widget.initialPushToTalkEnabled) {
+      return;
+    }
+
+    setState(() {
+      _talkMode = widget.initialPushToTalkEnabled ? _TalkMode.ptt : _TalkMode.hf;
+    });
+  }
 
   CallService? get _activeCallService {
     final callService = widget.callService;
@@ -176,6 +198,9 @@ class _CallPaneState extends State<CallPane> {
     setState(() {
       _talkMode = value;
     });
+    unawaited(
+      widget.onPushToTalkPreferenceChanged(value == _TalkMode.ptt),
+    );
 
     final callService = _activeCallService;
     if (callService == null) {

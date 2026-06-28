@@ -31,6 +31,7 @@ class _CallScreenState extends State<CallScreen> {
       AdaptiveTriColumnController();
   late final CallService _callService;
   StreamSubscription<CallState>? _callStateSubscription;
+  bool _preferredPushToTalkEnabled = false;
 
   @override
   void initState() {
@@ -59,10 +60,16 @@ class _CallScreenState extends State<CallScreen> {
 
   Future<void> _initializeCallService() async {
     try {
+      final preferredPushToTalkEnabled = await AppContainer.preferences
+          .getPreferredCallPushToTalkEnabled();
       final voiceAgent = await _buildVoiceAgent(widget.speedDial);
       final textAgents = await _buildTextAgents();
       if (!mounted) return;
 
+      setState(() {
+        _preferredPushToTalkEnabled = preferredPushToTalkEnabled;
+      });
+      await _callService.setPushToTalkEnabled(preferredPushToTalkEnabled);
       _callService.setTextAgents(textAgents);
       _callService.setVoiceAgent(voiceAgent);
       await _callService.startCall();
@@ -103,6 +110,18 @@ class _CallScreenState extends State<CallScreen> {
     }
   }
 
+  Future<void> _savePushToTalkPreference(bool enabled) async {
+    if (mounted && _preferredPushToTalkEnabled != enabled) {
+      setState(() {
+        _preferredPushToTalkEnabled = enabled;
+      });
+    } else {
+      _preferredPushToTalkEnabled = enabled;
+    }
+
+    await AppContainer.preferences.setPreferredCallPushToTalkEnabled(enabled);
+  }
+
   @override
   void dispose() {
     _callStateSubscription?.cancel();
@@ -134,6 +153,8 @@ class _CallScreenState extends State<CallScreen> {
             center: CallPane(
               speedDial: widget.speedDial,
               callService: _callService,
+              initialPushToTalkEnabled: _preferredPushToTalkEnabled,
+              onPushToTalkPreferenceChanged: _savePushToTalkPreference,
               onChatPressed: _layoutController.goToLeft,
               onNotepadPressed: _layoutController.goToRight,
               hideNavigationButtons: isWideLayout,
