@@ -490,16 +490,17 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
         : entry;
     final isSelected = _selectedEntries.contains(entry);
 
-    return Container(
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(color: Colors.grey[200]!, width: 0.5),
+    return Material(
+      color: isSelected && _isSelectionMode
+          ? AppTheme.primaryColor.withValues(alpha: 0.1)
+          : Colors.white,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(color: Colors.grey[200]!, width: 0.5),
+          ),
         ),
-        color: isSelected && _isSelectionMode
-            ? AppTheme.primaryColor.withValues(alpha: 0.1)
-            : Colors.white,
-      ),
-      child: ListTile(
+        child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
         hoverColor: AppTheme.primaryColor.withValues(alpha: 0.05),
         splashColor: AppTheme.primaryColor.withValues(alpha: 0.1),
@@ -528,6 +529,7 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
                   ? () => _openDirectory(entry)
                   : () => _openFile(entry)),
         onLongPress: _isSelectionMode ? null : () => _enterSelectionMode(entry),
+        ),
       ),
     );
   }

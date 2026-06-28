@@ -135,17 +135,18 @@ class _AgentsTabState extends ConsumerState<AgentsTab> {
     final avatarColor = _getAvatarColor(colorIndex);
     final initial = agent.name.isNotEmpty ? agent.name[0].toUpperCase() : '?';
 
-    return Container(
-      decoration: BoxDecoration(
-        border: Border(
-          top: BorderSide(
-            color: Colors.grey[300]!,
-            width: 0.5,
+    return Material(
+      color: Colors.white,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          border: Border(
+            top: BorderSide(
+              color: Colors.grey[300]!,
+              width: 0.5,
+            ),
           ),
         ),
-        color: Colors.white,
-      ),
-      child: ListTile(
+        child: ListTile(
         enableFeedback: true,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: CircleAvatar(
@@ -180,6 +181,7 @@ class _AgentsTabState extends ConsumerState<AgentsTab> {
           color: AppTheme.lightTextSecondary,
         ),
         onTap: () => _editAgent(context, agent),
+        ),
       ),
     );
   }

@@ -215,17 +215,18 @@ class _SessionsTabState extends ConsumerState<SessionsTab> {
   Widget _buildSessionItem(BuildContext context, CallSession session) {
     final isSelected = _selectedSessionIds.contains(session.id);
 
-    return Container(
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(
-            color: Colors.grey[200]!,
-            width: 0.5,
+    return Material(
+      color: Colors.white,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(
+              color: Colors.grey[200]!,
+              width: 0.5,
+            ),
           ),
         ),
-        color: Colors.white,
-      ),
-      child: ListTile(
+        child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
         hoverColor: AppTheme.primaryColor.withValues(alpha: 0.05),
         splashColor: AppTheme.primaryColor.withValues(alpha: 0.1),
@@ -277,6 +278,7 @@ class _SessionsTabState extends ConsumerState<SessionsTab> {
             });
           }
         },
+        ),
       ),
     );
   }
