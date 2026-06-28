@@ -8,6 +8,7 @@ import 'package:vagina/feat/speed_dial/widgets/emoji_picker.dart';
 import 'package:vagina/feat/speed_dial/widgets/reasoning_effort_slider.dart';
 import 'package:vagina/l10n/app_localizations.dart';
 import 'package:vagina/models/speed_dial.dart';
+import 'package:vagina/models/voice_agent.dart';
 
 /// Speed dial configuration screen
 /// Accessed from speed dial tab when tapping on a speed dial
@@ -27,11 +28,15 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
   late TextEditingController _descriptionController;
   late TextEditingController _instructionsController;
   late String _selectedVoice;
+  late String _selectedVoiceAgentId;
   late String _selectedEmoji;
   late Map<String, bool> _enabledTools;
   late SpeedDialReasoningEffort _reasoningEffort;
   late bool _toolChoiceRequired;
   bool _isNewSpeedDial = false;
+  List<VoiceAgent> _voiceAgents = const [];
+  bool _isLoadingVoiceAgents = true;
+  String? _voiceAgentLoadError;
 
   @override
   void initState() {
@@ -43,6 +48,7 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
       _descriptionController = TextEditingController();
       _instructionsController = TextEditingController();
       _selectedVoice = 'alloy';
+      _selectedVoiceAgentId = SpeedDial.defaultVoiceAgentId;
       _selectedEmoji = '⭐';
       _enabledTools = {}; // Empty map = all tools enabled
       _reasoningEffort = SpeedDialReasoningEffort.off;
@@ -56,11 +62,52 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
         text: widget.speedDial!.systemPrompt,
       );
       _selectedVoice = widget.speedDial!.voice;
+      _selectedVoiceAgentId = widget.speedDial!.voiceAgentId;
       _selectedEmoji = widget.speedDial!.iconEmoji ?? '⭐';
       _enabledTools = Map<String, bool>.from(widget.speedDial!.enabledTools);
       _reasoningEffort = widget.speedDial!.reasoningEffort;
       _toolChoiceRequired = widget.speedDial!.toolChoiceRequired;
     }
+
+    _loadVoiceAgents();
+  }
+
+  Future<void> _loadVoiceAgents() async {
+    try {
+      final voiceAgents = await AppContainer.voiceAgents.listVoiceAgents();
+      if (!mounted) return;
+
+      final selectedExists = voiceAgents.any(
+        (agent) => agent.id == _selectedVoiceAgentId,
+      );
+      var selectedVoiceAgentId = _selectedVoiceAgentId;
+      if (!selectedExists && voiceAgents.isNotEmpty) {
+        selectedVoiceAgentId = _defaultVoiceAgentId(voiceAgents);
+      }
+
+      setState(() {
+        _voiceAgents = voiceAgents;
+        _selectedVoiceAgentId = selectedVoiceAgentId;
+        _isLoadingVoiceAgents = false;
+        _voiceAgentLoadError = null;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _voiceAgents = const [];
+        _isLoadingVoiceAgents = false;
+        _voiceAgentLoadError = error.toString();
+      });
+    }
+  }
+
+  String _defaultVoiceAgentId(List<VoiceAgent> voiceAgents) {
+    for (final voiceAgent in voiceAgents) {
+      if (voiceAgent.isDefault) {
+        return voiceAgent.id;
+      }
+    }
+    return voiceAgents.first.id;
   }
 
   @override
@@ -109,6 +156,27 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
       return;
     }
 
+    if (_isLoadingVoiceAgents) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.speedDialConfigVoiceAgentStillLoading)),
+      );
+      return;
+    }
+
+    if (_voiceAgentLoadError != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.speedDialConfigVoiceAgentLoadFailed)),
+      );
+      return;
+    }
+
+    if (!_voiceAgents.any((agent) => agent.id == _selectedVoiceAgentId)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.speedDialConfigVoiceAgentInvalidSelection)),
+      );
+      return;
+    }
+
     final speedDialRepo = AppContainer.speedDials;
     final speedDial = SpeedDial(
       id: _isNewSpeedDial
@@ -120,6 +188,7 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
           : _descriptionController.text.trim(),
       systemPrompt: _instructionsController.text,
       voice: _selectedVoice,
+      voiceAgentId: _selectedVoiceAgentId,
       iconEmoji: _selectedEmoji,
       enabledTools: _enabledTools,
       reasoningEffort: _reasoningEffort,
@@ -418,6 +487,110 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
                         }
                       },
                     ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Voice agent selection
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l10n.speedDialConfigVoiceAgentLabel,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.lightTextSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      l10n.speedDialConfigVoiceAgentDescription,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppTheme.lightTextSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    if (_isLoadingVoiceAgents)
+                      const Center(child: CircularProgressIndicator())
+                    else if (_voiceAgentLoadError != null)
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Icon(
+                                Icons.error_outline,
+                                color: AppTheme.errorColor,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  l10n.speedDialConfigVoiceAgentLoadFailed,
+                                  style: const TextStyle(
+                                    color: AppTheme.errorColor,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          OutlinedButton.icon(
+                            onPressed: () {
+                              setState(() {
+                                _isLoadingVoiceAgents = true;
+                                _voiceAgentLoadError = null;
+                              });
+                              _loadVoiceAgents();
+                            },
+                            icon: const Icon(Icons.refresh),
+                            label: Text(l10n.speedDialConfigVoiceAgentRetry),
+                          ),
+                        ],
+                      )
+                    else
+                      DropdownButtonFormField<String>(
+                        initialValue:
+                            _voiceAgents.any(
+                              (agent) => agent.id == _selectedVoiceAgentId,
+                            )
+                            ? _selectedVoiceAgentId
+                            : null,
+                        decoration: InputDecoration(
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          filled: true,
+                          fillColor: Colors.grey[50],
+                        ),
+                        items: _voiceAgents
+                            .map(
+                              (agent) => DropdownMenuItem<String>(
+                                value: agent.id,
+                                child: Text(
+                                  agent.isDefault
+                                      ? l10n.speedDialConfigVoiceAgentDefault(
+                                          agent.displayName,
+                                        )
+                                      : agent.displayName,
+                                ),
+                              ),
+                            )
+                            .toList(growable: false),
+                        onChanged: (value) {
+                          if (value != null) {
+                            setState(() {
+                              _selectedVoiceAgentId = value;
+                            });
+                          }
+                        },
+                      ),
                   ],
                 ),
               ),

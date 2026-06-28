@@ -640,6 +640,40 @@
   "@speedDialConfigVoiceLabel": {
     "description": "Field label for the voice selection dropdown on the speed dial configuration screen."
   },
+  "speedDialConfigVoiceAgentLabel": "Voice agent",
+  "@speedDialConfigVoiceAgentLabel": {
+    "description": "Field label for the server-hosted voice agent dropdown on the speed dial configuration screen."
+  },
+  "speedDialConfigVoiceAgentDescription": "Choose the hosted voice agent used by this speed dial.",
+  "@speedDialConfigVoiceAgentDescription": {
+    "description": "Helper text explaining that the selected hosted voice agent is stored on this speed dial."
+  },
+  "speedDialConfigVoiceAgentDefault": "{displayName} (default)",
+  "@speedDialConfigVoiceAgentDefault": {
+    "description": "Dropdown label suffix for the server default voice agent.",
+    "placeholders": {
+      "displayName": {
+        "type": "String",
+        "description": "Display name returned by the voice agent registry."
+      }
+    }
+  },
+  "speedDialConfigVoiceAgentStillLoading": "Voice agents are still loading.",
+  "@speedDialConfigVoiceAgentStillLoading": {
+    "description": "Snackbar shown when saving before the voice agent registry has finished loading."
+  },
+  "speedDialConfigVoiceAgentLoadFailed": "Could not load voice agents. Please retry.",
+  "@speedDialConfigVoiceAgentLoadFailed": {
+    "description": "Inline error and snackbar shown when the voice agent registry request fails."
+  },
+  "speedDialConfigVoiceAgentRetry": "Retry",
+  "@speedDialConfigVoiceAgentRetry": {
+    "description": "Retry button label shown after the voice agent registry request fails."
+  },
+  "speedDialConfigVoiceAgentInvalidSelection": "Select an available voice agent before saving.",
+  "@speedDialConfigVoiceAgentInvalidSelection": {
+    "description": "Snackbar shown when the selected voice agent id is not present in the server registry response."
+  },
   "speedDialConfigSystemPromptLabel": "System prompt",
   "@speedDialConfigSystemPromptLabel": {
     "description": "Field label for the system prompt input on the speed dial configuration screen."

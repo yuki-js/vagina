@@ -7,8 +7,10 @@ import 'package:vagina/interfaces/config_repository.dart';
 import 'package:vagina/interfaces/key_value_store.dart';
 import 'package:vagina/interfaces/speed_dial_repository.dart';
 import 'package:vagina/interfaces/virtual_filesystem_repository.dart';
+import 'package:vagina/interfaces/voice_agent_repository.dart';
 import 'package:vagina/repositories/api_speed_dial_repository.dart';
 import 'package:vagina/repositories/api_virtual_filesystem_repository.dart';
+import 'package:vagina/repositories/api_voice_agent_repository.dart';
 import 'package:vagina/repositories/preferences_repository.dart';
 import 'package:vagina/repositories/repository_factory.dart';
 
@@ -23,11 +25,13 @@ class AppContainer {
   static AuthCallbackCoordinator? _authCallbackCoordinator;
   static SpeedDialRepository? _speedDialRepository;
   static VirtualFilesystemRepository? _filesystemRepository;
+  static VoiceAgentRepository? _voiceAgentRepository;
 
   static AuthService? _authServiceOverride;
   static AuthCallbackCoordinator? _authCallbackCoordinatorOverride;
   static SpeedDialRepository? _speedDialRepositoryOverride;
   static VirtualFilesystemRepository? _filesystemRepositoryOverride;
+  static VoiceAgentRepository? _voiceAgentRepositoryOverride;
 
   static Future<void> initialize({KeyValueStore? store}) async {
     await RepositoryFactory.initialize(store: store);
@@ -91,16 +95,29 @@ class AppContainer {
     );
   }
 
+  static VoiceAgentRepository get voiceAgents {
+    _ensureInitialized();
+    final override = _voiceAgentRepositoryOverride;
+    if (override != null) {
+      return override;
+    }
+    return _voiceAgentRepository ??= ApiVoiceAgentRepository(
+      apiClient: auth.apiClient,
+    );
+  }
+
   static void setOverridesForTesting({
     AuthService? authService,
     AuthCallbackCoordinator? authCallbacks,
     SpeedDialRepository? speedDials,
     VirtualFilesystemRepository? filesystem,
+    VoiceAgentRepository? voiceAgents,
   }) {
     _authServiceOverride = authService;
     _authCallbackCoordinatorOverride = authCallbacks;
     _speedDialRepositoryOverride = speedDials;
     _filesystemRepositoryOverride = filesystem;
+    _voiceAgentRepositoryOverride = voiceAgents;
   }
 
   static void reset() {
@@ -111,10 +128,12 @@ class AppContainer {
     _authCallbackCoordinator = null;
     _speedDialRepository = null;
     _filesystemRepository = null;
+    _voiceAgentRepository = null;
     _authServiceOverride = null;
     _authCallbackCoordinatorOverride = null;
     _speedDialRepositoryOverride = null;
     _filesystemRepositoryOverride = null;
+    _voiceAgentRepositoryOverride = null;
     _initialized = false;
 
     RepositoryFactory.reset();

@@ -640,6 +640,40 @@
   "@speedDialConfigVoiceLabel": {
     "description": "スピードダイヤル設定画面の音声選択ドロップダウンラベル。"
   },
+  "speedDialConfigVoiceAgentLabel": "Voice Agent",
+  "@speedDialConfigVoiceAgentLabel": {
+    "description": "スピードダイヤル設定画面のサーバー Hosted Voice Agent ドロップダウンラベル。"
+  },
+  "speedDialConfigVoiceAgentDescription": "このスピードダイヤルで使う Hosted Voice Agent を選択します。",
+  "@speedDialConfigVoiceAgentDescription": {
+    "description": "選択した Hosted Voice Agent がスピードダイヤルに保存されることを説明する補助文。"
+  },
+  "speedDialConfigVoiceAgentDefault": "{displayName} (デフォルト)",
+  "@speedDialConfigVoiceAgentDefault": {
+    "description": "サーバーデフォルトの Voice Agent を示すドロップダウンラベル接尾辞。",
+    "placeholders": {
+      "displayName": {
+        "type": "String",
+        "description": "Voice Agent レジストリから返された表示名。"
+      }
+    }
+  },
+  "speedDialConfigVoiceAgentStillLoading": "Voice Agent を読み込み中です。",
+  "@speedDialConfigVoiceAgentStillLoading": {
+    "description": "Voice Agent レジストリの読み込み完了前に保存しようとしたときのスナックバー文言。"
+  },
+  "speedDialConfigVoiceAgentLoadFailed": "Voice Agent を読み込めませんでした。再試行してください。",
+  "@speedDialConfigVoiceAgentLoadFailed": {
+    "description": "Voice Agent レジストリの取得に失敗したときのインラインエラーおよびスナックバー文言。"
+  },
+  "speedDialConfigVoiceAgentRetry": "再試行",
+  "@speedDialConfigVoiceAgentRetry": {
+    "description": "Voice Agent レジストリの取得に失敗したあとに表示する再試行ボタンラベル。"
+  },
+  "speedDialConfigVoiceAgentInvalidSelection": "保存する前に利用可能な Voice Agent を選択してください。",
+  "@speedDialConfigVoiceAgentInvalidSelection": {
+    "description": "選択中の Voice Agent ID がサーバーレジストリ応答に存在しない場合のスナックバー文言。"
+  },
   "speedDialConfigSystemPromptLabel": "システムプロンプト",
   "@speedDialConfigSystemPromptLabel": {
     "description": "スピードダイヤル設定画面のシステムプロンプト入力欄ラベル。"
