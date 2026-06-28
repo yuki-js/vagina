@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:vagina/core/config/app_config.dart';
 import 'package:vagina/feat/call/models/realtime/realtime_thread.dart';
 import 'package:vagina/feat/call/services/call_service.dart';
 import 'package:vagina/feat/call/services/subservice.dart';
@@ -14,8 +15,10 @@ import 'package:vagina/feat/call/services/subservice.dart';
 ///
 /// Uses a single timer for both duration updates and timeout detection.
 final class TimerService extends SubService {
-  /// Minimum allowed silence timeout duration (5 seconds)
-  static const Duration minSilenceTimeout = Duration(seconds: 5);
+  /// Minimum allowed silence timeout duration.
+  static const Duration minSilenceTimeout = Duration(
+    seconds: AppConfig.minSilenceTimeoutSeconds,
+  );
 
   final CallService _callService;
   final StreamController<Duration> _durationController =
@@ -35,7 +38,9 @@ final class TimerService extends SubService {
 
   TimerService(
     this._callService, {
-    Duration silenceTimeout = const Duration(seconds: 180),
+    Duration silenceTimeout = const Duration(
+      seconds: AppConfig.defaultSilenceTimeoutSeconds,
+    ),
   }) : _silenceTimeout = silenceTimeout;
 
   /// Whether the timer is currently tracking.
@@ -177,16 +182,18 @@ final class TimerService extends SubService {
     });
 
     // Reset on assistant audio completion
-    _assistantAudioCompletedSubscription =
-        realtimeService.assistantAudioCompleted.listen((_) {
-      if (_isTracking) {
-        resetSilenceTimer();
-      }
-    });
+    _assistantAudioCompletedSubscription = realtimeService
+        .assistantAudioCompleted
+        .listen((_) {
+          if (_isTracking) {
+            resetSilenceTimer();
+          }
+        });
 
     // Reset on user speaking
-    _userSpeakingSubscription =
-        realtimeService.isUserSpeakingUpdates.listen((isSpeaking) {
+    _userSpeakingSubscription = realtimeService.isUserSpeakingUpdates.listen((
+      isSpeaking,
+    ) {
       if (isSpeaking && _isTracking) {
         resetSilenceTimer();
       }
@@ -228,13 +235,12 @@ final class TimerService extends SubService {
     final timeSinceActivity = DateTime.now().difference(lastActivityAt);
     if (timeSinceActivity >= _silenceTimeout) {
       logger.info(
-          'Silence timeout detected: ${timeSinceActivity.inSeconds}s >= ${_silenceTimeout.inSeconds}s, ending call');
+        'Silence timeout detected: ${timeSinceActivity.inSeconds}s >= ${_silenceTimeout.inSeconds}s, ending call',
+      );
       if (!_timeoutController.isClosed) {
         _timeoutController.add(null);
       }
-      unawaited(_callService.endCall(
-        endContext: 'silence_timeout',
-      ));
+      unawaited(_callService.endCall(endContext: 'silence_timeout'));
     }
   }
 }

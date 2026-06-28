@@ -62,6 +62,8 @@ class _CallScreenState extends State<CallScreen> {
     try {
       final preferredPushToTalkEnabled = await AppContainer.preferences
           .getPreferredCallPushToTalkEnabled();
+      final idleDisconnectTimeoutSeconds = await AppContainer.preferences
+          .getPreferredCallIdleDisconnectTimeoutSeconds();
       final voiceAgent = await _buildVoiceAgent(widget.speedDial);
       final textAgents = await _buildTextAgents();
       if (!mounted) return;
@@ -70,6 +72,9 @@ class _CallScreenState extends State<CallScreen> {
         _preferredPushToTalkEnabled = preferredPushToTalkEnabled;
       });
       await _callService.setPushToTalkEnabled(preferredPushToTalkEnabled);
+      _callService.setSilenceTimeout(
+        Duration(seconds: idleDisconnectTimeoutSeconds),
+      );
       _callService.setTextAgents(textAgents);
       _callService.setVoiceAgent(voiceAgent);
       await _callService.startCall();

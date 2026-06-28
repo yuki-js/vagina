@@ -30,8 +30,9 @@ class AppConfig {
   /// When no explicit override is provided, Flutter Web debug builds fall back
   /// to the local dev fixture for announcement previewing.
   static const String announcementJsonUrl = String.fromEnvironment(
-      'ANNOUNCEMENT_JSON_URL',
-      defaultValue: 'https://vagina.app/announcement.json');
+    'ANNOUNCEMENT_JSON_URL',
+    defaultValue: 'https://vagina.app/announcement.json',
+  );
 
   /// Default asset path for local announcement preview fixtures.
   static const String devAnnouncementJsonAssetPath =
@@ -41,17 +42,19 @@ class AppConfig {
   static const String callbackScheme = 'https';
   static const String callbackHost = 'vagina.app';
   static const String callbackPath = '/callback';
-  static String get callbackUrl => '$callbackScheme://$callbackHost$callbackPath';
+  static String get callbackUrl =>
+      '$callbackScheme://$callbackHost$callbackPath';
 
   static const String _apiBaseUrlEnvKey = 'VAGINA_API_BASE_URL';
   static const String defaultDebugApiBaseUrl = 'http://localhost:8080/api';
   static const String defaultReleaseApiBaseUrl =
       'https://vagina-api.ouchiserver.aokiapp.com/api';
 
-  static String resolveApiBaseUrl({
-    required bool isDebugMode,
-  }) {
-    const configured = String.fromEnvironment(_apiBaseUrlEnvKey, defaultValue: '');
+  static String resolveApiBaseUrl({required bool isDebugMode}) {
+    const configured = String.fromEnvironment(
+      _apiBaseUrlEnvKey,
+      defaultValue: '',
+    );
     final trimmed = configured.trim();
     if (trimmed.isNotEmpty) {
       return trimmed;
@@ -147,7 +150,19 @@ class AppConfig {
   // Call Configuration
   // ==========================================================================
 
-  /// Silence timeout in seconds - call will auto-end after this duration of silence
-  /// Set to 0 to disable silence detection
-  static const int silenceTimeoutSeconds = 180;
+  /// Minimum configurable idle disconnect timeout in seconds.
+  static const int minSilenceTimeoutSeconds = 30;
+
+  /// Default idle disconnect timeout in seconds.
+  static const int defaultSilenceTimeoutSeconds = 180;
+
+  /// Allowed idle disconnect timeout options in seconds.
+  static const List<int> silenceTimeoutSecondsOptions = [
+    30,
+    60,
+    180,
+    300,
+    600,
+    1800,
+  ];
 }

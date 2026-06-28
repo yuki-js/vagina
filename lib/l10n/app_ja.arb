@@ -334,6 +334,42 @@
   "@settingsScreenTitle": {
     "description": "設定画面のアプリバータイトル。"
   },
+  "settingsCallSectionTitle": "通話",
+  "@settingsCallSectionTitle": {
+    "description": "設定画面で通話設定カードをまとめるセクション見出し。"
+  },
+  "settingsCallIdleDisconnectTimeoutLabel": "アイドル時の自動切断",
+  "@settingsCallIdleDisconnectTimeoutLabel": {
+    "description": "無音・無活動の通話を自動終了するまでの時間を設定する項目ラベル。"
+  },
+  "settingsCallIdleDisconnectTimeoutHelper": "ユーザーまたはアシスタントの活動がない状態がこの時間続くと、通話を自動終了します。変更は次回の通話から反映されます。",
+  "@settingsCallIdleDisconnectTimeoutHelper": {
+    "description": "アイドル時の自動切断時間設定を説明する補助文。"
+  },
+  "settingsCallIdleDisconnectTimeout30Seconds": "30秒",
+  "@settingsCallIdleDisconnectTimeout30Seconds": {
+    "description": "アイドル時の自動切断時間 30 秒のドロップダウン表示。"
+  },
+  "settingsCallIdleDisconnectTimeout1Minute": "1分",
+  "@settingsCallIdleDisconnectTimeout1Minute": {
+    "description": "アイドル時の自動切断時間 1 分のドロップダウン表示。"
+  },
+  "settingsCallIdleDisconnectTimeout3Minutes": "3分",
+  "@settingsCallIdleDisconnectTimeout3Minutes": {
+    "description": "アイドル時の自動切断時間 3 分のドロップダウン表示。"
+  },
+  "settingsCallIdleDisconnectTimeout5Minutes": "5分",
+  "@settingsCallIdleDisconnectTimeout5Minutes": {
+    "description": "アイドル時の自動切断時間 5 分のドロップダウン表示。"
+  },
+  "settingsCallIdleDisconnectTimeout10Minutes": "10分",
+  "@settingsCallIdleDisconnectTimeout10Minutes": {
+    "description": "アイドル時の自動切断時間 10 分のドロップダウン表示。"
+  },
+  "settingsCallIdleDisconnectTimeout30Minutes": "30分",
+  "@settingsCallIdleDisconnectTimeout30Minutes": {
+    "description": "アイドル時の自動切断時間 30 分のドロップダウン表示。"
+  },
   "settingsOpenAiConfigSectionTitle": "音声エージェント API 設定",
   "@settingsOpenAiConfigSectionTitle": {
     "description": "設定画面で音声エージェントのAPI設定カードをまとめるセクション見出し。"

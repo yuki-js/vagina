@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:vagina/core/config/app_config.dart';
 import 'package:vagina/core/state/locale_providers.dart';
 import 'package:vagina/core/app/app_container.dart';
 import 'package:vagina/feat/settings/widgets/openai_config_section.dart';
@@ -30,6 +31,12 @@ class SettingsScreen extends StatelessWidget {
                 SectionHeader(title: l10n.settingsLanguageSectionTitle),
                 const SizedBox(height: 12),
                 const _LanguageSelectorCard(),
+                const SizedBox(height: 24),
+
+                // Call preferences section
+                SectionHeader(title: l10n.settingsCallSectionTitle),
+                const SizedBox(height: 12),
+                const _CallPreferencesCard(),
                 const SizedBox(height: 24),
 
                 // OpenAI configuration section
@@ -90,8 +97,9 @@ class _LanguageSelectorCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final selectedValue =
-        _selectionFromLocaleCode(ref.watch(appLocaleCodeProvider));
+    final selectedValue = _selectionFromLocaleCode(
+      ref.watch(appLocaleCodeProvider),
+    );
 
     return SettingsCard(
       child: Column(
@@ -99,9 +107,9 @@ class _LanguageSelectorCard extends ConsumerWidget {
         children: [
           Text(
             l10n.settingsLanguageLabel,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(
@@ -137,6 +145,112 @@ class _LanguageSelectorCard extends ConsumerWidget {
 
               _persistLocaleSelection(ref, value);
             },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CallPreferencesCard extends StatefulWidget {
+  const _CallPreferencesCard();
+
+  @override
+  State<_CallPreferencesCard> createState() => _CallPreferencesCardState();
+}
+
+class _CallPreferencesCardState extends State<_CallPreferencesCard> {
+  int _selectedTimeoutSeconds = AppConfig.defaultSilenceTimeoutSeconds;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPreference();
+  }
+
+  Future<void> _loadPreference() async {
+    final timeoutSeconds = await AppContainer.preferences
+        .getPreferredCallIdleDisconnectTimeoutSeconds();
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _selectedTimeoutSeconds = timeoutSeconds;
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _handleTimeoutChanged(int timeoutSeconds) async {
+    setState(() {
+      _selectedTimeoutSeconds = timeoutSeconds;
+    });
+    await AppContainer.preferences.setPreferredCallIdleDisconnectTimeoutSeconds(
+      timeoutSeconds,
+    );
+  }
+
+  String _formatTimeoutLabel(AppLocalizations l10n, int timeoutSeconds) {
+    return switch (timeoutSeconds) {
+      30 => l10n.settingsCallIdleDisconnectTimeout30Seconds,
+      60 => l10n.settingsCallIdleDisconnectTimeout1Minute,
+      180 => l10n.settingsCallIdleDisconnectTimeout3Minutes,
+      300 => l10n.settingsCallIdleDisconnectTimeout5Minutes,
+      600 => l10n.settingsCallIdleDisconnectTimeout10Minutes,
+      1800 => l10n.settingsCallIdleDisconnectTimeout30Minutes,
+      _ => '${timeoutSeconds}s',
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
+    return SettingsCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.settingsCallIdleDisconnectTimeoutLabel,
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            l10n.settingsCallIdleDisconnectTimeoutHelper,
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<int>(
+            initialValue: _selectedTimeoutSeconds,
+            isExpanded: true,
+            decoration: InputDecoration(
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
+              ),
+            ),
+            items: [
+              for (final timeoutSeconds
+                  in AppConfig.silenceTimeoutSecondsOptions)
+                DropdownMenuItem<int>(
+                  value: timeoutSeconds,
+                  child: Text(_formatTimeoutLabel(l10n, timeoutSeconds)),
+                ),
+            ],
+            onChanged: _isLoading
+                ? null
+                : (value) {
+                    if (value == null) {
+                      return;
+                    }
+                    _handleTimeoutChanged(value);
+                  },
           ),
         ],
       ),

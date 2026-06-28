@@ -334,6 +334,42 @@
   "@settingsScreenTitle": {
     "description": "App bar title for the settings screen."
   },
+  "settingsCallSectionTitle": "Call",
+  "@settingsCallSectionTitle": {
+    "description": "Section header for call preferences on the settings screen."
+  },
+  "settingsCallIdleDisconnectTimeoutLabel": "Idle auto-disconnect",
+  "@settingsCallIdleDisconnectTimeoutLabel": {
+    "description": "Label for the setting that controls how long a silent call stays connected before ending automatically."
+  },
+  "settingsCallIdleDisconnectTimeoutHelper": "Calls end automatically after this duration without user or assistant activity. Changes apply from the next call.",
+  "@settingsCallIdleDisconnectTimeoutHelper": {
+    "description": "Helper text explaining the idle auto-disconnect timeout setting."
+  },
+  "settingsCallIdleDisconnectTimeout30Seconds": "30 seconds",
+  "@settingsCallIdleDisconnectTimeout30Seconds": {
+    "description": "Dropdown label for a 30 second idle auto-disconnect timeout."
+  },
+  "settingsCallIdleDisconnectTimeout1Minute": "1 minute",
+  "@settingsCallIdleDisconnectTimeout1Minute": {
+    "description": "Dropdown label for a 1 minute idle auto-disconnect timeout."
+  },
+  "settingsCallIdleDisconnectTimeout3Minutes": "3 minutes",
+  "@settingsCallIdleDisconnectTimeout3Minutes": {
+    "description": "Dropdown label for a 3 minute idle auto-disconnect timeout."
+  },
+  "settingsCallIdleDisconnectTimeout5Minutes": "5 minutes",
+  "@settingsCallIdleDisconnectTimeout5Minutes": {
+    "description": "Dropdown label for a 5 minute idle auto-disconnect timeout."
+  },
+  "settingsCallIdleDisconnectTimeout10Minutes": "10 minutes",
+  "@settingsCallIdleDisconnectTimeout10Minutes": {
+    "description": "Dropdown label for a 10 minute idle auto-disconnect timeout."
+  },
+  "settingsCallIdleDisconnectTimeout30Minutes": "30 minutes",
+  "@settingsCallIdleDisconnectTimeout30Minutes": {
+    "description": "Dropdown label for a 30 minute idle auto-disconnect timeout."
+  },
   "settingsOpenAiConfigSectionTitle": "Voice Agent API Settings",
   "@settingsOpenAiConfigSectionTitle": {
     "description": "Section header for the Voice Agent API configuration card on the settings screen."

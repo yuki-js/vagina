@@ -1,3 +1,4 @@
+import 'package:vagina/core/config/app_config.dart';
 import 'package:vagina/interfaces/key_value_store.dart';
 
 /// Repository for app preferences and settings
@@ -12,6 +13,8 @@ class PreferencesRepository {
       'dismissed_announcement_topic_ids';
   static const String _keyPreferredCallPushToTalkEnabled =
       'preferred_call_push_to_talk_enabled';
+  static const String _keyPreferredCallIdleDisconnectTimeoutSeconds =
+      'preferred_call_idle_disconnect_timeout_seconds';
   static const String _keyAuthRefreshToken = 'auth_refresh_token';
   static const String _keyLegacyAuthSession = 'auth_session';
   static const String _keyPendingPkceVerifier = 'pending_pkce_verifier';
@@ -145,6 +148,42 @@ class PreferencesRepository {
   /// Persists the app-wide default call talk mode.
   Future<void> setPreferredCallPushToTalkEnabled(bool enabled) async {
     await _store.set(_keyPreferredCallPushToTalkEnabled, enabled);
+  }
+
+  /// Returns the persisted idle disconnect timeout in seconds.
+  ///
+  /// A missing or unsupported value falls back to the default 3 minutes.
+  Future<int> getPreferredCallIdleDisconnectTimeoutSeconds() async {
+    final timeoutSeconds = await _store.get(
+      _keyPreferredCallIdleDisconnectTimeoutSeconds,
+    );
+    if (timeoutSeconds is! int) {
+      return AppConfig.defaultSilenceTimeoutSeconds;
+    }
+
+    if (!AppConfig.silenceTimeoutSecondsOptions.contains(timeoutSeconds)) {
+      return AppConfig.defaultSilenceTimeoutSeconds;
+    }
+
+    return timeoutSeconds;
+  }
+
+  /// Persists the app-wide idle disconnect timeout in seconds.
+  Future<void> setPreferredCallIdleDisconnectTimeoutSeconds(
+    int timeoutSeconds,
+  ) async {
+    if (!AppConfig.silenceTimeoutSecondsOptions.contains(timeoutSeconds)) {
+      throw ArgumentError.value(
+        timeoutSeconds,
+        'timeoutSeconds',
+        'Unsupported idle disconnect timeout. Expected one of: ${AppConfig.silenceTimeoutSecondsOptions.join(', ')}',
+      );
+    }
+
+    await _store.set(
+      _keyPreferredCallIdleDisconnectTimeoutSeconds,
+      timeoutSeconds,
+    );
   }
 
   /// Returns the persisted authentication refresh token, if present.

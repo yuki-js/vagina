@@ -89,6 +89,9 @@ class CallService {
   bool _pushToTalkActive = false;
   int _pushToTalkGeneration = 0;
   Future<void>? _pendingPushToTalkRelease;
+  Duration _silenceTimeout = const Duration(
+    seconds: AppConfig.defaultSilenceTimeoutSeconds,
+  );
 
   CallService({
     required VirtualFilesystemRepository filesystemRepository,
@@ -251,6 +254,17 @@ class CallService {
     _realtimeService.projectManualAudioTurnSpeakingState(false);
   }
 
+  void setSilenceTimeout(Duration timeout) {
+    if (state == CallState.disposed) {
+      return;
+    }
+
+    _silenceTimeout = timeout;
+    if (state != CallState.uninitialized) {
+      _timerService.setSilenceTimeout(timeout);
+    }
+  }
+
   void setVoiceAgent(VoiceAgentInfo voiceAgent) {
     if (state != CallState.uninitialized) {
       throw StateError(
@@ -312,7 +326,7 @@ class CallService {
   Future<void> _instantiateServices() async {
     _playbackService = PlaybackService();
     _feedbackService = FeedbackService(this);
-    _timerService = TimerService(this);
+    _timerService = TimerService(this, silenceTimeout: _silenceTimeout);
     _vfs = VirtualFilesystemService(_filesystemRepository);
 
     _notepadService = NotepadService(_vfs);
