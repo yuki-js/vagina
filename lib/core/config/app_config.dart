@@ -3,8 +3,8 @@ import 'package:flutter/foundation.dart';
 /// Application configuration
 ///
 /// Contains all application-wide configuration constants.
-/// Audio-related constants should be kept in sync with OpenAI
-/// Realtime API requirements (24kHz, 16-bit, mono PCM).
+/// Audio-related constants should be kept in sync with the hosted realtime
+/// voice transport format (24kHz, 16-bit, mono PCM).
 class AppConfig {
   const AppConfig._();
 

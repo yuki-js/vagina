@@ -340,7 +340,7 @@
   },
   "settingsCommonClear": "クリア",
   "@settingsCommonClear": {
-    "description": "保存済みの OpenAI 設定をクリアするボタンのラベル。"
+    "description": "設定ダイアログで使う汎用的なクリアボタンラベル。"
   },
   "settingsSetupRestartOobeTitle": "初期設定をやり直す",
   "@settingsSetupRestartOobeTitle": {
@@ -456,11 +456,11 @@
   },
   "speedDialConfigVoiceAgentLabel": "Voice Agent",
   "@speedDialConfigVoiceAgentLabel": {
-    "description": "スピードダイヤル設定画面のサーバー Hosted Voice Agent ドロップダウンラベル。"
+    "description": "スピードダイヤル設定画面の Voice Agent ドロップダウンラベル。"
   },
-  "speedDialConfigVoiceAgentDescription": "このスピードダイヤルで使う Hosted Voice Agent を選択します。",
+  "speedDialConfigVoiceAgentDescription": "このスピードダイヤルで使う Voice Agent を選択します。",
   "@speedDialConfigVoiceAgentDescription": {
-    "description": "選択した Hosted Voice Agent がスピードダイヤルに保存されることを説明する補助文。"
+    "description": "選択した Voice Agent がスピードダイヤルに保存されることを説明する補助文。"
   },
   "speedDialConfigVoiceAgentDefault": "{displayName} (デフォルト)",
   "@speedDialConfigVoiceAgentDefault": {

@@ -340,7 +340,7 @@
   },
   "settingsCommonClear": "Clear",
   "@settingsCommonClear": {
-    "description": "Button label that clears the saved OpenAI settings."
+    "description": "Generic clear button label used in settings dialogs."
   },
   "settingsSetupRestartOobeTitle": "Run initial setup again",
   "@settingsSetupRestartOobeTitle": {
@@ -456,11 +456,11 @@
   },
   "speedDialConfigVoiceAgentLabel": "Voice agent",
   "@speedDialConfigVoiceAgentLabel": {
-    "description": "Field label for the server-hosted voice agent dropdown on the speed dial configuration screen."
+    "description": "Field label for the voice agent dropdown on the speed dial configuration screen."
   },
-  "speedDialConfigVoiceAgentDescription": "Choose the hosted voice agent used by this speed dial.",
+  "speedDialConfigVoiceAgentDescription": "Choose the voice agent used by this speed dial.",
   "@speedDialConfigVoiceAgentDescription": {
-    "description": "Helper text explaining that the selected hosted voice agent is stored on this speed dial."
+    "description": "Helper text explaining that the selected voice agent is stored on this speed dial."
   },
   "speedDialConfigVoiceAgentDefault": "{displayName} (default)",
   "@speedDialConfigVoiceAgentDefault": {

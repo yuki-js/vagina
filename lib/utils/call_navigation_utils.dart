@@ -36,6 +36,10 @@ class CallNavigationUtils {
       throw StateError('Default speed dial not found.');
     }
 
+    if (!context.mounted) {
+      return;
+    }
+
     await navigateToCallWithSpeedDial(
       context: context,
       speedDial: speedDial,
