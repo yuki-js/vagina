@@ -349,7 +349,6 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
     String? errorMessage,
   }) async {
     _ensureNotDisposed();
-    await interrupt();
 
     final itemId = _nextLocalId();
     _thread.addItem(
