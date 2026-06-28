@@ -6,6 +6,9 @@ class SpeedDial {
   /// ID for the default speed dial (non-deletable, non-renameable)
   static const String defaultId = 'default';
 
+  /// Default server registry voice-agent id used until the registry picker is wired.
+  static const String defaultVoiceAgentId = 'voice-agent-prod';
+
   /// Default speed dial instance
   static SpeedDial get defaultSpeedDial => SpeedDial(
         id: defaultId,
@@ -13,6 +16,7 @@ class SpeedDial {
         systemPrompt: 'You are a helpful AI assistant.',
         description: 'Default voice assistant',
         voice: 'alloy',
+        voiceAgentId: defaultVoiceAgentId,
         enabledTools: const {},
         reasoningEffort: SpeedDialReasoningEffort.off,
         toolChoiceRequired: false,
@@ -24,6 +28,7 @@ class SpeedDial {
   final String? description;
   final String? iconEmoji; // Optional emoji icon
   final String voice;
+  final String voiceAgentId;
   final Map<String, bool> enabledTools;
   final SpeedDialReasoningEffort reasoningEffort;
   final bool toolChoiceRequired;
@@ -39,6 +44,7 @@ class SpeedDial {
     this.description,
     this.iconEmoji,
     this.voice = 'alloy',
+    this.voiceAgentId = defaultVoiceAgentId,
     this.enabledTools = const {},
     this.reasoningEffort = SpeedDialReasoningEffort.off,
     this.toolChoiceRequired = false,
@@ -52,6 +58,7 @@ class SpeedDial {
     String? description,
     String? iconEmoji,
     String? voice,
+    String? voiceAgentId,
     Map<String, bool>? enabledTools,
     SpeedDialReasoningEffort? reasoningEffort,
     bool? toolChoiceRequired,
@@ -64,6 +71,7 @@ class SpeedDial {
       description: description ?? this.description,
       iconEmoji: iconEmoji ?? this.iconEmoji,
       voice: voice ?? this.voice,
+      voiceAgentId: voiceAgentId ?? this.voiceAgentId,
       enabledTools: enabledTools ?? this.enabledTools,
       reasoningEffort: reasoningEffort ?? this.reasoningEffort,
       toolChoiceRequired: toolChoiceRequired ?? this.toolChoiceRequired,
@@ -79,6 +87,7 @@ class SpeedDial {
       if (description != null) 'description': description,
       if (iconEmoji != null) 'iconEmoji': iconEmoji,
       'voice': voice,
+      'voiceAgentId': voiceAgentId,
       'enabledTools': enabledTools,
       'reasoningEffort': reasoningEffort.name,
       'toolChoiceRequired': toolChoiceRequired,
@@ -94,6 +103,7 @@ class SpeedDial {
       description: json['description'] as String?,
       iconEmoji: json['iconEmoji'] as String?,
       voice: json['voice'] as String? ?? 'alloy',
+      voiceAgentId: json['voiceAgentId'] as String? ?? defaultVoiceAgentId,
       enabledTools: json['enabledTools'] != null
           ? Map<String, bool>.from(json['enabledTools'] as Map)
           : const {}, // フォールバック: 空Map（キー不在=true規約により全ツール有効と同等）

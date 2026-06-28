@@ -137,6 +137,7 @@ class ApiSpeedDialRepository implements SpeedDialRepository {
       description: _optionalString(speedDial.description),
       iconEmoji: _optionalString(speedDial.iconEmoji),
       voice: speedDial.voice,
+      voiceAgentId: speedDial.voiceAgentId,
       enabledTools: Map<String, bool>.from(speedDial.enabledTools),
       reasoningEffort: _reasoningEffortFromApi(speedDial.reasoningEffort),
       toolChoiceRequired: speedDial.toolChoiceRequired,
@@ -156,6 +157,7 @@ class ApiSpeedDialRepository implements SpeedDialRepository {
           ? const JsonOptional<String>.absent()
           : JsonOptional<String>.value(speedDial.iconEmoji),
       voice: speedDial.voice,
+      voiceAgentId: speedDial.voiceAgentId,
       enabledTools: Map<String, bool>.from(speedDial.enabledTools),
       reasoningEffort: _reasoningEffortToApi(speedDial.reasoningEffort),
       toolChoiceRequired: speedDial.toolChoiceRequired,

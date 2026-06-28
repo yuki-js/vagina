@@ -14,6 +14,7 @@ void main() {
           "name": "Default",
           "systemPrompt": "You are a helpful AI assistant.",
           "voice": "alloy",
+          "voiceAgentId": "voice-agent-prod",
           "reasoningEffort": "off",
           "toolChoiceRequired": false,
           "enabledTools": {
@@ -40,6 +41,7 @@ void main() {
           "name": "Default",
           "systemPrompt": "You are a helpful AI assistant.",
           "voice": "alloy",
+          "voiceAgentId": "voice-agent-prod",
           "reasoningEffort": "off",
           "toolChoiceRequired": false,
           "enabledTools": {}

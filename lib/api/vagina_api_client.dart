@@ -4,6 +4,7 @@ import 'package:vagina/api/auth_exception.dart';
 import 'package:vagina/api/generated/clients/auth_api_client.dart';
 import 'package:vagina/api/generated/clients/speed_dials_api_client.dart';
 import 'package:vagina/api/generated/clients/vfs_api_client.dart';
+import 'package:vagina/api/generated/clients/voice_agents_api_client.dart';
 import 'package:vagina/core/config/app_config.dart';
 
 typedef AuthTokenSupplier = Future<String> Function({bool forceRefresh});
@@ -16,12 +17,14 @@ class VaginaApiClient {
   final AuthApiClient auth;
   final SpeedDialsApiClient speedDials;
   final VfsApiClient vfs;
+  final VoiceAgentsApiClient voiceAgents;
 
   VaginaApiClient._({
     required this.dio,
     required this.auth,
     required this.speedDials,
     required this.vfs,
+    required this.voiceAgents,
   });
 
   factory VaginaApiClient({
@@ -113,6 +116,7 @@ class VaginaApiClient {
       auth: AuthApiClient(dio),
       speedDials: SpeedDialsApiClient(dio),
       vfs: VfsApiClient(dio),
+      voiceAgents: VoiceAgentsApiClient(dio),
     );
   }
 
