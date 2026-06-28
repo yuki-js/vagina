@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:vagina/core/app/app_container.dart';
 import 'package:vagina/feat/call/screens/call.dart';
 import 'package:vagina/models/speed_dial.dart';
 
@@ -26,13 +27,18 @@ class CallNavigationUtils {
   /// Navigate to call screen with the Default SpeedDial
   ///
   /// This is used by the FAB button and other entry points that should
-  /// use the default character configuration
+  /// use the user's persisted default character configuration.
   static Future<void> navigateToCallWithDefault({
     required BuildContext context,
   }) async {
+    final speedDial = await AppContainer.speedDials.getById(SpeedDial.defaultId);
+    if (speedDial == null) {
+      throw StateError('Default speed dial not found.');
+    }
+
     await navigateToCallWithSpeedDial(
       context: context,
-      speedDial: SpeedDial.defaultSpeedDial,
+      speedDial: speedDial,
     );
   }
 }
