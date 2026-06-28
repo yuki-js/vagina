@@ -83,7 +83,7 @@ class _NotepadPaneState extends State<NotepadPane> {
 
     _stateSubscription = service.states.listen(
       _onCallStateChanged,
-      onError: (_, __) {
+      onError: (_, _) {
         if (!mounted) {
           return;
         }
@@ -154,7 +154,7 @@ class _NotepadPaneState extends State<NotepadPane> {
             _applyActiveFiles(files);
           });
         },
-        onError: (_, __) {
+        onError: (_, _) {
           if (!mounted) {
             return;
           }
@@ -187,7 +187,8 @@ class _NotepadPaneState extends State<NotepadPane> {
         .toList(growable: false);
 
     final previousSelected = _selectedTabId;
-    final hasPreviousSelection = previousSelected != null &&
+    final hasPreviousSelection =
+        previousSelected != null &&
         nextTabs.any((tab) => tab.id == previousSelected);
 
     _tabs = nextTabs;
@@ -223,8 +224,10 @@ class _NotepadPaneState extends State<NotepadPane> {
 
     if (_isEditing && _editedContent != selectedTab.content) {
       _runFireAndForget(
-        widget.callService.notepadService
-            .update(selectedTab.id, _editedContent),
+        widget.callService.notepadService.update(
+          selectedTab.id,
+          _editedContent,
+        ),
         errorMessage: AppLocalizations.of(context).callNotepadSaveFailed,
       );
     }
@@ -270,13 +273,13 @@ class _NotepadPaneState extends State<NotepadPane> {
     required String errorMessage,
   }) {
     unawaited(
-      operation.catchError((Object _, StackTrace __) {
+      operation.catchError((Object _, StackTrace _) {
         if (!mounted) {
           return;
         }
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorMessage)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(errorMessage)));
       }),
     );
   }
@@ -321,24 +324,24 @@ class _NotepadPaneState extends State<NotepadPane> {
                   message: l10n.callNotepadLoadingMessage,
                 )
               : _errorMessage != null
-                  ? _NotepadEmptyState(
-                      title: _errorMessage!,
-                      message: l10n.callNotepadRetryMessage,
-                    )
-                  : selectedTab == null
-                      ? _NotepadEmptyState(
-                          title: l10n.callNotepadNoOpenNotesTitle,
-                          message: l10n.callNotepadNoOpenNotesMessage,
-                        )
-                      : _NotepadContentShell(
-                          tab: selectedTab,
-                          isEditing: _isEditing,
-                          editingContent: _editedContent,
-                          editorController: _editorController,
-                          onEditedContentChanged: _onEditedContentChanged,
-                          onEditToggle: () => _toggleEditing(selectedTab.id),
-                          onClose: () => _closeTab(selectedTab.id),
-                        ),
+              ? _NotepadEmptyState(
+                  title: _errorMessage!,
+                  message: l10n.callNotepadRetryMessage,
+                )
+              : selectedTab == null
+              ? _NotepadEmptyState(
+                  title: l10n.callNotepadNoOpenNotesTitle,
+                  message: l10n.callNotepadNoOpenNotesMessage,
+                )
+              : _NotepadContentShell(
+                  tab: selectedTab,
+                  isEditing: _isEditing,
+                  editingContent: _editedContent,
+                  editorController: _editorController,
+                  onEditedContentChanged: _onEditedContentChanged,
+                  onEditToggle: () => _toggleEditing(selectedTab.id),
+                  onClose: () => _closeTab(selectedTab.id),
+                ),
         ),
       ],
     );
@@ -593,11 +596,7 @@ class _HeaderActionButton extends StatelessWidget {
           width: 36,
           height: 36,
           child: Center(
-            child: Icon(
-              icon,
-              size: 22,
-              color: AppTheme.textSecondary,
-            ),
+            child: Icon(icon, size: 22, color: AppTheme.textSecondary),
           ),
         ),
       ),
@@ -609,10 +608,7 @@ class _NotepadEmptyState extends StatelessWidget {
   final String title;
   final String message;
 
-  const _NotepadEmptyState({
-    required this.title,
-    required this.message,
-  });
+  const _NotepadEmptyState({required this.title, required this.message});
 
   @override
   Widget build(BuildContext context) {

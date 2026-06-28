@@ -5,6 +5,7 @@ import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/feat/shared/widgets/tool_config_section.dart';
 import 'package:vagina/feat/speed_dial/state/speed_dial_providers.dart';
 import 'package:vagina/feat/speed_dial/widgets/emoji_picker.dart';
+import 'package:vagina/feat/speed_dial/widgets/reasoning_effort_slider.dart';
 import 'package:vagina/l10n/app_localizations.dart';
 import 'package:vagina/models/speed_dial.dart';
 
@@ -28,6 +29,8 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
   late String _selectedVoice;
   late String _selectedEmoji;
   late Map<String, bool> _enabledTools;
+  late SpeedDialReasoningEffort _reasoningEffort;
+  late bool _toolChoiceRequired;
   bool _isNewSpeedDial = false;
 
   @override
@@ -42,6 +45,8 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
       _selectedVoice = 'alloy';
       _selectedEmoji = '⭐';
       _enabledTools = {}; // Empty map = all tools enabled
+      _reasoningEffort = SpeedDialReasoningEffort.off;
+      _toolChoiceRequired = false;
     } else {
       _nameController = TextEditingController(text: widget.speedDial!.name);
       _descriptionController = TextEditingController(
@@ -53,6 +58,8 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
       _selectedVoice = widget.speedDial!.voice;
       _selectedEmoji = widget.speedDial!.iconEmoji ?? '⭐';
       _enabledTools = Map<String, bool>.from(widget.speedDial!.enabledTools);
+      _reasoningEffort = widget.speedDial!.reasoningEffort;
+      _toolChoiceRequired = widget.speedDial!.toolChoiceRequired;
     }
   }
 
@@ -115,6 +122,8 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
       voice: _selectedVoice,
       iconEmoji: _selectedEmoji,
       enabledTools: _enabledTools,
+      reasoningEffort: _reasoningEffort,
+      toolChoiceRequired: _toolChoiceRequired,
       createdAt: _isNewSpeedDial ? DateTime.now() : widget.speedDial!.createdAt,
     );
 
@@ -477,6 +486,72 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
                       onChanged: (newTools) {
                         setState(() {
                           _enabledTools = newTools;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    const Divider(height: 1),
+                    const SizedBox(height: 12),
+                    CheckboxListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(
+                        l10n.speedDialConfigToolChoiceRequiredLabel,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.lightTextPrimary,
+                        ),
+                      ),
+                      subtitle: Text(
+                        l10n.speedDialConfigToolChoiceRequiredHint,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppTheme.lightTextSecondary,
+                        ),
+                      ),
+                      value: _toolChoiceRequired,
+                      activeColor: AppTheme.primaryColor,
+                      controlAffinity: ListTileControlAffinity.leading,
+                      onChanged: (value) {
+                        setState(() {
+                          _toolChoiceRequired = value ?? false;
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Reasoning effort
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l10n.speedDialConfigReasoningEffortLabel,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.lightTextSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      l10n.speedDialConfigReasoningEffortHint,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppTheme.lightTextSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    ReasoningEffortSlider(
+                      value: _reasoningEffort,
+                      onChanged: (value) {
+                        setState(() {
+                          _reasoningEffort = value;
                         });
                       },
                     ),

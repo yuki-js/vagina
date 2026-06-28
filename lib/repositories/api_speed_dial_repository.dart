@@ -1,6 +1,8 @@
 import 'package:vagina/api/api_exception.dart';
 import 'package:vagina/api/generated/core/json_optional.dart';
 import 'package:vagina/api/generated/models/speed_dial.dart' as api_model;
+import 'package:vagina/api/generated/models/speed_dial_reasoning_effort.dart'
+    as api_reasoning;
 import 'package:vagina/api/generated/responses/delete_speed_dial_response.dart';
 import 'package:vagina/api/generated/responses/get_speed_dial_response.dart';
 import 'package:vagina/api/generated/responses/list_speed_dials_response.dart';
@@ -136,6 +138,8 @@ class ApiSpeedDialRepository implements SpeedDialRepository {
       iconEmoji: _optionalString(speedDial.iconEmoji),
       voice: speedDial.voice,
       enabledTools: Map<String, bool>.from(speedDial.enabledTools),
+      reasoningEffort: _reasoningEffortFromApi(speedDial.reasoningEffort),
+      toolChoiceRequired: speedDial.toolChoiceRequired,
       createdAt: _optionalDateTime(speedDial.createdAt),
     );
   }
@@ -153,6 +157,8 @@ class ApiSpeedDialRepository implements SpeedDialRepository {
           : JsonOptional<String>.value(speedDial.iconEmoji),
       voice: speedDial.voice,
       enabledTools: Map<String, bool>.from(speedDial.enabledTools),
+      reasoningEffort: _reasoningEffortToApi(speedDial.reasoningEffort),
+      toolChoiceRequired: speedDial.toolChoiceRequired,
       createdAt: speedDial.createdAt == null
           ? const JsonOptional<DateTime>.absent()
           : JsonOptional<DateTime>.value(speedDial.createdAt!.toUtc()),
@@ -164,6 +170,28 @@ class ApiSpeedDialRepository implements SpeedDialRepository {
       JsonOptionalValue<String>(:final value) => value,
       JsonOptionalAbsent<String>() => null,
     };
+  }
+
+  SpeedDialReasoningEffort _reasoningEffortFromApi(
+    api_reasoning.SpeedDialReasoningEffort value,
+  ) {
+    for (final effort in SpeedDialReasoningEffort.values) {
+      if (effort.name == value.name) {
+        return effort;
+      }
+    }
+    return SpeedDialReasoningEffort.off;
+  }
+
+  api_reasoning.SpeedDialReasoningEffort _reasoningEffortToApi(
+    SpeedDialReasoningEffort value,
+  ) {
+    for (final effort in api_reasoning.SpeedDialReasoningEffort.values) {
+      if (effort.name == value.name) {
+        return effort;
+      }
+    }
+    return api_reasoning.SpeedDialReasoningEffort.off;
   }
 
   DateTime? _optionalDateTime(JsonOptional<DateTime> value) {

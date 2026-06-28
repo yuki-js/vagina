@@ -1,4 +1,5 @@
 import 'package:vagina/feat/call/models/voice_agent_api_config.dart';
+import 'package:vagina/models/speed_dial.dart';
 
 /// Self-contained configuration for the voice agent used in a call session.
 class VoiceAgentInfo {
@@ -10,6 +11,8 @@ class VoiceAgentInfo {
   final String prompt;
   final VoiceAgentApiConfig apiConfig;
   final List<String> enabledTools;
+  final SpeedDialReasoningEffort reasoningEffort;
+  final bool toolChoiceRequired;
 
   const VoiceAgentInfo({
     required this.id,
@@ -20,5 +23,7 @@ class VoiceAgentInfo {
     required this.prompt,
     required this.apiConfig,
     this.enabledTools = const [],
+    this.reasoningEffort = SpeedDialReasoningEffort.off,
+    this.toolChoiceRequired = false,
   });
 }

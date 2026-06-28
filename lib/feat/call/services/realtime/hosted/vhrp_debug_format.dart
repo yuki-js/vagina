@@ -61,8 +61,8 @@ abstract final class VhrpDebugFormat {
       SessionExtensionApplyMsg m =>
         'session.extension.apply {messageId: ${m.messageId}, extensionType: ${m.extensionType}}',
       ToolResultSubmitMsg m => _formatToolResultSubmit(m),
-      AssistantInterruptMsg m =>
-        'assistant.interrupt {reason: ${m.reason}}',
+      AssistantInterruptMsg m => 'assistant.interrupt {reason: ${m.reason}}',
+      SessionEndMsg() => 'session.end',
       ThreadSyncRequestMsg m =>
         'thread.sync.request {messageId: ${m.messageId}, reason: ${m.reason}}',
     };
@@ -144,7 +144,9 @@ abstract final class VhrpDebugFormat {
     sb.write('replyTo: ${m.replyTo}');
     sb.write(', sessionId: ${m.sessionId}');
     sb.write(', threadId: ${m.threadId}');
-    if (m.conversationId != null) sb.write(', conversationId: ${m.conversationId}');
+    if (m.conversationId != null) {
+      sb.write(', conversationId: ${m.conversationId}');
+    }
     if (m.capabilityExtensions.isNotEmpty) {
       sb.write(', capabilities: [${m.capabilityExtensions.join(', ')}]');
     }
@@ -157,7 +159,9 @@ abstract final class VhrpDebugFormat {
     sb.write('replyTo: ${m.replyTo}');
     sb.write(', sessionId: ${m.sessionId}');
     sb.write(', threadId: ${m.threadId}');
-    if (m.conversationId != null) sb.write(', conversationId: ${m.conversationId}');
+    if (m.conversationId != null) {
+      sb.write(', conversationId: ${m.conversationId}');
+    }
     sb.write('}');
     return sb.toString();
   }
@@ -173,12 +177,18 @@ abstract final class VhrpDebugFormat {
       RemoveItemOp o => 'remove_item(${o.itemId})',
       SetStatusOp o => 'set_status(${o.itemId}, ${o.status})',
       SetRoleOp o => 'set_role(${o.itemId}, ${o.role})',
-      SetFieldOp o => 'set_field(${o.itemId}, ${o.field}=${_sanitiseValue(o.value)})',
-      PutPartOp o => 'put_part(${o.itemId}, ci=${o.contentIndex}, type=${_sanitiseMap(o.part)['type'] ?? '?'})',
-      AppendTextOp o => 'append_text(${o.itemId}, ci=${o.contentIndex}, delta=${_verbatimText(o.delta)})',
-      ReplaceTextOp o => 'replace_text(${o.itemId}, ci=${o.contentIndex}, text=${_verbatimText(o.text)})',
-      AppendTranscriptOp o => 'append_transcript(${o.itemId}, ci=${o.contentIndex}, delta=${_verbatimText(o.delta)})',
-      ReplaceTranscriptOp o => 'replace_transcript(${o.itemId}, ci=${o.contentIndex}, text=${_verbatimText(o.text)})',
+      SetFieldOp o =>
+        'set_field(${o.itemId}, ${o.field}=${_sanitiseValue(o.value)})',
+      PutPartOp o =>
+        'put_part(${o.itemId}, ci=${o.contentIndex}, type=${_sanitiseMap(o.part)['type'] ?? '?'})',
+      AppendTextOp o =>
+        'append_text(${o.itemId}, ci=${o.contentIndex}, delta=${_verbatimText(o.delta)})',
+      ReplaceTextOp o =>
+        'replace_text(${o.itemId}, ci=${o.contentIndex}, text=${_verbatimText(o.text)})',
+      AppendTranscriptOp o =>
+        'append_transcript(${o.itemId}, ci=${o.contentIndex}, delta=${_verbatimText(o.delta)})',
+      ReplaceTranscriptOp o =>
+        'replace_transcript(${o.itemId}, ci=${o.contentIndex}, text=${_verbatimText(o.text)})',
       SetConversationIdOp o => 'set_conversation_id(${o.conversationId})',
       UnknownOp o => 'unknown_op(${o.unknownOp})',
     };
@@ -231,8 +241,7 @@ abstract final class VhrpDebugFormat {
   /// Returns a new Map; the original is not mutated.
   static Map<String, Object?> _sanitiseMap(Map<String, Object?> map) {
     return {
-      for (final entry in map.entries)
-        entry.key: _sanitiseValue(entry.value),
+      for (final entry in map.entries) entry.key: _sanitiseValue(entry.value),
     };
   }
 

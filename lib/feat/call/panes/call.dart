@@ -16,8 +16,6 @@ enum _TalkMode { ptt, hf }
 
 enum _NoiseReductionMode { off, nearField, farField }
 
-enum _ReasoningEffortLevel { off, minimal, low, medium, high, xhigh }
-
 class CallPane extends StatefulWidget {
   final SpeedDial speedDial;
   final CallService callService;
@@ -41,8 +39,6 @@ class CallPane extends StatefulWidget {
 class _CallPaneState extends State<CallPane> {
   _TalkMode _talkMode = _TalkMode.hf;
   _NoiseReductionMode _noiseReductionMode = _NoiseReductionMode.nearField;
-  _ReasoningEffortLevel _reasoningEffort = _ReasoningEffortLevel.off;
-  bool _toolChoiceRequired = false;
 
   CallService? get _activeCallService {
     final callService = widget.callService;
@@ -214,45 +210,6 @@ class _CallPaneState extends State<CallPane> {
     );
   }
 
-  void _handleReasoningEffortChanged(_ReasoningEffortLevel value) {
-    if (_reasoningEffort == value) {
-      return;
-    }
-
-    setState(() {
-      _reasoningEffort = value;
-    });
-
-    final selection = switch (value) {
-      _ReasoningEffortLevel.off => null,
-      _ => value.name,
-    };
-
-    unawaited(
-      widget.callService.applyRealtimeProviderExtension(
-        RealtimeProviderExtensions.reasoningEffortSelection,
-        <String, dynamic>{RealtimeProviderExtensions.selectionKey: selection},
-      ),
-    );
-  }
-
-  void _handleToolChoiceRequiredChanged(bool value) {
-    if (_toolChoiceRequired == value) {
-      return;
-    }
-
-    setState(() {
-      _toolChoiceRequired = value;
-    });
-
-    unawaited(
-      widget.callService.applyRealtimeProviderExtension(
-        RealtimeProviderExtensions.toolChoiceRequired,
-        <String, dynamic>{RealtimeProviderExtensions.requiredKey: value},
-      ),
-    );
-  }
-
   void _handlePttPressStart() {
     final callService = _activeCallService;
     if (callService == null) {
@@ -326,13 +283,9 @@ class _CallPaneState extends State<CallPane> {
           child: _CallSettingsSheet(
             initialTalkMode: _talkMode,
             initialNoiseReductionMode: _noiseReductionMode,
-            initialReasoningEffort: _reasoningEffort,
-            initialToolChoiceRequired: _toolChoiceRequired,
             showNoiseReductionSettings: _showsNoiseReductionSettings,
             onTalkModeChanged: _handleTalkModeChanged,
             onNoiseReductionModeChanged: _handleNoiseReductionModeChanged,
-            onReasoningEffortChanged: _handleReasoningEffortChanged,
-            onToolChoiceRequiredChanged: _handleToolChoiceRequiredChanged,
           ),
         );
       },
@@ -823,24 +776,16 @@ class _PttHoldButtonState extends State<_PttHoldButton> {
 class _CallSettingsSheet extends StatefulWidget {
   final _TalkMode initialTalkMode;
   final _NoiseReductionMode initialNoiseReductionMode;
-  final _ReasoningEffortLevel initialReasoningEffort;
-  final bool initialToolChoiceRequired;
   final bool showNoiseReductionSettings;
   final ValueChanged<_TalkMode> onTalkModeChanged;
   final ValueChanged<_NoiseReductionMode> onNoiseReductionModeChanged;
-  final ValueChanged<_ReasoningEffortLevel> onReasoningEffortChanged;
-  final ValueChanged<bool> onToolChoiceRequiredChanged;
 
   const _CallSettingsSheet({
     required this.initialTalkMode,
     required this.initialNoiseReductionMode,
-    required this.initialReasoningEffort,
-    required this.initialToolChoiceRequired,
     required this.showNoiseReductionSettings,
     required this.onTalkModeChanged,
     required this.onNoiseReductionModeChanged,
-    required this.onReasoningEffortChanged,
-    required this.onToolChoiceRequiredChanged,
   });
 
   @override
@@ -850,16 +795,12 @@ class _CallSettingsSheet extends StatefulWidget {
 class _CallSettingsSheetState extends State<_CallSettingsSheet> {
   late _TalkMode _talkMode;
   late _NoiseReductionMode _noiseReductionMode;
-  late _ReasoningEffortLevel _selectedReasoningEffort;
-  late bool _toolChoiceRequired;
 
   @override
   void initState() {
     super.initState();
     _talkMode = widget.initialTalkMode;
     _noiseReductionMode = widget.initialNoiseReductionMode;
-    _selectedReasoningEffort = widget.initialReasoningEffort;
-    _toolChoiceRequired = widget.initialToolChoiceRequired;
   }
 
   void _handleTalkModeChanged(_TalkMode value) {
@@ -876,42 +817,9 @@ class _CallSettingsSheetState extends State<_CallSettingsSheet> {
     widget.onNoiseReductionModeChanged(value);
   }
 
-  void _handleReasoningEffortChanged(_ReasoningEffortLevel value) {
-    setState(() {
-      _selectedReasoningEffort = value;
-    });
-    widget.onReasoningEffortChanged(value);
-  }
-
-  void _handleToolChoiceRequiredChanged(bool value) {
-    setState(() {
-      _toolChoiceRequired = value;
-    });
-    widget.onToolChoiceRequiredChanged(value);
-  }
-
-  String _reasoningEffortLabel(
-    AppLocalizations l10n,
-    _ReasoningEffortLevel value,
-  ) {
-    return switch (value) {
-      _ReasoningEffortLevel.off => l10n.callSettingsReasoningEffortOff,
-      _ReasoningEffortLevel.minimal => l10n.callSettingsReasoningEffortMinimal,
-      _ReasoningEffortLevel.low => l10n.callSettingsReasoningEffortLow,
-      _ReasoningEffortLevel.medium => l10n.callSettingsReasoningEffortMedium,
-      _ReasoningEffortLevel.high => l10n.callSettingsReasoningEffortHigh,
-      _ReasoningEffortLevel.xhigh => l10n.callSettingsReasoningEffortXhigh,
-    };
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final reasoningEffortValues = _ReasoningEffortLevel.values;
-    final reasoningEffortLabels = reasoningEffortValues
-        .map((value) => _reasoningEffortLabel(l10n, value))
-        .toList(growable: false);
-
     return SafeArea(
       child: Center(
         child: SingleChildScrollView(
@@ -1024,50 +932,6 @@ class _CallSettingsSheetState extends State<_CallSettingsSheet> {
                         ),
                       ),
                     ],
-                    const SizedBox(height: 16),
-                    _SettingsSection(
-                      title: l10n.callSettingsAdvancedTitle,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _SettingsSubsection(
-                            title: l10n.callSettingsReasoningEffortTitle,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _SettingsSlider(
-                                  selectedIndex: _selectedReasoningEffort.index,
-                                  labels: reasoningEffortLabels,
-                                  onChanged: (index) =>
-                                      _handleReasoningEffortChanged(
-                                        reasoningEffortValues[index],
-                                      ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  l10n.callSettingsReasoningEffortHint,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: AppTheme.textSecondary.withValues(
-                                      alpha: 0.9,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          _SettingsSubsection(
-                            title: l10n.callSettingsToolChoiceTitle,
-                            child: _SettingsCheckboxTile(
-                              label: l10n.callSettingsToolChoiceRequired,
-                              value: _toolChoiceRequired,
-                              onChanged: _handleToolChoiceRequiredChanged,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
                   ],
                 ),
               ),
@@ -1100,137 +964,6 @@ class _SettingsSection extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         child,
-      ],
-    );
-  }
-}
-
-class _SettingsSubsection extends StatelessWidget {
-  final String title;
-  final Widget child;
-
-  const _SettingsSubsection({required this.title, required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: AppTheme.textPrimary,
-          ),
-        ),
-        const SizedBox(height: 8),
-        child,
-      ],
-    );
-  }
-}
-
-class _SettingsSlider extends StatelessWidget {
-  final int selectedIndex;
-  final List<String> labels;
-  final ValueChanged<int> onChanged;
-
-  const _SettingsSlider({
-    required this.selectedIndex,
-    required this.labels,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        SliderTheme(
-          data: SliderTheme.of(context).copyWith(
-            trackHeight: 4,
-            overlayShape: SliderComponentShape.noOverlay,
-            activeTrackColor: AppTheme.primaryColor,
-            inactiveTrackColor: AppTheme.textSecondary.withValues(alpha: 0.18),
-            thumbColor: AppTheme.primaryColor,
-            activeTickMarkColor: AppTheme.primaryColor.withValues(alpha: 0.9),
-            inactiveTickMarkColor: AppTheme.textSecondary.withValues(
-              alpha: 0.28,
-            ),
-          ),
-          child: Slider(
-            value: selectedIndex.toDouble(),
-            min: 0,
-            max: (labels.length - 1).toDouble(),
-            divisions: labels.length - 1,
-            onChanged: (value) => onChanged(value.round()),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            for (var index = 0; index < labels.length; index++)
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 2),
-                  child: Text(
-                    labels[index],
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: index == selectedIndex
-                          ? FontWeight.w700
-                          : FontWeight.w500,
-                      color: index == selectedIndex
-                          ? AppTheme.textPrimary
-                          : AppTheme.textSecondary,
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class _SettingsCheckboxTile extends StatelessWidget {
-  final String label;
-  final bool value;
-  final ValueChanged<bool> onChanged;
-
-  const _SettingsCheckboxTile({
-    required this.label,
-    required this.value,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Checkbox(
-          value: value,
-          onChanged: (nextValue) => onChanged(nextValue ?? false),
-          activeColor: AppTheme.primaryColor,
-          checkColor: AppTheme.surfaceColor,
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            label,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppTheme.textPrimary,
-            ),
-          ),
-        ),
       ],
     );
   }

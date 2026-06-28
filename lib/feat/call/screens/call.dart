@@ -167,6 +167,8 @@ Future<VoiceAgentInfo> _buildVoiceAgent(SpeedDial speedDial) async {
         .map((tool) => tool.definition.toolKey)
         .where((toolKey) => speedDial.enabledTools[toolKey] ?? true)
         .toList(growable: false),
+    reasoningEffort: speedDial.reasoningEffort,
+    toolChoiceRequired: speedDial.toolChoiceRequired,
     apiConfig: apiConfig,
   );
 }
