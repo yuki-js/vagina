@@ -19,6 +19,8 @@ import 'oai_cc_wav_encoder.dart';
 /// Live microphone input is lifecycle-bound only; completed manual/PTT audio
 /// turns are supplied by CallService through [sendAudioOneShot].
 final class OaiCcRealtimeAdapter implements RealtimeAdapter {
+  static const String _unsupportedInputAudioTranscript = 'Audio message';
+
   /// Test Chat Completions API connectivity.
   static Future<void> testConnection(
     String baseUrl,
@@ -495,7 +497,10 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
 
   Future<String> _sendAudioTurn(String wavBase64) async {
     final userItemId = _nextLocalId();
-    final audioPart = RealtimeThreadAudioPart(transcript: null, isDone: true);
+    final audioPart = RealtimeThreadAudioPart(
+      transcript: _unsupportedInputAudioTranscript,
+      isDone: true,
+    );
     audioPart.replaceAudio(wavBase64);
 
     final userItem = RealtimeThreadItem(
@@ -717,8 +722,16 @@ final class OaiCcRealtimeAdapter implements RealtimeAdapter {
           if (event.audioId != null && event.audioId!.isNotEmpty) {
             _assistantAudioIds[assistantItemId] = event.audioId!;
           }
+          RealtimeThreadAudioPart? audioPart;
           if (event.transcript != null && event.transcript!.isNotEmpty) {
-            assistantTextPart.appendDelta(event.transcript!);
+            audioPart = assistantItem.content
+                .whereType<RealtimeThreadAudioPart>()
+                .firstOrNull;
+            if (audioPart == null) {
+              audioPart = RealtimeThreadAudioPart();
+              assistantItem.addContentPart(audioPart);
+            }
+            audioPart.appendTranscriptDelta(event.transcript!);
             _emitThreadUpdate();
           }
           if (event.audioBase64 != null && event.audioBase64!.isNotEmpty) {
