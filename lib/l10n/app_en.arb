@@ -218,16 +218,6 @@
       }
     }
   },
-  "oobeAuthenticationProviderComingSoon": "{providerName} sign-in is coming soon",
-  "@oobeAuthenticationProviderComingSoon": {
-    "description": "Snackbar message shown when the user taps an authentication provider whose backend flow is not implemented yet on the OOBE authentication screen.",
-    "placeholders": {
-      "providerName": {
-        "type": "String",
-        "description": "External authentication provider brand name such as Google, GitHub, X (Twitter), or Apple. Keep the provider brand untranslated if required by brand rules."
-      }
-    }
-  },
   "oobeAuthenticationSigningIn": "Signing in...",
   "@oobeAuthenticationSigningIn": {
     "description": "Progress label shown while the OOBE sign-in flow is in progress."
@@ -259,16 +249,6 @@
   "oobeAuthenticationMissingAuthCode": "Missing authorization code in callback.",
   "@oobeAuthenticationMissingAuthCode": {
     "description": "Fallback message when callback lacks required code/state query parameters."
-  },
-  "oobeAuthenticationExchangeFailed": "Could not finish sign-in: {error}",
-  "@oobeAuthenticationExchangeFailed": {
-    "description": "Snackbar message shown when exchanging callback code for app tokens fails.",
-    "placeholders": {
-      "error": {
-        "type": "String",
-        "description": "Error details returned by the exchange API."
-      }
-    }
   },
   "oobeAuthenticationSignInSuccess": "Sign-in completed successfully.",
   "@oobeAuthenticationSignInSuccess": {
@@ -523,14 +503,6 @@
   "settingsOpenAiTranscriptionModelHint": "Select a transcription model",
   "@settingsOpenAiTranscriptionModelHint": {
     "description": "Placeholder text inside the transcription model preset selector."
-  },
-  "settingsOpenAiTranscriptionModelCustomOption": "Custom",
-  "@settingsOpenAiTranscriptionModelCustomOption": {
-    "description": "Dropdown option label for entering a custom transcription model name."
-  },
-  "settingsOpenAiTranscriptionModelCustomHint": "Enter a custom transcription model name",
-  "@settingsOpenAiTranscriptionModelCustomHint": {
-    "description": "Placeholder text inside the custom transcription model text field."
   },
   "settingsOpenAiTranscriptionModelHelper": "Used for speech-to-text on microphone input. Presets are provided, or you can enter any model name.",
   "@settingsOpenAiTranscriptionModelHelper": {
@@ -958,40 +930,6 @@
   "@textAgentsFieldEndpointUrl": {
     "description": "Field label for the endpoint URL input used by the custom provider on the text agent form screen."
   },
-  "textAgentsEmptyViewTitle": "No text agents yet",
-  "@textAgentsEmptyViewTitle": {
-    "description": "Standalone empty-state title in the reusable empty text agents view widget."
-  },
-  "textAgentsEmptyViewBody": "Create a text agent to unlock advanced AI features",
-  "@textAgentsEmptyViewBody": {
-    "description": "Standalone empty-state helper text in the reusable empty text agents view widget."
-  },
-  "textAgentsEmptyViewCreateAction": "Create your first agent",
-  "@textAgentsEmptyViewCreateAction": {
-    "description": "Primary button label in the reusable empty text agents view widget."
-  },
-  "textAgentsSelectionDialogTitle": "Select agent",
-  "@textAgentsSelectionDialogTitle": {
-    "description": "Dialog title for the text agent selection dialog."
-  },
-  "textAgentsSelectionDialogEmptyTitle": "No agents available",
-  "@textAgentsSelectionDialogEmptyTitle": {
-    "description": "Empty-state title shown inside the text agent selection dialog when no agents exist."
-  },
-  "textAgentsSelectionDialogError": "Error: {error}",
-  "@textAgentsSelectionDialogError": {
-    "description": "Error text shown inside the text agent selection dialog when loading agents or the selected agent fails.",
-    "placeholders": {
-      "error": {
-        "type": "String",
-        "description": "Error details from the failed text agent selection dialog load operation."
-      }
-    }
-  },
-  "textAgentsSelectedBadge": "Selected",
-  "@textAgentsSelectedBadge": {
-    "description": "Small badge label shown on text agent cards and list tiles for the currently selected text agent."
-  },
   "textAgentsProviderUrlRequired": "Enter a URL",
   "@textAgentsProviderUrlRequired": {
     "description": "Validation message shown when a provider URL field is empty in text agent provider parsing logic."
@@ -1083,58 +1021,6 @@
   "callSettingsNoiseReductionFarField": "Far field",
   "@callSettingsNoiseReductionFarField": {
     "description": "Option label for far-field input noise reduction in the call settings sheet, intended for more distant speech."
-  },
-  "callSettingsAdvancedTitle": "Advanced settings",
-  "@callSettingsAdvancedTitle": {
-    "description": "Section title for advanced mock controls in the call settings sheet."
-  },
-  "callSettingsAdvancedMockDescription": "Mock UI only. Controls are intentionally not wired yet.",
-  "@callSettingsAdvancedMockDescription": {
-    "description": "Helper text explaining that the advanced settings controls in the call settings sheet are mock-only and non-interactive."
-  },
-  "callSettingsReasoningEffortTitle": "Reasoning effort",
-  "@callSettingsReasoningEffortTitle": {
-    "description": "Subsection title for the advanced reasoning effort control in the call settings sheet."
-  },
-  "callSettingsReasoningEffortHint": "Please turn off reasoning for non-reasoning models",
-  "@callSettingsReasoningEffortHint": {
-    "description": "思考モデルのときに使える上級者設定。思考モデルでないならばエラーでこけます"
-  },
-  "callSettingsReasoningEffortOff": "Off",
-  "@callSettingsReasoningEffortOff": {
-    "description": "Label for the off position in the reasoning effort mock control."
-  },
-  "callSettingsReasoningEffortMinimal": "Minimal",
-  "@callSettingsReasoningEffortMinimal": {
-    "description": "Label for the minimal position in the reasoning effort mock control."
-  },
-  "callSettingsReasoningEffortLow": "Low",
-  "@callSettingsReasoningEffortLow": {
-    "description": "Label for the low position in the reasoning effort mock control."
-  },
-  "callSettingsReasoningEffortMedium": "Medium",
-  "@callSettingsReasoningEffortMedium": {
-    "description": "Label for the medium position in the reasoning effort mock control."
-  },
-  "callSettingsReasoningEffortHigh": "High",
-  "@callSettingsReasoningEffortHigh": {
-    "description": "Label for the high position in the reasoning effort mock control."
-  },
-  "callSettingsReasoningEffortXhigh": "ExtraHigh",
-  "@callSettingsReasoningEffortXhigh": {
-    "description": "Label for the x-high position in the reasoning effort mock control."
-  },
-  "callSettingsToolChoiceTitle": "Tool choice",
-  "@callSettingsToolChoiceTitle": {
-    "description": "Subsection title for the advanced tool choice control in the call settings sheet."
-  },
-  "callSettingsToolChoiceRequired": "Require tool calls",
-  "@callSettingsToolChoiceRequired": {
-    "description": "Checkbox label for enabling required tool_choice mode in the call settings sheet."
-  },
-  "callSettingsToolChoiceHint": "If no tools are configured, tool choice is effectively none.",
-  "@callSettingsToolChoiceHint": {
-    "description": "Helper text for the advanced tool choice mock control explaining the behavior when no tools are configured."
   },
   "callChatTitle": "Chat",
   "@callChatTitle": {
