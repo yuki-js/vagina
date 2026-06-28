@@ -133,6 +133,9 @@ class VhrpCborCodec {
         _putText(body, 'reason', m.reason);
         root[CborString('body')] = body;
 
+      case SessionEndMsg _:
+        root[CborString('body')] = CborMap({});
+
       case ThreadSyncRequestMsg m:
         _putText(root, 'messageId', m.messageId);
         final body = CborMap({});

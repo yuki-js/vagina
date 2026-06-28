@@ -8,16 +8,15 @@
 //           - disconnected/failed while _sessionId != null → auto-reconnect
 //           - session.open + resume.sessionId (§6.1 step 2)
 //           - session.resumed → thread.sync.request("reconnected") → snapshot
-//           - error(resume.not_available) → fresh session.open (no resume)
-//           - Exponential backoff: 500 ms × 2^attempt, max 16 s, max 5 attempts
+//           - error(resume.not_available) → fail the call; no fresh fallback
+//           - Exponential backoff: 500 ms × 2^attempt, bounded by 15 seconds
 //           - dispose-safe: _disposed guard checked before every reconnect step
 //       • Resume post-state policy (§6.1):
 //           - session.resumed path: tools/instructions/extensions NOT re-sent
 //             (session preserved server-side); liveAudioSequence reset; audio
 //             subscription kept alive.
-//           - resume.not_available → new session path: session.open carries the
-//             current canonical session state; buffers flush only state that is
-//             not part of session.open.
+//           - resume.not_available means the server retention window expired;
+//             the existing call is no longer resumable.
 //       • Single recovery path: both desync (patch_apply_failed via §5.5) and
 //         resume both resolve through thread.sync.request → thread.snapshot
 //         → _projector.applySnapshot — handled by the existing _onThreadSnapshot.
@@ -147,6 +146,11 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
 
   // ── Reconnect state (Step 8) ─────────────────────────────────────────────
 
+  /// True once local disposal has started from the existing end-call route.
+  /// Transport close observed after this point is intentional and must not
+  /// trigger resume.
+  bool _explicitlyClosing = false;
+
   /// True while the automatic reconnect loop is running.
   /// Guards against concurrent reconnect attempts.
   bool _isReconnecting = false;
@@ -155,8 +159,8 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
   /// session.ready / session.resumed.  Reset to 0 on success.
   int _reconnectAttempt = 0;
 
-  /// Maximum number of reconnect attempts before giving up.
-  static const int _maxReconnectAttempts = 5;
+  /// Maximum wall-clock window for resuming a detached server session.
+  static const int _resumeDeadlineMs = 15000;
 
   /// Base delay for exponential backoff (ms).
   static const int _reconnectBaseMs = 500;
@@ -408,7 +412,10 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
   @override
   Future<void> dispose() async {
     if (_disposed) return;
+    _explicitlyClosing = true;
     _disposed = true;
+
+    _sendSessionEndBestEffort();
 
     // Cancel live audio input subscription first so no more PCM is forwarded.
     await _audioInputSubscription?.cancel();
@@ -801,7 +808,10 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
         // ── Step 8: auto-reconnect on unexpected disconnect ─────────────────
         // Trigger reconnect only when we had an established session (sessionId
         // is set) and are not already reconnecting and not being disposed.
-        if (_sessionId != null && !_isReconnecting && !_disposed) {
+        if (_sessionId != null &&
+            !_isReconnecting &&
+            !_disposed &&
+            !_explicitlyClosing) {
           _startReconnectLoop();
         }
 
@@ -825,7 +835,10 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
               ),
         );
         // ── Step 8: auto-reconnect on transport failure ─────────────────────
-        if (_sessionId != null && !_isReconnecting && !_disposed) {
+        if (_sessionId != null &&
+            !_isReconnecting &&
+            !_disposed &&
+            !_explicitlyClosing) {
           _startReconnectLoop();
         }
     }
@@ -1285,6 +1298,19 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
     _transport.sendBytes(bytes);
   }
 
+  /// Best-effort terminal intent for the existing end-call dispose route.
+  ///
+  /// Delivery is intentionally not observed: if this frame reaches the server,
+  /// the server immediately terminal-closes the retained session; if it does
+  /// not, the server-side 15 second detached retention reclaims it.
+  void _sendSessionEndBestEffort() {
+    try {
+      _sendMsg(SessionEndMsg());
+    } catch (_) {
+      // Normal during failed/closed transports: retention expiry is the fallback.
+    }
+  }
+
   /// Sends `tools.set` and awaits the server ack.
   ///
   /// [ToolDefinition] → [ToolSpec] mapping:
@@ -1409,26 +1435,20 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
   ///   • Guards against concurrent loops via [_isReconnecting].
   ///   • Stops if [_disposed] or if [_connectConfig] is null.
   ///   • Exponential backoff: `500 ms × 2^attempt`, capped at 16 s.
-  ///   • Up to [_maxReconnectAttempts] consecutive attempts; gives up after
-  ///     that and transitions to [failed].
+  ///   • Stops at the 15 second resume deadline; after that the server has
+  ///     discarded the retained session and this call transitions to [failed].
   ///
   /// Resume strategy (§6.1):
   ///   1. Try `session.open` with `resume: { sessionId: _sessionId }`.
   ///   2. If `session.resumed` → send `thread.sync.request("reconnected")`.
   ///      `_onSessionResumed` handles steps 4-5 (thread snapshot replacement).
-  ///   3. If `error(resume.not_available)` → fall back to new `session.open`
-  ///      (no `resume` field), repopulate pre-connect buffers.
+  ///   3. If `error(resume.not_available)` → fail the existing call.  The
+  ///      retained server session has expired, so this adapter intentionally
+  ///      does not open a fresh session under the same call.
   ///
   /// Tools / instructions / extensions re-send policy:
   ///   • Resume path: NOT re-sent.  The server preserved the session.
-  ///   • New session path (resume.not_available): pre-connect buffers are
-  ///     repopulated from [_persistedTools] / [_persistedInstructions] so
-  ///     that [_flushPreConnectBuffers] restores them on session.ready.
-  ///     NOTE: This adapter does not yet persist tools/instructions between
-  ///     reconnects (out of scope for step 8; tracked as a follow-up).
-  ///     For now the new session starts without tools/instructions — callers
-  ///     are expected to call [registerTools]/[setInstructions] again if they
-  ///     observe a new `session.ready` (not `session.resumed`).
+  ///   • No fresh-session fallback is performed after resume expiry.
   void _startReconnectLoop() {
     _isReconnecting = true;
     _doReconnectLoop().catchError((Object e) {
@@ -1458,16 +1478,27 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
       return;
     }
 
-    while (!_disposed && _reconnectAttempt < _maxReconnectAttempts) {
+    final resumeDeadline = DateTime.now().add(
+      const Duration(milliseconds: _resumeDeadlineMs),
+    );
+
+    while (!_disposed && DateTime.now().isBefore(resumeDeadline)) {
       // Exponential backoff before each attempt (including the first — give
-      // the network a moment to recover after an unexpected disconnect).
+      // the network a moment to recover after an unexpected disconnect), but
+      // never sleep past the server-side 15 second retention window.
+      final remainingMs = resumeDeadline
+          .difference(DateTime.now())
+          .inMilliseconds;
+      if (remainingMs <= 0) break;
       final delayMs = (_reconnectBaseMs * (1 << _reconnectAttempt)).clamp(
         0,
         _reconnectMaxMs,
       );
-      await Future<void>.delayed(Duration(milliseconds: delayMs));
+      await Future<void>.delayed(
+        Duration(milliseconds: delayMs.clamp(0, remainingMs).toInt()),
+      );
 
-      if (_disposed) break;
+      if (_disposed || !DateTime.now().isBefore(resumeDeadline)) break;
 
       _reconnectAttempt += 1;
       _setConnectionState(const RealtimeAdapterConnectionState.connecting());
@@ -1553,9 +1584,9 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
       // _onTransportState on disconnect/failed) or by _onErrorMsg for
       // non-recoverable errors.
       //
-      // Special case: error(resume.not_available) is handled inline here
-      // because the error handler fails the completer with the error object.
-      bool resumeNotAvailable = false;
+      // Special case: error(resume.not_available) means the 15 second server
+      // retention window has expired. Do not open a fresh session under the
+      // same call; this call is no longer resumable.
       try {
         await _sessionReadyCompleter!.future;
         // Success — _onSessionResumed or _onSessionReady completed the future.
@@ -1564,80 +1595,34 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
         return;
       } on RealtimeAdapterError catch (e) {
         if (e.code == 'resume.not_available') {
-          resumeNotAvailable = true;
-        } else {
-          // Some other correlated error — treat as a transient failure and
-          // retry the loop.
-          continue;
+          _isReconnecting = false;
+          final msg = 'Resume failed: ${e.message}';
+          _emitError(
+            RealtimeAdapterError(
+              code: 'resume.not_available',
+              message: msg,
+              cause: e,
+            ),
+          );
+          _setConnectionState(
+            RealtimeAdapterConnectionState.failed(message: msg, error: e),
+          );
+          return;
         }
+        // Some other correlated error — treat as a transient failure and retry.
+        continue;
       } catch (_) {
         // Transport disconnect or other error — retry.
         continue;
       } finally {
         _sessionReadyCompleter = null;
       }
-
-      if (_disposed) break;
-
-      // ── resume.not_available fallback (§6.1): fresh session.open ────────
-      if (resumeNotAvailable) {
-        // The server no longer holds our session.  Open a new WebSocket and
-        // start a fresh session without a `resume` field.
-        //
-        // The current WebSocket may still be open (the server sent a
-        // recoverable error).  We reuse the existing connection here and
-        // simply send a new session.open without `resume`.
-        //
-        // Reset capability extensions — the new session will advertise fresh
-        // capabilities in its session.ready.
-        _capabilityExtensions = const <String>[];
-        _sessionReadyCompleter = Completer<void>();
-
-        final freshOpen = SessionOpenMsg(
-          messageId: _nextMsgId('session-open-fresh'),
-          token: token,
-          modelId: config.modelId,
-          voice: config.voice,
-          instructions: _sessionInstructions,
-          audioTurnMode: _audioTurnMode == RealtimeAudioTurnMode.voiceActivity
-              ? 'voice_activity'
-              : 'manual',
-          inputAudio: audioFormat,
-          outputAudio: audioFormat,
-          // resume: null — fresh session, no resume.
-          client: const <String, Object?>{},
-        );
-
-        try {
-          _sendMsg(freshOpen);
-        } catch (_) {
-          _sessionReadyCompleter?.completeError(
-            StateError(
-              'Transport closed before fresh session.open could be sent.',
-            ),
-          );
-          _sessionReadyCompleter = null;
-          continue;
-        }
-
-        try {
-          await _sessionReadyCompleter!.future;
-          // Fresh session.ready received; _onSessionReady flushed buffers.
-          _isReconnecting = false;
-          return;
-        } catch (_) {
-          // Fresh session also failed — retry the whole loop.
-          continue;
-        } finally {
-          _sessionReadyCompleter = null;
-        }
-      }
     }
 
     // Exhausted all attempts.
     _isReconnecting = false;
     if (!_disposed) {
-      const msg = 'Reconnect loop exhausted all attempts.';
+      const msg = 'Reconnect loop exceeded the 15 second resume window.';
       _emitError(
         const RealtimeAdapterError(code: 'reconnect.exhausted', message: msg),
       );

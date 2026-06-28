@@ -295,6 +295,21 @@ void main() {
     );
 
     test(
+      // Contract: ending a hosted session is a terminal one-way command.  It
+      // carries no messageId and expects no ack; the server closes the socket.
+      'session.end encodes as one-way terminal command',
+      () {
+        final msg = SessionEndMsg();
+        final root = _encodeToCborMap(msg);
+        final body = _bodyOf(root);
+
+        expect(_textOf(root, 'type'), 'session.end');
+        expect(root[CborString('messageId')], isNull);
+        expect(body, isA<CborMap>());
+      },
+    );
+
+    test(
       // Contract: registering tools with the server sends the complete tool
       // catalog including parameters schema so the AI knows what functions
       // are available.

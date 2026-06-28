@@ -258,6 +258,13 @@ final class AssistantInterruptMsg extends VhrpC2sMessage {
   AssistantInterruptMsg({required this.reason});
 }
 
+/// `session.end`: explicitly terminates this hosted realtime session.
+/// One-way terminal command; no messageId and no ack.
+final class SessionEndMsg extends VhrpC2sMessage {
+  @override
+  String get type => 'session.end';
+}
+
 /// `thread.sync.request`: asks for a fresh full `thread.snapshot`.
 /// No cursor or revision — the reply is always a full snapshot.
 /// [reason] is advisory only.
