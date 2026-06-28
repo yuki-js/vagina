@@ -12,7 +12,6 @@ import 'package:vagina/feat/call/panes/notepad.dart';
 import 'package:vagina/feat/call/services/call_service.dart';
 import 'package:vagina/feat/call/widgets/call_screen_shell.dart';
 import 'package:vagina/models/speed_dial.dart';
-import 'package:vagina/tools/tools.dart';
 
 /// Layout scaffold for the call screen.
 class CallScreen extends StatefulWidget {
@@ -64,7 +63,7 @@ class _CallScreenState extends State<CallScreen> {
           .getPreferredCallPushToTalkEnabled();
       final idleDisconnectTimeoutSeconds = await AppContainer.preferences
           .getPreferredCallIdleDisconnectTimeoutSeconds();
-      final voiceAgent = await _buildVoiceAgent(widget.speedDial);
+      final voiceAgent = VoiceAgentInfo.fromSpeedDial(widget.speedDial);
       final textAgents = await _buildTextAgents();
       if (!mounted) return;
 
@@ -174,29 +173,6 @@ class _CallScreenState extends State<CallScreen> {
       ),
     );
   }
-}
-
-Future<VoiceAgentInfo> _buildVoiceAgent(SpeedDial speedDial) async {
-  final configRepository = AppContainer.config;
-  final apiConfig = await configRepository.getVoiceAgentApiConfig();
-  if (apiConfig == null) {
-    throw StateError('Voice agent API config is not configured.');
-  }
-  return VoiceAgentInfo(
-    id: speedDial.id,
-    name: speedDial.name,
-    description: speedDial.description ?? '',
-    iconEmoji: speedDial.iconEmoji,
-    voice: speedDial.voice,
-    prompt: speedDial.systemPrompt,
-    enabledTools: toolbox.tools
-        .map((tool) => tool.definition.toolKey)
-        .where((toolKey) => speedDial.enabledTools[toolKey] ?? true)
-        .toList(growable: false),
-    reasoningEffort: speedDial.reasoningEffort,
-    toolChoiceRequired: speedDial.toolChoiceRequired,
-    apiConfig: apiConfig,
-  );
 }
 
 Future<List<TextAgentInfo>> _buildTextAgents() async {
