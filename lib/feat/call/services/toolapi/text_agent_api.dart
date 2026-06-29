@@ -20,23 +20,19 @@ final class CallTextAgentApi implements TextAgentApi {
     final agents = _textAgentService.agents;
     return agents.map((agent) {
       final apiConfig = agent.apiConfig;
-      String provider = 'unknown';
-      String config = 'Unknown';
-
-      if (apiConfig is SelfhostedTextAgentApiConfig) {
-        provider = apiConfig.provider;
-        config = '${apiConfig.provider}: ${apiConfig.model}';
-      } else if (apiConfig is HostedTextAgentApiConfig) {
-        provider = 'hosted';
-        config = 'Hosted: ${apiConfig.modelId}';
-      }
+      final textModelId = apiConfig is ServerBackedTextAgentApiConfig
+          ? apiConfig.textModelId
+          : null;
 
       return {
         'id': agent.id,
         'name': agent.name,
         'description': agent.description,
-        'provider': provider,
-        'config': config,
+        if (textModelId != null) 'text_model_id': textModelId,
+        'enabled_tools': agent.enabledTools,
+        'query_supported': false,
+        'query_status':
+            'query_text_agent is disabled for server-backed text agent definitions until server-hosted execution is implemented.',
       };
     }).toList();
   }

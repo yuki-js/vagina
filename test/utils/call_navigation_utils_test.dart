@@ -5,8 +5,10 @@ import 'package:vagina/core/app/app_container.dart';
 import 'package:vagina/feat/call/screens/call.dart';
 import 'package:vagina/interfaces/key_value_store.dart';
 import 'package:vagina/interfaces/speed_dial_repository.dart';
+import 'package:vagina/interfaces/text_agent_repository.dart';
 import 'package:vagina/l10n/app_localizations.dart';
 import 'package:vagina/models/speed_dial.dart';
+import 'package:vagina/models/text_agent_definition.dart';
 import 'package:vagina/utils/call_navigation_utils.dart';
 
 void main() {
@@ -29,16 +31,16 @@ void main() {
         description: 'Persisted default description',
         iconEmoji: '🦄',
         voice: 'verse',
-        enabledTools: const {
-          'document_read': false,
-          'calculator': true,
-        },
+        enabledTools: const {'document_read': false, 'calculator': true},
         reasoningEffort: SpeedDialReasoningEffort.high,
         toolChoiceRequired: true,
         createdAt: DateTime.utc(2026, 1, 2, 3, 4, 5),
       );
       AppContainer.setOverridesForTesting(
-        speedDials: _FakeSpeedDialRepository(defaultSpeedDial: persistedDefault),
+        speedDials: _FakeSpeedDialRepository(
+          defaultSpeedDial: persistedDefault,
+        ),
+        textAgents: _FakeTextAgentRepository(),
       );
 
       final observer = _RouteCaptureObserver();
@@ -85,6 +87,7 @@ void main() {
     (tester) async {
       AppContainer.setOverridesForTesting(
         speedDials: _FakeSpeedDialRepository(defaultSpeedDial: null),
+        textAgents: _FakeTextAgentRepository(),
       );
 
       late BuildContext capturedContext;
@@ -135,8 +138,31 @@ class _FakeSpeedDialRepository implements SpeedDialRepository {
   final Map<String, SpeedDial> _saved = {};
 
   @override
-  Future<void> save(SpeedDial speedDial) async {
+  Future<SpeedDial> create({
+    required String name,
+    required String systemPrompt,
+    String? description,
+    String? iconEmoji,
+    String voice = 'alloy',
+    String voiceAgentId = SpeedDial.defaultVoiceAgentId,
+    Map<String, bool> enabledTools = const {},
+    SpeedDialReasoningEffort reasoningEffort = SpeedDialReasoningEffort.off,
+    bool toolChoiceRequired = false,
+  }) async {
+    final speedDial = SpeedDial(
+      id: 'sd_test_${_saved.length + 1}',
+      name: name,
+      systemPrompt: systemPrompt,
+      description: description,
+      iconEmoji: iconEmoji,
+      voice: voice,
+      voiceAgentId: voiceAgentId,
+      enabledTools: enabledTools,
+      reasoningEffort: reasoningEffort,
+      toolChoiceRequired: toolChoiceRequired,
+    );
     _saved[speedDial.id] = speedDial;
+    return speedDial;
   }
 
   @override
@@ -171,6 +197,51 @@ class _FakeSpeedDialRepository implements SpeedDialRepository {
     if (id == SpeedDial.defaultId) {
       return false;
     }
+    return _saved.remove(id) != null;
+  }
+}
+
+class _FakeTextAgentRepository implements TextAgentRepository {
+  final Map<String, TextAgentDefinition> _saved = {};
+
+  @override
+  Future<TextAgentDefinition> create({
+    required String name,
+    required String prompt,
+    String? description,
+    String textModelId = TextAgentDefinition.defaultTextModelId,
+    Map<String, bool> enabledTools = const {},
+  }) async {
+    final textAgent = TextAgentDefinition(
+      id: 'ta_test_${_saved.length + 1}',
+      name: name,
+      prompt: prompt,
+      description: description,
+      textModelId: textModelId,
+      enabledTools: enabledTools,
+    );
+    _saved[textAgent.id] = textAgent;
+    return textAgent;
+  }
+
+  @override
+  Future<List<TextAgentDefinition>> getAll() async {
+    return _saved.values.toList(growable: false);
+  }
+
+  @override
+  Future<TextAgentDefinition?> getById(String id) async {
+    return _saved[id];
+  }
+
+  @override
+  Future<bool> update(TextAgentDefinition textAgent) async {
+    _saved[textAgent.id] = textAgent;
+    return true;
+  }
+
+  @override
+  Future<bool> delete(String id) async {
     return _saved.remove(id) != null;
   }
 }

@@ -606,30 +606,6 @@
   "@textAgentsSearchEmptyTitle": {
     "description": "Message shown on the agents tab when the text agent search returns no matches."
   },
-  "textAgentsProviderHostedPrefix": "Hosted",
-  "@textAgentsProviderHostedPrefix": {
-    "description": "Short prefix shown before a hosted text agent model identifier in provider summary labels."
-  },
-  "textAgentsProviderUnknown": "Unknown",
-  "@textAgentsProviderUnknown": {
-    "description": "Fallback provider label shown when a text agent provider type cannot be determined."
-  },
-  "textAgentsProviderLabelOpenAi": "OpenAI",
-  "@textAgentsProviderLabelOpenAi": {
-    "description": "Provider name label shown for the OpenAI text agent provider in dropdowns and summaries."
-  },
-  "textAgentsProviderLabelAzure": "Azure OpenAI",
-  "@textAgentsProviderLabelAzure": {
-    "description": "Provider name label shown for the Azure OpenAI text agent provider in dropdowns and summaries."
-  },
-  "textAgentsProviderLabelLiteLlm": "LiteLLM Proxy",
-  "@textAgentsProviderLabelLiteLlm": {
-    "description": "Provider name label shown for the LiteLLM text agent provider in dropdowns and summaries."
-  },
-  "textAgentsProviderLabelCustom": "Custom endpoint",
-  "@textAgentsProviderLabelCustom": {
-    "description": "Provider name label shown for the custom OpenAI-compatible text agent provider in dropdowns and summaries."
-  },
   "textAgentsFieldRequired": "Enter {fieldName}",
   "@textAgentsFieldRequired": {
     "description": "Validation message shown on the text agent form when a required field is empty.",
@@ -724,35 +700,15 @@
   },
   "textAgentsSectionSettings": "Settings",
   "@textAgentsSectionSettings": {
-    "description": "Section header for the provider and API settings card on the text agent form screen."
+    "description": "Section header for the server-backed model preset settings card on the text agent form screen."
   },
-  "textAgentsFieldProvider": "Provider",
-  "@textAgentsFieldProvider": {
-    "description": "Field label for the provider dropdown on the text agent form screen."
+  "textAgentsModelPresetDefault": "Default",
+  "@textAgentsModelPresetDefault": {
+    "description": "Label appended to the default server-backed text model preset."
   },
-  "textAgentsProviderHelpOpenAi": "OpenAI's official API. Uses api.openai.com.",
-  "@textAgentsProviderHelpOpenAi": {
-    "description": "Helper text shown on the text agent form when the OpenAI provider is selected."
-  },
-  "textAgentsProviderHelpAzure": "Azure OpenAI Service. Enter either a base URL such as https://{resource}.openai.azure.com or a full Chat Completions URL.",
-  "@textAgentsProviderHelpAzure": {
-    "description": "Helper text shown on the text agent form when the Azure OpenAI provider is selected. Keep the URL pattern intact and explain that either a base URL or a full Chat Completions URL is accepted."
-  },
-  "textAgentsProviderHelpLiteLlm": "LiteLLM proxy service. Enter a local or remote proxy URL.",
-  "@textAgentsProviderHelpLiteLlm": {
-    "description": "Helper text shown on the text agent form when the LiteLLM provider is selected."
-  },
-  "textAgentsProviderHelpCustom": "OpenAI-compatible custom endpoint. Enter a full URL.",
-  "@textAgentsProviderHelpCustom": {
-    "description": "Helper text shown on the text agent form when the custom provider is selected."
-  },
-  "textAgentsFieldApiKey": "API key",
-  "@textAgentsFieldApiKey": {
-    "description": "Field label for the API key input on the text agent form screen."
-  },
-  "textAgentsFieldApiKeyHint": "Enter the provider API key",
-  "@textAgentsFieldApiKeyHint": {
-    "description": "Placeholder text inside the API key input on the text agent form screen."
+  "textAgentsModelPresetsEmpty": "No text models are available",
+  "@textAgentsModelPresetsEmpty": {
+    "description": "Message shown when the server returns no safe text model presets."
   },
   "textAgentsSectionToolSettings": "Tool settings",
   "@textAgentsSectionToolSettings": {
@@ -764,35 +720,7 @@
   },
   "textAgentsFieldModel": "Model",
   "@textAgentsFieldModel": {
-    "description": "Field label for the model input used by the OpenAI provider on the text agent form screen."
-  },
-  "textAgentsFieldEndpoint": "Endpoint",
-  "@textAgentsFieldEndpoint": {
-    "description": "Field label for the endpoint input used by the Azure provider on the text agent form screen."
-  },
-  "textAgentsFieldProxyUrl": "Proxy URL",
-  "@textAgentsFieldProxyUrl": {
-    "description": "Field label for the proxy URL input used by the LiteLLM provider on the text agent form screen."
-  },
-  "textAgentsFieldEndpointUrl": "Endpoint URL",
-  "@textAgentsFieldEndpointUrl": {
-    "description": "Field label for the endpoint URL input used by the custom provider on the text agent form screen."
-  },
-  "textAgentsProviderUrlRequired": "Enter a URL",
-  "@textAgentsProviderUrlRequired": {
-    "description": "Validation message shown when a provider URL field is empty in text agent provider parsing logic."
-  },
-  "textAgentsProviderUrlInvalid": "Enter a valid URL",
-  "@textAgentsProviderUrlInvalid": {
-    "description": "Validation message shown when a provider URL cannot be parsed for a text agent."
-  },
-  "textAgentsProviderUrlHttpHttpsOnly": "Enter an HTTP or HTTPS URL",
-  "@textAgentsProviderUrlHttpHttpsOnly": {
-    "description": "Validation message shown when a provider URL uses an unsupported scheme for a text agent."
-  },
-  "textAgentsProviderAzureUrlWarning": "This may not be a valid Azure OpenAI URL",
-  "@textAgentsProviderAzureUrlWarning": {
-    "description": "Validation warning shown when an Azure provider URL for a text agent does not resemble an Azure OpenAI host."
+    "description": "Field label for the server-backed text model preset input on the text agent form screen."
   },
   "callConnectionFailedTitle": "Unable to connect",
   "@callConnectionFailedTitle": {

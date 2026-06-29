@@ -1,7 +1,8 @@
-import 'package:vagina/models/speed_dial.dart';
-import 'package:vagina/interfaces/speed_dial_repository.dart';
-import 'package:vagina/interfaces/key_value_store.dart';
 import 'package:logging/logging.dart';
+import 'package:uuid/uuid.dart';
+import 'package:vagina/interfaces/key_value_store.dart';
+import 'package:vagina/interfaces/speed_dial_repository.dart';
+import 'package:vagina/models/speed_dial.dart';
 
 /// JSON-based implementation of SpeedDialRepository
 class JsonSpeedDialRepository implements SpeedDialRepository {
@@ -14,8 +15,31 @@ class JsonSpeedDialRepository implements SpeedDialRepository {
   JsonSpeedDialRepository(this._store);
 
   @override
-  Future<void> save(SpeedDial speedDial) async {
-    _logger.fine('Saving speed dial: ${speedDial.id}');
+  Future<SpeedDial> create({
+    required String name,
+    required String systemPrompt,
+    String? description,
+    String? iconEmoji,
+    String voice = 'alloy',
+    String voiceAgentId = SpeedDial.defaultVoiceAgentId,
+    Map<String, bool> enabledTools = const {},
+    SpeedDialReasoningEffort reasoningEffort = SpeedDialReasoningEffort.off,
+    bool toolChoiceRequired = false,
+  }) async {
+    final speedDial = SpeedDial(
+      id: 'sd_${const Uuid().v4()}',
+      name: name,
+      systemPrompt: systemPrompt,
+      description: description,
+      iconEmoji: iconEmoji,
+      voice: voice,
+      voiceAgentId: voiceAgentId,
+      enabledTools: enabledTools,
+      reasoningEffort: reasoningEffort,
+      toolChoiceRequired: toolChoiceRequired,
+      createdAt: DateTime.now(),
+    );
+    _logger.fine('Creating speed dial: ${speedDial.id}');
 
     final speedDials = await getAll();
     speedDials.add(speedDial);
@@ -23,7 +47,8 @@ class JsonSpeedDialRepository implements SpeedDialRepository {
     final speedDialsJson = speedDials.map((s) => s.toJson()).toList();
     await _store.set(_speedDialsKey, speedDialsJson);
 
-    _logger.info('Speed dial saved: ${speedDial.id}');
+    _logger.info('Speed dial created: ${speedDial.id}');
+    return speedDial;
   }
 
   @override

@@ -606,30 +606,6 @@
   "@textAgentsSearchEmptyTitle": {
     "description": "テキストエージェント検索に一致する結果がないとき、エージェントタブに表示するメッセージ。"
   },
-  "textAgentsProviderHostedPrefix": "Hosted",
-  "@textAgentsProviderHostedPrefix": {
-    "description": "ホスト型テキストエージェントのモデル識別子の前に付ける短い接頭辞。プロダクト表記として英語の Hosted を維持する。"
-  },
-  "textAgentsProviderUnknown": "不明",
-  "@textAgentsProviderUnknown": {
-    "description": "テキストエージェントのプロバイダー種別を特定できないときに表示するフォールバックラベル。"
-  },
-  "textAgentsProviderLabelOpenAi": "OpenAI",
-  "@textAgentsProviderLabelOpenAi": {
-    "description": "OpenAI テキストエージェントプロバイダーをドロップダウンや概要表示で示すラベル。ブランド名として OpenAI 表記を維持する。"
-  },
-  "textAgentsProviderLabelAzure": "Azure OpenAI",
-  "@textAgentsProviderLabelAzure": {
-    "description": "Azure OpenAI テキストエージェントプロバイダーをドロップダウンや概要表示で示すラベル。ブランド名として Azure OpenAI 表記を維持する。"
-  },
-  "textAgentsProviderLabelLiteLlm": "LiteLLM Proxy",
-  "@textAgentsProviderLabelLiteLlm": {
-    "description": "LiteLLM テキストエージェントプロバイダーをドロップダウンや概要表示で示すラベル。プロダクト表記として LiteLLM Proxy を維持する。"
-  },
-  "textAgentsProviderLabelCustom": "カスタムエンドポイント",
-  "@textAgentsProviderLabelCustom": {
-    "description": "Custom テキストエージェントプロバイダーをドロップダウンや概要表示で示すラベル。OpenAI 互換の任意エンドポイントを意味する。"
-  },
   "textAgentsFieldRequired": "{fieldName}を入力してください",
   "@textAgentsFieldRequired": {
     "description": "テキストエージェント作成・編集フォームの必須入力が空のときに表示するバリデーション文言。",
@@ -724,35 +700,15 @@
   },
   "textAgentsSectionSettings": "設定",
   "@textAgentsSectionSettings": {
-    "description": "テキストエージェントフォームのプロバイダー・API設定カード見出し。"
+    "description": "テキストエージェントフォームのサーバー管理モデルプリセット設定カード見出し。"
   },
-  "textAgentsFieldProvider": "プロバイダー",
-  "@textAgentsFieldProvider": {
-    "description": "テキストエージェントフォームのプロバイダードロップダウンラベル。"
+  "textAgentsModelPresetDefault": "デフォルト",
+  "@textAgentsModelPresetDefault": {
+    "description": "サーバー管理テキストモデルプリセットがデフォルトの場合に付けるラベル。"
   },
-  "textAgentsProviderHelpOpenAi": "OpenAIの公式API。api.openai.comを使用します。",
-  "@textAgentsProviderHelpOpenAi": {
-    "description": "OpenAI プロバイダー選択時にテキストエージェントフォームへ表示する補助説明。"
-  },
-  "textAgentsProviderHelpAzure": "Azure OpenAI Service。ベースURL（https://{resource}.openai.azure.com）または完成済みのChat Completions URLを指定します。",
-  "@textAgentsProviderHelpAzure": {
-    "description": "Azure OpenAI プロバイダー選択時にテキストエージェントフォームへ表示する補助説明。URL パターンは維持し、ベースURLまたは完全な Chat Completions URL を受け付けることを説明する。"
-  },
-  "textAgentsProviderHelpLiteLlm": "LiteLLMプロキシサービス。ローカルまたはリモートのプロキシURLを指定します。",
-  "@textAgentsProviderHelpLiteLlm": {
-    "description": "LiteLLM プロバイダー選択時にテキストエージェントフォームへ表示する補助説明。"
-  },
-  "textAgentsProviderHelpCustom": "OpenAI互換のカスタムエンドポイント。完全なURLを指定します。",
-  "@textAgentsProviderHelpCustom": {
-    "description": "Custom プロバイダー選択時にテキストエージェントフォームへ表示する補助説明。"
-  },
-  "textAgentsFieldApiKey": "APIキー",
-  "@textAgentsFieldApiKey": {
-    "description": "テキストエージェントフォームの API キー入力欄ラベル。"
-  },
-  "textAgentsFieldApiKeyHint": "プロバイダーのAPIキーを入力",
-  "@textAgentsFieldApiKeyHint": {
-    "description": "テキストエージェントフォームの API キー入力欄プレースホルダー。"
+  "textAgentsModelPresetsEmpty": "利用可能なテキストモデルがありません",
+  "@textAgentsModelPresetsEmpty": {
+    "description": "サーバーから安全なテキストモデルプリセットが返されなかったときに表示するメッセージ。"
   },
   "textAgentsSectionToolSettings": "ツール設定",
   "@textAgentsSectionToolSettings": {
@@ -764,35 +720,7 @@
   },
   "textAgentsFieldModel": "モデル",
   "@textAgentsFieldModel": {
-    "description": "OpenAI プロバイダー用のモデル入力欄ラベル。"
-  },
-  "textAgentsFieldEndpoint": "エンドポイント",
-  "@textAgentsFieldEndpoint": {
-    "description": "Azure プロバイダー用のエンドポイント入力欄ラベル。"
-  },
-  "textAgentsFieldProxyUrl": "プロキシURL",
-  "@textAgentsFieldProxyUrl": {
-    "description": "LiteLLM プロバイダー用のプロキシ URL 入力欄ラベル。"
-  },
-  "textAgentsFieldEndpointUrl": "エンドポイントURL",
-  "@textAgentsFieldEndpointUrl": {
-    "description": "Custom プロバイダー用のエンドポイント URL 入力欄ラベル。"
-  },
-  "textAgentsProviderUrlRequired": "URLを入力してください",
-  "@textAgentsProviderUrlRequired": {
-    "description": "テキストエージェントのプロバイダー URL が空のときに表示するバリデーション文言。"
-  },
-  "textAgentsProviderUrlInvalid": "有効なURLを入力してください",
-  "@textAgentsProviderUrlInvalid": {
-    "description": "テキストエージェントのプロバイダー URL を解析できないときに表示するバリデーション文言。"
-  },
-  "textAgentsProviderUrlHttpHttpsOnly": "HTTP/HTTPSのURLを入力してください",
-  "@textAgentsProviderUrlHttpHttpsOnly": {
-    "description": "テキストエージェントのプロバイダー URL が未対応スキームのときに表示するバリデーション文言。"
-  },
-  "textAgentsProviderAzureUrlWarning": "Azure OpenAIのURLが正しくない可能性があります",
-  "@textAgentsProviderAzureUrlWarning": {
-    "description": "Azure 用のテキストエージェント URL が Azure OpenAI のホストらしく見えないときに表示するバリデーション警告。"
+    "description": "サーバーバック型テキストモデルプリセット入力欄のラベル。"
   },
   "callConnectionFailedTitle": "接続できません",
   "@callConnectionFailedTitle": {

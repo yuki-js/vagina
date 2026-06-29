@@ -5,6 +5,7 @@ import 'package:vagina/core/app/app_container.dart';
 import 'package:vagina/core/widgets/adaptive_tri_column_layout.dart';
 import 'package:vagina/l10n/app_localizations.dart';
 import 'package:vagina/feat/call/models/text_agent_info.dart';
+import 'package:vagina/feat/call/models/text_agent_info_from_definition.dart';
 import 'package:vagina/feat/call/models/voice_agent_info.dart';
 import 'package:vagina/feat/call/panes/call.dart';
 import 'package:vagina/feat/call/panes/chat.dart';
@@ -35,9 +36,7 @@ class _CallScreenState extends State<CallScreen> {
   @override
   void initState() {
     super.initState();
-    _callService = CallService(
-      filesystemRepository: AppContainer.filesystem,
-    );
+    _callService = CallService(filesystemRepository: AppContainer.filesystem);
 
     // CallStateの変化を監視してpaneを再構築
     _callStateSubscription = _callService.states.listen((state) {
@@ -175,6 +174,9 @@ class _CallScreenState extends State<CallScreen> {
 }
 
 Future<List<TextAgentInfo>> _buildTextAgents() async {
-  final configRepository = AppContainer.config;
-  return configRepository.getAllTextAgents();
+  final textAgentRepository = AppContainer.textAgents;
+  final definitions = await textAgentRepository.getAll();
+  return definitions
+      .map((definition) => definition.toCallTextAgentInfo())
+      .toList(growable: false);
 }

@@ -178,29 +178,37 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
     }
 
     final speedDialRepo = AppContainer.speedDials;
-    final speedDial = SpeedDial(
-      id: _isNewSpeedDial
-          ? DateTime.now().millisecondsSinceEpoch.toString()
-          : widget.speedDial!.id,
-      name: _nameController.text,
-      description: _descriptionController.text.trim().isEmpty
-          ? null
-          : _descriptionController.text.trim(),
-      systemPrompt: _instructionsController.text,
-      voice: _selectedVoice,
-      voiceAgentId: _selectedVoiceAgentId,
-      iconEmoji: _selectedEmoji,
-      enabledTools: _enabledTools,
-      reasoningEffort: _reasoningEffort,
-      toolChoiceRequired: _toolChoiceRequired,
-      createdAt: _isNewSpeedDial ? DateTime.now() : widget.speedDial!.createdAt,
-    );
+    final description = _descriptionController.text.trim();
 
     try {
       if (_isNewSpeedDial) {
-        await speedDialRepo.save(speedDial);
+        await speedDialRepo.create(
+          name: _nameController.text,
+          description: description.isEmpty ? null : description,
+          systemPrompt: _instructionsController.text,
+          voice: _selectedVoice,
+          voiceAgentId: _selectedVoiceAgentId,
+          iconEmoji: _selectedEmoji,
+          enabledTools: Map<String, bool>.from(_enabledTools),
+          reasoningEffort: _reasoningEffort,
+          toolChoiceRequired: _toolChoiceRequired,
+        );
       } else {
-        await speedDialRepo.update(speedDial);
+        await speedDialRepo.update(
+          SpeedDial(
+            id: widget.speedDial!.id,
+            name: _nameController.text,
+            description: description.isEmpty ? null : description,
+            systemPrompt: _instructionsController.text,
+            voice: _selectedVoice,
+            voiceAgentId: _selectedVoiceAgentId,
+            iconEmoji: _selectedEmoji,
+            enabledTools: Map<String, bool>.from(_enabledTools),
+            reasoningEffort: _reasoningEffort,
+            toolChoiceRequired: _toolChoiceRequired,
+            createdAt: widget.speedDial!.createdAt,
+          ),
+        );
       }
       ref.invalidate(speedDialsProvider);
 

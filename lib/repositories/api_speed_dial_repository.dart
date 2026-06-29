@@ -1,16 +1,23 @@
+import 'package:logging/logging.dart';
 import 'package:vagina/api/api_exception.dart';
 import 'package:vagina/api/generated/core/json_optional.dart';
 import 'package:vagina/api/generated/models/speed_dial.dart' as api_model;
+import 'package:vagina/api/generated/models/speed_dial_create_request.dart';
+import 'package:vagina/api/generated/models/speed_dial_create_request_reasoning_effort.dart'
+    as api_create_reasoning;
 import 'package:vagina/api/generated/models/speed_dial_reasoning_effort.dart'
     as api_reasoning;
+import 'package:vagina/api/generated/models/speed_dial_update_request.dart';
+import 'package:vagina/api/generated/models/speed_dial_update_request_reasoning_effort.dart'
+    as api_update_reasoning;
+import 'package:vagina/api/generated/responses/create_speed_dial_response.dart';
 import 'package:vagina/api/generated/responses/delete_speed_dial_response.dart';
 import 'package:vagina/api/generated/responses/get_speed_dial_response.dart';
 import 'package:vagina/api/generated/responses/list_speed_dials_response.dart';
-import 'package:vagina/api/generated/responses/save_speed_dial_response.dart';
+import 'package:vagina/api/generated/responses/update_speed_dial_response.dart';
 import 'package:vagina/api/vagina_api_client.dart';
 import 'package:vagina/interfaces/speed_dial_repository.dart';
 import 'package:vagina/models/speed_dial.dart';
-import 'package:logging/logging.dart';
 
 class ApiSpeedDialRepository implements SpeedDialRepository {
   static final Logger _logger = Logger('ApiSpeedDialRepository');
@@ -21,29 +28,48 @@ class ApiSpeedDialRepository implements SpeedDialRepository {
     : _apiClient = apiClient;
 
   @override
-  Future<void> save(SpeedDial speedDial) async {
-    _logger.fine('Saving speed dial: ${speedDial.id}');
-    final response = await _apiClient.speedDials.saveSpeedDial(
-      speedDialId: speedDial.id,
-      body: _toApiModel(speedDial),
+  Future<SpeedDial> create({
+    required String name,
+    required String systemPrompt,
+    String? description,
+    String? iconEmoji,
+    String voice = 'alloy',
+    String voiceAgentId = SpeedDial.defaultVoiceAgentId,
+    Map<String, bool> enabledTools = const {},
+    SpeedDialReasoningEffort reasoningEffort = SpeedDialReasoningEffort.off,
+    bool toolChoiceRequired = false,
+  }) async {
+    _logger.fine('Creating speed dial');
+    final response = await _apiClient.speedDials.createSpeedDial(
+      body: SpeedDialCreateRequest(
+        name: name,
+        systemPrompt: systemPrompt,
+        description: description,
+        iconEmoji: iconEmoji,
+        voice: voice,
+        voiceAgentId: voiceAgentId,
+        enabledTools: Map<String, dynamic>.from(enabledTools),
+        reasoningEffort: _reasoningEffortToCreateApi(reasoningEffort),
+        toolChoiceRequired: toolChoiceRequired,
+      ),
     );
 
     switch (response) {
-      case SaveSpeedDialResponseSuccess():
-        return;
-      case SaveSpeedDialResponseBadRequest(:final data):
+      case CreateSpeedDialResponseCreated(:final data):
+        return _fromApiModel(data);
+      case CreateSpeedDialResponseBadRequest(:final data):
         throw ApiException.badRequest(
           data.message,
-          operation: 'Save speed dial',
+          operation: 'Create speed dial',
         );
-      case SaveSpeedDialResponseServerError(:final data):
+      case CreateSpeedDialResponseServerError(:final data):
         throw ApiException.serverError(
           data.message,
-          operation: 'Save speed dial',
+          operation: 'Create speed dial',
         );
-      case SaveSpeedDialResponseUnknown(:final statusCode, :final body):
+      case CreateSpeedDialResponseUnknown(:final statusCode, :final body):
         throw _unknownResponseError(
-          operation: 'Save speed dial',
+          operation: 'Create speed dial',
           statusCode: statusCode,
           body: body,
         );
@@ -98,8 +124,49 @@ class ApiSpeedDialRepository implements SpeedDialRepository {
 
   @override
   Future<bool> update(SpeedDial speedDial) async {
-    await save(speedDial);
-    return true;
+    _logger.fine('Updating speed dial: ${speedDial.id}');
+    final response = await _apiClient.speedDials.updateSpeedDial(
+      speedDialId: speedDial.id,
+      body: SpeedDialUpdateRequest(
+        name: speedDial.name,
+        systemPrompt: speedDial.systemPrompt,
+        description: speedDial.description == null
+            ? const JsonOptional<String>.absent()
+            : JsonOptional<String>.value(speedDial.description),
+        iconEmoji: speedDial.iconEmoji == null
+            ? const JsonOptional<String>.absent()
+            : JsonOptional<String>.value(speedDial.iconEmoji),
+        voice: speedDial.voice,
+        voiceAgentId: speedDial.voiceAgentId,
+        enabledTools: Map<String, dynamic>.from(speedDial.enabledTools),
+        reasoningEffort: _reasoningEffortToUpdateApi(speedDial.reasoningEffort),
+        toolChoiceRequired: speedDial.toolChoiceRequired,
+      ),
+    );
+
+    switch (response) {
+      case UpdateSpeedDialResponseSuccess():
+        return true;
+      case UpdateSpeedDialResponseNotFound():
+      case UpdateSpeedDialResponseConflict():
+        return false;
+      case UpdateSpeedDialResponseBadRequest(:final data):
+        throw ApiException.badRequest(
+          data.message,
+          operation: 'Update speed dial',
+        );
+      case UpdateSpeedDialResponseServerError(:final data):
+        throw ApiException.serverError(
+          data.message,
+          operation: 'Update speed dial',
+        );
+      case UpdateSpeedDialResponseUnknown(:final statusCode, :final body):
+        throw _unknownResponseError(
+          operation: 'Update speed dial',
+          statusCode: statusCode,
+          body: body,
+        );
+    }
   }
 
   @override
@@ -134,44 +201,19 @@ class ApiSpeedDialRepository implements SpeedDialRepository {
       id: speedDial.id,
       name: speedDial.name,
       systemPrompt: speedDial.systemPrompt,
-      description: _optionalString(speedDial.description),
-      iconEmoji: _optionalString(speedDial.iconEmoji),
+      description: speedDial.description,
+      iconEmoji: speedDial.iconEmoji,
       voice: speedDial.voice,
       voiceAgentId: speedDial.voiceAgentId,
-      enabledTools: Map<String, bool>.from(speedDial.enabledTools),
+      enabledTools: _boolMap(speedDial.enabledTools),
       reasoningEffort: _reasoningEffortFromApi(speedDial.reasoningEffort),
       toolChoiceRequired: speedDial.toolChoiceRequired,
-      createdAt: _optionalDateTime(speedDial.createdAt),
+      createdAt: speedDial.createdAt,
     );
   }
 
-  api_model.SpeedDial _toApiModel(SpeedDial speedDial) {
-    return api_model.SpeedDial(
-      id: speedDial.id,
-      name: speedDial.name,
-      systemPrompt: speedDial.systemPrompt,
-      description: speedDial.description == null
-          ? const JsonOptional<String>.absent()
-          : JsonOptional<String>.value(speedDial.description),
-      iconEmoji: speedDial.iconEmoji == null
-          ? const JsonOptional<String>.absent()
-          : JsonOptional<String>.value(speedDial.iconEmoji),
-      voice: speedDial.voice,
-      voiceAgentId: speedDial.voiceAgentId,
-      enabledTools: Map<String, bool>.from(speedDial.enabledTools),
-      reasoningEffort: _reasoningEffortToApi(speedDial.reasoningEffort),
-      toolChoiceRequired: speedDial.toolChoiceRequired,
-      createdAt: speedDial.createdAt == null
-          ? const JsonOptional<DateTime>.absent()
-          : JsonOptional<DateTime>.value(speedDial.createdAt!.toUtc()),
-    );
-  }
-
-  String? _optionalString(JsonOptional<String> value) {
-    return switch (value) {
-      JsonOptionalValue<String>(:final value) => value,
-      JsonOptionalAbsent<String>() => null,
-    };
+  Map<String, bool> _boolMap(Map<String, dynamic> value) {
+    return value.map((key, value) => MapEntry(key, value == true));
   }
 
   SpeedDialReasoningEffort _reasoningEffortFromApi(
@@ -185,22 +227,26 @@ class ApiSpeedDialRepository implements SpeedDialRepository {
     return SpeedDialReasoningEffort.off;
   }
 
-  api_reasoning.SpeedDialReasoningEffort _reasoningEffortToApi(
-    SpeedDialReasoningEffort value,
-  ) {
-    for (final effort in api_reasoning.SpeedDialReasoningEffort.values) {
+  api_create_reasoning.SpeedDialCreateRequestReasoningEffort
+  _reasoningEffortToCreateApi(SpeedDialReasoningEffort value) {
+    for (final effort
+        in api_create_reasoning.SpeedDialCreateRequestReasoningEffort.values) {
       if (effort.name == value.name) {
         return effort;
       }
     }
-    return api_reasoning.SpeedDialReasoningEffort.off;
+    return api_create_reasoning.SpeedDialCreateRequestReasoningEffort.off;
   }
 
-  DateTime? _optionalDateTime(JsonOptional<DateTime> value) {
-    return switch (value) {
-      JsonOptionalValue<DateTime>(:final value) => value,
-      JsonOptionalAbsent<DateTime>() => null,
-    };
+  api_update_reasoning.SpeedDialUpdateRequestReasoningEffort
+  _reasoningEffortToUpdateApi(SpeedDialReasoningEffort value) {
+    for (final effort
+        in api_update_reasoning.SpeedDialUpdateRequestReasoningEffort.values) {
+      if (effort.name == value.name) {
+        return effort;
+      }
+    }
+    return api_update_reasoning.SpeedDialUpdateRequestReasoningEffort.off;
   }
 
   ApiException _unknownResponseError({

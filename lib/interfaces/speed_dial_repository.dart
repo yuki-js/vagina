@@ -2,8 +2,18 @@ import 'package:vagina/models/speed_dial.dart';
 
 /// Repository for managing speed dial data
 abstract class SpeedDialRepository {
-  /// Save a speed dial entry
-  Future<void> save(SpeedDial speedDial);
+  /// Create a speed dial entry and return the server/generated persisted entry.
+  Future<SpeedDial> create({
+    required String name,
+    required String systemPrompt,
+    String? description,
+    String? iconEmoji,
+    String voice = 'alloy',
+    String voiceAgentId = SpeedDial.defaultVoiceAgentId,
+    Map<String, bool> enabledTools = const {},
+    SpeedDialReasoningEffort reasoningEffort = SpeedDialReasoningEffort.off,
+    bool toolChoiceRequired = false,
+  });
 
   /// Get all speed dials
   Future<List<SpeedDial>> getAll();

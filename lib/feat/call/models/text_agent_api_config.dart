@@ -7,76 +7,31 @@ abstract class TextAgentApiConfig {
   factory TextAgentApiConfig.fromJson(Map<String, dynamic> json) {
     final type = json['type'] as String?;
     switch (type) {
-      case 'selfhosted':
-        return SelfhostedTextAgentApiConfig.fromJson(json);
-      case 'hosted':
-        return HostedTextAgentApiConfig.fromJson(json);
+      case 'serverBacked':
+        return ServerBackedTextAgentApiConfig.fromJson(json);
       default:
         throw ArgumentError('Unknown TextAgentApiConfig type: $type');
     }
   }
 }
 
-/// Use a self-hosted or user-managed API endpoint.
-class SelfhostedTextAgentApiConfig extends TextAgentApiConfig {
-  final String provider;
-  final String baseUrl;
-  final String apiKey;
-  final String model;
-  final Map<String, Object?> params;
+/// Server-owned text-agent definition selected from the server model registry.
+///
+/// This intentionally carries only the safe public model preset identifier. It
+/// does not expose private transport details to the client runtime.
+class ServerBackedTextAgentApiConfig extends TextAgentApiConfig {
+  final String textModelId;
 
-  const SelfhostedTextAgentApiConfig({
-    required this.provider,
-    required this.baseUrl,
-    required this.apiKey,
-    required this.model,
-    this.params = const {},
-  });
+  const ServerBackedTextAgentApiConfig({required this.textModelId});
 
   @override
   Map<String, dynamic> toJson() {
-    return {
-      'type': 'selfhosted',
-      'provider': provider,
-      'baseUrl': baseUrl,
-      'apiKey': apiKey,
-      'model': model,
-      'params': params,
-    };
+    return {'type': 'serverBacked', 'textModelId': textModelId};
   }
 
-  factory SelfhostedTextAgentApiConfig.fromJson(Map<String, dynamic> json) {
-    return SelfhostedTextAgentApiConfig(
-      provider: json['provider'] as String,
-      baseUrl: json['baseUrl'] as String,
-      apiKey: json['apiKey'] as String,
-      model: json['model'] as String,
-      params: json['params'] != null
-          ? Map<String, Object?>.from(json['params'] as Map)
-          : const {},
-    );
-  }
-}
-
-/// Use the application's hosted API.
-class HostedTextAgentApiConfig extends TextAgentApiConfig {
-  final String modelId;
-
-  const HostedTextAgentApiConfig({
-    required this.modelId,
-  });
-
-  @override
-  Map<String, dynamic> toJson() {
-    return {
-      'type': 'hosted',
-      'modelId': modelId,
-    };
-  }
-
-  factory HostedTextAgentApiConfig.fromJson(Map<String, dynamic> json) {
-    return HostedTextAgentApiConfig(
-      modelId: json['modelId'] as String,
+  factory ServerBackedTextAgentApiConfig.fromJson(Map<String, dynamic> json) {
+    return ServerBackedTextAgentApiConfig(
+      textModelId: json['textModelId'] as String,
     );
   }
 }

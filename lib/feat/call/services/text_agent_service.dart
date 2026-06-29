@@ -6,7 +6,6 @@ import 'package:vagina/feat/call/models/text_agent_api_config.dart';
 import 'package:vagina/feat/call/models/text_agent_info.dart';
 import 'package:vagina/feat/call/models/text_agent_thread.dart';
 import 'package:vagina/feat/call/services/transport/text_agent_transport.dart';
-import 'package:vagina/feat/call/services/transport/text_agent_transport_azure.dart';
 import 'package:vagina/feat/call/services/notepad_service.dart';
 import 'package:vagina/feat/call/services/subservice.dart';
 import 'package:vagina/feat/call/services/tool_runner.dart';
@@ -114,6 +113,10 @@ final class TextAgentService extends SubService {
     // Get agent
     final agent = getAgent(agentId);
 
+    // Create transport before mutating thread state so deliberately unsupported
+    // server-backed definitions fail cleanly without recording stale user turns.
+    final transport = _createTransport(agent);
+
     // Get or create thread
     final thread = getOrCreateThread(agentId, threadId: threadId);
 
@@ -126,9 +129,6 @@ final class TextAgentService extends SubService {
       content: [TextAgentThreadTextPart(text: prompt, isDone: true)],
     );
     thread.addItem(userItem);
-
-    // Create transport
-    final transport = _createTransport(agent);
 
     try {
       // Execute query with tool calling support
@@ -173,17 +173,10 @@ final class TextAgentService extends SubService {
   TextAgentTransport _createTransport(TextAgentInfo agent) {
     final apiConfig = agent.apiConfig;
 
-    if (apiConfig is SelfhostedTextAgentApiConfig) {
-      if (apiConfig.provider == 'azure') {
-        return AzureTextAgentTransport(config: apiConfig);
-      }
+    if (apiConfig is ServerBackedTextAgentApiConfig) {
       throw UnsupportedError(
-        'Provider not supported yet: ${apiConfig.provider}',
+        'query_text_agent is disabled for server-backed text agent definitions until server-hosted Text Agent execution is implemented. Available agent: ${agent.id} (${agent.name}), text model preset: ${apiConfig.textModelId}.',
       );
-    }
-
-    if (apiConfig is HostedTextAgentApiConfig) {
-      throw UnsupportedError('Hosted text agents not supported yet');
     }
 
     throw UnsupportedError('Unknown API config type');

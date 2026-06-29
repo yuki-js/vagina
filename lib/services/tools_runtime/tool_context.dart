@@ -9,10 +9,8 @@ import 'package:vagina/services/tools_runtime/apis/text_agent_api.dart';
 /// while maintaining a clean separation of concerns.
 ///
 /// **Implementations:**
-/// - For isolate execution: Use [FilesystemApiClient], [CallApiClient], and
-///   [TextAgentApiClient]
-///   which communicate with the host via message passing.
-/// - For testing/host-side: Create direct wrapper implementations that
+/// - For isolate execution: use message-passing API clients for host services.
+/// - For testing/host-side: create direct wrapper implementations that
 ///   delegate to actual services.
 class ToolContext {
   /// Unique identifier of the tool (for storage isolation and tracking)

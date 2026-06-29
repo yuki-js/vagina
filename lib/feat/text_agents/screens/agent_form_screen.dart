@@ -2,31 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vagina/core/app/app_container.dart';
 import 'package:vagina/core/theme/app_theme.dart';
-import 'package:vagina/feat/call/models/text_agent_api_config.dart';
-import 'package:vagina/feat/call/models/text_agent_info.dart';
 import 'package:vagina/feat/shared/widgets/tool_config_section.dart';
-import 'package:vagina/feat/text_agents/model/text_agent_config.dart';
-import 'package:vagina/feat/text_agents/model/text_agent_provider.dart';
 import 'package:vagina/feat/text_agents/state/text_agent_providers.dart';
-import 'package:vagina/feat/text_agents/util/provider_parser.dart';
 import 'package:vagina/l10n/app_localizations.dart';
+import 'package:vagina/models/text_agent_definition.dart';
+import 'package:vagina/models/text_agent_model_preset.dart';
 
-/// Screen for creating or editing a text agent with simplified multi-provider support
+/// Screen for creating or editing a server-backed text agent definition.
 ///
-/// Configuration fields:
+/// User-editable fields:
 /// 1. Agent Name
-/// 2. Description (for list_available_agents)
+/// 2. Description
 /// 3. System Prompt
-/// 4. Provider (OpenAI, Azure, LiteLLM, Custom)
-/// 5. API Endpoint / Model (depends on provider)
-/// 6. API Key
+/// 4. Safe server-provided model preset
+/// 5. Tool enablement
 class AgentFormScreen extends ConsumerStatefulWidget {
-  final TextAgentInfo? agent; // null for new agent
+  final TextAgentDefinition? agent; // null for new agent
 
-  const AgentFormScreen({
-    super.key,
-    this.agent,
-  });
+  const AgentFormScreen({super.key, this.agent});
 
   @override
   ConsumerState<AgentFormScreen> createState() => _AgentFormScreenState();
@@ -37,10 +30,8 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
   late TextEditingController _nameController;
   late TextEditingController _descriptionController;
   late TextEditingController _promptController;
-  late TextEditingController _apiKeyController;
-  late TextEditingController _apiEndpointController;
-  late TextAgentProvider _provider;
   late Map<String, bool> _enabledTools;
+  String? _selectedTextModelId;
   bool _isNewAgent = false;
   bool _isSaving = false;
 
@@ -53,28 +44,16 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
       _nameController = TextEditingController();
       _descriptionController = TextEditingController();
       _promptController = TextEditingController();
-      _apiKeyController = TextEditingController();
-      _apiEndpointController = TextEditingController();
-      _provider = TextAgentProvider.azure;
+      _selectedTextModelId = null;
       _enabledTools = {};
     } else {
       final agent = widget.agent!;
       _nameController = TextEditingController(text: agent.name);
-      _descriptionController = TextEditingController(text: agent.description);
+      _descriptionController = TextEditingController(
+        text: agent.description ?? '',
+      );
       _promptController = TextEditingController(text: agent.prompt);
-
-      final apiConfig = agent.apiConfig;
-      if (apiConfig is SelfhostedTextAgentApiConfig) {
-        _apiKeyController = TextEditingController(text: apiConfig.apiKey);
-        _apiEndpointController = TextEditingController(text: apiConfig.baseUrl);
-        _provider = TextAgentProvider.fromString(apiConfig.provider);
-      } else {
-        // Fallback for hosted config (should not happen in current implementation)
-        _apiKeyController = TextEditingController();
-        _apiEndpointController = TextEditingController();
-        _provider = TextAgentProvider.azure;
-      }
-
+      _selectedTextModelId = agent.textModelId;
       _enabledTools = Map<String, bool>.from(agent.enabledTools);
     }
   }
@@ -84,8 +63,6 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
     _nameController.dispose();
     _descriptionController.dispose();
     _promptController.dispose();
-    _apiKeyController.dispose();
-    _apiEndpointController.dispose();
     super.dispose();
   }
 
@@ -96,24 +73,13 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
     return null;
   }
 
-  String? _validateEndpoint(String? value) {
-    final l10n = AppLocalizations.of(context);
-
-    if (value == null || value.trim().isEmpty) {
-      return l10n.textAgentsFieldRequired(_getEndpointFieldName());
-    }
-
-    // For OpenAI, just check it's not empty (it's a model name)
-    if (_provider == TextAgentProvider.openai) {
-      return null;
-    }
-
-    // For other providers, validate as URL
-    return ProviderParser.validateUrl(value.trim(), _provider, l10n);
-  }
-
-  Future<void> _saveAgent() async {
+  Future<void> _saveAgent(List<TextAgentModelPreset> modelPresets) async {
     if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    final textModelId = _effectiveSelectedTextModelId(modelPresets);
+    if (textModelId == null) {
       return;
     }
 
@@ -122,28 +88,29 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
     });
 
     try {
-      final endpoint = _apiEndpointController.text.trim();
-      final modelIdentifier = _extractModelIdentifier(_provider, endpoint);
-
-      final apiConfig = SelfhostedTextAgentApiConfig(
-        provider: _provider.value,
-        baseUrl: endpoint,
-        apiKey: _apiKeyController.text.trim(),
-        model: modelIdentifier,
-      );
-
-      final now = DateTime.now();
-      final agent = TextAgentInfo(
-        id: _isNewAgent ? 'ta_${now.millisecondsSinceEpoch}' : widget.agent!.id,
-        name: _nameController.text.trim(),
-        description: _descriptionController.text.trim(),
-        prompt: _promptController.text.trim(),
-        apiConfig: apiConfig,
-        enabledTools: _enabledTools,
-      );
-
-      final configRepository = AppContainer.config;
-      await configRepository.saveTextAgent(agent);
+      final description = _descriptionController.text.trim();
+      final repository = AppContainer.textAgents;
+      if (_isNewAgent) {
+        await repository.create(
+          name: _nameController.text.trim(),
+          description: description.isEmpty ? null : description,
+          prompt: _promptController.text.trim(),
+          textModelId: textModelId,
+          enabledTools: Map<String, bool>.from(_enabledTools),
+        );
+      } else {
+        await repository.update(
+          TextAgentDefinition(
+            id: widget.agent!.id,
+            name: _nameController.text.trim(),
+            description: description.isEmpty ? null : description,
+            prompt: _promptController.text.trim(),
+            textModelId: textModelId,
+            enabledTools: Map<String, bool>.from(_enabledTools),
+            createdAt: widget.agent!.createdAt,
+          ),
+        );
+      }
 
       if (mounted) {
         ref.invalidate(textAgentsProvider);
@@ -196,9 +163,7 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, true),
-              style: TextButton.styleFrom(
-                foregroundColor: AppTheme.errorColor,
-              ),
+              style: TextButton.styleFrom(foregroundColor: AppTheme.errorColor),
               child: Text(l10n.settingsCommonDelete),
             ),
           ],
@@ -208,8 +173,8 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
 
     if (confirmed == true && mounted) {
       try {
-        final configRepository = AppContainer.config;
-        await configRepository.deleteTextAgent(widget.agent!.id);
+        final repository = AppContainer.textAgents;
+        await repository.delete(widget.agent!.id);
         ref.invalidate(textAgentsProvider);
 
         if (mounted) {
@@ -236,26 +201,10 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
     }
   }
 
-  String _extractModelIdentifier(TextAgentProvider provider, String endpoint) {
-    switch (provider) {
-      case TextAgentProvider.openai:
-        // For OpenAI, endpoint is actually the model name
-        return endpoint;
-      case TextAgentProvider.azure:
-        // Try to extract deployment from URL
-        final deployment =
-            TextAgentConfig.tryExtractAzureDeploymentFromUrl(endpoint);
-        return deployment ?? 'unknown-deployment';
-      case TextAgentProvider.litellm:
-      case TextAgentProvider.custom:
-        // For proxy endpoints, we don't know the model from URL
-        return 'default';
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final modelPresetsAsync = ref.watch(textAgentModelsProvider);
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -285,7 +234,7 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
           else
             IconButton(
               icon: const Icon(Icons.save),
-              onPressed: _saveAgent,
+              onPressed: _saveAction(modelPresetsAsync),
               tooltip: l10n.settingsCommonSave,
             ),
         ],
@@ -324,7 +273,9 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
                         fillColor: Colors.grey[50],
                       ),
                       validator: (value) => _validateRequired(
-                          value, l10n.textAgentsFieldAgentName),
+                        value,
+                        l10n.textAgentsFieldAgentName,
+                      ),
                       textInputAction: TextInputAction.next,
                     ),
                     const SizedBox(height: 16),
@@ -362,116 +313,11 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
               ),
               const SizedBox(height: 24),
 
-              // Provider Configuration Section
+              // Safe model preset section
               _buildSectionHeader(l10n.textAgentsSectionSettings),
               const SizedBox(height: 12),
               _buildCard(
-                child: Column(
-                  children: [
-                    // Provider Selection
-                    DropdownButtonFormField<TextAgentProvider>(
-                      initialValue: _provider,
-                      decoration: InputDecoration(
-                        labelText: '${l10n.textAgentsFieldProvider} *',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        filled: true,
-                        fillColor: Colors.grey[50],
-                        prefixIcon: const Icon(Icons.cloud),
-                      ),
-                      items: TextAgentProvider.values.map((provider) {
-                        return DropdownMenuItem(
-                          value: provider,
-                          child: Text(_getProviderLabel(provider)),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        if (value != null) {
-                          setState(() {
-                            _provider = value;
-                            // Clear endpoint when provider changes
-                            _apiEndpointController.clear();
-                          });
-                        }
-                      },
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Help text for current provider
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppTheme.primaryColor.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Icon(
-                            Icons.info_outline,
-                            size: 18,
-                            color: AppTheme.primaryColor,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              ProviderParser.getProviderHelpText(
-                                  _provider, l10n),
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: AppTheme.primaryColor,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // API Endpoint / Model field (labeled based on provider)
-                    TextFormField(
-                      controller: _apiEndpointController,
-                      decoration: InputDecoration(
-                        labelText: _getEndpointLabel(),
-                        hintText: ProviderParser.getExampleUrl(_provider),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        filled: true,
-                        fillColor: Colors.grey[50],
-                        prefixIcon: _provider == TextAgentProvider.openai
-                            ? const Icon(Icons.precision_manufacturing)
-                            : const Icon(Icons.link),
-                      ),
-                      validator: _validateEndpoint,
-                      keyboardType: _provider == TextAgentProvider.openai
-                          ? TextInputType.text
-                          : TextInputType.url,
-                      textInputAction: TextInputAction.next,
-                    ),
-                    const SizedBox(height: 16),
-
-                    // API Key field
-                    TextFormField(
-                      controller: _apiKeyController,
-                      decoration: InputDecoration(
-                        labelText: '${l10n.textAgentsFieldApiKey} *',
-                        hintText: l10n.textAgentsFieldApiKeyHint,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        filled: true,
-                        fillColor: Colors.grey[50],
-                        prefixIcon: const Icon(Icons.key),
-                      ),
-                      validator: (value) =>
-                          _validateRequired(value, l10n.textAgentsFieldApiKey),
-                      obscureText: true,
-                      textInputAction: TextInputAction.done,
-                    ),
-                  ],
-                ),
+                child: _buildModelPresetField(modelPresetsAsync, l10n),
               ),
               const SizedBox(height: 24),
 
@@ -490,7 +336,7 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
 
               // Save Button
               ElevatedButton(
-                onPressed: _isSaving ? null : _saveAgent,
+                onPressed: _saveAction(modelPresetsAsync),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.primaryColor,
                   foregroundColor: Colors.white,
@@ -506,8 +352,9 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
                         width: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(Colors.white),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
                         ),
                       )
                     : Text(
@@ -528,43 +375,94 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
     );
   }
 
-  String _getEndpointLabel() {
-    switch (_provider) {
-      case TextAgentProvider.openai:
-        return '${AppLocalizations.of(context).textAgentsFieldModel} *';
-      case TextAgentProvider.azure:
-        return '${AppLocalizations.of(context).textAgentsFieldEndpoint} *';
-      case TextAgentProvider.litellm:
-        return '${AppLocalizations.of(context).textAgentsFieldProxyUrl} *';
-      case TextAgentProvider.custom:
-        return '${AppLocalizations.of(context).textAgentsFieldEndpointUrl} *';
+  VoidCallback? _saveAction(
+    AsyncValue<List<TextAgentModelPreset>> presetsAsync,
+  ) {
+    if (_isSaving) {
+      return null;
     }
+    return presetsAsync.maybeWhen(
+      data: (presets) => presets.isEmpty ? null : () => _saveAgent(presets),
+      orElse: () => null,
+    );
   }
 
-  String _getEndpointFieldName() {
-    switch (_provider) {
-      case TextAgentProvider.openai:
-        return AppLocalizations.of(context).textAgentsFieldModel;
-      case TextAgentProvider.azure:
-        return AppLocalizations.of(context).textAgentsFieldEndpoint;
-      case TextAgentProvider.litellm:
-        return AppLocalizations.of(context).textAgentsFieldProxyUrl;
-      case TextAgentProvider.custom:
-        return AppLocalizations.of(context).textAgentsFieldEndpointUrl;
-    }
+  Widget _buildModelPresetField(
+    AsyncValue<List<TextAgentModelPreset>> presetsAsync,
+    AppLocalizations l10n,
+  ) {
+    return presetsAsync.when(
+      loading: () => const Center(
+        child: Padding(
+          padding: EdgeInsets.all(16),
+          child: CircularProgressIndicator(),
+        ),
+      ),
+      error: (error, stack) => Text(
+        l10n.textAgentsLoadError(error.toString()),
+        style: const TextStyle(color: AppTheme.errorColor),
+      ),
+      data: (presets) {
+        if (presets.isEmpty) {
+          return Text(
+            l10n.textAgentsModelPresetsEmpty,
+            style: const TextStyle(color: AppTheme.errorColor),
+          );
+        }
+
+        final selectedModelId = _effectiveSelectedTextModelId(presets);
+        return DropdownButtonFormField<String>(
+          initialValue: selectedModelId,
+          decoration: InputDecoration(
+            labelText: '${l10n.textAgentsFieldModel} *',
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+            filled: true,
+            fillColor: Colors.grey[50],
+            prefixIcon: const Icon(Icons.psychology_outlined),
+          ),
+          items: presets.map((preset) {
+            return DropdownMenuItem(
+              value: preset.id,
+              child: Text(_modelPresetLabel(preset, l10n)),
+            );
+          }).toList(),
+          onChanged: (value) {
+            if (value == null) {
+              return;
+            }
+            setState(() {
+              _selectedTextModelId = value;
+            });
+          },
+          validator: (value) =>
+              _validateRequired(value, l10n.textAgentsFieldModel),
+        );
+      },
+    );
   }
 
-  String _getProviderLabel(TextAgentProvider provider) {
-    switch (provider) {
-      case TextAgentProvider.openai:
-        return AppLocalizations.of(context).textAgentsProviderLabelOpenAi;
-      case TextAgentProvider.azure:
-        return AppLocalizations.of(context).textAgentsProviderLabelAzure;
-      case TextAgentProvider.litellm:
-        return AppLocalizations.of(context).textAgentsProviderLabelLiteLlm;
-      case TextAgentProvider.custom:
-        return AppLocalizations.of(context).textAgentsProviderLabelCustom;
+  String? _effectiveSelectedTextModelId(List<TextAgentModelPreset> presets) {
+    if (presets.isEmpty) {
+      return null;
     }
+
+    final selectedTextModelId = _selectedTextModelId;
+    if (selectedTextModelId != null &&
+        presets.any((preset) => preset.id == selectedTextModelId)) {
+      return selectedTextModelId;
+    }
+
+    final defaultPreset = presets
+        .where((preset) => preset.isDefault)
+        .firstOrNull;
+    return defaultPreset?.id ?? presets.first.id;
+  }
+
+  String _modelPresetLabel(TextAgentModelPreset preset, AppLocalizations l10n) {
+    if (!preset.isDefault) {
+      return preset.displayName;
+    }
+    return '${preset.displayName} (${l10n.textAgentsModelPresetDefault})';
   }
 
   Widget _buildSectionHeader(String title) {
@@ -583,15 +481,9 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: Colors.grey[200]!,
-          width: 1,
-        ),
+        side: BorderSide(color: Colors.grey[200]!, width: 1),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: child,
-      ),
+      child: Padding(padding: const EdgeInsets.all(16), child: child),
     );
   }
 }

@@ -1,48 +1,10 @@
 import 'dart:convert';
 
-import 'package:vagina/feat/call/models/text_agent_api_config.dart';
-import 'package:vagina/interfaces/config_repository.dart';
-import 'package:logging/logging.dart';
 import 'package:vagina/services/tools_runtime/tool.dart';
 import 'package:vagina/services/tools_runtime/tool_definition.dart';
 
 class QueryTextAgentTool extends Tool {
   static const String toolKeyName = 'query_text_agent';
-  static final Logger _logger = Logger('QueryTextAgentTool');
-
-  @override
-  Future<Map<String, dynamic>?> loadInitializationData(dynamic config) async {
-    if (config is! ConfigRepository) {
-      return null;
-    }
-
-    try {
-      final agents = await config.getAllTextAgents();
-      final agentConfigs = agents.map((agent) {
-        final apiConfig = agent.apiConfig;
-        if (apiConfig is! SelfhostedTextAgentApiConfig) {
-          throw UnsupportedError(
-            'Only selfhosted text agents are supported: ${agent.id}',
-          );
-        }
-        return {
-          'id': agent.id,
-          'name': agent.name,
-          'description': agent.description,
-          'provider': apiConfig.provider,
-          'apiKey': apiConfig.apiKey,
-          'apiIdentifier': apiConfig.baseUrl,
-          'enabledTools': agent.enabledTools,
-        };
-      }).toList();
-
-      return {'text_agents': agentConfigs};
-    } catch (e) {
-      _logger.severe('Error loading initialization data: $e');
-      return null;
-    }
-  }
-
   @override
   ToolDefinition get definition => const ToolDefinition(
     toolKey: toolKeyName,

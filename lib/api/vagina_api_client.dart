@@ -4,6 +4,8 @@ import 'package:vagina/api/auth_exception.dart';
 import 'package:vagina/api/generated/clients/auth_api_client.dart';
 import 'package:vagina/api/generated/clients/sessions_api_client.dart';
 import 'package:vagina/api/generated/clients/speed_dials_api_client.dart';
+import 'package:vagina/api/generated/clients/text_agent_models_api_client.dart';
+import 'package:vagina/api/generated/clients/text_agents_api_client.dart';
 import 'package:vagina/api/generated/clients/vfs_api_client.dart';
 import 'package:vagina/api/generated/clients/voice_agents_api_client.dart';
 import 'package:vagina/core/config/app_config.dart';
@@ -18,6 +20,8 @@ class VaginaApiClient {
   final AuthApiClient auth;
   final SpeedDialsApiClient speedDials;
   final SessionsApiClient sessions;
+  final TextAgentModelsApiClient textAgentModels;
+  final TextAgentsApiClient textAgents;
   final VfsApiClient vfs;
   final VoiceAgentsApiClient voiceAgents;
 
@@ -26,6 +30,8 @@ class VaginaApiClient {
     required this.auth,
     required this.speedDials,
     required this.sessions,
+    required this.textAgentModels,
+    required this.textAgents,
     required this.vfs,
     required this.voiceAgents,
   });
@@ -119,6 +125,8 @@ class VaginaApiClient {
       auth: AuthApiClient(dio),
       speedDials: SpeedDialsApiClient(dio),
       sessions: SessionsApiClient(dio),
+      textAgentModels: TextAgentModelsApiClient(dio),
+      textAgents: TextAgentsApiClient(dio),
       vfs: VfsApiClient(dio),
       voiceAgents: VoiceAgentsApiClient(dio),
     );

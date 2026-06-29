@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vagina/core/theme/app_theme.dart';
-import 'package:vagina/feat/call/models/text_agent_api_config.dart';
-import 'package:vagina/feat/call/models/text_agent_info.dart';
-import 'package:vagina/feat/text_agents/state/text_agent_providers.dart';
 import 'package:vagina/feat/text_agents/screens/agent_form_screen.dart';
+import 'package:vagina/feat/text_agents/state/text_agent_providers.dart';
 import 'package:vagina/l10n/app_localizations.dart';
+import 'package:vagina/models/text_agent_definition.dart';
+import 'package:vagina/models/text_agent_model_preset.dart';
 
 /// Agents tab - Text agent management with phone book interface
 class AgentsTab extends ConsumerStatefulWidget {
@@ -29,12 +29,12 @@ class _AgentsTabState extends ConsumerState<AgentsTab> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final agentsAsync = ref.watch(textAgentsProvider);
+    final modelPresetsAsync = ref.watch(textAgentModelsProvider);
 
     return agentsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) => Center(
-        child: Text(l10n.textAgentsLoadError(error.toString())),
-      ),
+      error: (error, stack) =>
+          Center(child: Text(l10n.textAgentsLoadError(error.toString()))),
       data: (agents) {
         if (agents.isEmpty) {
           return _buildTabPanel(_buildEmptyState(context));
@@ -46,7 +46,8 @@ class _AgentsTabState extends ConsumerState<AgentsTab> {
             : agents.where((agent) {
                 final query = _searchQuery.toLowerCase();
                 return agent.name.toLowerCase().contains(query) ||
-                    agent.description.toLowerCase().contains(query);
+                    (agent.description ?? '').toLowerCase().contains(query) ||
+                    agent.textModelId.toLowerCase().contains(query);
               }).toList();
 
         return _buildTabPanel(
@@ -58,7 +59,7 @@ class _AgentsTabState extends ConsumerState<AgentsTab> {
               Expanded(
                 child: filteredAgents.isEmpty
                     ? _buildNoResultsState()
-                    : _buildAgentList(filteredAgents),
+                    : _buildAgentList(filteredAgents, modelPresetsAsync),
               ),
             ],
           ),
@@ -85,16 +86,10 @@ class _AgentsTabState extends ConsumerState<AgentsTab> {
             color: AppTheme.lightTextSecondary,
             fontSize: 16,
           ),
-          prefixIcon: Icon(
-            Icons.search,
-            color: AppTheme.lightTextSecondary,
-          ),
+          prefixIcon: Icon(Icons.search, color: AppTheme.lightTextSecondary),
           suffixIcon: _searchQuery.isNotEmpty
               ? IconButton(
-                  icon: Icon(
-                    Icons.clear,
-                    color: AppTheme.lightTextSecondary,
-                  ),
+                  icon: Icon(Icons.clear, color: AppTheme.lightTextSecondary),
                   onPressed: () {
                     setState(() {
                       _searchController.clear();
@@ -118,20 +113,32 @@ class _AgentsTabState extends ConsumerState<AgentsTab> {
     );
   }
 
-  Widget _buildAgentList(List<TextAgentInfo> agents) {
+  Widget _buildAgentList(
+    List<TextAgentDefinition> agents,
+    AsyncValue<List<TextAgentModelPreset>> modelPresetsAsync,
+  ) {
+    final modelPresetsById = modelPresetsAsync.maybeWhen(
+      data: (presets) => {for (final preset in presets) preset.id: preset},
+      orElse: () => const <String, TextAgentModelPreset>{},
+    );
+
     return ListView.builder(
       padding: const EdgeInsets.only(bottom: 96),
       itemCount: agents.length,
       itemBuilder: (context, index) {
-        return _buildAgentListTile(agents[index]);
+        return _buildAgentListTile(agents[index], modelPresetsById);
       },
     );
   }
 
-  Widget _buildAgentListTile(TextAgentInfo agent) {
+  Widget _buildAgentListTile(
+    TextAgentDefinition agent,
+    Map<String, TextAgentModelPreset> modelPresetsById,
+  ) {
     // Generate a color based on agent name for avatar
-    final colorIndex =
-        agent.name.codeUnits.isNotEmpty ? agent.name.codeUnits.first % 10 : 0;
+    final colorIndex = agent.name.codeUnits.isNotEmpty
+        ? agent.name.codeUnits.first % 10
+        : 0;
     final avatarColor = _getAvatarColor(colorIndex);
     final initial = agent.name.isNotEmpty ? agent.name[0].toUpperCase() : '?';
 
@@ -139,48 +146,43 @@ class _AgentsTabState extends ConsumerState<AgentsTab> {
       color: Colors.white,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          border: Border(
-            top: BorderSide(
-              color: Colors.grey[300]!,
-              width: 0.5,
-            ),
-          ),
+          border: Border(top: BorderSide(color: Colors.grey[300]!, width: 0.5)),
         ),
         child: ListTile(
-        enableFeedback: true,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: CircleAvatar(
-          radius: 24,
-          backgroundColor: avatarColor.withValues(alpha: 0.2),
-          child: Text(
-            initial,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: avatarColor,
+          enableFeedback: true,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 8,
+          ),
+          leading: CircleAvatar(
+            radius: 24,
+            backgroundColor: avatarColor.withValues(alpha: 0.2),
+            child: Text(
+              initial,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: avatarColor,
+              ),
             ),
           ),
-        ),
-        title: Text(
-          agent.name,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: AppTheme.lightTextPrimary,
+          title: Text(
+            agent.name,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: AppTheme.lightTextPrimary,
+            ),
           ),
-        ),
-        subtitle: Text(
-          _getProviderDisplayString(agent),
-          style: TextStyle(
-            fontSize: 14,
+          subtitle: Text(
+            _getModelDisplayString(agent, modelPresetsById),
+            style: TextStyle(fontSize: 14, color: AppTheme.lightTextSecondary),
+          ),
+          trailing: Icon(
+            Icons.chevron_right,
             color: AppTheme.lightTextSecondary,
           ),
-        ),
-        trailing: Icon(
-          Icons.chevron_right,
-          color: AppTheme.lightTextSecondary,
-        ),
-        onTap: () => _editAgent(context, agent),
+          onTap: () => _editAgent(context, agent),
         ),
       ),
     );
@@ -226,10 +228,7 @@ class _AgentsTabState extends ConsumerState<AgentsTab> {
           const SizedBox(height: 8),
           Text(
             l10n.textAgentsListEmptyBody,
-            style: TextStyle(
-              fontSize: 14,
-              color: AppTheme.lightTextSecondary,
-            ),
+            style: TextStyle(fontSize: 14, color: AppTheme.lightTextSecondary),
           ),
         ],
       ),
@@ -251,10 +250,7 @@ class _AgentsTabState extends ConsumerState<AgentsTab> {
           const SizedBox(height: 16),
           Text(
             l10n.textAgentsSearchEmptyTitle,
-            style: TextStyle(
-              fontSize: 16,
-              color: AppTheme.lightTextSecondary,
-            ),
+            style: TextStyle(fontSize: 16, color: AppTheme.lightTextSecondary),
           ),
         ],
       ),
@@ -276,10 +272,7 @@ class _AgentsTabState extends ConsumerState<AgentsTab> {
               shape: const CircleBorder(),
               onPressed: () => _addAgent(context),
               backgroundColor: AppTheme.primaryColor,
-              child: const Icon(
-                Icons.add,
-                color: Colors.white,
-              ),
+              child: const Icon(Icons.add, color: Colors.white),
             ),
           ),
         ),
@@ -287,50 +280,29 @@ class _AgentsTabState extends ConsumerState<AgentsTab> {
     );
   }
 
-  String _getProviderDisplayString(TextAgentInfo agent) {
-    final l10n = AppLocalizations.of(context);
-    final apiConfig = agent.apiConfig;
-    if (apiConfig is SelfhostedTextAgentApiConfig) {
-      return '${_getProviderLabel(apiConfig.provider, l10n)}: ${apiConfig.model}';
-    } else if (apiConfig is HostedTextAgentApiConfig) {
-      return '${l10n.textAgentsProviderHostedPrefix}: ${apiConfig.modelId}';
+  String _getModelDisplayString(
+    TextAgentDefinition agent,
+    Map<String, TextAgentModelPreset> modelPresetsById,
+  ) {
+    final preset = modelPresetsById[agent.textModelId];
+    if (preset != null) {
+      return preset.displayName;
     }
-    return l10n.textAgentsProviderUnknown;
-  }
-
-  String _getProviderLabel(String providerValue, AppLocalizations l10n) {
-    switch (providerValue) {
-      case 'openai':
-        return l10n.textAgentsProviderLabelOpenAi;
-      case 'azure':
-        return l10n.textAgentsProviderLabelAzure;
-      case 'litellm':
-        return l10n.textAgentsProviderLabelLiteLlm;
-      case 'custom':
-        return l10n.textAgentsProviderLabelCustom;
-      default:
-        return providerValue;
-    }
+    return agent.textModelId;
   }
 
   Future<void> _addAgent(BuildContext context) async {
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const AgentFormScreen(),
-      ),
-    );
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => const AgentFormScreen()));
   }
 
   Future<void> _editAgent(
     BuildContext context,
-    TextAgentInfo agent,
+    TextAgentDefinition agent,
   ) async {
     await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => AgentFormScreen(
-          agent: agent,
-        ),
-      ),
+      MaterialPageRoute(builder: (context) => AgentFormScreen(agent: agent)),
     );
   }
 }

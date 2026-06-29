@@ -6,10 +6,14 @@ import 'package:vagina/interfaces/call_session_repository.dart';
 import 'package:vagina/interfaces/config_repository.dart';
 import 'package:vagina/interfaces/key_value_store.dart';
 import 'package:vagina/interfaces/speed_dial_repository.dart';
+import 'package:vagina/interfaces/text_agent_model_repository.dart';
+import 'package:vagina/interfaces/text_agent_repository.dart';
 import 'package:vagina/interfaces/virtual_filesystem_repository.dart';
 import 'package:vagina/interfaces/voice_agent_repository.dart';
 import 'package:vagina/repositories/api_call_session_repository.dart';
 import 'package:vagina/repositories/api_speed_dial_repository.dart';
+import 'package:vagina/repositories/api_text_agent_model_repository.dart';
+import 'package:vagina/repositories/api_text_agent_repository.dart';
 import 'package:vagina/repositories/api_virtual_filesystem_repository.dart';
 import 'package:vagina/repositories/api_voice_agent_repository.dart';
 import 'package:vagina/repositories/preferences_repository.dart';
@@ -25,6 +29,8 @@ class AppContainer {
   static AuthService? _authService;
   static AuthCallbackCoordinator? _authCallbackCoordinator;
   static SpeedDialRepository? _speedDialRepository;
+  static TextAgentRepository? _textAgentRepository;
+  static TextAgentModelRepository? _textAgentModelRepository;
   static VirtualFilesystemRepository? _filesystemRepository;
   static VoiceAgentRepository? _voiceAgentRepository;
   static CallSessionRepository? _callSessionRepository;
@@ -32,6 +38,8 @@ class AppContainer {
   static AuthService? _authServiceOverride;
   static AuthCallbackCoordinator? _authCallbackCoordinatorOverride;
   static SpeedDialRepository? _speedDialRepositoryOverride;
+  static TextAgentRepository? _textAgentRepositoryOverride;
+  static TextAgentModelRepository? _textAgentModelRepositoryOverride;
   static VirtualFilesystemRepository? _filesystemRepositoryOverride;
   static VoiceAgentRepository? _voiceAgentRepositoryOverride;
   static CallSessionRepository? _callSessionRepositoryOverride;
@@ -93,6 +101,28 @@ class AppContainer {
     );
   }
 
+  static TextAgentRepository get textAgents {
+    _ensureInitialized();
+    final override = _textAgentRepositoryOverride;
+    if (override != null) {
+      return override;
+    }
+    return _textAgentRepository ??= ApiTextAgentRepository(
+      apiClient: auth.apiClient,
+    );
+  }
+
+  static TextAgentModelRepository get textAgentModels {
+    _ensureInitialized();
+    final override = _textAgentModelRepositoryOverride;
+    if (override != null) {
+      return override;
+    }
+    return _textAgentModelRepository ??= ApiTextAgentModelRepository(
+      apiClient: auth.apiClient,
+    );
+  }
+
   static VirtualFilesystemRepository get filesystem {
     _ensureInitialized();
     final override = _filesystemRepositoryOverride;
@@ -119,6 +149,8 @@ class AppContainer {
     AuthService? authService,
     AuthCallbackCoordinator? authCallbacks,
     SpeedDialRepository? speedDials,
+    TextAgentRepository? textAgents,
+    TextAgentModelRepository? textAgentModels,
     VirtualFilesystemRepository? filesystem,
     VoiceAgentRepository? voiceAgents,
     CallSessionRepository? callSessions,
@@ -126,6 +158,8 @@ class AppContainer {
     _authServiceOverride = authService;
     _authCallbackCoordinatorOverride = authCallbacks;
     _speedDialRepositoryOverride = speedDials;
+    _textAgentRepositoryOverride = textAgents;
+    _textAgentModelRepositoryOverride = textAgentModels;
     _filesystemRepositoryOverride = filesystem;
     _voiceAgentRepositoryOverride = voiceAgents;
     _callSessionRepositoryOverride = callSessions;
@@ -138,12 +172,16 @@ class AppContainer {
     _authService = null;
     _authCallbackCoordinator = null;
     _speedDialRepository = null;
+    _textAgentRepository = null;
+    _textAgentModelRepository = null;
     _filesystemRepository = null;
     _voiceAgentRepository = null;
     _callSessionRepository = null;
     _authServiceOverride = null;
     _authCallbackCoordinatorOverride = null;
     _speedDialRepositoryOverride = null;
+    _textAgentRepositoryOverride = null;
+    _textAgentModelRepositoryOverride = null;
     _filesystemRepositoryOverride = null;
     _voiceAgentRepositoryOverride = null;
     _callSessionRepositoryOverride = null;

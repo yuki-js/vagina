@@ -5,7 +5,6 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vagina/api/vagina_api_client.dart';
-import 'package:vagina/models/speed_dial.dart';
 import 'package:vagina/repositories/api_speed_dial_repository.dart';
 
 void main() {
@@ -32,10 +31,10 @@ void main() {
       expect(speedDials.single.voiceAgentId, 'voice-agent-prod-cc');
     });
 
-    test('sends voiceAgentId when saving', () async {
+    test('sends voiceAgentId when creating', () async {
       final adapter = _RecordingAdapter((_) async {
-        return _jsonResponse(200, {
-          'id': 'custom',
+        return _jsonResponse(201, {
+          'id': 'sd_server_generated',
           'name': 'Custom',
           'systemPrompt': 'You are custom.',
           'voice': 'alloy',
@@ -47,19 +46,21 @@ void main() {
       });
       final repository = ApiSpeedDialRepository(apiClient: _client(adapter));
 
-      await repository.save(
-        const SpeedDial(
-          id: 'custom',
-          name: 'Custom',
-          systemPrompt: 'You are custom.',
-          voice: 'alloy',
-          voiceAgentId: 'voice-agent-prod-cc',
-        ),
+      final created = await repository.create(
+        name: 'Custom',
+        systemPrompt: 'You are custom.',
+        voice: 'alloy',
+        voiceAgentId: 'voice-agent-prod-cc',
       );
 
+      expect(created.id, 'sd_server_generated');
       expect(adapter.requests, hasLength(1));
+      expect(adapter.requests.single.method, 'POST');
+      expect(adapter.requests.single.path, '/speed-dials');
       expect(adapter.requestBodies, hasLength(1));
-      final body = jsonDecode(adapter.requestBodies.single) as Map<String, dynamic>;
+      final body =
+          jsonDecode(adapter.requestBodies.single) as Map<String, dynamic>;
+      expect(body['id'], isNull);
       expect(body['voiceAgentId'], 'voice-agent-prod-cc');
     });
   });
