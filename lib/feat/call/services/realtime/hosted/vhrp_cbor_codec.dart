@@ -48,12 +48,8 @@ class VhrpCborCodec {
         _putText(root, 'messageId', m.messageId);
         final body = CborMap({});
         _putText(body, 'token', m.token);
-        _putText(body, 'modelId', m.modelId);
-        _putTextNullable(body, 'voice', m.voice);
-        _putText(body, 'instructions', m.instructions);
+        _putText(body, 'speedDialId', m.speedDialId);
         _putText(body, 'audioTurnMode', m.audioTurnMode);
-        body[CborString('inputAudio')] = _encodeAudioFormat(m.inputAudio);
-        body[CborString('outputAudio')] = _encodeAudioFormat(m.outputAudio);
         if (m.resume != null) {
           body[CborString('resume')] = CborMap({
             CborString('sessionId'): CborString(m.resume!.sessionId),
@@ -357,12 +353,6 @@ class VhrpCborCodec {
   );
 
   // ── Encode helpers ────────────────────────────────────────────────────────
-
-  CborMap _encodeAudioFormat(AudioFormat fmt) => CborMap({
-    CborString('encoding'): CborString(fmt.encoding),
-    CborString('sampleRate'): CborSmallInt(fmt.sampleRate),
-    CborString('channels'): CborSmallInt(fmt.channels),
-  });
 
   CborMap _encodeToolSpec(ToolSpec spec) => CborMap({
     CborString('name'): CborString(spec.name),

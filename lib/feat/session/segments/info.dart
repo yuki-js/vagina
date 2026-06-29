@@ -36,12 +36,12 @@ class SessionDetailInfoSegment extends ConsumerWidget {
               _buildInfoCard([
                 _buildInfoRow(
                   l10n.sessionDetailStartTime,
-                  _formatDateTime(context, session.startTime),
+                  _formatDateTime(context, session.startedAt),
                 ),
-                if (session.endTime != null)
+                if (session.endedAt != null)
                   _buildInfoRow(
                     l10n.sessionDetailEndTime,
-                    _formatDateTime(context, session.endTime!),
+                    _formatDateTime(context, session.endedAt!),
                   ),
                 _buildInfoRow(
                   l10n.sessionDetailCallDuration,
@@ -50,20 +50,9 @@ class SessionDetailInfoSegment extends ConsumerWidget {
                 _buildInfoRow(
                   l10n.sessionDetailMessageCount,
                   l10n.sessionDetailMessageCountValue(
-                    session.chatMessages.length,
+                    session.visibleThreadItemCount,
                   ),
                 ),
-                _buildInfoRow(
-                  l10n.callPaneNotepad,
-                  l10n.sessionDetailNotepadCountValue(
-                    session.notepadTabs?.length ?? 0,
-                  ),
-                ),
-                if (session.endContext != null &&
-                    session.endContext!.isNotEmpty) ...[
-                  const Divider(height: 16),
-                  _buildEndContextRow(context, session.endContext!),
-                ],
               ]),
 
               const SizedBox(height: 24),
@@ -73,10 +62,11 @@ class SessionDetailInfoSegment extends ConsumerWidget {
               const SizedBox(height: 8),
               if (speedDial != null)
                 _buildSpeedDialCard(context, speedDial)
-              else if (session.speedDialId != SpeedDial.defaultId)
+              else if (session.speedDialId != null &&
+                  session.speedDialId != SpeedDial.defaultId)
                 // Non-default SpeedDial was deleted
                 _buildInfoCard([
-                  _buildInfoRow(l10n.sessionDetailId, session.speedDialId),
+                  _buildInfoRow(l10n.sessionDetailId, session.speedDialId!),
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     child: Text(
@@ -119,11 +109,16 @@ class SessionDetailInfoSegment extends ConsumerWidget {
   }
 
   Future<SpeedDial?> _loadSpeedDial(WidgetRef ref) async {
+    final speedDialId = session.speedDialId;
+    if (speedDialId == null || speedDialId.isEmpty) {
+      return null;
+    }
+
     final repository = AppContainer.speedDials;
     try {
-      return await repository.getById(session.speedDialId);
+      return await repository.getById(speedDialId);
     } catch (e) {
-      _logger.warning('SpeedDial load failed for ${session.speedDialId}: $e');
+      _logger.warning('SpeedDial load failed for $speedDialId: $e');
       return null;
     }
   }
@@ -173,55 +168,6 @@ class SessionDetailInfoSegment extends ConsumerWidget {
               fontSize: 14,
               fontWeight: FontWeight.w500,
               color: AppTheme.lightTextPrimary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEndContextRow(BuildContext context, String endContext) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(
-                Icons.info_outline,
-                size: 16,
-                color: AppTheme.primaryColor,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                AppLocalizations.of(context).sessionDetailEndReason,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: AppTheme.lightTextSecondary,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: AppTheme.primaryColor.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: AppTheme.primaryColor.withValues(alpha: 0.2),
-              ),
-            ),
-            child: Text(
-              endContext,
-              style: const TextStyle(
-                fontSize: 13,
-                color: AppTheme.lightTextPrimary,
-                height: 1.4,
-              ),
             ),
           ),
         ],
@@ -298,8 +244,7 @@ class SessionDetailInfoSegment extends ConsumerWidget {
 
   Widget _buildSummaryCard(BuildContext context, CallSession session) {
     final l10n = AppLocalizations.of(context);
-    final messageCount = session.chatMessages.length;
-    final notepadCount = session.notepadTabs?.length ?? 0;
+    final messageCount = session.visibleThreadItemCount;
 
     String summary;
     if (messageCount == 0) {
@@ -310,10 +255,6 @@ class SessionDetailInfoSegment extends ConsumerWidget {
       summary = l10n.sessionDetailSummaryMedium(messageCount);
     } else {
       summary = l10n.sessionDetailSummaryLong(messageCount);
-    }
-
-    if (notepadCount > 0) {
-      summary += '\n${l10n.sessionDetailSummaryDocumentsCreated(notepadCount)}';
     }
 
     return Container(

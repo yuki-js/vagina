@@ -17,24 +17,6 @@ import 'dart:typed_data';
 // Shared sub-structures
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// PCM stream format descriptor used by [SessionOpenMsg.inputAudio] /
-/// [SessionOpenMsg.outputAudio].  Matches `VhrpMessage.AudioFormat`.
-final class AudioFormat {
-  final String encoding;
-  final int sampleRate;
-  final int channels;
-
-  AudioFormat({
-    required this.encoding,
-    required this.sampleRate,
-    required this.channels,
-  });
-
-  @override
-  String toString() =>
-      'AudioFormat(encoding: $encoding, sampleRate: $sampleRate, channels: $channels)';
-}
-
 /// `session.open.body.resume`: present only when reconnecting.
 /// Matches `VhrpMessage.ResumeRequest`.
 final class ResumeRequest {
@@ -70,6 +52,7 @@ sealed class VhrpC2sMessage {
 
 /// `session.open`: bootstraps (or resumes) a session.
 /// [token] is the sole application-level credential (JWT).
+/// [speedDialId] is the server-owned Speed Dial authority for fresh opens.
 /// [resume] is present only on reconnect.
 final class SessionOpenMsg extends VhrpC2sMessage {
   @override
@@ -77,24 +60,16 @@ final class SessionOpenMsg extends VhrpC2sMessage {
 
   final String messageId;
   final String token;
-  final String modelId;
-  final String? voice;
-  final String instructions;
+  final String speedDialId;
   final String audioTurnMode;
-  final AudioFormat inputAudio;
-  final AudioFormat outputAudio;
   final ResumeRequest? resume;
   final Map<String, Object?> client;
 
   SessionOpenMsg({
     required this.messageId,
     required this.token,
-    required this.modelId,
-    this.voice,
-    required this.instructions,
+    required this.speedDialId,
     required this.audioTurnMode,
-    required this.inputAudio,
-    required this.outputAudio,
     this.resume,
     required this.client,
   });

@@ -176,28 +176,16 @@ void main() {
     );
 
     test(
-      // Contract: the session.open message carries the JWT, modelId, and
-      // audio format settings so the server can authenticate and configure
-      // the realtime session correctly.
-      'session.open encodes all required fields',
+      // Contract: the session.open message carries only the JWT, speedDialId,
+      // audio turn mode, resume info, and client metadata. Model/voice/prompt
+      // and audio formats are server-owned through the Speed Dial.
+      'session.open encodes server-owned speedDialId contract',
       () {
         final msg = SessionOpenMsg(
           messageId: 'open-001',
           token: 'jwt.token.here',
-          modelId: 'voice-agent-prod',
-          voice: 'alloy',
-          instructions: 'Be concise.',
+          speedDialId: 'default',
           audioTurnMode: 'voice_activity',
-          inputAudio: AudioFormat(
-            encoding: 'pcm_s16le',
-            sampleRate: 24000,
-            channels: 1,
-          ),
-          outputAudio: AudioFormat(
-            encoding: 'pcm_s16le',
-            sampleRate: 24000,
-            channels: 1,
-          ),
           client: {'platform': 'flutter', 'appVersion': '1.0.0'},
         );
         final root = _encodeToCborMap(msg);
@@ -206,17 +194,13 @@ void main() {
         expect(_textOf(root, 'type'), 'session.open');
         expect(_textOf(root, 'messageId'), 'open-001');
         expect(_textOf(body, 'token'), 'jwt.token.here');
-        expect(_textOf(body, 'modelId'), 'voice-agent-prod');
-        expect(_textOf(body, 'voice'), 'alloy');
-        expect(_textOf(body, 'instructions'), 'Be concise.');
+        expect(_textOf(body, 'speedDialId'), 'default');
         expect(_textOf(body, 'audioTurnMode'), 'voice_activity');
-        // nested inputAudio
-        final inputAudio = body[CborString('inputAudio')] as CborMap;
-        expect(_textOf(inputAudio, 'encoding'), 'pcm_s16le');
-        expect(
-          (inputAudio[CborString('sampleRate')] as CborInt).toInt(),
-          24000,
-        );
+        expect(body.containsKey(CborString('modelId')), isFalse);
+        expect(body.containsKey(CborString('voice')), isFalse);
+        expect(body.containsKey(CborString('instructions')), isFalse);
+        expect(body.containsKey(CborString('inputAudio')), isFalse);
+        expect(body.containsKey(CborString('outputAudio')), isFalse);
       },
     );
 
@@ -229,19 +213,8 @@ void main() {
         final msg = SessionOpenMsg(
           messageId: 'open-002',
           token: 'jwt.token.here',
-          modelId: 'voice-agent-prod',
-          instructions: '',
+          speedDialId: 'default',
           audioTurnMode: 'voice_activity',
-          inputAudio: AudioFormat(
-            encoding: 'pcm_s16le',
-            sampleRate: 24000,
-            channels: 1,
-          ),
-          outputAudio: AudioFormat(
-            encoding: 'pcm_s16le',
-            sampleRate: 24000,
-            channels: 1,
-          ),
           client: {},
           resume: ResumeRequest(sessionId: 's_01'),
         );

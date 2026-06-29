@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:vagina/feat/call/models/active_file.dart';
 import 'package:vagina/feat/call/services/virtual_filesystem_service.dart';
 import 'package:vagina/feat/call/services/subservice.dart';
-import 'package:vagina/models/call_session.dart';
 import 'package:vagina/models/virtual_file.dart';
 
 /// Session-scoped notepad backing service for a single call.
@@ -12,7 +11,6 @@ import 'package:vagina/models/virtual_file.dart';
 /// - Active file registry (in-memory map of path → content)
 /// - Stream of active files for external consumers
 /// - Write-through persistence to VFS (immediate for tool mutations)
-/// - Session export to SessionNotepadTab
 final class NotepadService extends SubService {
   final VirtualFilesystemService _vfs;
   final Map<String, String> _activeFiles = <String, String>{};
@@ -157,11 +155,6 @@ final class NotepadService extends SubService {
     _validatePath(path, 'path');
 
     return _vfs.list(path, recursive: recursive);
-  }
-
-  /// Export active files as SessionNotepadTabs for session persistence.
-  List<SessionNotepadTab> exportSessionTabs() {
-    return listActive().map((file) => file.toSessionTab()).toList();
   }
 
   /// Persist all active files to VFS.

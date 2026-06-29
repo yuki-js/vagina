@@ -1,19 +1,26 @@
 import 'package:vagina/models/call_session.dart';
 
-/// Repository for managing call session data
+class CallSessionPage {
+  final List<CallSession> items;
+  final String? nextCursor;
+
+  const CallSessionPage({
+    required this.items,
+    required this.nextCursor,
+  });
+}
+
+/// Repository for retrieving and deleting server-backed call session history.
 abstract class CallSessionRepository {
-  /// Save a call session
-  Future<void> save(CallSession session);
+  /// List call sessions using the server cursor pagination contract.
+  Future<CallSessionPage> list({String? cursor, int? limit});
 
-  /// Get all call sessions
-  Future<List<CallSession>> getAll();
-
-  /// Get a specific call session by ID
+  /// Get a specific call session detail by ID.
   Future<CallSession?> getById(String id);
 
-  /// Delete a call session
+  /// Delete a call session.
   Future<bool> delete(String id);
 
-  /// Delete all call sessions
-  Future<void> deleteAll();
+  /// Bulk-delete call sessions and return the server deleted count.
+  Future<int> bulkDelete(List<String> ids);
 }

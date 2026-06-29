@@ -1041,6 +1041,40 @@
     "description": "過去セッション詳細画面のアプリバータイトル。"
   },
   "sessionDetailMissing": "セッションが見つかりません",
+  "sessionDetailLoadError": "エラー: {error}",
+  "@sessionDetailLoadError": {
+    "description": "Inline error text shown when the historical session detail cannot be loaded for a generic reason.",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "Error details returned by the session detail repository."
+      }
+    }
+  },
+  "sessionDetailSavedThreadCannotBeDisplayed": "保存済みスレッドを表示できません。",
+  "@sessionDetailSavedThreadCannotBeDisplayed": {
+    "description": "保存済みリアルタイムスレッドが存在するが表示用に解析できないときに、過去セッション詳細画面で表示するエラー文。"
+  },
+  "sessionDetailMetadataTitle": "セッション情報",
+  "@sessionDetailMetadataTitle": {
+    "description": "過去セッション詳細画面の上部に統合表示するメタデータヘッダーのタイトル。"
+  },
+  "sessionDetailThreadEmptyTitle": "保存済みスレッドがありません",
+  "@sessionDetailThreadEmptyTitle": {
+    "description": "保存済みリアルタイムスレッドに表示可能な項目がないときに、セッション詳細で表示する空状態タイトル。"
+  },
+  "sessionDetailThreadEmptyMessage": "このセッションに保存されたスレッドのメッセージがここに表示されます。",
+  "@sessionDetailThreadEmptyMessage": {
+    "description": "保存済みリアルタイムスレッドに表示可能な項目がないときに、セッション詳細で表示する空状態の補足文。"
+  },
+  "sessionDetailSpeedDialId": "スピードダイヤルID",
+  "@sessionDetailSpeedDialId": {
+    "description": "過去セッションに紐づくスピードダイヤル識別子のメタデータラベル。"
+  },
+  "sessionDetailVoiceAgentId": "ボイスエージェントID",
+  "@sessionDetailVoiceAgentId": {
+    "description": "過去セッションに紐づくボイスエージェント識別子のメタデータラベル。"
+  },
   "@sessionDetailMissing": {
     "description": "対象のセッション記録を読み込めないときにセッション詳細画面で表示するフォールバック文。"
   },
@@ -1089,16 +1123,6 @@
       "count": {
         "type": "int",
         "description": "セッション内のチャットメッセージ件数。"
-      }
-    }
-  },
-  "sessionDetailNotepadCountValue": "{count}",
-  "@sessionDetailNotepadCountValue": {
-    "description": "過去セッションに保存されたノートドキュメント数として表示する数値。",
-    "placeholders": {
-      "count": {
-        "type": "int",
-        "description": "セッション内の履歴ノートタブ数。"
       }
     }
   },
@@ -1160,37 +1184,9 @@
       }
     }
   },
-  "sessionDetailSummaryDocumentsCreated": "{count}件のドキュメントが作成されました",
-  "@sessionDetailSummaryDocumentsCreated": {
-    "description": "過去セッション中にノートドキュメントが作成された場合に要約の2行目として追記する文。",
-    "placeholders": {
-      "count": {
-        "type": "int",
-        "description": "セッション中に作成された履歴ノートドキュメント数。"
-      }
-    }
-  },
-  "sessionDetailHistoricalNotepadEmpty": "ノートパッドは空です",
-  "@sessionDetailHistoricalNotepadEmpty": {
-    "description": "過去セッションに保存済みノートタブがないときに履歴ノートタブで表示する空状態文。"
-  },
-  "sessionDetailHistoricalNotepadCopyTooltip": "コピー",
-  "@sessionDetailHistoricalNotepadCopyTooltip": {
-    "description": "履歴ノートカードのコピーボタンに表示するツールチップ。"
-  },
-  "sessionDetailHistoricalNotepadCopied": "「{title}」の内容をコピーしました",
-  "@sessionDetailHistoricalNotepadCopied": {
-    "description": "履歴ノートタブの内容をコピーしたあとに表示するスナックバー文。",
-    "placeholders": {
-      "title": {
-        "type": "String",
-        "description": "コピー対象だった履歴ノートタブのタイトル。"
-      }
-    }
-  },
-  "sessionDetailNoContent": "（内容なし）",
-  "@sessionDetailNoContent": {
-    "description": "履歴ノートのタブ自体は存在するが本文が空のときに表示するプレースホルダー文。"
+  "fileViewerNoContent": "（内容なし）",
+  "@fileViewerNoContent": {
+    "description": "ファイル自体は存在するが本文が空のときにファイルビューアーで表示するプレースホルダー文。"
   },
   "fileBrowserRootTitle": "ファイル",
   "@fileBrowserRootTitle": {
@@ -1384,46 +1380,6 @@
   "@fileTableNoData": {
     "description": "テーブルビューアーで表示可能な解析済みデータが存在しないときに表示する代替文。"
   },
-  "sessionDetailFileTypeCsvTable": "CSV表",
-  "@sessionDetailFileTypeCsvTable": {
-    "description": ".v2d.csv 形式の構造化テーブルを示す履歴ノートのファイル種別バッジ。"
-  },
-  "sessionDetailFileTypeJsonTable": "JSON表",
-  "@sessionDetailFileTypeJsonTable": {
-    "description": ".v2d.json 形式の構造化テーブルを示す履歴ノートのファイル種別バッジ。"
-  },
-  "sessionDetailFileTypeJsonlTable": "JSONL表",
-  "@sessionDetailFileTypeJsonlTable": {
-    "description": ".v2d.jsonl 形式の構造化テーブルを示す履歴ノートのファイル種別バッジ。"
-  },
-  "sessionDetailFileTypeMarkdown": "Markdown",
-  "@sessionDetailFileTypeMarkdown": {
-    "description": "Markdown の履歴ノートに表示するファイル種別バッジ。"
-  },
-  "sessionDetailFileTypeHtml": "HTML",
-  "@sessionDetailFileTypeHtml": {
-    "description": "HTML の履歴ノートに表示するファイル種別バッジ。"
-  },
-  "sessionDetailFileTypeText": "Text",
-  "@sessionDetailFileTypeText": {
-    "description": "プレーンテキストの履歴ノートに表示するファイル種別バッジ。英字の Text 表記を維持する。"
-  },
-  "sessionDetailFileTypeCsv": "CSV",
-  "@sessionDetailFileTypeCsv": {
-    "description": "構造化 .v2d 形式ではない通常の CSV 履歴ノートに表示するファイル種別バッジ。"
-  },
-  "sessionDetailFileTypeJson": "JSON",
-  "@sessionDetailFileTypeJson": {
-    "description": "構造化 .v2d 形式ではない通常の JSON 履歴ノートに表示するファイル種別バッジ。"
-  },
-  "sessionDetailFileTypeJsonl": "JSONL",
-  "@sessionDetailFileTypeJsonl": {
-    "description": "構造化 .v2d 形式ではない通常の JSONL 履歴ノートに表示するファイル種別バッジ。"
-  },
-  "sessionDetailFileTypeFile": "File",
-  "@sessionDetailFileTypeFile": {
-    "description": "既知の拡張子に一致しない履歴ノートに表示するフォールバックのファイル種別バッジ。製品用語として File は英字で維持する。"
-  },
   "homeMoreFeatureWazaMachine": "わざマシン",
   "@homeMoreFeatureWazaMachine": {
     "description": "ホーム画面のもっとタブにある、ストアフロントアイコン付きのプレースホルダー機能タイルのラベル。製品風の用語として『わざマシン』を維持する。"
@@ -1463,6 +1419,10 @@
     }
   },
   "homeSessionsLoadError": "エラー: {error}",
+  "homeSessionsLoadingMore": "さらに読み込み中...",
+  "@homeSessionsLoadingMore": {
+    "description": "Small bottom indicator label shown while the home Sessions tab is loading the next cursor page."
+  },
   "@homeSessionsLoadError": {
     "description": "ホーム画面のセッションタブで、セッション一覧の読み込みに失敗したときに表示するインラインエラー文言。",
     "placeholders": {

@@ -50,10 +50,9 @@ import 'websocket_vhrp_transport.dart';
 /// Frozen copy of [VhrpRealtimeAdapter.connect] parameters so the reconnect
 /// loop can rebuild a `session.open` message without re-calling connect().
 final class _ConnectConfig {
-  final String modelId;
-  final String? voice;
+  final String speedDialId;
 
-  _ConnectConfig({required this.modelId, this.voice});
+  _ConnectConfig({required this.speedDialId});
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -168,10 +167,8 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
   /// Maximum backoff delay (ms).
   static const int _reconnectMaxMs = 16000;
 
-  /// Stored connect() parameters so reconnect can rebuild session.open
-  /// identically (apiConfig for modelId and voice). Instructions are kept in
-  /// [_sessionInstructions] because [setInstructions] is the sole prompt entry
-  /// point before and after connect.
+  /// Stored connect() parameters so reconnect can rebuild session.open with the
+  /// same Speed Dial authority.
   _ConnectConfig? _connectConfig;
 
   // ── Thread model ─────────────────────────────────────────────────────────
@@ -321,7 +318,7 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
   ///      If acquisition fails → emit error, transition to [failed], rethrow.
   ///   3. Connect the underlying transport (`vhrp.cbor.v1` subprotocol).
   ///   4. Subscribe to [inboundBytes] to start the dispatch loop.
-  ///   5. Send `session.open` with model / voice / instructions / audio fmt.
+  ///   5. Send `session.open` with token / speedDialId / audioTurnMode.
   ///   6. Await `session.ready` or `session.resumed`.
   ///
   /// If [apiConfig] is not [HostedVoiceAgentApiConfig], emits an error on
@@ -357,7 +354,7 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
     }
 
     // ── Step 3: Freeze connect config for reconnect loop ───────────────────
-    _connectConfig = _ConnectConfig(modelId: apiConfig.modelId, voice: voice);
+    _connectConfig = _ConnectConfig(speedDialId: apiConfig.speedDialId);
 
     // Reset reconnect counters on each fresh connect().
     _reconnectAttempt = 0;
@@ -378,26 +375,16 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
     );
 
     // ── Step 6: Send session.open ───────────────────────────────────────────
-    final audioFormat = AudioFormat(
-      encoding: 'pcm_s16le',
-      sampleRate: 24000,
-      channels: 1,
-    );
-
     // Reset capability extensions for this new session.
     _capabilityExtensions = const <String>[];
 
     final sessionOpen = SessionOpenMsg(
       messageId: _nextMsgId('session-open'),
       token: token,
-      modelId: apiConfig.modelId,
-      voice: voice,
-      instructions: _sessionInstructions,
+      speedDialId: apiConfig.speedDialId,
       audioTurnMode: _audioTurnMode == RealtimeAudioTurnMode.voiceActivity
           ? 'voice_activity'
           : 'manual',
-      inputAudio: audioFormat,
-      outputAudio: audioFormat,
       // resume: null — initial connect never carries resume.
       client: const <String, Object?>{},
     );
@@ -575,8 +562,9 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
   /// Wire: `session.instructions.set` with the canonical non-null instructions
   /// string. The empty string clears instructions.
   ///
-  /// Pre-connect behaviour: the canonical value is stored in
-  /// [_sessionInstructions] and carried by `session.open`.
+  /// Pre-connect behaviour: the canonical value is stored locally and is not
+  /// sent during initial `session.open`; the server-owned Speed Dial prompt is
+  /// the initial authority.
   @override
   Future<void> setInstructions(String instructions) async {
     _ensureNotDisposed();
@@ -1265,8 +1253,8 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
       await _sendToolsSet(tools);
     }
 
-    // 2. Instructions are not flushed here: [setInstructions] owns the
-    // canonical state and [connect] carries that state in session.open.
+    // 2. Instructions are not flushed here: initial prompt authority belongs to
+    // the server-owned Speed Dial, not a client-side session.instructions.set.
 
     // 3. Extensions (FIFO queue; each extension awaits its ack/error before
     //    the next one is sent, maintaining order).
@@ -1544,23 +1532,13 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
       final sessionIdForResume = _sessionId;
       _sessionReadyCompleter = Completer<void>();
 
-      final audioFormat = AudioFormat(
-        encoding: 'pcm_s16le',
-        sampleRate: 24000,
-        channels: 1,
-      );
-
       final sessionOpen = SessionOpenMsg(
         messageId: _nextMsgId('session-open-resume'),
         token: token,
-        modelId: config.modelId,
-        voice: config.voice,
-        instructions: _sessionInstructions,
+        speedDialId: config.speedDialId,
         audioTurnMode: _audioTurnMode == RealtimeAudioTurnMode.voiceActivity
             ? 'voice_activity'
             : 'manual',
-        inputAudio: audioFormat,
-        outputAudio: audioFormat,
         resume: sessionIdForResume != null
             ? ResumeRequest(sessionId: sessionIdForResume)
             : null,

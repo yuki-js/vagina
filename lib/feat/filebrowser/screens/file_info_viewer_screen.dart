@@ -239,7 +239,7 @@ class _FileInfoViewerScreenState extends State<FileInfoViewerScreen> {
                 border: Border.all(color: Colors.grey[300]!),
               ),
               child: SelectableText(
-                preview.isEmpty ? _l10n.sessionDetailNoContent : preview,
+                preview.isEmpty ? _l10n.fileViewerNoContent : preview,
                 style: const TextStyle(
                   fontSize: 13,
                   fontFamily: 'monospace',

@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:vagina/api/auth_exception.dart';
 import 'package:vagina/api/generated/clients/auth_api_client.dart';
+import 'package:vagina/api/generated/clients/sessions_api_client.dart';
 import 'package:vagina/api/generated/clients/speed_dials_api_client.dart';
 import 'package:vagina/api/generated/clients/vfs_api_client.dart';
 import 'package:vagina/api/generated/clients/voice_agents_api_client.dart';
@@ -16,6 +17,7 @@ class VaginaApiClient {
   final Dio dio;
   final AuthApiClient auth;
   final SpeedDialsApiClient speedDials;
+  final SessionsApiClient sessions;
   final VfsApiClient vfs;
   final VoiceAgentsApiClient voiceAgents;
 
@@ -23,6 +25,7 @@ class VaginaApiClient {
     required this.dio,
     required this.auth,
     required this.speedDials,
+    required this.sessions,
     required this.vfs,
     required this.voiceAgents,
   });
@@ -115,6 +118,7 @@ class VaginaApiClient {
       dio: dio,
       auth: AuthApiClient(dio),
       speedDials: SpeedDialsApiClient(dio),
+      sessions: SessionsApiClient(dio),
       vfs: VfsApiClient(dio),
       voiceAgents: VoiceAgentsApiClient(dio),
     );

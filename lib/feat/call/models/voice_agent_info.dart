@@ -42,7 +42,10 @@ class VoiceAgentInfo {
           .toList(growable: false),
       reasoningEffort: speedDial.reasoningEffort,
       toolChoiceRequired: speedDial.toolChoiceRequired,
-      apiConfig: HostedVoiceAgentApiConfig(modelId: speedDial.voiceAgentId),
+      apiConfig: HostedVoiceAgentApiConfig(
+        speedDialId: speedDial.id,
+        modelId: speedDial.voiceAgentId,
+      ),
     );
   }
 }

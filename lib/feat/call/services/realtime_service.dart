@@ -5,9 +5,7 @@ import 'package:vagina/feat/call/models/realtime/realtime_adapter_models.dart';
 import 'package:vagina/feat/call/models/realtime/realtime_thread.dart';
 import 'package:vagina/feat/call/models/voice_agent_api_config.dart';
 import 'package:vagina/feat/call/models/voice_agent_info.dart';
-import 'package:vagina/feat/call/services/realtime/realtime_provider_extensions.dart';
 import 'package:vagina/feat/call/services/subservice.dart';
-import 'package:vagina/models/speed_dial.dart';
 import 'package:vagina/services/tools_runtime/tool_definition.dart';
 
 import 'realtime/realtime_adapter.dart';
@@ -52,35 +50,13 @@ final class RealtimeService extends SubService {
     await super.start();
 
     try {
-      await _adapter.setInstructions(voiceAgent.prompt);
       await _adapter.connect(voiceAgent.apiConfig, voice: voiceAgent.voice);
-      await _applyInitialSpeedDialSessionSettings();
     } catch (e, stackTrace) {
       logger.severe('Failed to connect to realtime API', e, stackTrace);
       // Reset _started flag on connection failure
       await dispose();
       rethrow;
     }
-  }
-
-  Future<void> _applyInitialSpeedDialSessionSettings() async {
-    final reasoningSelection = switch (voiceAgent.reasoningEffort) {
-      SpeedDialReasoningEffort.off => null,
-      _ => voiceAgent.reasoningEffort.name,
-    };
-
-    await _adapter.applyProviderExtension(
-      RealtimeProviderExtensions.reasoningEffortSelection,
-      <String, dynamic>{
-        RealtimeProviderExtensions.selectionKey: reasoningSelection,
-      },
-    );
-    await _adapter.applyProviderExtension(
-      RealtimeProviderExtensions.toolChoiceRequired,
-      <String, dynamic>{
-        RealtimeProviderExtensions.requiredKey: voiceAgent.toolChoiceRequired,
-      },
-    );
   }
 
   // ---------------------------------------------------------------------------

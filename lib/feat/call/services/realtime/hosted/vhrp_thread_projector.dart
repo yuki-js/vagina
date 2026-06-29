@@ -24,6 +24,7 @@
 //   responsibility.
 
 import 'package:vagina/feat/call/models/realtime/realtime_thread.dart';
+import 'package:vagina/feat/call/models/realtime/realtime_thread_json_codec.dart';
 import 'vhrp_messages.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -69,8 +70,7 @@ final class VhrpThreadProjector {
   RealtimeThread applySnapshot(ThreadSnapshotMsg msg) {
     final items = <RealtimeThreadItem>[];
     for (final rawItem in msg.items) {
-      final item = _itemFromMap(rawItem);
-      if (item != null) items.add(item);
+      items.add(RealtimeThreadJsonCodec.itemFromJson(rawItem));
     }
     return RealtimeThread(
       id: msg.threadId,
@@ -130,9 +130,10 @@ final class VhrpThreadProjector {
   ///     item has content parts, they are added.  Existing content is never
   ///     erased (audioChunks accumulated in step 6 must not be lost).
   ProjectResult _applyAddItem(AddItemOp op, RealtimeThread thread) {
-    final incoming = _itemFromMap(op.item);
-    if (incoming == null) {
-      // Malformed item map — treat as desync.
+    final RealtimeThreadItem incoming;
+    try {
+      incoming = RealtimeThreadJsonCodec.itemFromJson(op.item);
+    } on RealtimeThreadJsonDecodeException {
       return const ProjectResult.desynced(
         'add_item received an item map without a valid id or type.',
       );
@@ -197,7 +198,7 @@ final class VhrpThreadProjector {
         'set_role: item "${op.itemId}" not found — desync required.',
       );
     }
-    item.role = _mapRole(op.role);
+    item.role = RealtimeThreadJsonCodec.roleFromWireValue(op.role);
     return const ProjectResult.ok();
   }
 
@@ -221,7 +222,9 @@ final class VhrpThreadProjector {
         item.output = op.value as String?;
       case 'toolOutputDisposition':
         item.toolOutputDisposition =
-            _mapToolOutputDisposition(op.value as String?);
+            RealtimeThreadJsonCodec.toolOutputDispositionFromWireValue(
+          op.value as String?,
+        );
       case 'toolErrorMessage':
         item.toolErrorMessage = op.value as String?;
       case 'displayState':
@@ -243,7 +246,7 @@ final class VhrpThreadProjector {
         'put_part: item "${op.itemId}" not found — desync required.',
       );
     }
-    final part = _partFromMap(op.part);
+    final part = RealtimeThreadJsonCodec.partFromJson(op.part);
     if (part == null) {
       // Unknown part type — silently ignore (forward-compatible).
       return const ProjectResult.ok();
@@ -342,104 +345,4 @@ final class VhrpThreadProjector {
     return const ProjectResult.ok();
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // Private — object construction from opaque maps
-  // ─────────────────────────────────────────────────────────────────────────
-
-  /// Parses an opaque item map (from snapshot or add_item) into a
-  /// [RealtimeThreadItem].  Returns null if the map lacks a valid `id`.
-  RealtimeThreadItem? _itemFromMap(Map<String, Object?> map) {
-    final id = map['id'] as String?;
-    if (id == null || id.isEmpty) return null;
-
-    final type = _mapItemType(map['type'] as String?);
-    final role = _mapRole(map['role'] as String?);
-    final status = RealtimeThreadItemStatus.fromWireValue(
-      map['status'] as String?,
-    );
-
-    final item = RealtimeThreadItem(
-      id: id,
-      type: type,
-      role: role,
-      status: status,
-      displayState: RealtimeThreadItemDisplayState.fromWireValue(
-        map['displayState'] as String?,
-      ),
-      callId: map['callId'] as String?,
-      name: map['name'] as String?,
-      arguments: map['arguments'] as String?,
-      output: map['output'] as String?,
-      toolOutputDisposition: _mapToolOutputDisposition(
-        map['toolOutputDisposition'] as String?,
-      ),
-      toolErrorMessage: map['toolErrorMessage'] as String?,
-    );
-
-    // Parse content parts if present.
-    final rawContent = map['content'];
-    if (rawContent is List) {
-      for (final rawPart in rawContent) {
-        if (rawPart is Map<String, Object?>) {
-          final part = _partFromMap(rawPart);
-          if (part != null) item.addContentPart(part);
-        }
-      }
-    }
-
-    return item;
-  }
-
-  /// Parses a part map `{ type, isDone, ... }` into a content part.
-  ///
-  /// Returns null for unknown part types (forward-compatible).
-  RealtimeThreadContentPart? _partFromMap(Map<String, Object?> map) {
-    final type = map['type'] as String?;
-    final isDone = map['isDone'] as bool? ?? false;
-    return switch (type) {
-      'text' => RealtimeThreadTextPart(
-          text: map['text'] as String? ?? '',
-          isDone: isDone,
-        ),
-      'audio' => RealtimeThreadAudioPart(
-          // audioChunks deliberately left empty at this layer — §5.6.
-          transcript: map['transcript'] as String?,
-          isDone: isDone,
-        ),
-      'image' => RealtimeThreadImagePart(
-          imageUrl: map['imageUrl'] as String? ?? '',
-          detail: map['detail'] as String? ?? 'auto',
-        ),
-      _ => null, // Unknown part type — silently ignored.
-    };
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // Private — enum mapping
-  // ─────────────────────────────────────────────────────────────────────────
-
-  RealtimeThreadItemType _mapItemType(String? value) {
-    return switch (value) {
-      'functionCall' => RealtimeThreadItemType.functionCall,
-      'functionCallOutput' => RealtimeThreadItemType.functionCallOutput,
-      _ => RealtimeThreadItemType.message,
-    };
-  }
-
-  RealtimeThreadItemRole? _mapRole(String? value) {
-    return switch (value) {
-      'system' => RealtimeThreadItemRole.system,
-      'user' => RealtimeThreadItemRole.user,
-      'assistant' => RealtimeThreadItemRole.assistant,
-      _ => null,
-    };
-  }
-
-  RealtimeToolOutputDisposition? _mapToolOutputDisposition(String? value) {
-    return switch (value) {
-      'success' => RealtimeToolOutputDisposition.success,
-      'error' => RealtimeToolOutputDisposition.error,
-      _ => null,
-    };
-  }
 }

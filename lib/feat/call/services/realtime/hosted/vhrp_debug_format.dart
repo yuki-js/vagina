@@ -96,11 +96,9 @@ abstract final class VhrpDebugFormat {
   static String _formatSessionOpen(SessionOpenMsg m) {
     final sb = StringBuffer('session.open {');
     sb.write('messageId: ${m.messageId}');
-    sb.write(', modelId: ${m.modelId}');
-    if (m.voice != null) sb.write(', voice: ${m.voice}');
+    sb.write(', speedDialId: ${m.speedDialId}');
     sb.write(', audioTurnMode: ${m.audioTurnMode}');
     if (m.resume != null) sb.write(', resumeSessionId: ${m.resume!.sessionId}');
-    sb.write(', instructions: ${_truncateOperationalStr(m.instructions)}');
     sb.write('}');
     return sb.toString();
   }

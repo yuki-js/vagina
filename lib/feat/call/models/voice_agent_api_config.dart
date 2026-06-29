@@ -19,20 +19,34 @@ abstract class VoiceAgentApiConfig {
 
 /// Use the application's hosted realtime voice API.
 class HostedVoiceAgentApiConfig extends VoiceAgentApiConfig {
+  final String speedDialId;
   final String modelId;
 
-  const HostedVoiceAgentApiConfig({required this.modelId});
+  const HostedVoiceAgentApiConfig({
+    required this.speedDialId,
+    this.modelId = '',
+  });
 
-  HostedVoiceAgentApiConfig copyWith({String? modelId}) {
-    return HostedVoiceAgentApiConfig(modelId: modelId ?? this.modelId);
+  HostedVoiceAgentApiConfig copyWith({String? speedDialId, String? modelId}) {
+    return HostedVoiceAgentApiConfig(
+      speedDialId: speedDialId ?? this.speedDialId,
+      modelId: modelId ?? this.modelId,
+    );
   }
 
   @override
   Map<String, dynamic> toJson() {
-    return {'type': VoiceAgentApiConfig.hostedType, 'modelId': modelId};
+    return {
+      'type': VoiceAgentApiConfig.hostedType,
+      'speedDialId': speedDialId,
+      if (modelId.isNotEmpty) 'modelId': modelId,
+    };
   }
 
   factory HostedVoiceAgentApiConfig.fromJson(Map<String, dynamic> json) {
-    return HostedVoiceAgentApiConfig(modelId: json['modelId'] as String? ?? '');
+    return HostedVoiceAgentApiConfig(
+      speedDialId: json['speedDialId'] as String? ?? json['modelId'] as String? ?? '',
+      modelId: json['modelId'] as String? ?? '',
+    );
   }
 }

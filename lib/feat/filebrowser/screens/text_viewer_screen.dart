@@ -229,7 +229,7 @@ class _TextViewerScreenState extends State<TextViewerScreen> {
         padding: const EdgeInsets.all(20),
         child: MarkdownBody(
           data: _file!.content.isEmpty
-              ? '_${_l10n.sessionDetailNoContent}_'
+              ? '_${_l10n.fileViewerNoContent}_'
               : _file!.content,
           selectable: true,
           styleSheet: MarkdownStyleSheet(
@@ -277,7 +277,7 @@ class _TextViewerScreenState extends State<TextViewerScreen> {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: SelectableText(
-        _file!.content.isEmpty ? _l10n.sessionDetailNoContent : _file!.content,
+        _file!.content.isEmpty ? _l10n.fileViewerNoContent : _file!.content,
         style: const TextStyle(
           fontSize: 15,
           height: 1.6,

@@ -1,109 +1,50 @@
-import 'speed_dial.dart';
+import 'package:vagina/feat/call/models/realtime/realtime_thread.dart';
 
-/// Represents a simple notepad tab for session history
-class SessionNotepadTab {
-  final String title;
-  final String content;
-  final String mimeType;
-
-  const SessionNotepadTab({
-    required this.title,
-    required this.content,
-    required this.mimeType,
-  });
-
-  Map<String, dynamic> toJson() {
-    return {
-      'title': title,
-      'content': content,
-      'mimeType': mimeType,
-    };
-  }
-
-  factory SessionNotepadTab.fromJson(Map<String, dynamic> json) {
-    return SessionNotepadTab(
-      title: json['title'] as String,
-      content: json['content'] as String,
-      mimeType: json['mimeType'] as String,
-    );
-  }
-}
-
-/// Represents a single call session with metadata and chat history
+/// Server-backed call session history record.
+///
+/// List responses populate only [id], [startedAt], and [endedAt]. Detail-only
+/// fields are nullable and are populated by the session detail API.
 class CallSession {
   final String id;
-  final DateTime startTime;
-  final DateTime? endTime;
-  final int duration; // in seconds
-  final List<String> chatMessages; // JSON-encoded messages
-  final List<SessionNotepadTab>? notepadTabs; // Structured notepad tabs
-  final String speedDialId; // Reference to speed dial used (non-nullable)
-  final String? endContext; // Optional context explaining why the call ended
+  final DateTime startedAt;
+  final DateTime? endedAt;
+  final String? speedDialId;
+  final String? voiceAgentId;
+  final RealtimeThread? thread;
 
   const CallSession({
     required this.id,
-    required this.startTime,
-    this.endTime,
-    this.duration = 0,
-    this.chatMessages = const [],
-    this.notepadTabs,
-    required this.speedDialId,
-    this.endContext,
+    required this.startedAt,
+    this.endedAt,
+    this.speedDialId,
+    this.voiceAgentId,
+    this.thread,
   });
+
+  int get duration {
+    final end = endedAt ?? DateTime.now();
+    return end.difference(startedAt).inSeconds;
+  }
+
+  int get visibleThreadItemCount {
+    return thread?.items.where((item) => item.isVisible).length ?? 0;
+  }
 
   CallSession copyWith({
     String? id,
-    DateTime? startTime,
-    DateTime? endTime,
-    int? duration,
-    List<String>? chatMessages,
-    List<SessionNotepadTab>? notepadTabs,
+    DateTime? startedAt,
+    DateTime? endedAt,
     String? speedDialId,
-    String? endContext,
+    String? voiceAgentId,
+    RealtimeThread? thread,
   }) {
     return CallSession(
       id: id ?? this.id,
-      startTime: startTime ?? this.startTime,
-      endTime: endTime ?? this.endTime,
-      duration: duration ?? this.duration,
-      chatMessages: chatMessages ?? this.chatMessages,
-      notepadTabs: notepadTabs ?? this.notepadTabs,
+      startedAt: startedAt ?? this.startedAt,
+      endedAt: endedAt ?? this.endedAt,
       speedDialId: speedDialId ?? this.speedDialId,
-      endContext: endContext ?? this.endContext,
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'startTime': startTime.toIso8601String(),
-      if (endTime != null) 'endTime': endTime!.toIso8601String(),
-      'duration': duration,
-      'chatMessages': chatMessages,
-      if (notepadTabs != null)
-        'notepadTabs': notepadTabs!.map((t) => t.toJson()).toList(),
-      'speedDialId': speedDialId,
-      if (endContext != null) 'endContext': endContext,
-    };
-  }
-
-  factory CallSession.fromJson(Map<String, dynamic> json) {
-    return CallSession(
-      id: json['id'] as String,
-      startTime: DateTime.parse(json['startTime'] as String),
-      endTime: json['endTime'] != null
-          ? DateTime.parse(json['endTime'] as String)
-          : null,
-      duration: json['duration'] as int? ?? 0,
-      chatMessages: (json['chatMessages'] as List<dynamic>?)
-              ?.map((e) => e as String)
-              .toList() ??
-          const [],
-      notepadTabs: (json['notepadTabs'] as List<dynamic>?)
-          ?.map((e) => SessionNotepadTab.fromJson(e as Map<String, dynamic>))
-          .toList(),
-      speedDialId: json['speedDialId'] as String? ?? SpeedDial.defaultId,
-      endContext: json['endContext'] as String?,
+      voiceAgentId: voiceAgentId ?? this.voiceAgentId,
+      thread: thread ?? this.thread,
     );
   }
 }

@@ -1,10 +1,8 @@
 import 'package:vagina/core/data/in_memory_store.dart';
 import 'package:vagina/core/data/json_file_store.dart';
-import 'package:vagina/interfaces/call_session_repository.dart';
 import 'package:vagina/interfaces/config_repository.dart';
 import 'package:vagina/interfaces/key_value_store.dart';
 
-import 'json_call_session_repository.dart';
 import 'json_config_repository.dart';
 import 'preferences_repository.dart';
 
@@ -14,7 +12,6 @@ import 'preferences_repository.dart';
 /// data storage location and initialization.
 class RepositoryFactory {
   static KeyValueStore? _store;
-  static CallSessionRepository? _callSessionRepo;
   static ConfigRepository? _configRepo;
   static PreferencesRepository? _preferencesRepo;
 
@@ -43,12 +40,6 @@ class RepositoryFactory {
     await _store!.initialize();
   }
 
-  /// Get the CallSession repository
-  static CallSessionRepository get callSessions {
-    _ensureInitialized();
-    return _callSessionRepo ??= JsonCallSessionRepository(_store!);
-  }
-
   /// Get the Config repository
   static ConfigRepository get config {
     _ensureInitialized();
@@ -73,7 +64,6 @@ class RepositoryFactory {
   /// Reset all repositories (for testing)
   static void reset() {
     _store = null;
-    _callSessionRepo = null;
     _configRepo = null;
     _preferencesRepo = null;
   }

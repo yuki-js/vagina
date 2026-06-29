@@ -1041,6 +1041,40 @@
     "description": "App bar title for the historical session detail screen."
   },
   "sessionDetailMissing": "Session not found",
+  "sessionDetailLoadError": "Error: {error}",
+  "@sessionDetailLoadError": {
+    "description": "Inline error text shown when the historical session detail cannot be loaded for a generic reason.",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "Error details returned by the session detail repository."
+      }
+    }
+  },
+  "sessionDetailSavedThreadCannotBeDisplayed": "The saved thread cannot be displayed.",
+  "@sessionDetailSavedThreadCannotBeDisplayed": {
+    "description": "Error-state text shown on the historical session detail screen when a saved realtime thread exists but cannot be parsed for display."
+  },
+  "sessionDetailMetadataTitle": "Session metadata",
+  "@sessionDetailMetadataTitle": {
+    "description": "Title for the metadata header integrated at the top of the historical session detail screen."
+  },
+  "sessionDetailThreadEmptyTitle": "No saved thread",
+  "@sessionDetailThreadEmptyTitle": {
+    "description": "Empty-state title shown in session detail when the saved realtime thread has no visible items."
+  },
+  "sessionDetailThreadEmptyMessage": "Thread messages will appear here when they are saved for this session.",
+  "@sessionDetailThreadEmptyMessage": {
+    "description": "Empty-state helper text shown in session detail when the saved realtime thread has no visible items."
+  },
+  "sessionDetailSpeedDialId": "Speed dial ID",
+  "@sessionDetailSpeedDialId": {
+    "description": "Metadata label for the speed dial identifier associated with a historical session."
+  },
+  "sessionDetailVoiceAgentId": "Voice agent ID",
+  "@sessionDetailVoiceAgentId": {
+    "description": "Metadata label for the voice agent identifier associated with a historical session."
+  },
   "@sessionDetailMissing": {
     "description": "Fallback text shown when the requested session record cannot be loaded for the session detail screen."
   },
@@ -1089,16 +1123,6 @@
       "count": {
         "type": "int",
         "description": "Number of chat messages in the session."
-      }
-    }
-  },
-  "sessionDetailNotepadCountValue": "{count}",
-  "@sessionDetailNotepadCountValue": {
-    "description": "Numeric value shown for the number of notepad documents captured in a historical session.",
-    "placeholders": {
-      "count": {
-        "type": "int",
-        "description": "Number of historical notepad tabs/documents in the session."
       }
     }
   },
@@ -1160,37 +1184,9 @@
       }
     }
   },
-  "sessionDetailSummaryDocumentsCreated": "{count} documents were created",
-  "@sessionDetailSummaryDocumentsCreated": {
-    "description": "Second-line summary text appended when historical session notes/documents were created.",
-    "placeholders": {
-      "count": {
-        "type": "int",
-        "description": "Number of historical notepad documents created during the session."
-      }
-    }
-  },
-  "sessionDetailHistoricalNotepadEmpty": "Notepad is empty",
-  "@sessionDetailHistoricalNotepadEmpty": {
-    "description": "Empty-state text shown on the historical notepad tab when the session has no saved note tabs."
-  },
-  "sessionDetailHistoricalNotepadCopyTooltip": "Copy",
-  "@sessionDetailHistoricalNotepadCopyTooltip": {
-    "description": "Tooltip for the copy button on a historical notepad card."
-  },
-  "sessionDetailHistoricalNotepadCopied": "Copied contents of \"{title}\"",
-  "@sessionDetailHistoricalNotepadCopied": {
-    "description": "Snackbar text shown after copying the contents of a historical notepad tab.",
-    "placeholders": {
-      "title": {
-        "type": "String",
-        "description": "Title of the historical notepad tab whose content was copied."
-      }
-    }
-  },
-  "sessionDetailNoContent": "(No content)",
-  "@sessionDetailNoContent": {
-    "description": "Placeholder text shown when a historical note exists but its content body is empty."
+  "fileViewerNoContent": "(No content)",
+  "@fileViewerNoContent": {
+    "description": "Placeholder text shown in file viewers when a file exists but its content body is empty."
   },
   "fileBrowserRootTitle": "Files",
   "@fileBrowserRootTitle": {
@@ -1384,46 +1380,6 @@
   "@fileTableNoData": {
     "description": "Fallback message shown in the table viewer when no parsed table data is available to display."
   },
-  "sessionDetailFileTypeCsvTable": "CSV table",
-  "@sessionDetailFileTypeCsvTable": {
-    "description": "File type badge for a historical notepad tab containing a .v2d.csv structured table."
-  },
-  "sessionDetailFileTypeJsonTable": "JSON table",
-  "@sessionDetailFileTypeJsonTable": {
-    "description": "File type badge for a historical notepad tab containing a .v2d.json structured table."
-  },
-  "sessionDetailFileTypeJsonlTable": "JSONL table",
-  "@sessionDetailFileTypeJsonlTable": {
-    "description": "File type badge for a historical notepad tab containing a .v2d.jsonl structured table."
-  },
-  "sessionDetailFileTypeMarkdown": "Markdown",
-  "@sessionDetailFileTypeMarkdown": {
-    "description": "File type badge for a markdown historical notepad tab."
-  },
-  "sessionDetailFileTypeHtml": "HTML",
-  "@sessionDetailFileTypeHtml": {
-    "description": "File type badge for an HTML historical notepad tab."
-  },
-  "sessionDetailFileTypeText": "Text",
-  "@sessionDetailFileTypeText": {
-    "description": "File type badge for a plain text historical notepad tab."
-  },
-  "sessionDetailFileTypeCsv": "CSV",
-  "@sessionDetailFileTypeCsv": {
-    "description": "File type badge for a CSV historical notepad tab outside the structured .v2d table format."
-  },
-  "sessionDetailFileTypeJson": "JSON",
-  "@sessionDetailFileTypeJson": {
-    "description": "File type badge for a JSON historical notepad tab outside the structured .v2d table format."
-  },
-  "sessionDetailFileTypeJsonl": "JSONL",
-  "@sessionDetailFileTypeJsonl": {
-    "description": "File type badge for a JSONL historical notepad tab outside the structured .v2d table format."
-  },
-  "sessionDetailFileTypeFile": "File",
-  "@sessionDetailFileTypeFile": {
-    "description": "Fallback file type badge for a historical notepad tab whose extension does not match a known label."
-  },
   "homeMoreFeatureWazaMachine": "Waza Machine",
   "@homeMoreFeatureWazaMachine": {
     "description": "Label for the placeholder feature tile on the home screen's More tab represented by a storefront icon. Keep the product-style term Waza Machine."
@@ -1463,6 +1419,10 @@
     }
   },
   "homeSessionsLoadError": "Error: {error}",
+  "homeSessionsLoadingMore": "Loading more sessions...",
+  "@homeSessionsLoadingMore": {
+    "description": "Small bottom indicator label shown while the home Sessions tab is loading the next cursor page."
+  },
   "@homeSessionsLoadError": {
     "description": "Inline error text shown in the home Sessions tab when loading the session list fails.",
     "placeholders": {

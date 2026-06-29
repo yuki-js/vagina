@@ -23,9 +23,7 @@ import 'package:vagina/feat/call/services/tool_runner.dart';
 import 'package:vagina/feat/call/services/toolapi/call_control_api.dart';
 import 'package:vagina/feat/call/services/toolapi/call_filesystem_api.dart';
 import 'package:vagina/feat/call/services/toolapi/text_agent_api.dart';
-import 'package:vagina/interfaces/call_session_repository.dart';
 import 'package:vagina/interfaces/virtual_filesystem_repository.dart';
-import 'package:vagina/models/call_session.dart';
 import 'package:vagina/services/tools_runtime/tool.dart';
 import 'package:vagina/services/tools_runtime/tool_definition.dart';
 
@@ -50,8 +48,6 @@ class CallService {
   VoiceAgentInfo? _voiceAgent;
   List<TextAgentInfo>? _textAgents;
   final VirtualFilesystemRepository _filesystemRepository;
-  final CallSessionRepository _sessionRepository;
-
   late final VirtualFilesystemService _vfs;
   late final NotepadService _notepadService;
   late final RealtimeService _realtimeService;
@@ -82,8 +78,6 @@ class CallService {
   final StreamController<String> _errorController =
       StreamController<String>.broadcast();
   CallState _state = CallState.uninitialized;
-  DateTime? _callStartedAt;
-  String? _endContext;
   bool _pushToTalkEnabled = false;
   bool _pushToTalkActive = false;
   int _pushToTalkGeneration = 0;
@@ -94,9 +88,7 @@ class CallService {
 
   CallService({
     required VirtualFilesystemRepository filesystemRepository,
-    required CallSessionRepository sessionRepository,
-  }) : _filesystemRepository = filesystemRepository,
-       _sessionRepository = sessionRepository;
+  }) : _filesystemRepository = filesystemRepository;
 
   CallState get state => _state;
 
@@ -364,8 +356,6 @@ class CallService {
 
   /// リソース確保と接続開始
   Future<void> _igniteCall() async {
-    _callStartedAt = DateTime.now();
-
     await Future.wait<void>([
       _feedbackService.start(),
       _vfs.start(),
@@ -639,22 +629,11 @@ class CallService {
       return;
     }
 
-    if (endContext != null && endContext.isNotEmpty) {
-      _endContext = endContext;
-    }
-
     await cancelPushToTalk();
     state = CallState.disposing;
 
     try {
       await _notepadService.persistAll();
-    } catch (_) {
-      // 継続
-    }
-
-    try {
-      final sessionTabs = _notepadService.exportSessionTabs();
-      await _saveSession(sessionTabs: sessionTabs);
     } catch (_) {
       // 継続
     }
@@ -705,147 +684,6 @@ class CallService {
     _pendingPushToTalkRelease = null;
   }
 
-  Future<void> _saveSession({
-    required List<SessionNotepadTab> sessionTabs,
-  }) async {
-    final callStartedAt = _callStartedAt;
-    final voiceAgent = _voiceAgent;
-    if (callStartedAt == null || voiceAgent == null) {
-      return;
-    }
-
-    final endTime = DateTime.now();
-    final session = CallSession(
-      id: endTime.millisecondsSinceEpoch.toString(),
-      startTime: callStartedAt,
-      endTime: endTime,
-      duration: endTime.difference(callStartedAt).inSeconds,
-      chatMessages: _buildSessionChatMessages(
-        startTime: callStartedAt,
-        endTime: endTime,
-      ),
-      notepadTabs: sessionTabs.isEmpty ? null : sessionTabs,
-      speedDialId: voiceAgent.id,
-      endContext: _endContext,
-    );
-
-    await _sessionRepository.save(session);
-  }
-
-  List<String> _buildSessionChatMessages({
-    required DateTime startTime,
-    required DateTime endTime,
-  }) {
-    final thread = realtimeService?.thread;
-    if (thread == null) {
-      return const <String>[];
-    }
-
-    // Include both messages and function calls
-    final allItems = thread.items
-        .where(
-          (item) =>
-              item.type == RealtimeThreadItemType.message ||
-              item.type == RealtimeThreadItemType.functionCall,
-        )
-        .toList(growable: false);
-    if (allItems.isEmpty) {
-      return const <String>[];
-    }
-
-    final matchedToolOutputIndices = matchCompletedToolOutputIndices(
-      thread.items,
-    );
-
-    final totalMilliseconds = endTime.difference(startTime).inMilliseconds;
-    final timestampStep = allItems.length <= 1
-        ? 0
-        : (totalMilliseconds ~/ allItems.length);
-    final chatMessages = <String>[];
-
-    for (var index = 0; index < allItems.length; index++) {
-      final item = allItems[index];
-      final timestamp = startTime.add(
-        Duration(milliseconds: timestampStep * index),
-      );
-
-      // Handle function calls
-      if (item.type == RealtimeThreadItemType.functionCall) {
-        final itemIndex = thread.items.indexOf(item);
-        final resolved = ResolvedRealtimeToolCall.fromThread(
-          thread.items,
-          itemIndex,
-          matchedToolOutputIndices,
-        );
-        final outputItem = resolved.outputItem;
-
-        final toolCallData = <String, dynamic>{
-          'name': item.name ?? 'unknown',
-          'status': resolved.statusName,
-        };
-
-        if (item.arguments?.isNotEmpty ?? false) {
-          toolCallData['arguments'] = item.arguments;
-        }
-
-        if (outputItem != null) {
-          if (outputItem.toolErrorMessage?.isNotEmpty ?? false) {
-            toolCallData['errorMessage'] = outputItem.toolErrorMessage;
-          } else if (outputItem.output?.isNotEmpty ?? false) {
-            toolCallData['result'] = outputItem.output;
-          }
-        }
-
-        chatMessages.add(
-          jsonEncode({
-            'role': 'assistant',
-            'timestamp': timestamp.toIso8601String(),
-            'toolCalls': [toolCallData],
-          }),
-        );
-        continue;
-      }
-
-      // Handle regular messages
-      final role = _sessionRoleForItem(item);
-      final content = _sessionContentForItem(item);
-      if (role == null || content.isEmpty) {
-        continue;
-      }
-
-      chatMessages.add(
-        jsonEncode({
-          'role': role,
-          'content': content,
-          'timestamp': timestamp.toIso8601String(),
-        }),
-      );
-    }
-
-    return chatMessages;
-  }
-
-  String? _sessionRoleForItem(RealtimeThreadItem item) {
-    return switch (item.role) {
-      RealtimeThreadItemRole.user => 'user',
-      RealtimeThreadItemRole.assistant => 'assistant',
-      _ => null,
-    };
-  }
-
-  String _sessionContentForItem(RealtimeThreadItem item) {
-    final fragments = <String>[];
-    for (final part in item.content) {
-      if (part is RealtimeThreadTextPart && part.text.isNotEmpty) {
-        fragments.add(part.text);
-      } else if (part is RealtimeThreadAudioPart &&
-          (part.transcript?.isNotEmpty ?? false)) {
-        fragments.add(part.transcript!);
-      }
-    }
-
-    return fragments.join('\n').trim();
-  }
 }
 
 final class _InFlightTool {

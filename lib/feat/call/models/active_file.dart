@@ -1,5 +1,3 @@
-import 'package:vagina/models/call_session.dart';
-
 /// Represents an active file during a call session.
 ///
 /// An active file is a document that has been opened by the agent or user
@@ -65,12 +63,4 @@ class ActiveFile {
     }
   }
 
-  /// Convert to SessionNotepadTab for session export.
-  SessionNotepadTab toSessionTab() {
-    return SessionNotepadTab(
-      title: title,
-      content: content,
-      mimeType: mimeType,
-    );
-  }
 }
