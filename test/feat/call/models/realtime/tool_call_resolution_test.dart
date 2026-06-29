@@ -64,6 +64,35 @@ void main() {
       expect(resolved.statusName, 'error');
       expect(resolved.isCancelled, isFalse);
     });
+
+    test('functionCallOutput error disposition resolves to error stage', () {
+      final items = <RealtimeThreadItem>[
+        RealtimeThreadItem(
+          id: 'call-item',
+          type: RealtimeThreadItemType.functionCall,
+          status: RealtimeThreadItemStatus.completed,
+          callId: 'call-1',
+          name: 'query_text_agent',
+          arguments: '{"question":"hello"}',
+        ),
+        RealtimeThreadItem(
+          id: 'error-output',
+          type: RealtimeThreadItemType.functionCallOutput,
+          status: RealtimeThreadItemStatus.completed,
+          callId: 'call-1',
+          output: '{"success":false,"error":"query_text_agent is disabled"}',
+          toolOutputDisposition: RealtimeToolOutputDisposition.error,
+          toolErrorMessage: 'query_text_agent is disabled',
+        ),
+      ];
+
+      final resolved = resolveRealtimeToolCall(items, 'call-item');
+
+      expect(resolved, isNotNull);
+      expect(resolved!.stage, RealtimeToolStage.error);
+      expect(resolved.errorMessage, 'query_text_agent is disabled');
+      expect(resolved.statusName, 'error');
+    });
   });
 
   group('tool output acceptance invariant', () {

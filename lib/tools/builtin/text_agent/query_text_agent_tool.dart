@@ -39,22 +39,19 @@ class QueryTextAgentTool extends Tool {
   @override
   Future<String> execute(Map<String, dynamic> args) async {
     // Validate parameters
-    final agentId = args['agent_id'] as String?;
-    final prompt = args['prompt'] as String?;
+    final agentIdValue = args['agent_id'];
+    final promptValue = args['prompt'];
 
-    if (agentId == null || agentId.isEmpty) {
-      return jsonEncode({
-        'success': false,
-        'error': 'Missing or empty required parameter: agent_id',
-      });
+    if (agentIdValue is! String || agentIdValue.isEmpty) {
+      throw ArgumentError('Missing or empty required parameter: agent_id');
     }
 
-    if (prompt == null || prompt.trim().isEmpty) {
-      return jsonEncode({
-        'success': false,
-        'error': 'Missing or empty required parameter: prompt',
-      });
+    if (promptValue is! String || promptValue.trim().isEmpty) {
+      throw ArgumentError('Missing or empty required parameter: prompt');
     }
+
+    final agentId = agentIdValue;
+    final prompt = promptValue;
 
     final cancellation = ToolCancellation.current;
 
@@ -67,11 +64,11 @@ class QueryTextAgentTool extends Tool {
       );
 
       return jsonEncode({'success': true, 'text': text});
-    } catch (e) {
+    } catch (_) {
       if (cancellation?.isCancelled ?? false) {
         rethrow;
       }
-      return jsonEncode({'success': false, 'error': 'Query failed: $e'});
+      rethrow;
     }
   }
 }

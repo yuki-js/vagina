@@ -515,13 +515,11 @@ class CallService {
       if (cancellation.isCancelled) {
         return;
       }
-      final outputMetadata = _deriveToolOutputMetadata(result);
       await _sendFunctionOutputIfAccepted(
         functionCallItemId: item.id,
         callId: callId,
         output: result,
-        disposition: outputMetadata.disposition,
-        errorMessage: outputMetadata.errorMessage,
+        disposition: RealtimeToolOutputDisposition.success,
       );
     } catch (e) {
       if (cancellation.isCancelled) {
@@ -566,24 +564,6 @@ class CallService {
       _realtimeService.thread.items,
       functionCallItemId: functionCallItemId,
       callId: callId,
-    );
-  }
-
-  _ToolOutputMetadata _deriveToolOutputMetadata(String output) {
-    try {
-      final decoded = jsonDecode(output);
-      if (decoded is Map<String, dynamic> && decoded['error'] != null) {
-        return _ToolOutputMetadata(
-          disposition: RealtimeToolOutputDisposition.error,
-          errorMessage: decoded['error'].toString(),
-        );
-      }
-    } catch (_) {
-      // Non-JSON output is treated as a successful tool result.
-    }
-
-    return const _ToolOutputMetadata(
-      disposition: RealtimeToolOutputDisposition.success,
     );
   }
 
@@ -696,11 +676,4 @@ final class _InFlightTool {
     required this.callId,
     required this.cancellation,
   });
-}
-
-final class _ToolOutputMetadata {
-  final RealtimeToolOutputDisposition disposition;
-  final String? errorMessage;
-
-  const _ToolOutputMetadata({required this.disposition, this.errorMessage});
 }

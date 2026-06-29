@@ -54,6 +54,70 @@ void main() {
         expect(subAgentCancelCount, 1);
       },
     );
+
+    test('throws argument errors for missing or invalid parameters', () async {
+      final tool = QueryTextAgentTool();
+      await tool.init(
+        ToolContext(
+          toolKey: QueryTextAgentTool.toolKeyName,
+          filesystemApi: _NoopFilesystemApi(),
+          callApi: _NoopCallApi(),
+          textAgentApi: _FakeTextAgentApi(
+            onSendQuery: ({onCancel}) => Future<String>.value('unused'),
+          ),
+        ),
+      );
+
+      await expectLater(
+        tool.execute(<String, dynamic>{'prompt': 'hello'}),
+        throwsA(isA<ArgumentError>()),
+      );
+      await expectLater(
+        tool.execute(<String, dynamic>{'agent_id': 42, 'prompt': 'hello'}),
+        throwsA(isA<ArgumentError>()),
+      );
+      await expectLater(
+        tool.execute(<String, dynamic>{'agent_id': 'agent-1'}),
+        throwsA(isA<ArgumentError>()),
+      );
+      await expectLater(
+        tool.execute(<String, dynamic>{'agent_id': 'agent-1', 'prompt': 42}),
+        throwsA(isA<ArgumentError>()),
+      );
+    });
+
+    test(
+      'throws unsupported query failures instead of returning failure JSON',
+      () async {
+        final tool = QueryTextAgentTool();
+        await tool.init(
+          ToolContext(
+            toolKey: QueryTextAgentTool.toolKeyName,
+            filesystemApi: _NoopFilesystemApi(),
+            callApi: _NoopCallApi(),
+            textAgentApi: _FakeTextAgentApi(
+              onSendQuery: ({onCancel}) => Future<String>.error(
+                UnsupportedError('query_text_agent is disabled'),
+              ),
+            ),
+          ),
+        );
+
+        await expectLater(
+          tool.execute(<String, dynamic>{
+            'agent_id': 'agent-1',
+            'prompt': 'delegate this',
+          }),
+          throwsA(
+            isA<UnsupportedError>().having(
+              (error) => error.message,
+              'message',
+              contains('query_text_agent is disabled'),
+            ),
+          ),
+        );
+      },
+    );
   });
 }
 
