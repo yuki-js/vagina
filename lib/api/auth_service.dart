@@ -232,17 +232,11 @@ class AuthService extends ChangeNotifier {
   Future<void> logout() async {
     final refreshToken = await _preferencesRepository.getAuthRefreshToken();
     if (refreshToken != null) {
-      final response = await _logoutCall(
-        LogoutBody(refreshToken: refreshToken),
-      );
-      switch (response) {
-        case LogoutResponseNoContent():
-        case LogoutResponseUnknown(:final statusCode) when statusCode == 204:
-          break;
-        case LogoutResponseUnknown(:final statusCode):
-          throw AuthException('Logout failed (status: $statusCode).');
-        case LogoutResponseServerError(:final data):
-          throw AuthException(data.message);
+      try {
+        await _logoutCall(LogoutBody(refreshToken: refreshToken));
+      } catch (_) {
+        // Server-side refresh token revocation is best-effort. The user intent
+        // is to leave this device, so local session cleanup must always win.
       }
     }
 

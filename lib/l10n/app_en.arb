@@ -322,9 +322,17 @@
   "@settingsCallIdleDisconnectTimeout30Minutes": {
     "description": "Dropdown label for a 30 minute idle auto-disconnect timeout."
   },
-  "settingsSetupSectionTitle": "Setup",
-  "@settingsSetupSectionTitle": {
-    "description": "Section header for the setup card on the settings screen."
+  "settingsTermsOfServiceTitle": "Terms of Service",
+  "@settingsTermsOfServiceTitle": {
+    "description": "Placeholder row title for the future terms of service link on the settings screen."
+  },
+  "settingsPrivacyPolicyTitle": "Privacy Policy",
+  "@settingsPrivacyPolicyTitle": {
+    "description": "Placeholder row title for the future privacy policy link on the settings screen."
+  },
+  "settingsLogoutTitle": "Log out",
+  "@settingsLogoutTitle": {
+    "description": "Title and button label for the logout action on the settings screen."
   },
   "settingsCommonCancel": "Cancel",
   "@settingsCommonCancel": {
@@ -341,14 +349,6 @@
   "settingsCommonClear": "Clear",
   "@settingsCommonClear": {
     "description": "Generic clear button label used in settings dialogs."
-  },
-  "settingsSetupRestartOobeTitle": "Run initial setup again",
-  "@settingsSetupRestartOobeTitle": {
-    "description": "Title of the setup list tile that restarts the onboarding flow from the welcome screen."
-  },
-  "settingsSetupRestartOobeSubtitle": "Restart initial setup from the welcome screen",
-  "@settingsSetupRestartOobeSubtitle": {
-    "description": "Subtitle of the setup list tile that explains onboarding will restart from the welcome screen."
   },
   "speedDialTabLoadError": "Error: {error}",
   "@speedDialTabLoadError": {

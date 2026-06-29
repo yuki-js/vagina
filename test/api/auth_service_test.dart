@@ -4,6 +4,7 @@ import 'package:vagina/api/generated/models/auth_token_response.dart';
 import 'package:vagina/api/generated/models/error_response.dart';
 import 'package:vagina/api/generated/models/user.dart';
 import 'package:vagina/api/generated/models/user_account_lifecycle.dart';
+import 'package:vagina/api/generated/responses/logout_response.dart';
 import 'package:vagina/api/generated/responses/refresh_session_response.dart';
 import 'package:vagina/interfaces/key_value_store.dart';
 import 'package:vagina/repositories/preferences_repository.dart';
@@ -109,6 +110,51 @@ void main() {
         expect(authService.authState, AuthState.authenticated);
       },
     );
+
+    test('logout revokes refresh token and clears local session', () async {
+      final store = _MemoryKeyValueStore();
+      final preferences = PreferencesRepository(store);
+      await preferences.saveAuthRefreshToken('refresh-token');
+      var revokedRefreshToken = '';
+      final authService = AuthService(
+        preferencesRepository: preferences,
+        logoutCall: (body) async {
+          revokedRefreshToken = body.refreshToken;
+          return const LogoutResponse.noContent();
+        },
+      );
+
+      await authService.logout();
+
+      expect(revokedRefreshToken, 'refresh-token');
+      expect(await preferences.getAuthRefreshToken(), isNull);
+      expect(authService.authState, AuthState.signedOut);
+    });
+
+    test('logout clears local session when server revocation fails', () async {
+      final store = _MemoryKeyValueStore();
+      final preferences = PreferencesRepository(store);
+      await preferences.saveAuthRefreshToken('refresh-token');
+      final authService = AuthService(
+        preferencesRepository: preferences,
+        logoutCall: (_) async => const LogoutResponse.unknown(500, null),
+      );
+
+      await authService.logout();
+
+      expect(await preferences.getAuthRefreshToken(), isNull);
+      expect(authService.authState, AuthState.signedOut);
+    });
+
+    test('logout succeeds locally when refresh token is missing', () async {
+      final preferences = PreferencesRepository(_MemoryKeyValueStore());
+      final authService = AuthService(preferencesRepository: preferences);
+
+      await authService.logout();
+
+      expect(await preferences.getAuthRefreshToken(), isNull);
+      expect(authService.authState, AuthState.signedOut);
+    });
   });
 }
 

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:vagina/core/config/app_config.dart';
 import 'package:vagina/core/state/locale_providers.dart';
 import 'package:vagina/core/app/app_container.dart';
-import 'package:vagina/feat/settings/widgets/setup_section.dart';
+import 'package:vagina/core/theme/app_theme.dart';
+import 'package:vagina/feat/oobe/screens/oobe_flow.dart';
 import 'package:vagina/feat/settings/widgets/settings_card.dart';
 import 'package:vagina/l10n/app_localizations.dart';
 
@@ -38,10 +40,7 @@ class SettingsScreen extends StatelessWidget {
                 const _CallPreferencesCard(),
                 const SizedBox(height: 24),
 
-                // Setup Section
-                SectionHeader(title: l10n.settingsSetupSectionTitle),
-                const SizedBox(height: 12),
-                const SetupSection(),
+                const _OtherSettingsCard(),
                 const SizedBox(height: 32),
               ]),
             ),
@@ -140,6 +139,110 @@ class _LanguageSelectorCard extends ConsumerWidget {
             },
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _OtherSettingsCard extends StatefulWidget {
+  const _OtherSettingsCard();
+
+  @override
+  State<_OtherSettingsCard> createState() => _OtherSettingsCardState();
+}
+
+class _OtherSettingsCardState extends State<_OtherSettingsCard> {
+  static final Uri _termsOfServiceUrl = Uri.parse(
+    'https://example.invalid/terms-of-service',
+  );
+  static final Uri _privacyPolicyUrl = Uri.parse(
+    'https://example.invalid/privacy-policy',
+  );
+
+  bool _isLoggingOut = false;
+
+  Future<void> _openPlaceholderUrl(Uri url) async {
+    await launchUrl(url, mode: LaunchMode.platformDefault);
+  }
+
+  Future<void> _handleLogout() async {
+    if (_isLoggingOut) {
+      return;
+    }
+
+    setState(() {
+      _isLoggingOut = true;
+    });
+
+    await AppContainer.auth.logout();
+
+    if (!mounted) {
+      return;
+    }
+
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => const OobeFlowScreen()),
+      (_) => false,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
+    return SettingsCard(
+      child: Material(
+        type: MaterialType.transparency,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ListTile(
+              leading: const Icon(
+                Icons.description_outlined,
+                color: AppTheme.lightTextSecondary,
+              ),
+              title: Text(
+                l10n.settingsTermsOfServiceTitle,
+                style: const TextStyle(color: AppTheme.lightTextPrimary),
+              ),
+              trailing: const Icon(
+                Icons.open_in_new,
+                color: AppTheme.lightTextSecondary,
+              ),
+              onTap: () => _openPlaceholderUrl(_termsOfServiceUrl),
+            ),
+            ListTile(
+              leading: const Icon(
+                Icons.privacy_tip_outlined,
+                color: AppTheme.lightTextSecondary,
+              ),
+              title: Text(
+                l10n.settingsPrivacyPolicyTitle,
+                style: const TextStyle(color: AppTheme.lightTextPrimary),
+              ),
+              trailing: const Icon(
+                Icons.open_in_new,
+                color: AppTheme.lightTextSecondary,
+              ),
+              onTap: () => _openPlaceholderUrl(_privacyPolicyUrl),
+            ),
+            ListTile(
+              leading: const Icon(Icons.logout, color: AppTheme.errorColor),
+              title: Text(
+                l10n.settingsLogoutTitle,
+                style: const TextStyle(color: AppTheme.errorColor),
+              ),
+              trailing: _isLoggingOut
+                  ? const SizedBox.square(
+                      dimension: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : null,
+              enabled: !_isLoggingOut,
+              onTap: _handleLogout,
+            ),
+          ],
+        ),
       ),
     );
   }
