@@ -18,7 +18,7 @@ abstract class TextAgentApiConfig {
 /// Server-owned text-agent definition selected from the server model registry.
 ///
 /// This intentionally carries only the safe public model preset identifier. It
-/// does not expose private transport details to the client runtime.
+/// does not expose private provider configuration to the client runtime.
 class ServerBackedTextAgentApiConfig extends TextAgentApiConfig {
   final String textModelId;
 

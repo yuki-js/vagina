@@ -1,7 +1,7 @@
 /// Abstract API for text agent query operations.
 ///
 /// This API allows tools to query text agents through the current call/session
-/// boundary. Implementations must not expose private text-model transport
+/// boundary. Implementations must not expose private text-model configuration
 /// details through [listAgents].
 abstract class TextAgentApi {
   /// Send a query to a text agent and return the response text.

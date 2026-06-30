@@ -87,7 +87,7 @@ void main() {
     });
 
     test(
-      'throws unsupported query failures instead of returning failure JSON',
+      'throws text agent query failures instead of returning failure JSON',
       () async {
         final tool = QueryTextAgentTool();
         await tool.init(
@@ -97,7 +97,9 @@ void main() {
             callApi: _NoopCallApi(),
             textAgentApi: _FakeTextAgentApi(
               onSendQuery: ({onCancel}) => Future<String>.error(
-                UnsupportedError('query_text_agent is disabled'),
+                Exception(
+                  'Text agent query request failed (409): active voice session ended',
+                ),
               ),
             ),
           ),
@@ -109,10 +111,10 @@ void main() {
             'prompt': 'delegate this',
           }),
           throwsA(
-            isA<UnsupportedError>().having(
-              (error) => error.message,
+            isA<Exception>().having(
+              (error) => error.toString(),
               'message',
-              contains('query_text_agent is disabled'),
+              contains('active voice session ended'),
             ),
           ),
         );

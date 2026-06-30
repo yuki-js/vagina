@@ -80,9 +80,10 @@ void main() {
           type: RealtimeThreadItemType.functionCallOutput,
           status: RealtimeThreadItemStatus.completed,
           callId: 'call-1',
-          output: '{"success":false,"error":"query_text_agent is disabled"}',
+          output:
+              '{"success":false,"error":"Text agent query request failed"}',
           toolOutputDisposition: RealtimeToolOutputDisposition.error,
-          toolErrorMessage: 'query_text_agent is disabled',
+          toolErrorMessage: 'Text agent query request failed',
         ),
       ];
 
@@ -90,7 +91,7 @@ void main() {
 
       expect(resolved, isNotNull);
       expect(resolved!.stage, RealtimeToolStage.error);
-      expect(resolved.errorMessage, 'query_text_agent is disabled');
+      expect(resolved.errorMessage, 'Text agent query request failed');
       expect(resolved.statusName, 'error');
     });
   });

@@ -73,7 +73,6 @@ final class TextAgentService extends SubService {
   Future<String> sendQuery(
     String agentId,
     String prompt, {
-    String? threadId,
     void Function() Function(void Function())? onCancel,
   }) async {
     ensureNotDisposed();
@@ -107,10 +106,6 @@ final class TextAgentService extends SubService {
     final submittedToolCallIds = <String>{};
 
     try {
-      if (threadId != null && threadId.isNotEmpty) {
-        logger.fine('Ignoring text agent threadId for agent ${agent.id}.');
-      }
-
       var response = await _postQuery(
         agentId: agent.id,
         voiceSessionId: voiceSessionId,
