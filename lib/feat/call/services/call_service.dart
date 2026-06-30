@@ -324,18 +324,19 @@ class CallService {
     _realtimeService = RealtimeService(voiceAgent: _voiceAgent!);
     _recorderService = RecorderService();
     _manualAudioTurnBuffer = ManualAudioTurnBuffer();
-    _textAgentService = TextAgentService(agents: _textAgents!);
+
+    _textAgentService = TextAgentService(
+      agents: _textAgents!,
+      notepadService: _notepadService,
+      realtimeService: _realtimeService,
+    );
 
     _toolRunner = ToolRunner(
       filesystemApi: CallFilesystemApi(notepadService: _notepadService),
       callApi: CallControlApi(callService: this),
       textAgentApi: CallTextAgentApi(textAgentService: _textAgentService),
     );
-
-    // Wire dependencies into TextAgentService
-    _textAgentService.setNotepadService(_notepadService);
     _textAgentService.setToolRunner(_toolRunner);
-
     _exposedToolKeys = Set<String>.from(_voiceAgent!.enabledTools);
   }
 

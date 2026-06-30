@@ -1,62 +1,50 @@
-import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
 
+import 'package:dio/dio.dart';
+import 'package:uuid/uuid.dart';
+import 'package:vagina/api/generated/api_models.dart' as api_models;
+import 'package:vagina/api/generated/api_responses.dart' as api_responses;
+import 'package:vagina/api/vagina_api_client.dart';
+import 'package:vagina/core/app/app_container.dart';
 import 'package:vagina/feat/call/models/text_agent_api_config.dart';
 import 'package:vagina/feat/call/models/text_agent_info.dart';
-import 'package:vagina/feat/call/models/text_agent_thread.dart';
-import 'package:vagina/feat/call/services/transport/text_agent_transport.dart';
+import 'package:vagina/feat/call/models/text_agent_query.dart';
 import 'package:vagina/feat/call/services/notepad_service.dart';
+import 'package:vagina/feat/call/services/realtime_service.dart';
 import 'package:vagina/feat/call/services/subservice.dart';
 import 'package:vagina/feat/call/services/tool_runner.dart';
+import 'package:vagina/services/tools_runtime/tool.dart';
 import 'package:vagina/services/tools_runtime/tool_definition.dart';
 
 /// Session-scoped text-agent domain service for a single CallService session.
-///
-/// Owns the text agent registry, thread management, and query execution.
-/// Delegates HTTP transport to provider-specific [TextAgentTransport] implementations.
 final class TextAgentService extends SubService {
-  static const String _defaultThreadId = 'default';
+  static const int _maxQueryIterations = 20;
+  static final Uuid _uuid = Uuid();
 
   final Map<String, TextAgentInfo> _agentsById = <String, TextAgentInfo>{};
+  final NotepadService _notepadService;
+  final RealtimeService _realtimeService;
+  final VaginaApiClient _apiClient;
 
-  /// Thread storage: agentId → threadId → thread.
-  /// Currently uses threadId='default' for single-thread-per-agent.
-  final Map<String, Map<String, TextAgentThread>> _threadsByAgent =
-      <String, Map<String, TextAgentThread>>{};
-
-  late final NotepadService _notepadService;
   late final ToolRunner _toolRunner;
 
-  TextAgentService({Iterable<TextAgentInfo> agents = const <TextAgentInfo>[]}) {
+  TextAgentService({
+    Iterable<TextAgentInfo> agents = const <TextAgentInfo>[],
+    required NotepadService notepadService,
+    required RealtimeService realtimeService,
+    VaginaApiClient? apiClient,
+  }) : _notepadService = notepadService,
+       _realtimeService = realtimeService,
+       _apiClient = apiClient ?? AppContainer.auth.apiClient {
     _registerAgents(agents);
-  }
-
-  /// Inject NotepadService for dynamic active file tracking.
-  ///
-  /// Must be called before [start]. Required for dynamic tool filtering.
-  void setNotepadService(NotepadService notepadService) {
-    if (isStarted) {
-      throw StateError('setNotepadService() must be called before start().');
-    }
-    _notepadService = notepadService;
   }
 
   /// Read-only view of the text agents available during this call.
   List<TextAgentInfo> get agents =>
       UnmodifiableListView<TextAgentInfo>(_agentsById.values);
 
-  /// Find a text agent by id.
-  TextAgentInfo? findAgent(String agentId) => _agentsById[agentId];
-
-  /// Get a text agent by id or throw when it is unavailable.
-  TextAgentInfo getAgent(String agentId) {
-    final agent = findAgent(agentId);
-    if (agent == null) {
-      throw StateError('Text agent not found: $agentId');
-    }
-    return agent;
-  }
+  String? get currentVoiceSessionId => _realtimeService.currentSessionId;
 
   /// Inject ToolRunner for tool execution support.
   ///
@@ -69,148 +57,342 @@ final class TextAgentService extends SubService {
     _toolRunner = toolRunner;
   }
 
-  /// Get or create a thread for the given agent.
-  ///
-  /// Currently uses a single 'default' thread per agent. Future support for
-  /// multiple threads per agent can be added by passing a threadId parameter.
-  TextAgentThread getOrCreateThread(String agentId, {String? threadId}) {
-    final effectiveThreadId = threadId ?? _defaultThreadId;
-
-    final agentThreads = _threadsByAgent.putIfAbsent(
-      agentId,
-      () => <String, TextAgentThread>{},
-    );
-
-    return agentThreads.putIfAbsent(
-      effectiveThreadId,
-      () => TextAgentThread(id: '${agentId}_$effectiveThreadId'),
-    );
-  }
-
-  /// Find a thread for the given agent (returns null if not exists).
-  TextAgentThread? findThread(String agentId, {String? threadId}) {
-    final effectiveThreadId = threadId ?? _defaultThreadId;
-    return _threadsByAgent[agentId]?[effectiveThreadId];
+  /// Get a text agent by id or throw when it is unavailable.
+  TextAgentInfo getAgent(String agentId) {
+    final agent = _agentsById[agentId];
+    if (agent == null) {
+      throw StateError('Text agent not found: $agentId');
+    }
+    return agent;
   }
 
   /// Send a query to a text agent and return the response.
   ///
-  /// Maintains conversation history in the agent's thread. Supports tool calling
-  /// via the configured [ToolRunner].
-  ///
-  /// Throws [StateError] if agent not found or service not started.
-  /// Throws [Exception] on API errors or tool execution failures.
+  /// Throws [StateError] if the service has not started, the agent is missing,
+  /// or there is no active voice session.
   Future<String> sendQuery(
     String agentId,
     String prompt, {
     String? threadId,
-    TextAgentCancelHook? onCancel,
+    void Function() Function(void Function())? onCancel,
   }) async {
+    ensureNotDisposed();
     if (!isStarted) {
       throw StateError('TextAgentService has not been started.');
     }
 
-    // Get agent
     final agent = getAgent(agentId);
+    final apiConfig = agent.apiConfig;
+    if (apiConfig is! ServerBackedTextAgentApiConfig) {
+      throw UnsupportedError(
+        'Text agent query is not available for agent: ${agent.id}',
+      );
+    }
 
-    // Create transport before mutating thread state so deliberately unsupported
-    // server-backed definitions fail cleanly without recording stale user turns.
-    final transport = _createTransport(agent);
+    final normalizedPrompt = prompt.trim();
+    if (normalizedPrompt.isEmpty) {
+      throw ArgumentError.value(prompt, 'prompt', 'Prompt must not be empty.');
+    }
 
-    // Get or create thread
-    final thread = getOrCreateThread(agentId, threadId: threadId);
+    final voiceSessionId = currentVoiceSessionId;
+    if (voiceSessionId == null) {
+      throw StateError('Text agent query requires an active voice session.');
+    }
 
-    // Add user message to thread
-    final userItem = TextAgentThreadItem(
-      id: 'msg_${DateTime.now().millisecondsSinceEpoch}',
-      type: TextAgentThreadItemType.message,
-      role: TextAgentThreadItemRole.user,
-      status: TextAgentThreadItemStatus.completed,
-      content: [TextAgentThreadTextPart(text: prompt, isDone: true)],
-    );
-    thread.addItem(userItem);
+    final requestId = 'req_${_uuid.v4().replaceAll('-', '')}';
+    final toolCancellation = ToolCancellation();
+    final unregisterCancel = onCancel?.call(toolCancellation.cancel);
+    final preparedToolResults = <String, TextAgentToolResultSubmission>{};
+    final pendingToolCallIds = Queue<String>();
 
     try {
-      // Execute query with tool calling support
-      final result = await _executeQueryLoop(
-        agent: agent,
-        thread: thread,
-        transport: transport,
-        onCancel: onCancel,
-      );
-
-      return result;
-    } catch (e, stackTrace) {
-      // Check for context length errors and retry
-      if (_isContextLengthError(e) && thread.length > 0) {
-        // Trim ~25% of oldest items
-        final trimCount = (thread.length * 0.25).ceil().clamp(1, 10);
-        logger.warning(
-          'Context length error detected, trimming $trimCount items from thread (${thread.length} → ${thread.length - trimCount})',
-        );
-        thread.trimLeadingItems(trimCount);
-
-        // Re-add user message
-        thread.addItem(userItem);
-
-        logger.info('Retrying query after context trimming');
-        // Retry once
-        return await _executeQueryLoop(
-          agent: agent,
-          thread: thread,
-          transport: transport,
-          onCancel: onCancel,
-        );
+      if (threadId != null && threadId.isNotEmpty) {
+        logger.fine('Ignoring text agent threadId for agent ${agent.id}.');
       }
 
-      logger.severe('Query failed for agent: $agentId', e, stackTrace);
+      var response = await _postQuery(
+        agentId: agent.id,
+        voiceSessionId: voiceSessionId,
+        requestId: requestId,
+        prompt: normalizedPrompt,
+      );
+
+      var iterationCount = 0;
+      while (iterationCount < _maxQueryIterations) {
+        iterationCount += 1;
+
+        switch (response.status) {
+          case TextAgentQueryStatus.completed:
+            final text = response.text;
+            if (text == null || text.isEmpty) {
+              throw Exception(
+                'Text agent query completed without returning any text.',
+              );
+            }
+            return text;
+          case TextAgentQueryStatus.failed:
+            final code = response.errorCode ?? 'unknown_error';
+            final message = response.errorMessage ?? 'Text agent query failed.';
+            throw Exception('Text agent query failed ($code): $message');
+          case TextAgentQueryStatus.requiresTool:
+            final toolCalls = response.toolCalls;
+            if (toolCalls.isEmpty) {
+              throw Exception(
+                'Text agent requested tool execution without any tool calls.',
+              );
+            }
+
+            await _prepareToolResults(
+              agent: agent,
+              toolCalls: toolCalls,
+              preparedToolResults: preparedToolResults,
+              cancellation: toolCancellation,
+            );
+            for (final toolCall in toolCalls) {
+              if (pendingToolCallIds.contains(toolCall.id)) {
+                continue;
+              }
+              pendingToolCallIds.add(toolCall.id);
+            }
+
+            if (pendingToolCallIds.isEmpty) {
+              throw Exception(
+                'Text agent requested tool execution but no pending tool results remain.',
+              );
+            }
+
+            final nextToolCallId = pendingToolCallIds.removeFirst();
+            final nextToolResult = preparedToolResults[nextToolCallId];
+            if (nextToolResult == null) {
+              throw Exception(
+                'Text agent requested a tool result that was not prepared: $nextToolCallId',
+              );
+            }
+            response = await _postQuery(
+              agentId: agent.id,
+              voiceSessionId: voiceSessionId,
+              requestId: requestId,
+              toolResult: nextToolResult,
+            );
+        }
+      }
+
+      throw Exception(
+        'Text agent query exceeded the maximum number of iterations ($_maxQueryIterations).',
+      );
+    } on DioException catch (error, stackTrace) {
+      logger.severe(
+        'Text agent query request failed for agent: $agentId',
+        error,
+        stackTrace,
+      );
+      throw Exception(_describeTransportError(error));
+    } catch (error, stackTrace) {
+      logger.severe(
+        'Text agent query failed for agent: $agentId',
+        error,
+        stackTrace,
+      );
       rethrow;
     } finally {
-      await transport.dispose();
+      unregisterCancel?.call();
     }
-  }
-
-  TextAgentTransport _createTransport(TextAgentInfo agent) {
-    final apiConfig = agent.apiConfig;
-
-    if (apiConfig is ServerBackedTextAgentApiConfig) {
-      throw UnsupportedError(
-        'query_text_agent is disabled for server-backed text agent definitions until server-hosted Text Agent execution is implemented. Available agent: ${agent.id} (${agent.name}), text model preset: ${apiConfig.textModelId}.',
-      );
-    }
-
-    throw UnsupportedError('Unknown API config type');
   }
 
   List<ToolDefinition> _getAvailableToolsForAgent(
     TextAgentInfo agent,
     Set<String> activeExtensions,
   ) {
-    // Get tools filtered by active file extensions
     final extensionFilteredTools = _toolRunner.computeAvailableTools(
       activeExtensions,
     );
 
-    // If agent's enabledTools is empty, all extension-filtered tools are enabled
     if (agent.enabledTools.isEmpty) {
       return extensionFilteredTools;
     }
 
-    // Further filter by agent's enabled tools (key-absent = true convention)
-    final filtered = extensionFilteredTools.where((tool) {
-      return agent.enabledTools[tool.toolKey] ?? true;
-    }).toList();
-
-    return filtered;
+    return extensionFilteredTools
+        .where((tool) {
+          return agent.enabledTools[tool.toolKey] ?? true;
+        })
+        .toList(growable: false);
   }
 
-  bool _isContextLengthError(dynamic error) {
-    final errorStr = error.toString().toLowerCase();
-    return errorStr.contains('context_length_exceeded') ||
-        errorStr.contains('context length') ||
-        errorStr.contains('maximum context') ||
-        errorStr.contains('token limit') ||
-        errorStr.contains('tokens exceeded');
+  Future<void> _prepareToolResults({
+    required TextAgentInfo agent,
+    required List<TextAgentToolCallRequest> toolCalls,
+    required Map<String, TextAgentToolResultSubmission> preparedToolResults,
+    required ToolCancellation cancellation,
+  }) async {
+    final availableToolKeys = _getAvailableToolsForAgent(
+      agent,
+      _getCurrentActiveExtensions(),
+    ).map((tool) => tool.toolKey).toSet();
+
+    for (final toolCall in toolCalls) {
+      if (preparedToolResults.containsKey(toolCall.id)) {
+        continue;
+      }
+
+      preparedToolResults[toolCall.id] = await _executeToolCall(
+        toolCall,
+        availableToolKeys: availableToolKeys,
+        cancellation: cancellation,
+      );
+    }
+  }
+
+  Future<TextAgentToolResultSubmission> _executeToolCall(
+    TextAgentToolCallRequest toolCall, {
+    required Set<String> availableToolKeys,
+    required ToolCancellation cancellation,
+  }) async {
+    if (!availableToolKeys.contains(toolCall.name)) {
+      return TextAgentToolResultSubmission(
+        toolCallId: toolCall.id,
+        output: jsonEncode(<String, dynamic>{
+          'success': false,
+          'error':
+              'Tool is not available in the current call session: ${toolCall.name}',
+        }),
+        isError: true,
+      );
+    }
+
+    try {
+      final output = await _toolRunner.execute(
+        toolCall.name,
+        toolCall.arguments,
+        cancellation: cancellation,
+      );
+      return TextAgentToolResultSubmission(
+        toolCallId: toolCall.id,
+        output: output,
+        isError: _isToolOutputError(output),
+      );
+    } catch (error, stackTrace) {
+      if (cancellation.isCancelled) {
+        rethrow;
+      }
+
+      logger.severe(
+        'Tool execution failed during text agent query: ${toolCall.name}',
+        error,
+        stackTrace,
+      );
+      return TextAgentToolResultSubmission(
+        toolCallId: toolCall.id,
+        output: jsonEncode(<String, dynamic>{
+          'success': false,
+          'error': 'Tool execution failed: $error',
+        }),
+        isError: true,
+      );
+    }
+  }
+
+  bool _isToolOutputError(String output) {
+    try {
+      final decoded = jsonDecode(output);
+      if (decoded is Map<String, dynamic>) {
+        final success = decoded['success'];
+        return success is bool && success == false;
+      }
+      if (decoded is Map) {
+        final success = decoded['success'];
+        return success is bool && success == false;
+      }
+    } catch (_) {
+      // Ignore malformed tool output and rely on thrown exceptions instead.
+    }
+    return false;
+  }
+
+  Future<TextAgentQueryResponse> _postQuery({
+    required String agentId,
+    required String voiceSessionId,
+    required String requestId,
+    String? prompt,
+    TextAgentToolResultSubmission? toolResult,
+  }) async {
+    if ((prompt == null) == (toolResult == null)) {
+      throw ArgumentError(
+        'Exactly one of prompt or toolResult must be provided.',
+      );
+    }
+
+    final response = await _apiClient.textAgents.queryTextAgent(
+      textAgentId: agentId,
+      body: api_models.QueryTextAgentBody(
+        voiceSessionId: voiceSessionId,
+        requestId: requestId,
+        prompt: prompt,
+        toolResult: toolResult?.toGenerated(),
+      ),
+    );
+
+    if (response is api_responses.QueryTextAgentResponseSuccess) {
+      return TextAgentQueryResponse.fromGenerated(response.data);
+    }
+
+    throw Exception(_describeQueryErrorResponse(response));
+  }
+
+  String _describeQueryErrorResponse(
+    api_responses.QueryTextAgentResponse response,
+  ) {
+    if (response is api_responses.QueryTextAgentResponseBadRequest) {
+      return 'Text agent query request failed (400): ${response.data.message}';
+    }
+    if (response is api_responses.QueryTextAgentResponseUnauthorized) {
+      return 'Text agent query request failed (401): ${response.data.message}';
+    }
+    if (response is api_responses.QueryTextAgentResponseNotFound) {
+      return 'Text agent query request failed (404): ${response.data.message}';
+    }
+    if (response is api_responses.QueryTextAgentResponseConflict) {
+      return 'Text agent query request failed (409): ${response.data.message}';
+    }
+    if (response is api_responses.QueryTextAgentResponseServerError) {
+      return 'Text agent query request failed (500): ${response.data.message}';
+    }
+    if (response is api_responses.QueryTextAgentResponseUnknown) {
+      return 'Text agent query request failed with status ${response.statusCode}.';
+    }
+    return 'Text agent query request failed.';
+  }
+
+  String _describeTransportError(DioException error) {
+    final statusCode = error.response?.statusCode;
+    final responseData = error.response?.data;
+    String? message;
+
+    if (responseData is Map) {
+      final body = Map<String, dynamic>.from(responseData);
+      final directMessage = body['message'];
+      if (directMessage is String && directMessage.isNotEmpty) {
+        message = directMessage;
+      } else {
+        final nestedError = body['error'];
+        if (nestedError is Map) {
+          final nestedMessage = nestedError['message'];
+          if (nestedMessage is String && nestedMessage.isNotEmpty) {
+            message = nestedMessage;
+          }
+        }
+      }
+    }
+
+    if (statusCode != null && message != null) {
+      return 'Text agent query request failed ($statusCode): $message';
+    }
+    if (statusCode != null) {
+      return 'Text agent query request failed with status $statusCode.';
+    }
+    if (error.message != null && error.message!.isNotEmpty) {
+      return 'Text agent query request failed: ${error.message}';
+    }
+    return 'Text agent query request failed.';
   }
 
   void _registerAgents(Iterable<TextAgentInfo> agents) {
@@ -227,149 +409,6 @@ final class TextAgentService extends SubService {
     }
   }
 
-  /// Execute a query with multi-turn tool calling support.
-  ///
-  /// Returns the final text response from the agent after all tool calls complete.
-  /// Recomputes available tools on each turn to reflect active file changes.
-  Future<String> _executeQueryLoop({
-    required TextAgentInfo agent,
-    required TextAgentThread thread,
-    required TextAgentTransport transport,
-    TextAgentCancelHook? onCancel,
-  }) async {
-    const maxTurns = 10;
-    int turnCount = 0;
-
-    while (turnCount < maxTurns) {
-      turnCount++;
-
-      // Recompute available tools based on current active file extensions
-      final activeExtensions = _getCurrentActiveExtensions();
-      final availableTools = _getAvailableToolsForAgent(
-        agent,
-        activeExtensions,
-      );
-
-      // Send request via transport (transport handles tool format conversion)
-      final responseJson = await transport.sendRequest(
-        thread: thread,
-        systemPrompt: agent.prompt,
-        availableTools: availableTools,
-        onCancel: onCancel,
-      );
-
-      // Parse response
-      final choices = responseJson['choices'] as List?;
-      if (choices == null || choices.isEmpty) {
-        logger.severe('No choices in API response');
-        throw Exception('No choices in API response');
-      }
-
-      final message = choices[0]['message'] as Map<String, dynamic>?;
-      if (message == null) {
-        logger.severe('No message in API response');
-        throw Exception('No message in API response');
-      }
-
-      // Check for tool calls
-      final toolCalls = message['tool_calls'] as List?;
-
-      if (toolCalls != null && toolCalls.isNotEmpty) {
-        logger.info('Agent requested ${toolCalls.length} tool call(s)');
-
-        // AI requested tool execution
-        // Convert tool calls to domain model
-        final domainToolCalls = <TextAgentToolCall>[];
-
-        for (final toolCallData in toolCalls) {
-          final toolCallId = toolCallData['id'] as String;
-          final function = toolCallData['function'] as Map<String, dynamic>;
-          final toolName = function['name'] as String;
-          final argumentsStr = function['arguments'] as String;
-
-          domainToolCalls.add(
-            TextAgentToolCall(
-              id: toolCallId,
-              name: toolName,
-              arguments: argumentsStr,
-            ),
-          );
-        }
-
-        // Add assistant message with tool calls to thread
-        final assistantItem = TextAgentThreadItem(
-          id: 'msg_${DateTime.now().millisecondsSinceEpoch}',
-          type: TextAgentThreadItemType.message,
-          role: TextAgentThreadItemRole.assistant,
-          status: TextAgentThreadItemStatus.completed,
-          toolCalls: domainToolCalls,
-        );
-        thread.addItem(assistantItem);
-
-        // Execute each tool and add results
-        for (final toolCall in domainToolCalls) {
-          String toolResult;
-          try {
-            toolResult = await _toolRunner.execute(
-              toolCall.name,
-              toolCall.arguments,
-            );
-          } catch (e, stackTrace) {
-            logger.severe(
-              'Tool execution failed: ${toolCall.name}',
-              e,
-              stackTrace,
-            );
-            toolResult = jsonEncode({
-              'success': false,
-              'error': 'Tool execution failed: $e',
-            });
-          }
-
-          // Add toolResult item to thread
-          final toolResultItem = TextAgentThreadItem(
-            id: '${toolCall.id}_result',
-            type: TextAgentThreadItemType.toolResult,
-            status: TextAgentThreadItemStatus.completed,
-            toolCallId: toolCall.id,
-            toolName: toolCall.name,
-            toolOutput: toolResult,
-          );
-          thread.addItem(toolResultItem);
-        }
-
-        // Continue loop for next turn
-        continue;
-      }
-
-      // No tool calls - get final response
-      final content = message['content'] as String?;
-      if (content == null) {
-        logger.severe('No content in final response');
-        throw Exception('No content in final response');
-      }
-
-      // Add final assistant message item to thread
-      final textPart = TextAgentThreadTextPart(text: content, isDone: true);
-      final assistantItem = TextAgentThreadItem(
-        id: 'msg_${DateTime.now().millisecondsSinceEpoch}',
-        type: TextAgentThreadItemType.message,
-        role: TextAgentThreadItemRole.assistant,
-        status: TextAgentThreadItemStatus.completed,
-        content: [textPart],
-      );
-      thread.addItem(assistantItem);
-
-      return content;
-    }
-
-    // Max turns reached
-    logger.warning(
-      'Query loop reached max turns ($maxTurns) without completion',
-    );
-    throw Exception('Max turns ($maxTurns) reached without completion');
-  }
-
   Set<String> _getCurrentActiveExtensions() {
     final activeFiles = _notepadService.listActive();
     return activeFiles
@@ -382,6 +421,5 @@ final class TextAgentService extends SubService {
   Future<void> dispose() async {
     await super.dispose();
     _agentsById.clear();
-    _threadsByAgent.clear();
   }
 }

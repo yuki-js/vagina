@@ -1,14 +1,21 @@
+import 'dart:typed_data';
+
+import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vagina/feat/call/models/text_agent_api_config.dart';
 import 'package:vagina/feat/call/models/text_agent_info.dart';
 import 'package:vagina/feat/call/services/text_agent_service.dart';
 import 'package:vagina/feat/call/services/toolapi/text_agent_api.dart';
 
+import '../text_agent_service_test_support.dart';
+
 void main() {
   group('CallTextAgentApi server-backed definitions', () {
     test(
-      'lists server-backed agents without provider runtime details',
+      'lists server-backed agents without provider runtime details and reflects missing voice session state',
       () async {
+        final notepadService = createTestNotepadService();
+        final realtimeService = createTestRealtimeService();
         final service = TextAgentService(
           agents: const <TextAgentInfo>[
             TextAgentInfo(
@@ -22,7 +29,18 @@ void main() {
               enabledTools: <String, bool>{'list': true},
             ),
           ],
+          notepadService: notepadService,
+          realtimeService: realtimeService,
+          apiClient: createTestApiClient(_NoopAdapter()),
         );
+        await notepadService.start();
+        await realtimeService.start();
+        await service.start();
+        addTearDown(() async {
+          await service.dispose();
+          await realtimeService.dispose();
+          await notepadService.dispose();
+        });
         final api = CallTextAgentApi(textAgentService: service);
 
         final agents = await api.listAgents();
@@ -30,6 +48,13 @@ void main() {
         expect(agents, hasLength(1));
         expect(agents.single, containsPair('text_model_id', 'text-agent-prod'));
         expect(agents.single, containsPair('query_supported', false));
+        expect(
+          agents.single,
+          containsPair(
+            'query_status',
+            'Text agent query requires an active voice session.',
+          ),
+        );
         expect(
           agents.single,
           containsPair('enabled_tools', <String, bool>{'list': true}),
@@ -42,8 +67,12 @@ void main() {
     );
 
     test(
-      'fails server-backed query with deliberate unsupported message',
+      'marks server-backed agents queryable when a voice session is active',
       () async {
+        final notepadService = createTestNotepadService();
+        final realtimeService = createTestRealtimeService(
+          sessionId: 'vs_0123456789abcdef',
+        );
         final service = TextAgentService(
           agents: const <TextAgentInfo>[
             TextAgentInfo(
@@ -56,26 +85,39 @@ void main() {
               ),
             ),
           ],
+          notepadService: notepadService,
+          realtimeService: realtimeService,
+          apiClient: createTestApiClient(_NoopAdapter()),
         );
+        await notepadService.start();
+        await realtimeService.start();
         await service.start();
-        addTearDown(service.dispose);
+        addTearDown(() async {
+          await service.dispose();
+          await realtimeService.dispose();
+          await notepadService.dispose();
+        });
+        final api = CallTextAgentApi(textAgentService: service);
 
-        await expectLater(
-          service.sendQuery('agent-1', 'hello'),
-          throwsA(
-            isA<UnsupportedError>().having(
-              (error) => error.message,
-              'message',
-              allOf(
-                contains('query_text_agent is disabled'),
-                contains('server-hosted Text Agent execution'),
-                contains('agent-1'),
-                contains('text-agent-prod'),
-              ),
-            ),
-          ),
-        );
+        final agents = await api.listAgents();
+
+        expect(agents.single, containsPair('query_supported', true));
+        expect(agents.single, containsPair('query_status', 'ready'));
       },
     );
   });
+}
+
+final class _NoopAdapter implements HttpClientAdapter {
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) {
+    throw UnimplementedError('HTTP is not used in this test.');
+  }
+
+  @override
+  void close({bool force = false}) {}
 }

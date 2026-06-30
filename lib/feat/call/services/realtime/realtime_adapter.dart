@@ -34,6 +34,9 @@ abstract interface class RealtimeAdapter {
   /// Current connection lifecycle state.
   RealtimeAdapterConnectionState get connectionState;
 
+  /// Current voice-session id once the session has been established.
+  String? get sessionId;
+
   /// Connection lifecycle state changes.
   Stream<RealtimeAdapterConnectionState> get connectionStateUpdates;
 

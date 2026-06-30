@@ -18,23 +18,37 @@ final class CallTextAgentApi implements TextAgentApi {
   @override
   Future<List<Map<String, dynamic>>> listAgents() async {
     final agents = _textAgentService.agents;
-    return agents.map((agent) {
-      final apiConfig = agent.apiConfig;
-      final textModelId = apiConfig is ServerBackedTextAgentApiConfig
-          ? apiConfig.textModelId
-          : null;
+    final hasActiveVoiceSession =
+        _textAgentService.isStarted &&
+        _textAgentService.currentVoiceSessionId != null;
 
-      return {
-        'id': agent.id,
-        'name': agent.name,
-        'description': agent.description,
-        if (textModelId != null) 'text_model_id': textModelId,
-        'enabled_tools': agent.enabledTools,
-        'query_supported': false,
-        'query_status':
-            'query_text_agent is disabled for server-backed text agent definitions until server-hosted execution is implemented.',
-      };
-    }).toList();
+    return agents
+        .map((agent) {
+          final apiConfig = agent.apiConfig;
+          final textModelId = apiConfig is ServerBackedTextAgentApiConfig
+              ? apiConfig.textModelId
+              : null;
+          final querySupported =
+              apiConfig is ServerBackedTextAgentApiConfig &&
+              hasActiveVoiceSession;
+          final queryStatus = switch ((apiConfig, hasActiveVoiceSession)) {
+            (ServerBackedTextAgentApiConfig _, true) => 'ready',
+            (ServerBackedTextAgentApiConfig _, false) =>
+              'Text agent query requires an active voice session.',
+            _ => 'Text agent query is not available for this agent.',
+          };
+
+          return {
+            'id': agent.id,
+            'name': agent.name,
+            'description': agent.description,
+            if (textModelId != null) 'text_model_id': textModelId,
+            'enabled_tools': agent.enabledTools,
+            'query_supported': querySupported,
+            'query_status': queryStatus,
+          };
+        })
+        .toList(growable: false);
   }
 
   @override

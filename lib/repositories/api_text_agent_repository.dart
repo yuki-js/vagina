@@ -2,8 +2,7 @@ import 'package:logging/logging.dart';
 import 'package:vagina/api/api_exception.dart';
 import 'package:vagina/api/generated/core/json_optional.dart';
 import 'package:vagina/api/generated/models/text_agent.dart' as api_model;
-import 'package:vagina/api/generated/models/text_agent_create_request.dart';
-import 'package:vagina/api/generated/models/text_agent_update_request.dart';
+import 'package:vagina/api/generated/models/text_agent_write_request.dart';
 import 'package:vagina/api/generated/responses/create_text_agent_response.dart';
 import 'package:vagina/api/generated/responses/delete_text_agent_response.dart';
 import 'package:vagina/api/generated/responses/get_text_agent_response.dart';
@@ -31,10 +30,12 @@ class ApiTextAgentRepository implements TextAgentRepository {
   }) async {
     _logger.fine('Creating text agent');
     final response = await _apiClient.textAgents.createTextAgent(
-      body: TextAgentCreateRequest(
+      body: TextAgentWriteRequest(
         name: name,
         prompt: prompt,
-        description: description,
+        description: description == null
+            ? const JsonOptional<String>.absent()
+            : JsonOptional<String>.value(description),
         textModelId: textModelId,
         enabledTools: Map<String, dynamic>.from(enabledTools),
       ),
@@ -131,7 +132,7 @@ class ApiTextAgentRepository implements TextAgentRepository {
     _logger.fine('Updating text agent: ${textAgent.id}');
     final response = await _apiClient.textAgents.updateTextAgent(
       textAgentId: textAgent.id,
-      body: TextAgentUpdateRequest(
+      body: TextAgentWriteRequest(
         name: textAgent.name,
         prompt: textAgent.prompt,
         description: textAgent.description == null

@@ -213,7 +213,7 @@ class VhrpCborCodec {
     }
     return SessionReadyMsg(
       replyTo: replyTo,
-      sessionId: _requireText(body, 'sessionId'),
+      sessionId: _requireText(body, 'sessionId').trim(),
       threadId: _requireText(body, 'threadId'),
       conversationId: _getText(body, 'conversationId'),
       capabilityExtensions: extensions,
@@ -223,7 +223,7 @@ class VhrpCborCodec {
   SessionResumedMsg _decodeSessionResumed(String? replyTo, CborMap body) =>
       SessionResumedMsg(
         replyTo: replyTo,
-        sessionId: _requireText(body, 'sessionId'),
+        sessionId: _requireText(body, 'sessionId').trim(),
         threadId: _requireText(body, 'threadId'),
         conversationId: _getText(body, 'conversationId'),
       );
@@ -274,22 +274,22 @@ class VhrpCborCodec {
               : CborMap({}),
         ),
       ),
-      'remove_item' => RemoveItemOp(itemId: _requireTextMap(raw, 'itemId')),
+      'remove_item' => RemoveItemOp(itemId: _requireText(raw, 'itemId')),
       'set_status' => SetStatusOp(
-        itemId: _requireTextMap(raw, 'itemId'),
-        status: _requireTextMap(raw, 'status'),
+        itemId: _requireText(raw, 'itemId'),
+        status: _requireText(raw, 'status'),
       ),
       'set_role' => SetRoleOp(
-        itemId: _requireTextMap(raw, 'itemId'),
-        role: _requireTextMap(raw, 'role'),
+        itemId: _requireText(raw, 'itemId'),
+        role: _requireText(raw, 'role'),
       ),
       'set_field' => SetFieldOp(
-        itemId: _requireTextMap(raw, 'itemId'),
-        field: _requireTextMap(raw, 'field'),
+        itemId: _requireText(raw, 'itemId'),
+        field: _requireText(raw, 'field'),
         value: _cborValueTodart(raw[CborString('value')]),
       ),
       'put_part' => PutPartOp(
-        itemId: _requireTextMap(raw, 'itemId'),
+        itemId: _requireText(raw, 'itemId'),
         contentIndex: _getInt(raw, 'contentIndex') ?? 0,
         part: _cborMapTodart(
           raw[CborString('part')] is CborMap
@@ -298,27 +298,27 @@ class VhrpCborCodec {
         ),
       ),
       'append_text' => AppendTextOp(
-        itemId: _requireTextMap(raw, 'itemId'),
+        itemId: _requireText(raw, 'itemId'),
         contentIndex: _getInt(raw, 'contentIndex') ?? 0,
-        delta: _requireTextMap(raw, 'delta'),
+        delta: _requireText(raw, 'delta'),
       ),
       'replace_text' => ReplaceTextOp(
-        itemId: _requireTextMap(raw, 'itemId'),
+        itemId: _requireText(raw, 'itemId'),
         contentIndex: _getInt(raw, 'contentIndex') ?? 0,
-        text: _requireTextMap(raw, 'text'),
+        text: _requireText(raw, 'text'),
       ),
       'append_transcript' => AppendTranscriptOp(
-        itemId: _requireTextMap(raw, 'itemId'),
+        itemId: _requireText(raw, 'itemId'),
         contentIndex: _getInt(raw, 'contentIndex') ?? 0,
-        delta: _requireTextMap(raw, 'delta'),
+        delta: _requireText(raw, 'delta'),
       ),
       'replace_transcript' => ReplaceTranscriptOp(
-        itemId: _requireTextMap(raw, 'itemId'),
+        itemId: _requireText(raw, 'itemId'),
         contentIndex: _getInt(raw, 'contentIndex') ?? 0,
-        text: _requireTextMap(raw, 'text'),
+        text: _requireText(raw, 'text'),
       ),
       'set_conversation_id' => SetConversationIdOp(
-        conversationId: _requireTextMap(raw, 'conversationId'),
+        conversationId: _requireText(raw, 'conversationId'),
       ),
       _ => UnknownOp(unknownOp: opVal, rawOp: _cborMapTodart(raw)),
     };
@@ -446,10 +446,6 @@ class VhrpCborCodec {
     }
     return v;
   }
-
-  /// [_requireText] variant with a pre-looked-up [CborMap] reference for ops.
-  static String _requireTextMap(CborMap map, String key) =>
-      _requireText(map, key);
 
   static bool? _getBool(CborMap map, String key) {
     final v = map[CborString(key)];

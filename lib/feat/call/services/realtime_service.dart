@@ -22,8 +22,8 @@ final class RealtimeService extends SubService {
   bool _manualAudioTurnSpeaking = false;
   bool _isUserSpeakingProjection = false;
 
-  RealtimeService({required this.voiceAgent}) {
-    _adapter = _createAdapter(voiceAgent.apiConfig);
+  RealtimeService({required this.voiceAgent, RealtimeAdapter? adapter}) {
+    _adapter = adapter ?? _createAdapter(voiceAgent.apiConfig);
     _adapterUserSpeaking = _adapter.isUserSpeaking;
     _adapterUserSpeakingSubscription = _adapter.isUserSpeakingUpdates.listen((
       isSpeaking,
@@ -39,6 +39,8 @@ final class RealtimeService extends SubService {
 
   RealtimeAdapterConnectionState get connectionState =>
       _adapter.connectionState;
+
+  String? get currentSessionId => _adapter.sessionId;
 
   Stream<RealtimeAdapterConnectionState> get connectionStateUpdates =>
       _adapter.connectionStateUpdates;

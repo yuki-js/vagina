@@ -300,6 +300,9 @@ final class VhrpRealtimeAdapter implements RealtimeAdapter {
   RealtimeAdapterConnectionState get connectionState => _connectionState;
 
   @override
+  String? get sessionId => _sessionId;
+
+  @override
   Stream<RealtimeAdapterConnectionState> get connectionStateUpdates =>
       _connectionStateController.stream;
 
