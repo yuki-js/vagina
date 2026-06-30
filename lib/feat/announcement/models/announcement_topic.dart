@@ -1,16 +1,8 @@
 import 'dart:convert';
 
-enum AnnouncementTopicType {
-  banner,
-  modal,
-  dialog,
-  marquee,
-}
+enum AnnouncementTopicType { banner, modal, dialog, marquee }
 
-enum AnnouncementActionType {
-  openLink,
-  dismissTopic,
-}
+enum AnnouncementActionType { openLink, dismissTopic }
 
 class AnnouncementTopicList {
   final List<AnnouncementTopic> topics;
@@ -33,9 +25,7 @@ class AnnouncementTopicList {
           );
         }
 
-        return AnnouncementTopic.fromJson(
-          Map<String, dynamic>.from(rawTopic),
-        );
+        return AnnouncementTopic.fromJson(Map<String, dynamic>.from(rawTopic));
       }).toList(),
     );
   }
@@ -43,18 +33,14 @@ class AnnouncementTopicList {
   factory AnnouncementTopicList.fromJsonString(String source) {
     final decoded = jsonDecode(source);
     if (decoded is! Map) {
-      throw const FormatException(
-        'Announcement JSON root must be an object.',
-      );
+      throw const FormatException('Announcement JSON root must be an object.');
     }
 
     return AnnouncementTopicList.fromJson(Map<String, dynamic>.from(decoded));
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'topics': topics.map((topic) => topic.toJson()).toList(),
-    };
+    return {'topics': topics.map((topic) => topic.toJson()).toList()};
   }
 }
 
@@ -79,7 +65,7 @@ class OpenLinkAnnouncementAction extends AnnouncementAction {
   final String linkUrl;
 
   const OpenLinkAnnouncementAction({required this.linkUrl})
-      : super(AnnouncementActionType.openLink);
+    : super(AnnouncementActionType.openLink);
 
   factory OpenLinkAnnouncementAction.fromJson(Map<String, dynamic> json) {
     return OpenLinkAnnouncementAction(
@@ -100,7 +86,7 @@ class DismissTopicAnnouncementAction extends AnnouncementAction {
   final bool showAgain;
 
   const DismissTopicAnnouncementAction({this.showAgain = false})
-      : super(AnnouncementActionType.dismissTopic);
+    : super(AnnouncementActionType.dismissTopic);
 
   factory DismissTopicAnnouncementAction.fromJson(Map<String, dynamic> json) {
     final actionType = _readActionType(json);
@@ -173,10 +159,7 @@ class AnnouncementVisualContent {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'imageUrl': imageUrl,
-      'altText': altText,
-    };
+    return {'imageUrl': imageUrl, 'altText': altText};
   }
 }
 
@@ -239,8 +222,9 @@ class BannerAnnouncementTopic extends AnnouncementTopic {
       startDate: base.startDate,
       endDate: base.endDate,
       priority: base.priority,
-      image:
-          AnnouncementVisualContent.fromJson(_readRequiredMap(json, 'image')),
+      image: AnnouncementVisualContent.fromJson(
+        _readRequiredMap(json, 'image'),
+      ),
       action: _readOptionalAction(json, 'action'),
       dismissingAction: _readOptionalAction(json, 'dismissingAction'),
     );
@@ -280,8 +264,9 @@ class ModalAnnouncementTopic extends AnnouncementTopic {
       startDate: base.startDate,
       endDate: base.endDate,
       priority: base.priority,
-      image:
-          AnnouncementVisualContent.fromJson(_readRequiredMap(json, 'image')),
+      image: AnnouncementVisualContent.fromJson(
+        _readRequiredMap(json, 'image'),
+      ),
       action: _readOptionalAction(json, 'action'),
       dismissingAction: _readOptionalAction(json, 'dismissingAction'),
     );
@@ -340,7 +325,8 @@ class DialogAnnouncementTopic extends AnnouncementTopic {
       image: _readOptionalMap(json, 'image') == null
           ? null
           : AnnouncementVisualContent.fromJson(
-              _readOptionalMap(json, 'image')!),
+              _readOptionalMap(json, 'image')!,
+            ),
       dismissingAction: _readOptionalAction(json, 'dismissingAction'),
     );
   }

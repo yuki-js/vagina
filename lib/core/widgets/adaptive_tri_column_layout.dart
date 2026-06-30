@@ -87,12 +87,14 @@ class _AdaptiveTriColumnLayoutState extends State<AdaptiveTriColumnLayout> {
     _currentPageIndex = widget.initialPage;
     _pageController = PageController(initialPage: widget.initialPage);
     _leftColumnHostKey = GlobalKey<_TriColumnPageHostState>(
-        debugLabel: 'adaptive_tri_column_left');
+      debugLabel: 'adaptive_tri_column_left',
+    );
     _centerColumnHostKey = GlobalKey<_TriColumnPageHostState>(
       debugLabel: 'adaptive_tri_column_center',
     );
     _rightColumnHostKey = GlobalKey<_TriColumnPageHostState>(
-        debugLabel: 'adaptive_tri_column_right');
+      debugLabel: 'adaptive_tri_column_right',
+    );
     widget.controller?._attach(_goToPage);
   }
 
@@ -160,18 +162,9 @@ class _AdaptiveTriColumnLayoutState extends State<AdaptiveTriColumnLayout> {
   Widget _buildWideLayout() {
     return Row(
       children: [
-        Expanded(
-          flex: widget.leftFlex,
-          child: _buildLeftColumn(),
-        ),
-        Expanded(
-          flex: widget.centerFlex,
-          child: _buildCenterColumn(),
-        ),
-        Expanded(
-          flex: widget.rightFlex,
-          child: _buildRightColumn(),
-        ),
+        Expanded(flex: widget.leftFlex, child: _buildLeftColumn()),
+        Expanded(flex: widget.centerFlex, child: _buildCenterColumn()),
+        Expanded(flex: widget.rightFlex, child: _buildRightColumn()),
       ],
     );
   }
@@ -184,45 +177,29 @@ class _AdaptiveTriColumnLayoutState extends State<AdaptiveTriColumnLayout> {
           _currentPageIndex = index;
         });
       },
-      children: [
-        _buildLeftColumn(),
-        _buildCenterColumn(),
-        _buildRightColumn(),
-      ],
+      children: [_buildLeftColumn(), _buildCenterColumn(), _buildRightColumn()],
     );
   }
 
   // GlobalKey-backed hosts let the same pane subtree move between the wide Row
   // and narrow PageView without throwing away its local State.
   Widget _buildLeftColumn() {
-    return _TriColumnPageHost(
-      key: _leftColumnHostKey,
-      child: widget.left,
-    );
+    return _TriColumnPageHost(key: _leftColumnHostKey, child: widget.left);
   }
 
   Widget _buildCenterColumn() {
-    return _TriColumnPageHost(
-      key: _centerColumnHostKey,
-      child: widget.center,
-    );
+    return _TriColumnPageHost(key: _centerColumnHostKey, child: widget.center);
   }
 
   Widget _buildRightColumn() {
-    return _TriColumnPageHost(
-      key: _rightColumnHostKey,
-      child: widget.right,
-    );
+    return _TriColumnPageHost(key: _rightColumnHostKey, child: widget.right);
   }
 }
 
 class _TriColumnPageHost extends StatefulWidget {
   final Widget child;
 
-  const _TriColumnPageHost({
-    super.key,
-    required this.child,
-  });
+  const _TriColumnPageHost({super.key, required this.child});
 
   @override
   State<_TriColumnPageHost> createState() => _TriColumnPageHostState();

@@ -8,30 +8,26 @@ class FsMoveTool extends Tool {
 
   @override
   ToolDefinition get definition => const ToolDefinition(
-        toolKey: toolKeyName,
-        displayName: 'ファイル移動',
-        displayDescription: 'ファイルを移動または改名します',
-        categoryKey: 'filesystem',
-        iconKey: 'drive_file_move',
-        sourceKey: 'builtin',
-        publishedBy: 'aokiapp',
-        description:
-            'Move or rename a filesystem file from one path to another.',
-        parametersSchema: {
-          'type': 'object',
-          'properties': {
-            'fromPath': {
-              'type': 'string',
-              'description': 'Source absolute path.',
-            },
-            'toPath': {
-              'type': 'string',
-              'description': 'Destination absolute path.',
-            },
-          },
-          'required': ['fromPath', 'toPath'],
+    toolKey: toolKeyName,
+    displayName: 'ファイル移動',
+    displayDescription: 'ファイルを移動または改名します',
+    categoryKey: 'filesystem',
+    iconKey: 'drive_file_move',
+    sourceKey: 'builtin',
+    publishedBy: 'aokiapp',
+    description: 'Move or rename a filesystem file from one path to another.',
+    parametersSchema: {
+      'type': 'object',
+      'properties': {
+        'fromPath': {'type': 'string', 'description': 'Source absolute path.'},
+        'toPath': {
+          'type': 'string',
+          'description': 'Destination absolute path.',
         },
-      );
+      },
+      'required': ['fromPath', 'toPath'],
+    },
+  );
 
   @override
   Future<String> execute(Map<String, dynamic> args) async {
@@ -47,10 +43,7 @@ class FsMoveTool extends Tool {
         'message': 'Moved successfully.',
       });
     } catch (e) {
-      return jsonEncode({
-        'success': false,
-        'error': 'Failed to move: $e',
-      });
+      return jsonEncode({'success': false, 'error': 'Failed to move: $e'});
     }
   }
 }

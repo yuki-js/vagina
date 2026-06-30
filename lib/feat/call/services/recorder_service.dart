@@ -105,20 +105,20 @@ final class RecorderService extends SubService {
       );
 
       await _amplitudeSubscription?.cancel();
-      _amplitudeSubscription =
-          _recorder.onAmplitudeChanged(amplitudeUpdateInterval).listen(
-        (amplitude) {
-          if (_isMuted) {
-            _emitAmplitude(0.0);
-            return;
-          }
-          _emitAmplitude(AudioUtils.normalizeAmplitude(amplitude.current));
-        },
-        onError: (Object error, StackTrace stackTrace) {
-          // amplitude is UI-only; errors are non-fatal
-        },
-      );
-
+      _amplitudeSubscription = _recorder
+          .onAmplitudeChanged(amplitudeUpdateInterval)
+          .listen(
+            (amplitude) {
+              if (_isMuted) {
+                _emitAmplitude(0.0);
+                return;
+              }
+              _emitAmplitude(AudioUtils.normalizeAmplitude(amplitude.current));
+            },
+            onError: (Object error, StackTrace stackTrace) {
+              // amplitude is UI-only; errors are non-fatal
+            },
+          );
     } catch (e, stackTrace) {
       logger.severe('Failed to start recording session', e, stackTrace);
       _isRecording = false;

@@ -72,8 +72,9 @@ class AnnouncementBanner extends StatelessWidget {
                       key: const Key('announcement_banner_close_button'),
                       onPressed: onDismissed,
                       icon: const Icon(Icons.close),
-                      tooltip:
-                          MaterialLocalizations.of(context).closeButtonTooltip,
+                      tooltip: MaterialLocalizations.of(
+                        context,
+                      ).closeButtonTooltip,
                     ),
                   ),
                 ),

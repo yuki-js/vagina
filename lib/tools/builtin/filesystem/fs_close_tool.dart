@@ -8,26 +8,26 @@ class FsCloseTool extends Tool {
 
   @override
   ToolDefinition get definition => const ToolDefinition(
-        toolKey: toolKeyName,
-        displayName: 'ファイルを閉じる',
-        displayDescription: '作業中ファイルのタブを消します',
-        categoryKey: 'filesystem',
-        iconKey: 'close',
-        sourceKey: 'builtin',
-        publishedBy: 'aokiapp',
-        description:
-            'Closes the file handle, and also closes the active file tab. User will not able to edit the file until it is reopened. Do not call this if you want to keep the file open.',
-        parametersSchema: {
-          'type': 'object',
-          'properties': {
-            'path': {
-              'type': 'string',
-              'description': 'Absolute filesystem path to close.',
-            },
-          },
-          'required': ['path'],
+    toolKey: toolKeyName,
+    displayName: 'ファイルを閉じる',
+    displayDescription: '作業中ファイルのタブを消します',
+    categoryKey: 'filesystem',
+    iconKey: 'close',
+    sourceKey: 'builtin',
+    publishedBy: 'aokiapp',
+    description:
+        'Closes the file handle, and also closes the active file tab. User will not able to edit the file until it is reopened. Do not call this if you want to keep the file open.',
+    parametersSchema: {
+      'type': 'object',
+      'properties': {
+        'path': {
+          'type': 'string',
+          'description': 'Absolute filesystem path to close.',
         },
-      );
+      },
+      'required': ['path'],
+    },
+  );
 
   @override
   Future<String> execute(Map<String, dynamic> args) async {

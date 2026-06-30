@@ -4,10 +4,7 @@ class CallSessionPage {
   final List<CallSession> items;
   final String? nextCursor;
 
-  const CallSessionPage({
-    required this.items,
-    required this.nextCursor,
-  });
+  const CallSessionPage({required this.items, required this.nextCursor});
 }
 
 /// Repository for retrieving and deleting server-backed call session history.

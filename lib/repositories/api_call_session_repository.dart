@@ -44,10 +44,7 @@ class ApiCallSessionRepository implements CallSessionRepository {
           nextCursor: data.nextCursor,
         );
       case ListSessionsResponseBadRequest(:final data):
-        throw ApiException.badRequest(
-          data.message,
-          operation: 'List sessions',
-        );
+        throw ApiException.badRequest(data.message, operation: 'List sessions');
       case ListSessionsResponseServerError(:final data):
         throw ApiException.serverError(
           data.message,
@@ -72,10 +69,7 @@ class ApiCallSessionRepository implements CallSessionRepository {
       case GetSessionResponseNotFound():
         return null;
       case GetSessionResponseServerError(:final data):
-        throw ApiException.serverError(
-          data.message,
-          operation: 'Get session',
-        );
+        throw ApiException.serverError(data.message, operation: 'Get session');
       case GetSessionResponseUnknown(:final statusCode, :final body):
         throw _unknownResponseError(
           operation: 'Get session',

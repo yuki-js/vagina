@@ -86,8 +86,9 @@ class _EditableSpreadsheetTableState extends State<EditableSpreadsheetTable> {
     final textSecondary = widget.useLightTheme
         ? AppTheme.lightTextSecondary
         : AppTheme.textSecondary;
-    final textPrimary =
-        widget.useLightTheme ? AppTheme.lightTextPrimary : AppTheme.textPrimary;
+    final textPrimary = widget.useLightTheme
+        ? AppTheme.lightTextPrimary
+        : AppTheme.textPrimary;
 
     // Create column widths: first column (row number) is fixed, rest are IntrinsicColumnWidth
     final columnWidths = <int, TableColumnWidth>{
@@ -120,15 +121,19 @@ class _EditableSpreadsheetTableState extends State<EditableSpreadsheetTable> {
             ],
           ),
           // Data rows
-          for (int rowIndex = 0;
-              rowIndex < _controller.data.rows.length;
-              rowIndex++)
+          for (
+            int rowIndex = 0;
+            rowIndex < _controller.data.rows.length;
+            rowIndex++
+          )
             TableRow(
               children: [
                 _buildRowNumberCell(rowIndex + 1, textSecondary),
-                for (int colIndex = 0;
-                    colIndex < _controller.data.columns.length;
-                    colIndex++)
+                for (
+                  int colIndex = 0;
+                  colIndex < _controller.data.columns.length;
+                  colIndex++
+                )
                   _buildDataCell(rowIndex, colIndex),
               ],
             ),
@@ -142,13 +147,14 @@ class _EditableSpreadsheetTableState extends State<EditableSpreadsheetTable> {
     }
 
     // Normal mode: wrap in vertical scroll
-    return SingleChildScrollView(
-      child: tableContent,
-    );
+    return SingleChildScrollView(child: tableContent);
   }
 
-  Widget _buildHeaderCell(String text, Color textColor,
-      {required bool isRowNumber}) {
+  Widget _buildHeaderCell(
+    String text,
+    Color textColor, {
+    required bool isRowNumber,
+  }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       alignment: isRowNumber ? Alignment.center : Alignment.centerLeft,
@@ -172,10 +178,7 @@ class _EditableSpreadsheetTableState extends State<EditableSpreadsheetTable> {
       alignment: Alignment.center,
       child: Text(
         '$rowNumber',
-        style: TextStyle(
-          color: textSecondary,
-          fontSize: 12,
-        ),
+        style: TextStyle(color: textSecondary, fontSize: 12),
       ),
     );
   }
@@ -186,8 +189,8 @@ class _EditableSpreadsheetTableState extends State<EditableSpreadsheetTable> {
     return SizedBox(
       height: cellHeight,
       child: EditableCell(
-        value: _controller.data.rows[rowIndex]
-            [_controller.data.columns[colIndex]],
+        value:
+            _controller.data.rows[rowIndex][_controller.data.columns[colIndex]],
         rowIndex: rowIndex,
         colIndex: colIndex,
         controller: _controller,

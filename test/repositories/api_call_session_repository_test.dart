@@ -32,7 +32,10 @@ void main() {
 
       expect(page.items, hasLength(1));
       expect(page.items.single.id, '11111111-1111-1111-1111-111111111111');
-      expect(page.items.single.startedAt, DateTime.parse('2026-01-02T03:04:05Z'));
+      expect(
+        page.items.single.startedAt,
+        DateTime.parse('2026-01-02T03:04:05Z'),
+      );
       expect(page.items.single.endedAt, DateTime.parse('2026-01-02T03:05:06Z'));
       expect(page.items.single.duration, 61);
       expect(page.nextCursor, 'after-one');
@@ -67,14 +70,19 @@ void main() {
       });
       final repository = ApiCallSessionRepository(apiClient: _client(adapter));
 
-      final session = await repository.getById('11111111-1111-1111-1111-111111111111');
+      final session = await repository.getById(
+        '11111111-1111-1111-1111-111111111111',
+      );
 
       expect(session, isNotNull);
       expect(session!.speedDialId, 'speed-dial-1');
       expect(session.voiceAgentId, 'voice-agent-1');
       expect(session.thread!.id, 'thread-1');
       expect(session.thread!.conversationId, 'conversation-1');
-      expect(session.thread!.items.single.role, RealtimeThreadItemRole.assistant);
+      expect(
+        session.thread!.items.single.role,
+        RealtimeThreadItemRole.assistant,
+      );
       final part = session.thread!.items.single.content.single;
       expect(part, isA<RealtimeThreadTextPart>());
       expect((part as RealtimeThreadTextPart).text, 'Hello');
@@ -94,16 +102,29 @@ void main() {
       });
       final repository = ApiCallSessionRepository(apiClient: _client(adapter));
 
-      final session = await repository.getById('33333333-3333-3333-3333-333333333333');
+      final session = await repository.getById(
+        '33333333-3333-3333-3333-333333333333',
+      );
 
       expect(session, isNotNull);
       expect(session!.speedDialId, 'history-tool-speed-dial');
       expect(session.voiceAgentId, 'voice-agent-prod-cc');
       expect(session.visibleThreadItemCount, 8);
       final thread = session.thread!;
-      expect(thread.items.where((item) => item.type == RealtimeThreadItemType.message), hasLength(4));
-      expect(thread.items.where((item) => item.type == RealtimeThreadItemType.functionCall), hasLength(2));
-      final finalPart = thread.items.last.content.single as RealtimeThreadAudioPart;
+      expect(
+        thread.items.where(
+          (item) => item.type == RealtimeThreadItemType.message,
+        ),
+        hasLength(4),
+      );
+      expect(
+        thread.items.where(
+          (item) => item.type == RealtimeThreadItemType.functionCall,
+        ),
+        hasLength(2),
+      );
+      final finalPart =
+          thread.items.last.content.single as RealtimeThreadAudioPart;
       expect(finalPart.transcript, 'SESSION_HISTORY_FINAL_ANSWER');
     });
 
@@ -142,7 +163,8 @@ void main() {
       ]);
 
       expect(count, 2);
-      final body = jsonDecode(adapter.requestBodies.single) as Map<String, dynamic>;
+      final body =
+          jsonDecode(adapter.requestBodies.single) as Map<String, dynamic>;
       expect(body['ids'], [
         '11111111-1111-1111-1111-111111111111',
         '22222222-2222-2222-2222-222222222222',
@@ -182,7 +204,11 @@ Map<String, Object?> _savedHistoryThreadJson() {
         'status': 'completed',
         'displayState': 'visible',
         'content': [
-          {'type': 'text', 'text': 'Ask the first saved-history question.', 'isDone': true},
+          {
+            'type': 'text',
+            'text': 'Ask the first saved-history question.',
+            'isDone': true,
+          },
         ],
       },
       {
@@ -192,7 +218,11 @@ Map<String, Object?> _savedHistoryThreadJson() {
         'status': 'completed',
         'displayState': 'visible',
         'content': [
-          {'type': 'audio', 'transcript': 'SESSION_HISTORY_FIRST_ANSWER', 'isDone': true},
+          {
+            'type': 'audio',
+            'transcript': 'SESSION_HISTORY_FIRST_ANSWER',
+            'isDone': true,
+          },
         ],
       },
       {
@@ -202,7 +232,11 @@ Map<String, Object?> _savedHistoryThreadJson() {
         'status': 'completed',
         'displayState': 'visible',
         'content': [
-          {'type': 'text', 'text': 'Use the history tool twice.', 'isDone': true},
+          {
+            'type': 'text',
+            'text': 'Use the history tool twice.',
+            'isDone': true,
+          },
         ],
       },
       {
@@ -244,7 +278,11 @@ Map<String, Object?> _savedHistoryThreadJson() {
         'status': 'completed',
         'displayState': 'visible',
         'content': [
-          {'type': 'audio', 'transcript': 'SESSION_HISTORY_FINAL_ANSWER', 'isDone': true},
+          {
+            'type': 'audio',
+            'transcript': 'SESSION_HISTORY_FINAL_ANSWER',
+            'isDone': true,
+          },
         ],
       },
     ],

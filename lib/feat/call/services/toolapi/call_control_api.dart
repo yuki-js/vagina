@@ -8,7 +8,7 @@ final class CallControlApi implements CallApi {
   final CallService _callService;
 
   CallControlApi({required CallService callService})
-      : _callService = callService;
+    : _callService = callService;
 
   @override
   Future<bool> endCall({String? endContext}) async {

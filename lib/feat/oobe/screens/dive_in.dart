@@ -8,11 +8,7 @@ class DiveInScreen extends StatefulWidget {
   final VoidCallback onStart;
   final VoidCallback onBack;
 
-  const DiveInScreen({
-    super.key,
-    required this.onStart,
-    required this.onBack,
-  });
+  const DiveInScreen({super.key, required this.onStart, required this.onBack});
 
   @override
   State<DiveInScreen> createState() => _DiveInScreenState();
@@ -33,10 +29,7 @@ class _DiveInScreenState extends State<DiveInScreen>
     )..repeat(reverse: true);
 
     _scaleAnimation = Tween<double>(begin: 0.95, end: 1.05).animate(
-      CurvedAnimation(
-        parent: _scaleController,
-        curve: Curves.easeInOut,
-      ),
+      CurvedAnimation(parent: _scaleController, curve: Curves.easeInOut),
     );
   }
 
@@ -196,11 +189,7 @@ class _DiveInScreenState extends State<DiveInScreen>
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(
-          icon,
-          size: 24,
-          color: AppTheme.primaryColor,
-        ),
+        Icon(icon, size: 24, color: AppTheme.primaryColor),
         const SizedBox(width: 12),
         Text(
           text,

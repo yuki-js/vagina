@@ -80,10 +80,7 @@ class TabularData {
       _validateRowKeys(newRows[i], columns, 'new row $i');
       _validateRowValues(newRows[i], 'new row $i');
     }
-    return TabularData(
-      columns: columns,
-      rows: [...rows, ...newRows],
-    );
+    return TabularData(columns: columns, rows: [...rows, ...newRows]);
   }
 
   /// Return a new [TabularData] with rows updated based on a lookup condition.
@@ -109,17 +106,13 @@ class TabularData {
     for (final update in updates) {
       final where = update['where'] as Map<String, dynamic>?;
       if (where == null) {
-        throw const TabularDataException(
-          'Missing "where" condition in update',
-        );
+        throw const TabularDataException('Missing "where" condition in update');
       }
 
       final lookupColumn = where['column'] as String?;
       final lookupValue = where['value'];
       if (lookupColumn == null) {
-        throw const TabularDataException(
-          'Missing "column" in where condition',
-        );
+        throw const TabularDataException('Missing "column" in where condition');
       }
 
       if (!columns.contains(lookupColumn)) {
@@ -212,7 +205,8 @@ class TabularData {
     final columns = records.first;
     if (columns.isEmpty) {
       throw const TabularDataException(
-          'CSV header row must have at least one column');
+        'CSV header row must have at least one column',
+      );
     }
 
     // Check for duplicate column names
@@ -220,7 +214,8 @@ class TabularData {
     for (final col in columns) {
       if (!seen.add(col)) {
         throw TabularDataException(
-            'Duplicate column name in CSV header: "$col"');
+          'Duplicate column name in CSV header: "$col"',
+        );
       }
     }
 
@@ -365,9 +360,7 @@ class TabularData {
     for (var i = 0; i < decoded.length; i++) {
       final element = decoded[i];
       if (element is! Map) {
-        throw TabularDataException(
-          'Element at index $i is not a JSON object',
-        );
+        throw TabularDataException('Element at index $i is not a JSON object');
       }
       final obj = Map<String, dynamic>.from(element);
       _validateRowKeys(obj, columns, 'element at index $i', expectedKeys);
@@ -383,8 +376,10 @@ class TabularData {
   // ---------------------------------------------------------------------------
 
   static TabularData _parseJsonl2d(String content) {
-    final lines =
-        content.split('\n').where((l) => l.trim().isNotEmpty).toList();
+    final lines = content
+        .split('\n')
+        .where((l) => l.trim().isNotEmpty)
+        .toList();
 
     if (lines.isEmpty) {
       return const TabularData(columns: [], rows: []);
@@ -428,9 +423,7 @@ class TabularData {
       }
 
       if (decoded is! Map) {
-        throw TabularDataException(
-          'Line ${i + 1} is not a JSON object',
-        );
+        throw TabularDataException('Line ${i + 1} is not a JSON object');
       }
 
       final obj = Map<String, dynamic>.from(decoded);

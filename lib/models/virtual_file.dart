@@ -5,10 +5,7 @@ class VirtualFile {
   final String path;
   final String content;
 
-  const VirtualFile({
-    required this.path,
-    required this.content,
-  });
+  const VirtualFile({required this.path, required this.content});
 
   /// Derive file extension from path.
   ///
@@ -28,10 +25,7 @@ class VirtualFile {
     return path.substring(dotIndex);
   }
 
-  Map<String, dynamic> toJson() => {
-        'path': path,
-        'content': content,
-      };
+  Map<String, dynamic> toJson() => {'path': path, 'content': content};
 
   factory VirtualFile.fromJson(Map<String, dynamic> json) {
     return VirtualFile(

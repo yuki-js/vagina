@@ -9,27 +9,27 @@ class GetCurrentTimeTool extends Tool {
 
   @override
   ToolDefinition get definition => const ToolDefinition(
-        toolKey: toolKeyName,
-        displayName: '現在時刻',
-        displayDescription: '現在の日時を取得します',
-        categoryKey: 'system',
-        iconKey: 'access_time',
-        sourceKey: 'builtin',
-        publishedBy: 'aokiapp',
-        description:
-            'Get the current date and time. Use this when the user asks about the current time or date.',
-        parametersSchema: {
-          'type': 'object',
-          'properties': {
-            'timezone': {
-              'type': 'string',
-              'description':
-                  'Timezone name (e.g., "Asia/Tokyo", "UTC"). Defaults to local time if not specified.',
-            },
-          },
-          'required': [],
+    toolKey: toolKeyName,
+    displayName: '現在時刻',
+    displayDescription: '現在の日時を取得します',
+    categoryKey: 'system',
+    iconKey: 'access_time',
+    sourceKey: 'builtin',
+    publishedBy: 'aokiapp',
+    description:
+        'Get the current date and time. Use this when the user asks about the current time or date.',
+    parametersSchema: {
+      'type': 'object',
+      'properties': {
+        'timezone': {
+          'type': 'string',
+          'description':
+              'Timezone name (e.g., "Asia/Tokyo", "UTC"). Defaults to local time if not specified.',
         },
-      );
+      },
+      'required': [],
+    },
+  );
 
   @override
   Future<String> execute(Map<String, dynamic> args) async {

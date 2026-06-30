@@ -45,11 +45,7 @@ final class RealtimeThreadJsonCodec {
       items.add(itemFromJson(_stringKeyedMap(rawItem)));
     }
 
-    return RealtimeThread(
-      id: id,
-      conversationId: conversationId,
-      items: items,
-    );
+    return RealtimeThread(id: id, conversationId: conversationId, items: items);
   }
 
   static RealtimeThreadItem itemFromJson(Map<String, dynamic> json) {
@@ -64,9 +60,7 @@ final class RealtimeThreadJsonCodec {
       id: id,
       type: itemTypeFromWireValue(json['type'] as String?),
       role: roleFromWireValue(json['role'] as String?),
-      status: RealtimeThreadItemStatus.fromWireValue(
-        json['status'] as String?,
-      ),
+      status: RealtimeThreadItemStatus.fromWireValue(json['status'] as String?),
       displayState: RealtimeThreadItemDisplayState.fromWireValue(
         json['displayState'] as String?,
       ),
@@ -112,17 +106,17 @@ final class RealtimeThreadJsonCodec {
 
     return switch (type) {
       'text' => RealtimeThreadTextPart(
-          text: json['text'] as String? ?? '',
-          isDone: isDone,
-        ),
+        text: json['text'] as String? ?? '',
+        isDone: isDone,
+      ),
       'audio' => RealtimeThreadAudioPart(
-          transcript: json['transcript'] as String?,
-          isDone: isDone,
-        ),
+        transcript: json['transcript'] as String?,
+        isDone: isDone,
+      ),
       'image' => RealtimeThreadImagePart(
-          imageUrl: json['imageUrl'] as String? ?? '',
-          detail: json['detail'] as String? ?? 'auto',
-        ),
+        imageUrl: json['imageUrl'] as String? ?? '',
+        detail: json['detail'] as String? ?? 'auto',
+      ),
       _ => null,
     };
   }

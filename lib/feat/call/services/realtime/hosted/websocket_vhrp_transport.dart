@@ -43,10 +43,8 @@ import 'websocket_vhrp_connector.dart';
 /// Connector function signature: receives [uri] and [protocols], returns a
 /// ready [WebSocketChannel].  Can be replaced in tests via constructor
 /// injection.
-typedef VhrpSocketConnector = Future<WebSocketChannel> Function(
-  Uri uri, {
-  List<String> protocols,
-});
+typedef VhrpSocketConnector =
+    Future<WebSocketChannel> Function(Uri uri, {List<String> protocols});
 
 /// Default connector: delegates to [connectVhrpWebSocketChannel], which
 /// selects the platform-appropriate implementation via conditional import.
@@ -75,7 +73,7 @@ final class WebSocketVhrpTransport implements VhrpRealtimeTransport {
   bool _disposed = false;
 
   WebSocketVhrpTransport({VhrpSocketConnector? connector})
-      : _connector = connector ?? _defaultConnector;
+    : _connector = connector ?? _defaultConnector;
 
   // ─── VhrpRealtimeTransport ────────────────────────────────────────────────
 
@@ -174,7 +172,8 @@ final class WebSocketVhrpTransport implements VhrpRealtimeTransport {
     // and fail the transport so the adapter triggers reconnect/recovery.
     _emitState(
       VhrpTransportConnectionState.failed(
-        message: 'VHRP transport received an unexpected text frame; '
+        message:
+            'VHRP transport received an unexpected text frame; '
             'VHRP/1 uses binary frames only.',
         error: data,
       ),

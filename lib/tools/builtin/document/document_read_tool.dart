@@ -9,26 +9,26 @@ class DocumentReadTool extends Tool {
 
   @override
   ToolDefinition get definition => const ToolDefinition(
-        toolKey: toolKeyName,
-        displayName: 'ドキュメント表示',
-        displayDescription: 'ドキュメントの内容を表示します',
-        categoryKey: 'document',
-        iconKey: 'visibility',
-        sourceKey: 'builtin',
-        publishedBy: 'aokiapp',
-        description: 'Read the content of an active filesystem file by path.',
-        activation: ToolActivation.forExtensions(kReadableDocumentExtensions),
-        parametersSchema: {
-          'type': 'object',
-          'properties': {
-            'path': {
-              'type': 'string',
-              'description': 'Absolute path of the active file to read',
-            },
-          },
-          'required': ['path'],
+    toolKey: toolKeyName,
+    displayName: 'ドキュメント表示',
+    displayDescription: 'ドキュメントの内容を表示します',
+    categoryKey: 'document',
+    iconKey: 'visibility',
+    sourceKey: 'builtin',
+    publishedBy: 'aokiapp',
+    description: 'Read the content of an active filesystem file by path.',
+    activation: ToolActivation.forExtensions(kReadableDocumentExtensions),
+    parametersSchema: {
+      'type': 'object',
+      'properties': {
+        'path': {
+          'type': 'string',
+          'description': 'Absolute path of the active file to read',
         },
-      );
+      },
+      'required': ['path'],
+    },
+  );
 
   @override
   Future<String> execute(Map<String, dynamic> args) async {

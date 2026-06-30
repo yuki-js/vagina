@@ -10,67 +10,67 @@ class SpreadsheetUpdateRowsTool extends Tool {
 
   @override
   ToolDefinition get definition => const ToolDefinition(
-        toolKey: toolKeyName,
-        displayName: 'スプレッドシート行更新',
-        displayDescription: 'スプレッドシートの行を条件検索して更新します',
-        categoryKey: 'document',
-        iconKey: 'edit',
-        sourceKey: 'builtin',
-        publishedBy: 'aokiapp',
-        description:
-            'Update rows in an active spreadsheet file using VLOOKUP-style search. The file must be a tabular type '
-            '(text/csv, application/vagina-2d+json, or application/vagina-2d+jsonl). '
-            'Each update specifies a "where" condition (column and value to match) and a "set" object with values to update. '
-            'By default updates only the first matching row; set "updateAll": true to update all matches.',
-        activation: ToolActivation.forExtensions(kTabularDocumentExtensions),
-        parametersSchema: {
-          'type': 'object',
-          'properties': {
-            'path': {
-              'type': 'string',
-              'description': 'Path of the active spreadsheet file to update',
-            },
-            'updates': {
-              'type': 'array',
-              'description':
-                  'Array of update operations. Each operation finds rows using a "where" condition and updates them with "set" values.',
-              'items': {
+    toolKey: toolKeyName,
+    displayName: 'スプレッドシート行更新',
+    displayDescription: 'スプレッドシートの行を条件検索して更新します',
+    categoryKey: 'document',
+    iconKey: 'edit',
+    sourceKey: 'builtin',
+    publishedBy: 'aokiapp',
+    description:
+        'Update rows in an active spreadsheet file using VLOOKUP-style search. The file must be a tabular type '
+        '(text/csv, application/vagina-2d+json, or application/vagina-2d+jsonl). '
+        'Each update specifies a "where" condition (column and value to match) and a "set" object with values to update. '
+        'By default updates only the first matching row; set "updateAll": true to update all matches.',
+    activation: ToolActivation.forExtensions(kTabularDocumentExtensions),
+    parametersSchema: {
+      'type': 'object',
+      'properties': {
+        'path': {
+          'type': 'string',
+          'description': 'Path of the active spreadsheet file to update',
+        },
+        'updates': {
+          'type': 'array',
+          'description':
+              'Array of update operations. Each operation finds rows using a "where" condition and updates them with "set" values.',
+          'items': {
+            'type': 'object',
+            'properties': {
+              'where': {
                 'type': 'object',
+                'description':
+                    'Condition to find the row(s). Specify "column" (name) and "value" to match.',
                 'properties': {
-                  'where': {
-                    'type': 'object',
-                    'description':
-                        'Condition to find the row(s). Specify "column" (name) and "value" to match.',
-                    'properties': {
-                      'column': {
-                        'type': 'string',
-                        'description': 'Column name to search in',
-                      },
-                      'value': {
-                        'description':
-                            'Value to match (string, number, bool, or null)',
-                      },
-                    },
-                    'required': ['column', 'value'],
+                  'column': {
+                    'type': 'string',
+                    'description': 'Column name to search in',
                   },
-                  'set': {
-                    'type': 'object',
+                  'value': {
                     'description':
-                        'Column-value pairs to update in the matching row(s)',
-                  },
-                  'updateAll': {
-                    'type': 'boolean',
-                    'description':
-                        'If true, update all matching rows. If false or omitted, update only the first match.',
+                        'Value to match (string, number, bool, or null)',
                   },
                 },
-                'required': ['where', 'set'],
+                'required': ['column', 'value'],
+              },
+              'set': {
+                'type': 'object',
+                'description':
+                    'Column-value pairs to update in the matching row(s)',
+              },
+              'updateAll': {
+                'type': 'boolean',
+                'description':
+                    'If true, update all matching rows. If false or omitted, update only the first match.',
               },
             },
+            'required': ['where', 'set'],
           },
-          'required': ['path', 'updates'],
         },
-      );
+      },
+      'required': ['path', 'updates'],
+    },
+  );
 
   @override
   Future<String> execute(Map<String, dynamic> args) async {
@@ -80,7 +80,8 @@ class SpreadsheetUpdateRowsTool extends Tool {
     if (!isPathSupportedByActivation(path, definition.activation)) {
       return jsonEncode({
         'success': false,
-        'error': 'File "$path" is not a tabular type. '
+        'error':
+            'File "$path" is not a tabular type. '
             'Expected extension: .v2d.csv, .v2d.json, or .v2d.jsonl',
       });
     }
@@ -100,8 +101,9 @@ class SpreadsheetUpdateRowsTool extends Tool {
     try {
       final data = TabularData.parse(content, extension);
 
-      final updates =
-          updatesRaw.map((u) => Map<String, dynamic>.from(u as Map)).toList();
+      final updates = updatesRaw
+          .map((u) => Map<String, dynamic>.from(u as Map))
+          .toList();
 
       final updated = data.updateRows(updates);
       final serialized = updated.serialize(extension);
@@ -116,10 +118,7 @@ class SpreadsheetUpdateRowsTool extends Tool {
             '${updates.length} update operation(s) completed successfully',
       });
     } on TabularDataException catch (e) {
-      return jsonEncode({
-        'success': false,
-        'error': e.message,
-      });
+      return jsonEncode({'success': false, 'error': e.message});
     } catch (e) {
       return jsonEncode({
         'success': false,

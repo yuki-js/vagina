@@ -23,31 +23,29 @@ final class RealtimeAdapterConnectionState {
   });
 
   const RealtimeAdapterConnectionState.idle()
-      : this(phase: RealtimeAdapterConnectionPhase.idle);
+    : this(phase: RealtimeAdapterConnectionPhase.idle);
 
   const RealtimeAdapterConnectionState.connecting()
-      : this(phase: RealtimeAdapterConnectionPhase.connecting);
+    : this(phase: RealtimeAdapterConnectionPhase.connecting);
 
   const RealtimeAdapterConnectionState.connected()
-      : this(phase: RealtimeAdapterConnectionPhase.connected);
+    : this(phase: RealtimeAdapterConnectionPhase.connected);
 
   const RealtimeAdapterConnectionState.disconnecting()
-      : this(phase: RealtimeAdapterConnectionPhase.disconnecting);
+    : this(phase: RealtimeAdapterConnectionPhase.disconnecting);
 
   const RealtimeAdapterConnectionState.disconnected({String? message})
-      : this(
-          phase: RealtimeAdapterConnectionPhase.disconnected,
-          message: message,
-        );
+    : this(
+        phase: RealtimeAdapterConnectionPhase.disconnected,
+        message: message,
+      );
 
-  const RealtimeAdapterConnectionState.failed({
-    String? message,
-    Object? error,
-  }) : this(
-          phase: RealtimeAdapterConnectionPhase.failed,
-          message: message,
-          error: error,
-        );
+  const RealtimeAdapterConnectionState.failed({String? message, Object? error})
+    : this(
+        phase: RealtimeAdapterConnectionPhase.failed,
+        message: message,
+        error: error,
+      );
 
   bool get isConnected => phase == RealtimeAdapterConnectionPhase.connected;
 }

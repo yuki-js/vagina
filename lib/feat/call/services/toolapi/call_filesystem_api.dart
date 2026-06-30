@@ -9,9 +9,8 @@ import 'package:vagina/services/tools_runtime/apis/filesystem_api.dart';
 final class CallFilesystemApi implements FilesystemApi {
   final NotepadService _notepadService;
 
-  CallFilesystemApi({
-    required NotepadService notepadService,
-  }) : _notepadService = notepadService;
+  CallFilesystemApi({required NotepadService notepadService})
+    : _notepadService = notepadService;
 
   // ---------------------------------------------------------------------------
   // Persistence operations (delegate to NotepadService → VFS)
@@ -99,8 +98,12 @@ final class CallFilesystemApi implements FilesystemApi {
   Future<List<Map<String, dynamic>>> listActiveFiles() async {
     return _notepadService
         .listActive()
-        .map((file) =>
-            <String, dynamic>{'path': file.path, 'content': file.content})
+        .map(
+          (file) => <String, dynamic>{
+            'path': file.path,
+            'content': file.content,
+          },
+        )
         .toList();
   }
 }

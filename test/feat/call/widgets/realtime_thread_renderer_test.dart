@@ -101,7 +101,11 @@ Map<String, Object?> _savedHistoryThreadJson() {
         'status': 'completed',
         'displayState': 'visible',
         'content': [
-          {'type': 'text', 'text': 'Ask the first saved-history question.', 'isDone': true},
+          {
+            'type': 'text',
+            'text': 'Ask the first saved-history question.',
+            'isDone': true,
+          },
         ],
       },
       {
@@ -111,7 +115,11 @@ Map<String, Object?> _savedHistoryThreadJson() {
         'status': 'completed',
         'displayState': 'visible',
         'content': [
-          {'type': 'audio', 'transcript': 'SESSION_HISTORY_FIRST_ANSWER', 'isDone': true},
+          {
+            'type': 'audio',
+            'transcript': 'SESSION_HISTORY_FIRST_ANSWER',
+            'isDone': true,
+          },
         ],
       },
       {
@@ -121,7 +129,11 @@ Map<String, Object?> _savedHistoryThreadJson() {
         'status': 'completed',
         'displayState': 'visible',
         'content': [
-          {'type': 'text', 'text': 'Use the history tool twice.', 'isDone': true},
+          {
+            'type': 'text',
+            'text': 'Use the history tool twice.',
+            'isDone': true,
+          },
         ],
       },
       {
@@ -163,7 +175,11 @@ Map<String, Object?> _savedHistoryThreadJson() {
         'status': 'completed',
         'displayState': 'visible',
         'content': [
-          {'type': 'audio', 'transcript': 'SESSION_HISTORY_FINAL_ANSWER', 'isDone': true},
+          {
+            'type': 'audio',
+            'transcript': 'SESSION_HISTORY_FINAL_ANSWER',
+            'isDone': true,
+          },
         ],
       },
     ],

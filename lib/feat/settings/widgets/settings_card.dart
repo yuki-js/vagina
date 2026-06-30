@@ -5,10 +5,7 @@ import 'package:vagina/core/theme/app_theme.dart';
 class SettingsCard extends StatelessWidget {
   final Widget child;
 
-  const SettingsCard({
-    super.key,
-    required this.child,
-  });
+  const SettingsCard({super.key, required this.child});
 
   @override
   Widget build(BuildContext context) {
@@ -34,10 +31,7 @@ class SettingsCard extends StatelessWidget {
 class SectionHeader extends StatelessWidget {
   final String title;
 
-  const SectionHeader({
-    super.key,
-    required this.title,
-  });
+  const SectionHeader({super.key, required this.title});
 
   @override
   Widget build(BuildContext context) {
@@ -57,11 +51,7 @@ class InfoRow extends StatelessWidget {
   final String label;
   final String value;
 
-  const InfoRow({
-    super.key,
-    required this.label,
-    required this.value,
-  });
+  const InfoRow({super.key, required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {

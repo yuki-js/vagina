@@ -8,29 +8,29 @@ class FsListTool extends Tool {
 
   @override
   ToolDefinition get definition => const ToolDefinition(
-        toolKey: toolKeyName,
-        displayName: 'ファイル一覧',
-        displayDescription: '仮想ファイルシステムの一覧を表示します',
-        categoryKey: 'filesystem',
-        iconKey: 'folder',
-        sourceKey: 'builtin',
-        publishedBy: 'aokiapp',
-        description:
-            'List files under a virtual filesystem path. Returns child entries.',
-        parametersSchema: {
-          'type': 'object',
-          'properties': {
-            'path': {
-              'type': 'string',
-              'description': 'Directory path to list (default: /).',
-            },
-            'recursive': {
-              'type': 'boolean',
-              'description': 'If true, list recursively.',
-            },
-          },
+    toolKey: toolKeyName,
+    displayName: 'ファイル一覧',
+    displayDescription: '仮想ファイルシステムの一覧を表示します',
+    categoryKey: 'filesystem',
+    iconKey: 'folder',
+    sourceKey: 'builtin',
+    publishedBy: 'aokiapp',
+    description:
+        'List files under a virtual filesystem path. Returns child entries.',
+    parametersSchema: {
+      'type': 'object',
+      'properties': {
+        'path': {
+          'type': 'string',
+          'description': 'Directory path to list (default: /).',
         },
-      );
+        'recursive': {
+          'type': 'boolean',
+          'description': 'If true, list recursively.',
+        },
+      },
+    },
+  );
 
   @override
   Future<String> execute(Map<String, dynamic> args) async {

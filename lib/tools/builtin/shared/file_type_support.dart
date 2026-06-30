@@ -29,13 +29,8 @@ String normalizedExtensionFromPath(String path) {
   return VirtualFile(path: path, content: '').extension.toLowerCase();
 }
 
-bool isPathSupportedByActivation(
-  String path,
-  ToolActivation activation,
-) {
-  return activation.isEnabledForExtensions({
-    normalizedExtensionFromPath(path),
-  });
+bool isPathSupportedByActivation(String path, ToolActivation activation) {
+  return activation.isEnabledForExtensions({normalizedExtensionFromPath(path)});
 }
 
 bool isTabularExtension(String extension) {

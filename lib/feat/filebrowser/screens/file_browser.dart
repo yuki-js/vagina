@@ -501,34 +501,39 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
           ),
         ),
         child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-        hoverColor: AppTheme.primaryColor.withValues(alpha: 0.05),
-        splashColor: AppTheme.primaryColor.withValues(alpha: 0.1),
-        leading: _isSelectionMode
-            ? Checkbox(
-                value: isSelected,
-                onChanged: (_) => _toggleSelection(entry),
-              )
-            : (isDirectory
-                  ? const Icon(Icons.folder, color: Colors.amber)
-                  : Icon(iconForPath(entry), color: colorForPath(entry))),
-        title: Text(
-          displayName,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: AppTheme.lightTextPrimary,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 14,
+            vertical: 4,
           ),
-        ),
-        trailing: isDirectory
-            ? Icon(Icons.chevron_right, color: AppTheme.lightTextSecondary)
-            : null,
-        onTap: _isSelectionMode
-            ? () => _toggleSelection(entry)
-            : (isDirectory
-                  ? () => _openDirectory(entry)
-                  : () => _openFile(entry)),
-        onLongPress: _isSelectionMode ? null : () => _enterSelectionMode(entry),
+          hoverColor: AppTheme.primaryColor.withValues(alpha: 0.05),
+          splashColor: AppTheme.primaryColor.withValues(alpha: 0.1),
+          leading: _isSelectionMode
+              ? Checkbox(
+                  value: isSelected,
+                  onChanged: (_) => _toggleSelection(entry),
+                )
+              : (isDirectory
+                    ? const Icon(Icons.folder, color: Colors.amber)
+                    : Icon(iconForPath(entry), color: colorForPath(entry))),
+          title: Text(
+            displayName,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: AppTheme.lightTextPrimary,
+            ),
+          ),
+          trailing: isDirectory
+              ? Icon(Icons.chevron_right, color: AppTheme.lightTextSecondary)
+              : null,
+          onTap: _isSelectionMode
+              ? () => _toggleSelection(entry)
+              : (isDirectory
+                    ? () => _openDirectory(entry)
+                    : () => _openFile(entry)),
+          onLongPress: _isSelectionMode
+              ? null
+              : () => _enterSelectionMode(entry),
         ),
       ),
     );

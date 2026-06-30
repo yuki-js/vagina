@@ -7,10 +7,7 @@ final class ManualAudioTurn {
   final Uint8List audioBytes;
   final Duration duration;
 
-  const ManualAudioTurn({
-    required this.audioBytes,
-    required this.duration,
-  });
+  const ManualAudioTurn({required this.audioBytes, required this.duration});
 }
 
 /// Owns client-side/manual audio turn accumulation for CallService.
@@ -58,10 +55,7 @@ final class ManualAudioTurnBuffer {
       return null;
     }
 
-    return ManualAudioTurn(
-      audioBytes: audioBytes,
-      duration: duration,
-    );
+    return ManualAudioTurn(audioBytes: audioBytes, duration: duration);
   }
 
   void cancel() {

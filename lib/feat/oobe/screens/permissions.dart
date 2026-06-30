@@ -139,9 +139,7 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
               Navigator.of(context).pop();
               openAppSettings();
             },
-            style: TextButton.styleFrom(
-              foregroundColor: AppTheme.primaryColor,
-            ),
+            style: TextButton.styleFrom(foregroundColor: AppTheme.primaryColor),
             child: Text(l10n.permissionsOpenSettings),
           ),
         ],
@@ -161,9 +159,7 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
       return const Scaffold(
         backgroundColor: Colors.black,
         body: Center(
-          child: CircularProgressIndicator(
-            color: AppTheme.primaryColor,
-          ),
+          child: CircularProgressIndicator(color: AppTheme.primaryColor),
         ),
       );
     }
@@ -229,10 +225,12 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppTheme.primaryColor,
                           foregroundColor: Colors.white,
-                          disabledBackgroundColor:
-                              Colors.white.withValues(alpha: 0.1),
-                          disabledForegroundColor:
-                              Colors.white.withValues(alpha: 0.3),
+                          disabledBackgroundColor: Colors.white.withValues(
+                            alpha: 0.1,
+                          ),
+                          disabledForegroundColor: Colors.white.withValues(
+                            alpha: 0.3,
+                          ),
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),

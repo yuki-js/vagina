@@ -43,8 +43,8 @@ final class ProjectResult {
   const ProjectResult({this.desync = false, this.desyncReason});
   const ProjectResult.ok() : this();
   const ProjectResult.desynced(String reason)
-      : desync = true,
-        desyncReason = reason;
+    : desync = true,
+      desyncReason = reason;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -113,8 +113,8 @@ final class VhrpThreadProjector {
       ReplaceTranscriptOp op => _applyReplaceTranscript(op, thread),
       SetConversationIdOp op => _applySetConversationId(op, thread),
       UnknownOp op => ProjectResult.desynced(
-          'Encountered unknown op "${op.unknownOp}" — desync required.',
-        ),
+        'Encountered unknown op "${op.unknownOp}" — desync required.',
+      ),
     };
   }
 
@@ -223,13 +223,14 @@ final class VhrpThreadProjector {
       case 'toolOutputDisposition':
         item.toolOutputDisposition =
             RealtimeThreadJsonCodec.toolOutputDispositionFromWireValue(
-          op.value as String?,
-        );
+              op.value as String?,
+            );
       case 'toolErrorMessage':
         item.toolErrorMessage = op.value as String?;
       case 'displayState':
-        item.displayState =
-            RealtimeThreadItemDisplayState.fromWireValue(op.value as String?);
+        item.displayState = RealtimeThreadItemDisplayState.fromWireValue(
+          op.value as String?,
+        );
       default:
         // Unknown field — silently ignore (forward-compatible, not a desync).
         break;
@@ -298,7 +299,9 @@ final class VhrpThreadProjector {
   // ── append_transcript ─────────────────────────────────────────────────────
 
   ProjectResult _applyAppendTranscript(
-      AppendTranscriptOp op, RealtimeThread thread) {
+    AppendTranscriptOp op,
+    RealtimeThread thread,
+  ) {
     final item = thread.findItem(op.itemId);
     if (item == null) {
       return ProjectResult.desynced(
@@ -319,7 +322,9 @@ final class VhrpThreadProjector {
   // ── replace_transcript ────────────────────────────────────────────────────
 
   ProjectResult _applyReplaceTranscript(
-      ReplaceTranscriptOp op, RealtimeThread thread) {
+    ReplaceTranscriptOp op,
+    RealtimeThread thread,
+  ) {
     final item = thread.findItem(op.itemId);
     if (item == null) {
       return ProjectResult.desynced(
@@ -340,9 +345,10 @@ final class VhrpThreadProjector {
   // ── set_conversation_id ───────────────────────────────────────────────────
 
   ProjectResult _applySetConversationId(
-      SetConversationIdOp op, RealtimeThread thread) {
+    SetConversationIdOp op,
+    RealtimeThread thread,
+  ) {
     thread.conversationId = op.conversationId;
     return const ProjectResult.ok();
   }
-
 }

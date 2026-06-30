@@ -47,7 +47,7 @@ abstract class FilesystemApi {
 /// Client implementation of [FilesystemApi] that uses hostCall.
 class FilesystemApiClient implements FilesystemApi {
   final Future<dynamic> Function(String method, Map<String, dynamic> args)
-      hostCall;
+  hostCall;
 
   FilesystemApiClient({required this.hostCall});
 
@@ -80,10 +80,7 @@ class FilesystemApiClient implements FilesystemApi {
 
   @override
   Future<List<String>> list(String path, {bool recursive = false}) async {
-    final data = await hostCall(
-      'list',
-      {'path': path, 'recursive': recursive},
-    );
+    final data = await hostCall('list', {'path': path, 'recursive': recursive});
 
     if (data is List) {
       return List<String>.from(data);

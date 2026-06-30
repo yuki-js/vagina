@@ -8,25 +8,25 @@ class FsDeleteTool extends Tool {
 
   @override
   ToolDefinition get definition => const ToolDefinition(
-        toolKey: toolKeyName,
-        displayName: 'ファイル削除',
-        displayDescription: '仮想ファイルシステムから削除します',
-        categoryKey: 'filesystem',
-        iconKey: 'delete',
-        sourceKey: 'builtin',
-        publishedBy: 'aokiapp',
-        description: 'Delete a filesystem path.',
-        parametersSchema: {
-          'type': 'object',
-          'properties': {
-            'path': {
-              'type': 'string',
-              'description': 'Absolute filesystem path to delete.',
-            },
-          },
-          'required': ['path'],
+    toolKey: toolKeyName,
+    displayName: 'ファイル削除',
+    displayDescription: '仮想ファイルシステムから削除します',
+    categoryKey: 'filesystem',
+    iconKey: 'delete',
+    sourceKey: 'builtin',
+    publishedBy: 'aokiapp',
+    description: 'Delete a filesystem path.',
+    parametersSchema: {
+      'type': 'object',
+      'properties': {
+        'path': {
+          'type': 'string',
+          'description': 'Absolute filesystem path to delete.',
         },
-      );
+      },
+      'required': ['path'],
+    },
+  );
 
   @override
   Future<String> execute(Map<String, dynamic> args) async {
@@ -40,10 +40,7 @@ class FsDeleteTool extends Tool {
         'message': 'Deleted successfully.',
       });
     } catch (e) {
-      return jsonEncode({
-        'success': false,
-        'error': 'Failed to delete: $e',
-      });
+      return jsonEncode({'success': false, 'error': 'Failed to delete: $e'});
     }
   }
 }

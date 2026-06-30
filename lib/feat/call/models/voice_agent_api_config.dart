@@ -45,7 +45,8 @@ class HostedVoiceAgentApiConfig extends VoiceAgentApiConfig {
 
   factory HostedVoiceAgentApiConfig.fromJson(Map<String, dynamic> json) {
     return HostedVoiceAgentApiConfig(
-      speedDialId: json['speedDialId'] as String? ?? json['modelId'] as String? ?? '',
+      speedDialId:
+          json['speedDialId'] as String? ?? json['modelId'] as String? ?? '',
       modelId: json['modelId'] as String? ?? '',
     );
   }

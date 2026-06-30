@@ -89,10 +89,7 @@ class SpreadsheetController extends ChangeNotifier {
       newRows[row] = Map<String, dynamic>.from(newRows[row]);
       newRows[row][columnName] = parsedValue;
 
-      final newData = TabularData(
-        columns: _data.columns,
-        rows: newRows,
-      );
+      final newData = TabularData(columns: _data.columns, rows: newRows);
 
       _data = newData;
       onDataChanged(newData);

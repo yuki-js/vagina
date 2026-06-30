@@ -62,26 +62,22 @@ final class VhrpTransportConnectionState {
   });
 
   const VhrpTransportConnectionState.idle()
-      : this(phase: VhrpTransportPhase.idle);
+    : this(phase: VhrpTransportPhase.idle);
 
   const VhrpTransportConnectionState.connecting()
-      : this(phase: VhrpTransportPhase.connecting);
+    : this(phase: VhrpTransportPhase.connecting);
 
   const VhrpTransportConnectionState.connected()
-      : this(phase: VhrpTransportPhase.connected);
+    : this(phase: VhrpTransportPhase.connected);
 
   const VhrpTransportConnectionState.disconnecting()
-      : this(phase: VhrpTransportPhase.disconnecting);
+    : this(phase: VhrpTransportPhase.disconnecting);
 
   const VhrpTransportConnectionState.disconnected({String? message})
-      : this(phase: VhrpTransportPhase.disconnected, message: message);
+    : this(phase: VhrpTransportPhase.disconnected, message: message);
 
   const VhrpTransportConnectionState.failed({String? message, Object? error})
-      : this(
-          phase: VhrpTransportPhase.failed,
-          message: message,
-          error: error,
-        );
+    : this(phase: VhrpTransportPhase.failed, message: message, error: error);
 
   bool get isConnected => phase == VhrpTransportPhase.connected;
 

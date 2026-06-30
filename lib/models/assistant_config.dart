@@ -14,11 +14,7 @@ class AssistantConfig {
   final String voice;
 
   /// Available voices for the assistant
-  static const List<String> availableVoices = [
-    'alloy',
-    'echo',
-    'shimmer',
-  ];
+  static const List<String> availableVoices = ['alloy', 'echo', 'shimmer'];
 
   static const String _defaultInstructionsTemplateJa =
       '''あなたは「{appName}」（{appSubtitle}）という名前の音声AIアシスタントです。
@@ -114,11 +110,7 @@ You support the user through voice conversation. Avoid overly long responses and
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'name': name,
-      'instructions': instructions,
-      'voice': voice,
-    };
+    return {'name': name, 'instructions': instructions, 'voice': voice};
   }
 
   factory AssistantConfig.fromJson(
@@ -127,7 +119,8 @@ You support the user through voice conversation. Avoid overly long responses and
   }) {
     return AssistantConfig._(
       name: json['name'] as String? ?? AppConfig.appName,
-      instructions: json['instructions'] as String? ??
+      instructions:
+          json['instructions'] as String? ??
           defaultInstructionsForLocale(locale),
       voice: json['voice'] as String? ?? AppConfig.defaultVoice,
     );

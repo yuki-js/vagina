@@ -8,10 +8,7 @@ import 'package:vagina/l10n/app_localizations.dart';
 class HistoricalChatView extends StatelessWidget {
   final List<String> chatMessages;
 
-  const HistoricalChatView({
-    super.key,
-    required this.chatMessages,
-  });
+  const HistoricalChatView({super.key, required this.chatMessages});
 
   @override
   Widget build(BuildContext context) {
@@ -77,8 +74,9 @@ class HistoricalChatView extends StatelessWidget {
           // Tool call item - display as badge only
           if (toolCalls != null && toolCalls.isNotEmpty) {
             return _ToolCallItem(
-              toolCalls:
-                  toolCalls.map((tc) => tc as Map<String, dynamic>).toList(),
+              toolCalls: toolCalls
+                  .map((tc) => tc as Map<String, dynamic>)
+                  .toList(),
               timestamp: timestamp,
             );
           }
@@ -87,8 +85,9 @@ class HistoricalChatView extends StatelessWidget {
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: 4),
             child: Row(
-              mainAxisAlignment:
-                  isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+              mainAxisAlignment: isUser
+                  ? MainAxisAlignment.end
+                  : MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 // Avatar only for AI
@@ -96,11 +95,7 @@ class HistoricalChatView extends StatelessWidget {
                   const CircleAvatar(
                     radius: 16,
                     backgroundColor: AppTheme.primaryColor,
-                    child: Icon(
-                      Icons.smart_toy,
-                      size: 18,
-                      color: Colors.white,
-                    ),
+                    child: Icon(Icons.smart_toy, size: 18, color: Colors.white),
                   ),
                   const SizedBox(width: 8),
                 ],
@@ -140,14 +135,18 @@ class HistoricalChatView extends StatelessWidget {
                       ),
                       // Timestamp below bubble
                       Padding(
-                        padding:
-                            const EdgeInsets.only(top: 4, left: 8, right: 8),
+                        padding: const EdgeInsets.only(
+                          top: 4,
+                          left: 8,
+                          right: 8,
+                        ),
                         child: Text(
                           DateFormat.Hms(l10n.localeName).format(timestamp),
                           style: TextStyle(
                             fontSize: 11,
-                            color: AppTheme.lightTextSecondary
-                                .withValues(alpha: 0.6),
+                            color: AppTheme.lightTextSecondary.withValues(
+                              alpha: 0.6,
+                            ),
                           ),
                         ),
                       ),
@@ -168,10 +167,7 @@ class _ToolCallItem extends StatelessWidget {
   final List<Map<String, dynamic>> toolCalls;
   final DateTime timestamp;
 
-  const _ToolCallItem({
-    required this.toolCalls,
-    required this.timestamp,
-  });
+  const _ToolCallItem({required this.toolCalls, required this.timestamp});
 
   @override
   Widget build(BuildContext context) {
@@ -195,7 +191,8 @@ class _ToolCallItem extends StatelessWidget {
                   runSpacing: 8,
                   children: toolCalls.map((toolCall) {
                     return _ToolBadge(
-                      name: toolCall['name'] as String? ??
+                      name:
+                          toolCall['name'] as String? ??
                           l10n.callChatToolFallbackName,
                       status: toolCall['status'] as String? ?? 'completed',
                       onTap: () => _showToolDetails(context, toolCall),
@@ -273,9 +270,7 @@ class _ToolBadge extends StatelessWidget {
         decoration: BoxDecoration(
           color: _statusColor.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: _statusColor.withValues(alpha: 0.25),
-          ),
+          border: Border.all(color: _statusColor.withValues(alpha: 0.25)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -363,11 +358,7 @@ class _ToolDetailsSheet extends StatelessWidget {
                     color: statusColor.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(
-                    statusIcon,
-                    color: statusColor,
-                    size: 20,
-                  ),
+                  child: Icon(statusIcon, color: statusColor, size: 20),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -404,11 +395,7 @@ class _ToolDetailsSheet extends StatelessWidget {
                     ),
                     child: Row(
                       children: [
-                        Icon(
-                          statusIcon,
-                          size: 16,
-                          color: statusColor,
-                        ),
+                        Icon(statusIcon, size: 16, color: statusColor),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
@@ -431,10 +418,10 @@ class _ToolDetailsSheet extends StatelessWidget {
                       text: arguments?.isNotEmpty ?? false
                           ? arguments!
                           : status == 'cancelled'
-                              ? l10n.callChatToolArgumentsCancelled
-                              : status == 'generating'
-                                  ? l10n.callChatToolArgumentsStreaming
-                                  : l10n.callChatToolArgumentsNone,
+                          ? l10n.callChatToolArgumentsCancelled
+                          : status == 'generating'
+                          ? l10n.callChatToolArgumentsStreaming
+                          : l10n.callChatToolArgumentsNone,
                       isPlaceholder: arguments?.isEmpty ?? true,
                     ),
                   ),
@@ -465,10 +452,7 @@ class _DetailSection extends StatelessWidget {
   final String title;
   final Widget child;
 
-  const _DetailSection({
-    required this.title,
-    required this.child,
-  });
+  const _DetailSection({required this.title, required this.child});
 
   @override
   Widget build(BuildContext context) {

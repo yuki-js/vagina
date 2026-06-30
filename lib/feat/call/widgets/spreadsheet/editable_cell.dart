@@ -73,15 +73,11 @@ class _EditableCellState extends State<EditableCell> {
     }
   }
 
-  bool get _isSelected => widget.controller.isCellSelected(
-        widget.rowIndex,
-        widget.colIndex,
-      );
+  bool get _isSelected =>
+      widget.controller.isCellSelected(widget.rowIndex, widget.colIndex);
 
-  bool get _isEditing => widget.controller.isCellEditing(
-        widget.rowIndex,
-        widget.colIndex,
-      );
+  bool get _isEditing =>
+      widget.controller.isCellEditing(widget.rowIndex, widget.colIndex);
 
   @override
   Widget build(BuildContext context) {
@@ -116,8 +112,9 @@ class _EditableCellState extends State<EditableCell> {
         ),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         alignment: Alignment.centerLeft,
-        child:
-            (!widget.readOnly && _isEditing) ? _buildEditor() : _buildLabel(),
+        child: (!widget.readOnly && _isEditing)
+            ? _buildEditor()
+            : _buildLabel(),
       ),
     );
   }
@@ -128,24 +125,23 @@ class _EditableCellState extends State<EditableCell> {
       _textController.text = editingValue;
     }
 
-    final textPrimary =
-        widget.useLightTheme ? AppTheme.lightTextPrimary : AppTheme.textPrimary;
+    final textPrimary = widget.useLightTheme
+        ? AppTheme.lightTextPrimary
+        : AppTheme.textPrimary;
 
     return TextField(
       controller: _textController,
       focusNode: _focusNode,
-      style: TextStyle(
-        fontSize: 13,
-        color: textPrimary,
-      ),
+      style: TextStyle(fontSize: 13, color: textPrimary),
       decoration: const InputDecoration(
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.zero,
-          focusedBorder: InputBorder.none,
-          enabledBorder: InputBorder.none,
-          isDense: true,
-          filled: false,
-          visualDensity: VisualDensity.standard),
+        border: InputBorder.none,
+        contentPadding: EdgeInsets.zero,
+        focusedBorder: InputBorder.none,
+        enabledBorder: InputBorder.none,
+        isDense: true,
+        filled: false,
+        visualDensity: VisualDensity.standard,
+      ),
       onChanged: (value) {
         widget.controller.editingValue = value;
       },
@@ -164,8 +160,9 @@ class _EditableCellState extends State<EditableCell> {
 
   Widget _buildLabel() {
     final displayValue = widget.value?.toString() ?? '';
-    final textPrimary =
-        widget.useLightTheme ? AppTheme.lightTextPrimary : AppTheme.textPrimary;
+    final textPrimary = widget.useLightTheme
+        ? AppTheme.lightTextPrimary
+        : AppTheme.textPrimary;
     final textSecondary = widget.useLightTheme
         ? AppTheme.lightTextSecondary
         : AppTheme.textSecondary;

@@ -19,30 +19,30 @@ class DocumentOverwriteTool extends Tool {
 
   @override
   ToolDefinition get definition => const ToolDefinition(
-        toolKey: toolKeyName,
-        displayName: 'ドキュメント作成',
-        displayDescription: '新しいドキュメントを作成または上書きします',
-        categoryKey: 'document',
-        iconKey: 'edit_document',
-        sourceKey: 'builtin',
-        publishedBy: 'aokiapp',
-        description: 'Overwrite the working content of an active file by path.',
-        activation: ToolActivation.forExtensions(kTextDocumentExtensions),
-        parametersSchema: {
-          'type': 'object',
-          'properties': {
-            'path': {
-              'type': 'string',
-              'description': 'Absolute path of the active file to overwrite.',
-            },
-            'content': {
-              'type': 'string',
-              'description': 'The content of the document',
-            },
-          },
-          'required': ['path', 'content'],
+    toolKey: toolKeyName,
+    displayName: 'ドキュメント作成',
+    displayDescription: '新しいドキュメントを作成または上書きします',
+    categoryKey: 'document',
+    iconKey: 'edit_document',
+    sourceKey: 'builtin',
+    publishedBy: 'aokiapp',
+    description: 'Overwrite the working content of an active file by path.',
+    activation: ToolActivation.forExtensions(kTextDocumentExtensions),
+    parametersSchema: {
+      'type': 'object',
+      'properties': {
+        'path': {
+          'type': 'string',
+          'description': 'Absolute path of the active file to overwrite.',
         },
-      );
+        'content': {
+          'type': 'string',
+          'description': 'The content of the document',
+        },
+      },
+      'required': ['path', 'content'],
+    },
+  );
 
   @override
   Future<String> execute(Map<String, dynamic> args) async {

@@ -19,11 +19,11 @@ class AnnouncementService {
     http.Client? httpClient,
     Uri? endpointUri,
     AnnouncementNowProvider? nowProvider,
-  })  : _preferencesRepository = preferencesRepository,
-        _httpClient = httpClient ?? http.Client(),
-        _endpointUri = endpointUri ?? AppConfig.announcementJsonUri,
-        _nowProvider = nowProvider ?? DateTime.now,
-        _ownsHttpClient = httpClient == null;
+  }) : _preferencesRepository = preferencesRepository,
+       _httpClient = httpClient ?? http.Client(),
+       _endpointUri = endpointUri ?? AppConfig.announcementJsonUri,
+       _nowProvider = nowProvider ?? DateTime.now,
+       _ownsHttpClient = httpClient == null;
 
   Future<AnnouncementTopicList> fetchTopicList() async {
     final endpointUri = _endpointUri;
@@ -96,8 +96,9 @@ class AnnouncementService {
   }
 
   int _compareTopics(AnnouncementTopic left, AnnouncementTopic right) {
-    final priorityComparison =
-        right.priorityValue.compareTo(left.priorityValue);
+    final priorityComparison = right.priorityValue.compareTo(
+      left.priorityValue,
+    );
     if (priorityComparison != 0) {
       return priorityComparison;
     }

@@ -30,9 +30,9 @@ final class VirtualFilesystemService extends SubService {
     int maxFileSizeBytes = defaultMaxFileSizeBytes,
     int maxTotalSizeBytes = defaultMaxTotalSizeBytes,
     int maxPathLength = defaultMaxPathLength,
-  })  : _maxFileSizeBytes = maxFileSizeBytes,
-        _maxTotalSizeBytes = maxTotalSizeBytes,
-        _maxPathLength = maxPathLength;
+  }) : _maxFileSizeBytes = maxFileSizeBytes,
+       _maxTotalSizeBytes = maxTotalSizeBytes,
+       _maxPathLength = maxPathLength;
 
   @override
   Future<void> start() async {
@@ -184,8 +184,10 @@ final class VirtualFilesystemService extends SubService {
 
     var normalizedInput = path;
     if (normalizedInput != '/' && normalizedInput.endsWith('/')) {
-      normalizedInput =
-          normalizedInput.substring(0, normalizedInput.length - 1);
+      normalizedInput = normalizedInput.substring(
+        0,
+        normalizedInput.length - 1,
+      );
     }
 
     final parts = normalizedInput

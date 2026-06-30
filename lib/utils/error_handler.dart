@@ -171,7 +171,10 @@ class ErrorHandler {
 
   /// Categorize a generic error into specific AppError types
   static AppError _categorizeError(
-      Object error, StackTrace stack, String context) {
+    Object error,
+    StackTrace stack,
+    String context,
+  ) {
     final message = error.toString();
 
     // Network-related errors
@@ -237,9 +240,5 @@ class ErrorHandler {
 
 /// Generic application error (internal use)
 class _GenericError extends AppError {
-  const _GenericError(
-    super.message, {
-    super.originalError,
-    super.stackTrace,
-  });
+  const _GenericError(super.message, {super.originalError, super.stackTrace});
 }

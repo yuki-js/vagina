@@ -75,7 +75,6 @@ class _ToolConfigSectionState extends State<ToolConfigSection> {
     widget.onChanged(newEnabledTools);
   }
 
-
   /// 選択したタブを画面中央にスクロール
   void _scrollTabToCenter(int index) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -91,7 +90,8 @@ class _ToolConfigSectionState extends State<ToolConfigSection> {
       final screenWidth = MediaQuery.of(context).size.width;
 
       // タブの中心を画面の中心に持ってくる
-      final targetScrollOffset = _tabScrollController.offset +
+      final targetScrollOffset =
+          _tabScrollController.offset +
           tabPosition.dx -
           (screenWidth / 2) +
           (tabWidth / 2);
@@ -131,15 +131,15 @@ class _ToolConfigSectionState extends State<ToolConfigSection> {
     final toolList = toolRegistry.registeredToolMeta;
 
     // カテゴリ別にグルーピング
-    final toolsByCategory =
-        toolList.fold<Map<ToolCategory, List<ToolMetadata>>>({}, (map, tool) {
-      final category = tool.category;
-      if (!map.containsKey(category)) {
-        map[category] = [];
-      }
-      map[category]!.add(tool);
-      return map;
-    });
+    final toolsByCategory = toolList
+        .fold<Map<ToolCategory, List<ToolMetadata>>>({}, (map, tool) {
+          final category = tool.category;
+          if (!map.containsKey(category)) {
+            map[category] = [];
+          }
+          map[category]!.add(tool);
+          return map;
+        });
 
     // カテゴリを定義順にソート
     final sortedCategories = toolsByCategory.keys.toList()
@@ -169,8 +169,10 @@ class _ToolConfigSectionState extends State<ToolConfigSection> {
                 label: Text(l10n.speedDialToolConfigSelectAll),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppTheme.primaryColor,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   side: BorderSide.none,
                   visualDensity: VisualDensity.compact,
                 ),
@@ -182,8 +184,10 @@ class _ToolConfigSectionState extends State<ToolConfigSection> {
                 label: Text(l10n.speedDialToolConfigClearAll),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppTheme.lightTextSecondary,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   side: BorderSide.none,
                   visualDensity: VisualDensity.compact,
                 ),
@@ -221,7 +225,9 @@ class _ToolConfigSectionState extends State<ToolConfigSection> {
                   child: Container(
                     key: _tabKeys[index],
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 20, vertical: 12),
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
                     decoration: BoxDecoration(
                       color: isSelected
                           ? AppTheme.primaryColor
@@ -233,8 +239,9 @@ class _ToolConfigSectionState extends State<ToolConfigSection> {
                         Icon(
                           ToolIconMapper.iconForCategory(category),
                           size: 18,
-                          color:
-                              isSelected ? Colors.white : AppTheme.primaryColor,
+                          color: isSelected
+                              ? Colors.white
+                              : AppTheme.primaryColor,
                         ),
                         const SizedBox(width: 8),
                         Text(
@@ -287,8 +294,9 @@ class _ToolConfigSectionState extends State<ToolConfigSection> {
                   fontWeight: isEnabled ? FontWeight.w600 : FontWeight.normal,
                 ),
                 side: BorderSide(
-                  color:
-                      isEnabled ? AppTheme.primaryColor : Colors.grey.shade300,
+                  color: isEnabled
+                      ? AppTheme.primaryColor
+                      : Colors.grey.shade300,
                 ),
               );
             }).toList(),

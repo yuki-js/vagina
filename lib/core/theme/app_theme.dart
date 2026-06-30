@@ -52,7 +52,7 @@ class AppTheme {
         'NotoSansJP',
         'Noto Sans JP',
         'Noto Sans CJK JP',
-        'sans-serif'
+        'sans-serif',
       ],
       textTheme: TextTheme(
         displayLarge: const TextStyle(
@@ -115,10 +115,7 @@ class AppTheme {
           fontWeight: FontWeight.w600,
           fontVariations: [ui.FontVariation('wght', 600)],
         ),
-      ).apply(
-        bodyColor: lightTextPrimary,
-        displayColor: lightTextPrimary,
-      ),
+      ).apply(bodyColor: lightTextPrimary, displayColor: lightTextPrimary),
       colorScheme: ColorScheme.light(
         primary: primaryColor,
         secondary: secondaryColor,
@@ -152,31 +149,35 @@ class AppTheme {
         ),
       ),
       textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(
-          foregroundColor: primaryColor,
-        ),
+        style: TextButton.styleFrom(foregroundColor: primaryColor),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: lightSurfaceColor,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide:
-              BorderSide(color: lightTextSecondary.withValues(alpha: 0.3)),
+          borderSide: BorderSide(
+            color: lightTextSecondary.withValues(alpha: 0.3),
+          ),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide:
-              BorderSide(color: lightTextSecondary.withValues(alpha: 0.3)),
+          borderSide: BorderSide(
+            color: lightTextSecondary.withValues(alpha: 0.3),
+          ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: primaryColor, width: 2),
         ),
-        labelStyle:
-            TextStyle(color: lightTextSecondary, fontWeight: FontWeight.w500),
-        hintStyle:
-            TextStyle(color: lightTextSecondary, fontWeight: FontWeight.w500),
+        labelStyle: TextStyle(
+          color: lightTextSecondary,
+          fontWeight: FontWeight.w500,
+        ),
+        hintStyle: TextStyle(
+          color: lightTextSecondary,
+          fontWeight: FontWeight.w500,
+        ),
       ),
       sliderTheme: SliderThemeData(
         activeTrackColor: primaryColor,
@@ -185,9 +186,7 @@ class AppTheme {
         overlayColor: primaryColor.withValues(alpha: 0.2),
       ),
       iconButtonTheme: IconButtonThemeData(
-        style: IconButton.styleFrom(
-          foregroundColor: lightTextPrimary,
-        ),
+        style: IconButton.styleFrom(foregroundColor: lightTextPrimary),
       ),
     );
   }
@@ -203,7 +202,7 @@ class AppTheme {
         'NotoSansJP',
         'Noto Sans JP',
         'Noto Sans CJK JP',
-        'sans-serif'
+        'sans-serif',
       ],
       textTheme: TextTheme(
         displayLarge: const TextStyle(
@@ -266,10 +265,7 @@ class AppTheme {
           fontWeight: FontWeight.w600,
           fontVariations: [ui.FontVariation('wght', 600)],
         ),
-      ).apply(
-        bodyColor: textPrimary,
-        displayColor: textPrimary,
-      ),
+      ).apply(bodyColor: textPrimary, displayColor: textPrimary),
       colorScheme: ColorScheme.dark(
         primary: primaryColor,
         secondary: secondaryColor,
@@ -303,9 +299,7 @@ class AppTheme {
         ),
       ),
       textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(
-          foregroundColor: primaryColor,
-        ),
+        style: TextButton.styleFrom(foregroundColor: primaryColor),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
@@ -322,10 +316,14 @@ class AppTheme {
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: primaryColor, width: 2),
         ),
-        labelStyle:
-            const TextStyle(color: textSecondary, fontWeight: FontWeight.w500),
-        hintStyle:
-            const TextStyle(color: textSecondary, fontWeight: FontWeight.w500),
+        labelStyle: const TextStyle(
+          color: textSecondary,
+          fontWeight: FontWeight.w500,
+        ),
+        hintStyle: const TextStyle(
+          color: textSecondary,
+          fontWeight: FontWeight.w500,
+        ),
       ),
       sliderTheme: SliderThemeData(
         activeTrackColor: primaryColor,
@@ -334,9 +332,7 @@ class AppTheme {
         overlayColor: primaryColor.withValues(alpha: 0.2),
       ),
       iconButtonTheme: IconButtonThemeData(
-        style: IconButton.styleFrom(
-          foregroundColor: textPrimary,
-        ),
+        style: IconButton.styleFrom(foregroundColor: textPrimary),
       ),
     );
   }

@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:vagina/feat/announcement/models/announcement_topic.dart';
 
-typedef AnnouncementDialogButtonHandler = Future<void> Function(
-  AnnouncementButton button,
-);
+typedef AnnouncementDialogButtonHandler =
+    Future<void> Function(AnnouncementButton button);
 typedef AnnouncementDialogDismissHandler = Future<void> Function();
 
 class AnnouncementDialog extends StatelessWidget {
@@ -25,12 +24,7 @@ class AnnouncementDialog extends StatelessWidget {
     return AlertDialog(
       title: Row(
         children: [
-          Expanded(
-            child: Text(
-              topic.title,
-              style: theme.textTheme.titleLarge,
-            ),
-          ),
+          Expanded(child: Text(topic.title, style: theme.textTheme.titleLarge)),
           if (onDismissed != null)
             IconButton(
               key: const Key('announcement_dialog_close_button'),
@@ -60,10 +54,7 @@ class AnnouncementDialog extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
               ],
-              Text(
-                topic.message,
-                style: theme.textTheme.bodyMedium,
-              ),
+              Text(topic.message, style: theme.textTheme.bodyMedium),
             ],
           ),
         ),
@@ -96,9 +87,7 @@ class AnnouncementDialog extends StatelessWidget {
     }
 
     final style = button.isNegative
-        ? TextButton.styleFrom(
-            foregroundColor: theme.colorScheme.error,
-          )
+        ? TextButton.styleFrom(foregroundColor: theme.colorScheme.error)
         : null;
 
     return TextButton(

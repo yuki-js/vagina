@@ -86,9 +86,8 @@ class CallService {
     seconds: AppConfig.defaultSilenceTimeoutSeconds,
   );
 
-  CallService({
-    required VirtualFilesystemRepository filesystemRepository,
-  }) : _filesystemRepository = filesystemRepository;
+  CallService({required VirtualFilesystemRepository filesystemRepository})
+    : _filesystemRepository = filesystemRepository;
 
   CallState get state => _state;
 
@@ -663,7 +662,6 @@ class CallService {
     _pushToTalkGeneration += 1;
     _pendingPushToTalkRelease = null;
   }
-
 }
 
 final class _InFlightTool {

@@ -69,7 +69,8 @@ class _FeaturePlaceholder extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
           ),
           child: InkWell(
-            onTap: onTap ??
+            onTap:
+                onTap ??
                 () {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
@@ -95,11 +96,7 @@ class _FeaturePlaceholder extends StatelessWidget {
                     color.withValues(alpha: 0.4),
                   ],
                 ).createShader(bounds),
-                child: Icon(
-                  icon,
-                  size: 40,
-                  color: Colors.white,
-                ),
+                child: Icon(icon, size: 40, color: Colors.white),
               ),
             ),
           ),

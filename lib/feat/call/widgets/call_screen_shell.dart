@@ -4,10 +4,7 @@ import 'package:vagina/core/theme/app_theme.dart';
 class CallScreenShell extends StatelessWidget {
   final Widget child;
 
-  const CallScreenShell({
-    super.key,
-    required this.child,
-  });
+  const CallScreenShell({super.key, required this.child});
 
   @override
   Widget build(BuildContext context) {
@@ -62,9 +59,7 @@ class CallScreenShell extends StatelessWidget {
                   ),
                 ),
               ),
-              SafeArea(
-                child: child,
-              ),
+              SafeArea(child: child),
             ],
           ),
         ),

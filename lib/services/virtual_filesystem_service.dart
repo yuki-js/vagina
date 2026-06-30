@@ -29,9 +29,9 @@ class VirtualFilesystemService {
     int maxFileSizeBytes = defaultMaxFileSizeBytes,
     int maxTotalSizeBytes = defaultMaxTotalSizeBytes,
     int maxPathLength = defaultMaxPathLength,
-  })  : _maxFileSizeBytes = maxFileSizeBytes,
-        _maxTotalSizeBytes = maxTotalSizeBytes,
-        _maxPathLength = maxPathLength;
+  }) : _maxFileSizeBytes = maxFileSizeBytes,
+       _maxTotalSizeBytes = maxTotalSizeBytes,
+       _maxPathLength = maxPathLength;
 
   Future<void> initialize() async {
     await _repository.initialize();
@@ -168,8 +168,10 @@ class VirtualFilesystemService {
 
     var normalizedInput = path;
     if (normalizedInput != '/' && normalizedInput.endsWith('/')) {
-      normalizedInput =
-          normalizedInput.substring(0, normalizedInput.length - 1);
+      normalizedInput = normalizedInput.substring(
+        0,
+        normalizedInput.length - 1,
+      );
     }
 
     final parts = normalizedInput

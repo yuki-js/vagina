@@ -18,9 +18,7 @@ class CallNavigationUtils {
     // Navigate to call screen, passing SpeedDial configuration directly
     // CallScreen will handle all call initialization within its ProviderScope
     await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => CallScreen(speedDial: speedDial),
-      ),
+      MaterialPageRoute(builder: (context) => CallScreen(speedDial: speedDial)),
     );
   }
 
@@ -31,7 +29,9 @@ class CallNavigationUtils {
   static Future<void> navigateToCallWithDefault({
     required BuildContext context,
   }) async {
-    final speedDial = await AppContainer.speedDials.getById(SpeedDial.defaultId);
+    final speedDial = await AppContainer.speedDials.getById(
+      SpeedDial.defaultId,
+    );
     if (speedDial == null) {
       throw StateError('Default speed dial not found.');
     }
@@ -40,9 +40,6 @@ class CallNavigationUtils {
       return;
     }
 
-    await navigateToCallWithSpeedDial(
-      context: context,
-      speedDial: speedDial,
-    );
+    await navigateToCallWithSpeedDial(context: context, speedDial: speedDial);
   }
 }

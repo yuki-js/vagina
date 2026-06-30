@@ -8,30 +8,25 @@ class FsActiveFilesTool extends Tool {
 
   @override
   ToolDefinition get definition => const ToolDefinition(
-        toolKey: toolKeyName,
-        displayName: '作業中ファイル一覧',
-        displayDescription: '現在開いているファイルを表示します',
-        categoryKey: 'filesystem',
-        iconKey: 'list',
-        sourceKey: 'builtin',
-        publishedBy: 'aokiapp',
-        description:
-            'List currently active filesystem files in the runtime open set.',
-        parametersSchema: {
-          'type': 'object',
-          'properties': {},
-        },
-      );
+    toolKey: toolKeyName,
+    displayName: '作業中ファイル一覧',
+    displayDescription: '現在開いているファイルを表示します',
+    categoryKey: 'filesystem',
+    iconKey: 'list',
+    sourceKey: 'builtin',
+    publishedBy: 'aokiapp',
+    description:
+        'List currently active filesystem files in the runtime open set.',
+    parametersSchema: {'type': 'object', 'properties': {}},
+  );
 
   @override
   Future<String> execute(Map<String, dynamic> args) async {
     try {
       final activeFiles = await context.filesystemApi.listActiveFiles();
-      final paths = activeFiles
-          .map((entry) => entry['path'])
-          .whereType<String>()
-          .toList()
-        ..sort();
+      final paths =
+          activeFiles.map((entry) => entry['path']).whereType<String>().toList()
+            ..sort();
 
       return jsonEncode({
         'success': true,

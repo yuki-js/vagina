@@ -30,22 +30,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   List<_TabInfo> _buildTabs() {
     final l10n = AppLocalizations.of(context);
     return [
-      _TabInfo(
-        icon: Icons.star,
-        label: l10n.homeTabSpeedDial,
-      ),
-      _TabInfo(
-        icon: Icons.history,
-        label: l10n.homeTabSessions,
-      ),
-      _TabInfo(
-        icon: Icons.contacts,
-        label: l10n.homeTabAgents,
-      ),
-      _TabInfo(
-        icon: Icons.apps,
-        label: l10n.homeTabMore,
-      ),
+      _TabInfo(icon: Icons.star, label: l10n.homeTabSpeedDial),
+      _TabInfo(icon: Icons.history, label: l10n.homeTabSessions),
+      _TabInfo(icon: Icons.contacts, label: l10n.homeTabAgents),
+      _TabInfo(icon: Icons.apps, label: l10n.homeTabMore),
     ];
   }
 
@@ -78,15 +66,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   void _openSettings() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) => const SettingsScreen()),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => const SettingsScreen()));
   }
 
   Future<void> _handleCallButton() async {
-    await CallNavigationUtils.navigateToCallWithDefault(
-      context: context,
-    );
+    await CallNavigationUtils.navigateToCallWithDefault(context: context);
   }
 
   @override
@@ -108,7 +94,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   // Title and action buttons
                   Padding(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                     child: Row(
                       children: [
                         const Spacer(),
@@ -189,10 +177,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             icon: Icon(tabs[1].icon),
             label: tabs[1].label,
           ),
-          const BottomNavigationBarItem(
-            icon: SizedBox.shrink(),
-            label: '',
-          ),
+          const BottomNavigationBarItem(icon: SizedBox.shrink(), label: ''),
           BottomNavigationBarItem(
             icon: Icon(tabs[2].icon),
             label: tabs[2].label,
@@ -212,11 +197,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           onPressed: _handleCallButton,
           backgroundColor: AppTheme.successColor,
           elevation: 6,
-          child: const Icon(
-            Icons.phone,
-            size: 32,
-            color: Colors.white,
-          ),
+          child: const Icon(Icons.phone, size: 32, color: Colors.white),
         ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
@@ -243,8 +224,5 @@ class _TabInfo {
   final IconData icon;
   final String label;
 
-  const _TabInfo({
-    required this.icon,
-    required this.label,
-  });
+  const _TabInfo({required this.icon, required this.label});
 }

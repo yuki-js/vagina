@@ -6,20 +6,18 @@ class ToolActivation {
   final bool alwaysAvailable;
   final List<String> extensions;
 
-  const ToolActivation.always()
-      : alwaysAvailable = true,
-        extensions = const [];
+  const ToolActivation.always() : alwaysAvailable = true, extensions = const [];
 
-  const ToolActivation.forExtensions(this.extensions)
-      : alwaysAvailable = false;
+  const ToolActivation.forExtensions(this.extensions) : alwaysAvailable = false;
 
   bool isEnabledForExtensions(Set<String> activeExtensions) {
     if (alwaysAvailable) {
       return true;
     }
 
-    final normalizedActiveExtensions =
-        activeExtensions.map((extension) => extension.toLowerCase()).toSet();
+    final normalizedActiveExtensions = activeExtensions
+        .map((extension) => extension.toLowerCase())
+        .toSet();
 
     for (final extension in extensions) {
       if (normalizedActiveExtensions.contains(extension.toLowerCase())) {
@@ -30,10 +28,7 @@ class ToolActivation {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'alwaysAvailable': alwaysAvailable,
-      'extensions': extensions,
-    };
+    return {'alwaysAvailable': alwaysAvailable, 'extensions': extensions};
   }
 
   static ToolActivation fromJson(Map<String, dynamic> json) {
@@ -128,8 +123,9 @@ class ToolDefinition {
       publishedBy: json['publishedBy'] as String,
       mcpServerUrl: json['mcpServerUrl'] as String?,
       description: json['description'] as String,
-      parametersSchema:
-          Map<String, dynamic>.from(json['parametersSchema'] as Map),
+      parametersSchema: Map<String, dynamic>.from(
+        json['parametersSchema'] as Map,
+      ),
       activation: _parseActivation(json['activation']),
     );
   }

@@ -46,10 +46,7 @@ class AnnouncementMarquee extends StatelessWidget {
               icon: const Icon(Icons.close),
             ),
           Expanded(
-            child: GestureDetector(
-              onTap: onTap,
-              child: content,
-            ),
+            child: GestureDetector(onTap: onTap, child: content),
           ),
         ],
       ),

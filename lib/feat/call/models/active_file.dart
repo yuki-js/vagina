@@ -7,10 +7,7 @@ class ActiveFile {
   final String path;
   final String content;
 
-  const ActiveFile({
-    required this.path,
-    required this.content,
-  });
+  const ActiveFile({required this.path, required this.content});
 
   String get title {
     final idx = path.lastIndexOf('/');
@@ -62,5 +59,4 @@ class ActiveFile {
         return 'text/plain';
     }
   }
-
 }

@@ -6,10 +6,7 @@ import 'package:vagina/feat/session/widgets/historical_chat_view.dart';
 class SessionDetailChatSegment extends StatelessWidget {
   final List<String> chatMessages;
 
-  const SessionDetailChatSegment({
-    super.key,
-    required this.chatMessages,
-  });
+  const SessionDetailChatSegment({super.key, required this.chatMessages});
 
   @override
   Widget build(BuildContext context) {

@@ -11,16 +11,16 @@ class SpeedDial {
 
   /// Default speed dial instance
   static SpeedDial get defaultSpeedDial => SpeedDial(
-        id: defaultId,
-        name: 'Default',
-        systemPrompt: 'You are a helpful AI assistant.',
-        description: 'Default voice assistant',
-        voice: 'alloy',
-        voiceAgentId: defaultVoiceAgentId,
-        enabledTools: const {},
-        reasoningEffort: SpeedDialReasoningEffort.off,
-        toolChoiceRequired: false,
-      );
+    id: defaultId,
+    name: 'Default',
+    systemPrompt: 'You are a helpful AI assistant.',
+    description: 'Default voice assistant',
+    voice: 'alloy',
+    voiceAgentId: defaultVoiceAgentId,
+    enabledTools: const {},
+    reasoningEffort: SpeedDialReasoningEffort.off,
+    toolChoiceRequired: false,
+  );
 
   final String id;
   final String name;

@@ -13,10 +13,7 @@
 ///   expose realtime item events like the voice stack does.
 library;
 
-enum TextAgentThreadItemType {
-  message,
-  toolResult,
-}
+enum TextAgentThreadItemType { message, toolResult }
 
 /// Provider-neutral tool call representation.
 ///
@@ -34,31 +31,17 @@ class TextAgentToolCall {
   });
 }
 
-enum TextAgentThreadItemRole {
-  system,
-  user,
-  assistant,
-}
+enum TextAgentThreadItemRole { system, user, assistant }
 
-enum TextAgentThreadItemStatus {
-  inProgress,
-  completed,
-  incomplete,
-}
+enum TextAgentThreadItemStatus { inProgress, completed, incomplete }
 
-enum TextAgentToolResultDisposition {
-  success,
-  error,
-}
+enum TextAgentToolResultDisposition { success, error }
 
 abstract class TextAgentThreadContentPart {
   final String type;
   bool isDone;
 
-  TextAgentThreadContentPart({
-    required this.type,
-    this.isDone = false,
-  });
+  TextAgentThreadContentPart({required this.type, this.isDone = false});
 
   void markDone() {
     isDone = true;
@@ -68,10 +51,7 @@ abstract class TextAgentThreadContentPart {
 final class TextAgentThreadTextPart extends TextAgentThreadContentPart {
   String text;
 
-  TextAgentThreadTextPart({
-    this.text = '',
-    super.isDone,
-  }) : super(type: 'text');
+  TextAgentThreadTextPart({this.text = '', super.isDone}) : super(type: 'text');
 
   void appendDelta(String delta) {
     text += delta;
@@ -86,10 +66,8 @@ final class TextAgentThread {
   final String id;
   final List<TextAgentThreadItem> items;
 
-  TextAgentThread({
-    required this.id,
-    List<TextAgentThreadItem>? items,
-  }) : items = items ?? <TextAgentThreadItem>[];
+  TextAgentThread({required this.id, List<TextAgentThreadItem>? items})
+    : items = items ?? <TextAgentThreadItem>[];
 
   TextAgentThreadItem? findItem(String itemId) {
     for (final item in items) {
@@ -188,10 +166,7 @@ final class TextAgentThreadItem {
     return part;
   }
 
-  void putContentPart(
-    TextAgentThreadContentPart part, {
-    int? contentIndex,
-  }) {
+  void putContentPart(TextAgentThreadContentPart part, {int? contentIndex}) {
     final index = _normalizeContentIndex(contentIndex);
     if (index == null || index >= content.length) {
       content.add(part);

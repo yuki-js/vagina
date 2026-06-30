@@ -53,16 +53,17 @@ HomeAnnouncementSelection selectHomeAnnouncements(
   Set<String> hiddenDialogTopicIds = const <String>{},
   Set<String> hiddenMarqueeTopicIds = const <String>{},
 }) {
-  final displayableTopics = topics
-      .where(
-        (topic) =>
-            topic is BannerAnnouncementTopic ||
-            topic is ModalAnnouncementTopic ||
-            topic is DialogAnnouncementTopic ||
-            topic is MarqueeAnnouncementTopic,
-      )
-      .toList()
-    ..sort(_compareAnnouncementTopics);
+  final displayableTopics =
+      topics
+          .where(
+            (topic) =>
+                topic is BannerAnnouncementTopic ||
+                topic is ModalAnnouncementTopic ||
+                topic is DialogAnnouncementTopic ||
+                topic is MarqueeAnnouncementTopic,
+          )
+          .toList()
+        ..sort(_compareAnnouncementTopics);
 
   final bannerTopics = <BannerAnnouncementTopic>[];
   final modalTopics = <ModalAnnouncementTopic>[];
@@ -266,8 +267,9 @@ class _HomeAnnouncementHostState extends State<HomeAnnouncementHost> {
     }
 
     if (currentTopicId != null) {
-      final currentIndex =
-          topics.indexWhere((topic) => topic.id == currentTopicId);
+      final currentIndex = topics.indexWhere(
+        (topic) => topic.id == currentTopicId,
+      );
       if (currentIndex != -1) {
         return currentIndex;
       }
@@ -613,7 +615,9 @@ class _HomeAnnouncementHostState extends State<HomeAnnouncementHost> {
 }
 
 int _compareAnnouncementTopics(
-    AnnouncementTopic left, AnnouncementTopic right) {
+  AnnouncementTopic left,
+  AnnouncementTopic right,
+) {
   final priorityComparison = right.priorityValue.compareTo(left.priorityValue);
   if (priorityComparison != 0) {
     return priorityComparison;

@@ -33,8 +33,11 @@ class Utils {
   }
 
   /// Truncate string to max length with ellipsis
-  static String truncate(String text, int maxLength,
-      {String ellipsis = '...'}) {
+  static String truncate(
+    String text,
+    int maxLength, {
+    String ellipsis = '...',
+  }) {
     if (text.length <= maxLength) return text;
     return '${text.substring(0, maxLength - ellipsis.length)}$ellipsis';
   }
@@ -50,8 +53,11 @@ class Utils {
   }
 
   /// Safe division that returns 0 instead of throwing on division by zero
-  static double safeDivide(num numerator, num denominator,
-      {double defaultValue = 0.0}) {
+  static double safeDivide(
+    num numerator,
+    num denominator, {
+    double defaultValue = 0.0,
+  }) {
     if (denominator == 0) return defaultValue;
     return numerator / denominator;
   }
@@ -93,7 +99,8 @@ class Utils {
 
   /// Deep copy a `List<Map<String, dynamic>>` structure
   static List<Map<String, dynamic>> deepCopyList(
-      List<Map<String, dynamic>> source) {
+    List<Map<String, dynamic>> source,
+  ) {
     final json = jsonEncode(source);
     return (jsonDecode(json) as List).cast<Map<String, dynamic>>();
   }

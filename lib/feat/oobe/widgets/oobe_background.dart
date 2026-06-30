@@ -7,10 +7,7 @@ import 'package:vagina/core/theme/app_theme.dart';
 class OOBEBackground extends StatefulWidget {
   final Widget child;
 
-  const OOBEBackground({
-    super.key,
-    required this.child,
-  });
+  const OOBEBackground({super.key, required this.child});
 
   @override
   State<OOBEBackground> createState() => _OOBEBackgroundState();
@@ -76,10 +73,7 @@ class OOBEParticlePainter extends CustomPainter {
   final double animation;
   final double waveAnimation;
 
-  OOBEParticlePainter({
-    required this.animation,
-    required this.waveAnimation,
-  });
+  OOBEParticlePainter({required this.animation, required this.waveAnimation});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -96,11 +90,7 @@ class OOBEParticlePainter extends CustomPainter {
 
       final particleSize = 2.0 + (i % 3) * 1.0;
 
-      canvas.drawCircle(
-        Offset(x, y),
-        particleSize,
-        particlePaint,
-      );
+      canvas.drawCircle(Offset(x, y), particleSize, particlePaint);
     }
 
     // Draw wave rings (always active for bright state)

@@ -105,20 +105,25 @@ void generateDialTone(Directory outputDir) {
   const durationSeconds = 1.6;
   const fadeSeconds = 0.040;
 
-  final samples = _render(durationSeconds, (t) {
-    final trem = _pulseTremolo(
-      t,
-      hz: 14.0,
-      depth: 0.70,
-      duty: 0.35,
-      edge: 0.06,
-    );
+  final samples = _render(
+    durationSeconds,
+    (t) {
+      final trem = _pulseTremolo(
+        t,
+        hz: 14.0,
+        depth: 0.70,
+        duty: 0.35,
+        edge: 0.06,
+      );
 
-    // Dial tone stays as pure sine (fundamental only), per earlier feedback.
-    final sig = _oscillate(t, hz: 400.0, amp: 0.36, osc: sin);
+      // Dial tone stays as pure sine (fundamental only), per earlier feedback.
+      final sig = _oscillate(t, hz: 400.0, amp: 0.36, osc: sin);
 
-    return sig * trem;
-  }, fadeInSeconds: fadeSeconds, fadeOutSeconds: fadeSeconds);
+      return sig * trem;
+    },
+    fadeInSeconds: fadeSeconds,
+    fadeOutSeconds: fadeSeconds,
+  );
 
   _writeWavFile(
     file: File('${outputDir.path}/dial_tone.wav'),
@@ -142,11 +147,7 @@ void generateCallEndTone(Directory outputDir) {
       _toneWithWaveform(
         durationSeconds: noteDuration,
         fundamentalHz: _applyDetuneCents(notes[i], detuneCents[i]),
-        harmonics: const [
-          (1.0, 0.30),
-          (2.0, 0.11),
-          (3.0, 0.045),
-        ],
+        harmonics: const [(1.0, 0.30), (2.0, 0.11), (3.0, 0.045)],
         attack: 0.006,
         decay: 0.014,
         sustain: 0.60,
@@ -171,27 +172,30 @@ void generateExecutingLoop(Directory outputDir) {
   const durationSeconds = 6.0;
   const fadeSeconds = 0.200;
 
-  final samples = _render(durationSeconds, (t) {
-    // Soft bed: warm A2.
-    final bed = _harmonicSignal(
-          t,
-          fundamentalHz: 110.0,
-          harmonics: const [
-            (1.0, 0.010),
-            (2.0, 0.0035),
-            (3.0, 0.0015),
-          ],
-          osc: sin,
-        ) *
-        0.55;
+  final samples = _render(
+    durationSeconds,
+    (t) {
+      // Soft bed: warm A2.
+      final bed =
+          _harmonicSignal(
+            t,
+            fundamentalHz: 110.0,
+            harmonics: const [(1.0, 0.010), (2.0, 0.0035), (3.0, 0.0015)],
+            osc: sin,
+          ) *
+          0.55;
 
-    // 3 phrase events: "hun" at 0.2s, 2.2s, 4.2s.
-    final motif = _humEvent(t, center: 0.20, freqHz: 196.0) +
-        _humEvent(t, center: 2.20, freqHz: 220.0) +
-        _humEvent(t, center: 4.20, freqHz: 196.0);
+      // 3 phrase events: "hun" at 0.2s, 2.2s, 4.2s.
+      final motif =
+          _humEvent(t, center: 0.20, freqHz: 196.0) +
+          _humEvent(t, center: 2.20, freqHz: 220.0) +
+          _humEvent(t, center: 4.20, freqHz: 196.0);
 
-    return bed + motif;
-  }, fadeInSeconds: fadeSeconds, fadeOutSeconds: fadeSeconds);
+      return bed + motif;
+    },
+    fadeInSeconds: fadeSeconds,
+    fadeOutSeconds: fadeSeconds,
+  );
 
   _writeWavFile(
     file: File('${outputDir.path}/tool_executing.wav'),
@@ -306,8 +310,12 @@ Int16List _render(
 }
 
 /// Single oscillator at a given frequency.
-double _oscillate(double t,
-    {required double hz, required double amp, required _Oscillator osc}) {
+double _oscillate(
+  double t, {
+  required double hz,
+  required double amp,
+  required _Oscillator osc,
+}) {
   const twoPi = 2.0 * pi;
   return osc(twoPi * hz * t) * amp;
 }
@@ -463,8 +471,11 @@ double _pulseTremolo(
 }
 
 /// Smooth pulse in [0..1] from phase [0..1].
-double _smoothPulse(double phase,
-    {required double duty, required double edge}) {
+double _smoothPulse(
+  double phase, {
+  required double duty,
+  required double edge,
+}) {
   final d = duty.clamp(0.05, 0.95);
   final e = edge.clamp(0.0, 0.45);
 
@@ -504,12 +515,7 @@ double _humEvent(double t, {required double center, required double freqHz}) {
   final sig = _harmonicSignal(
     t,
     fundamentalHz: freqHz,
-    harmonics: const [
-      (1.0, 0.060),
-      (2.0, 0.020),
-      (3.0, 0.009),
-      (4.0, 0.0035),
-    ],
+    harmonics: const [(1.0, 0.060), (2.0, 0.020), (3.0, 0.009), (4.0, 0.0035)],
     osc: _warmWave,
   );
 

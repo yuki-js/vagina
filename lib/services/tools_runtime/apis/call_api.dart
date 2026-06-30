@@ -15,7 +15,7 @@ abstract class CallApi {
 /// Client implementation of CallApi that uses hostCall for isolate communication
 class CallApiClient implements CallApi {
   final Future<dynamic> Function(String method, Map<String, dynamic> args)
-      hostCall;
+  hostCall;
 
   CallApiClient({required this.hostCall});
 

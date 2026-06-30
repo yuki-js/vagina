@@ -6,17 +6,9 @@ library;
 ///   accumulation.
 /// - Once `isDone` becomes true, that part/item is expected to become stable.
 
-enum RealtimeThreadItemType {
-  message,
-  functionCall,
-  functionCallOutput,
-}
+enum RealtimeThreadItemType { message, functionCall, functionCallOutput }
 
-enum RealtimeThreadItemRole {
-  system,
-  user,
-  assistant,
-}
+enum RealtimeThreadItemRole { system, user, assistant }
 
 enum RealtimeThreadItemStatus {
   inProgress('in_progress'),
@@ -54,19 +46,13 @@ enum RealtimeThreadItemDisplayState {
   }
 }
 
-enum RealtimeToolOutputDisposition {
-  success,
-  error,
-}
+enum RealtimeToolOutputDisposition { success, error }
 
 abstract class RealtimeThreadContentPart {
   final String type;
   bool isDone;
 
-  RealtimeThreadContentPart({
-    required this.type,
-    this.isDone = false,
-  });
+  RealtimeThreadContentPart({required this.type, this.isDone = false});
 
   void markDone() {
     isDone = true;
@@ -76,10 +62,7 @@ abstract class RealtimeThreadContentPart {
 final class RealtimeThreadTextPart extends RealtimeThreadContentPart {
   String text;
 
-  RealtimeThreadTextPart({
-    this.text = '',
-    super.isDone,
-  }) : super(type: 'text');
+  RealtimeThreadTextPart({this.text = '', super.isDone}) : super(type: 'text');
 
   void appendDelta(String delta) {
     text += delta;
@@ -98,8 +81,8 @@ final class RealtimeThreadAudioPart extends RealtimeThreadContentPart {
     List<String>? audioChunks,
     this.transcript,
     super.isDone,
-  })  : audioChunks = audioChunks ?? <String>[],
-        super(type: 'audio');
+  }) : audioChunks = audioChunks ?? <String>[],
+       super(type: 'audio');
 
   void appendAudioDelta(String base64Delta) {
     audioChunks.add(base64Delta);
@@ -126,10 +109,8 @@ final class RealtimeThreadImagePart extends RealtimeThreadContentPart {
   final String imageUrl;
   final String detail;
 
-  RealtimeThreadImagePart({
-    required this.imageUrl,
-    this.detail = 'auto',
-  }) : super(type: 'image', isDone: true);
+  RealtimeThreadImagePart({required this.imageUrl, this.detail = 'auto'})
+    : super(type: 'image', isDone: true);
 }
 
 final class RealtimeThread {
@@ -217,10 +198,7 @@ final class RealtimeThreadItem {
     return part;
   }
 
-  void putContentPart(
-    RealtimeThreadContentPart part, {
-    int? contentIndex,
-  }) {
+  void putContentPart(RealtimeThreadContentPart part, {int? contentIndex}) {
     final index = _normalizeContentIndex(contentIndex);
     if (index == null || index >= content.length) {
       content.add(part);

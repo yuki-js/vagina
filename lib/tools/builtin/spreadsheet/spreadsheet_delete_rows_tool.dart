@@ -10,36 +10,34 @@ class SpreadsheetDeleteRowsTool extends Tool {
 
   @override
   ToolDefinition get definition => const ToolDefinition(
-        toolKey: toolKeyName,
-        displayName: 'スプレッドシート行削除',
-        displayDescription: 'スプレッドシートから行を削除します',
-        categoryKey: 'document',
-        iconKey: 'playlist_remove',
-        sourceKey: 'builtin',
-        publishedBy: 'aokiapp',
-        description:
-            'Delete rows from an active spreadsheet file. The file must be a tabular type '
-            '(text/csv, application/vagina-2d+json, or application/vagina-2d+jsonl). '
-            'Specify rows to remove by their 0-based indices.',
-        activation: ToolActivation.forExtensions(kTabularDocumentExtensions),
-        parametersSchema: {
-          'type': 'object',
-          'properties': {
-            'path': {
-              'type': 'string',
-              'description': 'Path of the active spreadsheet file',
-            },
-            'rowIndices': {
-              'type': 'array',
-              'description': 'Array of 0-based row indices to delete',
-              'items': {
-                'type': 'integer',
-              },
-            },
-          },
-          'required': ['path', 'rowIndices'],
+    toolKey: toolKeyName,
+    displayName: 'スプレッドシート行削除',
+    displayDescription: 'スプレッドシートから行を削除します',
+    categoryKey: 'document',
+    iconKey: 'playlist_remove',
+    sourceKey: 'builtin',
+    publishedBy: 'aokiapp',
+    description:
+        'Delete rows from an active spreadsheet file. The file must be a tabular type '
+        '(text/csv, application/vagina-2d+json, or application/vagina-2d+jsonl). '
+        'Specify rows to remove by their 0-based indices.',
+    activation: ToolActivation.forExtensions(kTabularDocumentExtensions),
+    parametersSchema: {
+      'type': 'object',
+      'properties': {
+        'path': {
+          'type': 'string',
+          'description': 'Path of the active spreadsheet file',
         },
-      );
+        'rowIndices': {
+          'type': 'array',
+          'description': 'Array of 0-based row indices to delete',
+          'items': {'type': 'integer'},
+        },
+      },
+      'required': ['path', 'rowIndices'],
+    },
+  );
 
   @override
   Future<String> execute(Map<String, dynamic> args) async {
@@ -49,7 +47,8 @@ class SpreadsheetDeleteRowsTool extends Tool {
     if (!isPathSupportedByActivation(path, definition.activation)) {
       return jsonEncode({
         'success': false,
-        'error': 'File "$path" is not a tabular type. '
+        'error':
+            'File "$path" is not a tabular type. '
             'Expected extension: .v2d.csv, .v2d.json, or .v2d.jsonl',
       });
     }
@@ -83,10 +82,7 @@ class SpreadsheetDeleteRowsTool extends Tool {
         'message': '${indices.toSet().length} row(s) deleted successfully',
       });
     } on TabularDataException catch (e) {
-      return jsonEncode({
-        'success': false,
-        'error': e.message,
-      });
+      return jsonEncode({'success': false, 'error': e.message});
     } catch (e) {
       return jsonEncode({
         'success': false,

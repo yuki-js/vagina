@@ -35,18 +35,21 @@ final class FeedbackService extends SubService {
   Future<void> _bindRealtimeFeedback() async {
     final realtimeService = _callService.realtimeService!;
 
-    _assistantAudioCompletedSubscription =
-        realtimeService.assistantAudioCompleted.listen((_) {
-      unawaited(_handleAssistantAudioCompletedSignal());
-    });
-    _userSpeakingStateSubscription =
-        realtimeService.isUserSpeakingUpdates.listen((isSpeaking) {
-      if (!isSpeaking) {
-        return;
-      }
-      unawaited(selectionClick());
-    });
-    _threadSubscription = realtimeService.threadUpdates.listen(_handleThreadUpdate);
+    _assistantAudioCompletedSubscription = realtimeService
+        .assistantAudioCompleted
+        .listen((_) {
+          unawaited(_handleAssistantAudioCompletedSignal());
+        });
+    _userSpeakingStateSubscription = realtimeService.isUserSpeakingUpdates
+        .listen((isSpeaking) {
+          if (!isSpeaking) {
+            return;
+          }
+          unawaited(selectionClick());
+        });
+    _threadSubscription = realtimeService.threadUpdates.listen(
+      _handleThreadUpdate,
+    );
     _handleThreadUpdate(realtimeService.thread);
   }
 
@@ -201,7 +204,10 @@ final class FeedbackService extends SubService {
         );
       } catch (e, stackTrace) {
         logger.warning(
-            'Failed to play one-shot audio: $assetPath', e, stackTrace);
+          'Failed to play one-shot audio: $assetPath',
+          e,
+          stackTrace,
+        );
       }
     }();
 
@@ -233,56 +239,56 @@ final class FeedbackService extends SubService {
 
   /// Play dial tone when call is connecting (loops until stopped)
   Future<void> playDialTone() => _playLoopingAudio(
-        stopExisting: stopDialTone,
-        assignPlayer: (player) => _dialTonePlayer = player,
-        assetPath: 'assets/audio/dial_tone.wav',
-        volume: 0.7,
-      );
+    stopExisting: stopDialTone,
+    assignPlayer: (player) => _dialTonePlayer = player,
+    assetPath: 'assets/audio/dial_tone.wav',
+    volume: 0.7,
+  );
 
   /// Stop dial tone
   Future<void> stopDialTone() => _disposePlayer(
-        _dialTonePlayer,
-        clearPlayer: () => _dialTonePlayer = null,
-      );
+    _dialTonePlayer,
+    clearPlayer: () => _dialTonePlayer = null,
+  );
 
   /// Play call end tone (single descending arpeggio)
   Future<void> playCallEndTone() => _playOneShotAudio(
-        player: _endTonePlayer ?? AudioPlayer(),
-        assignPlayer: (player) => _endTonePlayer = player,
-        assetPath: 'assets/audio/call_end.wav',
-        volume: 0.7,
-        disposeDelayMs: 500,
-      );
+    player: _endTonePlayer ?? AudioPlayer(),
+    assignPlayer: (player) => _endTonePlayer = player,
+    assetPath: 'assets/audio/call_end.wav',
+    volume: 0.7,
+    disposeDelayMs: 500,
+  );
 
   /// Start looping the tool executing sound
   Future<void> playToolExecuting() => _playLoopingAudio(
-        stopExisting: stopToolExecuting,
-        assignPlayer: (player) => _toolExecutingPlayer = player,
-        assetPath: 'assets/audio/tool_executing.wav',
-        volume: 0.5,
-      );
+    stopExisting: stopToolExecuting,
+    assignPlayer: (player) => _toolExecutingPlayer = player,
+    assetPath: 'assets/audio/tool_executing.wav',
+    volume: 0.5,
+  );
 
   /// Stop the tool executing sound
   Future<void> stopToolExecuting() => _disposePlayer(
-        _toolExecutingPlayer,
-        clearPlayer: () => _toolExecutingPlayer = null,
-      );
+    _toolExecutingPlayer,
+    clearPlayer: () => _toolExecutingPlayer = null,
+  );
 
   /// Play tool error sound (single shot)
   Future<void> playToolError() => _playOneShotAudio(
-        assignPlayer: (_) {},
-        assetPath: 'assets/audio/tool_error.wav',
-        volume: 0.7,
-        disposeDelayMs: 500,
-      );
+    assignPlayer: (_) {},
+    assetPath: 'assets/audio/tool_error.wav',
+    volume: 0.7,
+    disposeDelayMs: 500,
+  );
 
   /// Play tool cancelled sound (single shot)
   Future<void> playToolCancelled() => _playOneShotAudio(
-        assignPlayer: (_) {},
-        assetPath: 'assets/audio/tool_cancelled.wav',
-        volume: 0.7,
-        disposeDelayMs: 250,
-      );
+    assignPlayer: (_) {},
+    assetPath: 'assets/audio/tool_cancelled.wav',
+    volume: 0.7,
+    disposeDelayMs: 250,
+  );
 
   // ==========================================================================
   // Haptic Feedback
@@ -319,10 +325,7 @@ final class FeedbackService extends SubService {
 
   /// Trigger both audio and haptic feedback for call end
   Future<void> callEnded() async {
-    await Future.wait([
-      playCallEndTone(),
-      heavyImpact(),
-    ]);
+    await Future.wait([playCallEndTone(), heavyImpact()]);
   }
 
   @override

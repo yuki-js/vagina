@@ -50,11 +50,8 @@ class ApiException implements Exception {
     this.operation,
   }) : type = ApiErrorType.serverError;
 
-  const ApiException.unknown(
-    this.message, {
-    this.statusCode,
-    this.operation,
-  }) : type = ApiErrorType.unknown;
+  const ApiException.unknown(this.message, {this.statusCode, this.operation})
+    : type = ApiErrorType.unknown;
 
   @override
   String toString() => message;

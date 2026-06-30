@@ -11,7 +11,10 @@ class AuthException implements Exception {
     : this('Authentication is required.', code: authRequiredCode);
 
   const AuthException.sessionExpired()
-    : this('Authentication session expired. Please sign in again.', code: sessionExpiredCode);
+    : this(
+        'Authentication session expired. Please sign in again.',
+        code: sessionExpiredCode,
+      );
 
   @override
   String toString() => message;

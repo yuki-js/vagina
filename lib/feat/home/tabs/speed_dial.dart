@@ -18,9 +18,8 @@ class SpeedDialTab extends ConsumerWidget {
 
     return speedDialsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) => Center(
-        child: Text(l10n.speedDialTabLoadError(error.toString())),
-      ),
+      error: (error, stack) =>
+          Center(child: Text(l10n.speedDialTabLoadError(error.toString()))),
       data: (speedDials) {
         if (speedDials.isEmpty) {
           return _buildEmptyState(context);
@@ -54,8 +53,9 @@ class SpeedDialTab extends ConsumerWidget {
                   // Calculate number of columns based on screen width
                   // Each card should be approximately 160px wide
                   final cardWidth = 160.0;
-                  final crossAxisCount =
-                      (constraints.maxWidth / cardWidth).floor().clamp(2, 6);
+                  final crossAxisCount = (constraints.maxWidth / cardWidth)
+                      .floor()
+                      .clamp(2, 6);
 
                   return GridView.builder(
                     shrinkWrap: true,
@@ -152,10 +152,7 @@ class SpeedDialTab extends ConsumerWidget {
               shape: const CircleBorder(),
               onPressed: () => _addSpeedDial(context),
               backgroundColor: AppTheme.primaryColor,
-              child: const Icon(
-                Icons.add,
-                color: Colors.white,
-              ),
+              child: const Icon(Icons.add, color: Colors.white),
             ),
           ),
         ),
@@ -172,9 +169,7 @@ class SpeedDialTab extends ConsumerWidget {
 
     return Card(
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: InkWell(
         onTap: () => _startCall(context, ref, speedDial),
         onLongPress: () => _editSpeedDial(context, speedDial),
@@ -232,9 +227,7 @@ class SpeedDialTab extends ConsumerWidget {
 
   Future<void> _addSpeedDial(BuildContext context) async {
     await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const SpeedDialConfigScreen(),
-      ),
+      MaterialPageRoute(builder: (context) => const SpeedDialConfigScreen()),
     );
   }
 
@@ -249,10 +242,7 @@ class SpeedDialTab extends ConsumerWidget {
     );
   }
 
-  Future<void> _editSpeedDial(
-    BuildContext context,
-    SpeedDial speedDial,
-  ) async {
+  Future<void> _editSpeedDial(BuildContext context, SpeedDial speedDial) async {
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => SpeedDialConfigScreen(

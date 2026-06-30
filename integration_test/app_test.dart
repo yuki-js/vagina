@@ -11,7 +11,8 @@ void main() {
       await tester.pumpAndSettle();
 
       // Should show either OOBE or Home screen
-      final oobeOrHomeFound = find.text('VAGINA').evaluate().isNotEmpty ||
+      final oobeOrHomeFound =
+          find.text('VAGINA').evaluate().isNotEmpty ||
           find.text('スピードダイヤル').evaluate().isNotEmpty;
 
       expect(oobeOrHomeFound, isTrue);

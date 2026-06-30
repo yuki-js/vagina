@@ -29,11 +29,7 @@ final class NotepadService extends SubService {
   /// - Contains null characters
   void _validatePath(String path, String paramName) {
     if (path.isEmpty) {
-      throw ArgumentError.value(
-        path,
-        paramName,
-        'Path cannot be empty',
-      );
+      throw ArgumentError.value(path, paramName, 'Path cannot be empty');
     }
 
     if (path.contains('\x00')) {
@@ -70,8 +66,11 @@ final class NotepadService extends SubService {
   /// [persist] controls whether to write through to VFS immediately.
   /// - true: Tool-driven changes (immediate persistence)
   /// - false: UI-driven changes (defer until explicit save)
-  Future<void> update(String path, String content,
-      {bool persist = false}) async {
+  Future<void> update(
+    String path,
+    String content, {
+    bool persist = false,
+  }) async {
     ensureNotDisposed();
     _validatePath(path, 'path');
 

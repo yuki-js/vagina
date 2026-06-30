@@ -121,10 +121,7 @@ class EmojiPicker extends StatelessWidget {
                 ),
                 const Spacer(),
                 if (selectedEmoji != null)
-                  Text(
-                    selectedEmoji!,
-                    style: const TextStyle(fontSize: 32),
-                  ),
+                  Text(selectedEmoji!, style: const TextStyle(fontSize: 32)),
               ],
             ),
           ),
@@ -160,10 +157,7 @@ class EmojiPicker extends StatelessWidget {
                       ),
                     ),
                     child: Center(
-                      child: Text(
-                        emoji,
-                        style: const TextStyle(fontSize: 28),
-                      ),
+                      child: Text(emoji, style: const TextStyle(fontSize: 28)),
                     ),
                   ),
                 );

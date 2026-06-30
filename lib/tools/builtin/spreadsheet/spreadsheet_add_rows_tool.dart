@@ -10,37 +10,35 @@ class SpreadsheetAddRowsTool extends Tool {
 
   @override
   ToolDefinition get definition => const ToolDefinition(
-        toolKey: toolKeyName,
-        displayName: 'スプレッドシート行追加',
-        displayDescription: 'スプレッドシートに行を追加します',
-        categoryKey: 'document',
-        iconKey: 'playlist_add',
-        sourceKey: 'builtin',
-        publishedBy: 'aokiapp',
-        description:
-            'Add rows to an active spreadsheet file. The file must be a tabular type '
-            '(text/csv, application/vagina-2d+json, or application/vagina-2d+jsonl). '
-            'Each row must have exactly the same keys as the existing columns.',
-        activation: ToolActivation.forExtensions(kTabularDocumentExtensions),
-        parametersSchema: {
-          'type': 'object',
-          'properties': {
-            'path': {
-              'type': 'string',
-              'description': 'Path of the active spreadsheet file',
-            },
-            'rows': {
-              'type': 'array',
-              'description':
-                  'Array of row objects to append. Each object must have exactly the same keys as existing columns.',
-              'items': {
-                'type': 'object',
-              },
-            },
-          },
-          'required': ['path', 'rows'],
+    toolKey: toolKeyName,
+    displayName: 'スプレッドシート行追加',
+    displayDescription: 'スプレッドシートに行を追加します',
+    categoryKey: 'document',
+    iconKey: 'playlist_add',
+    sourceKey: 'builtin',
+    publishedBy: 'aokiapp',
+    description:
+        'Add rows to an active spreadsheet file. The file must be a tabular type '
+        '(text/csv, application/vagina-2d+json, or application/vagina-2d+jsonl). '
+        'Each row must have exactly the same keys as the existing columns.',
+    activation: ToolActivation.forExtensions(kTabularDocumentExtensions),
+    parametersSchema: {
+      'type': 'object',
+      'properties': {
+        'path': {
+          'type': 'string',
+          'description': 'Path of the active spreadsheet file',
         },
-      );
+        'rows': {
+          'type': 'array',
+          'description':
+              'Array of row objects to append. Each object must have exactly the same keys as existing columns.',
+          'items': {'type': 'object'},
+        },
+      },
+      'required': ['path', 'rows'],
+    },
+  );
 
   @override
   Future<String> execute(Map<String, dynamic> args) async {
@@ -50,7 +48,8 @@ class SpreadsheetAddRowsTool extends Tool {
     if (!isPathSupportedByActivation(path, definition.activation)) {
       return jsonEncode({
         'success': false,
-        'error': 'File "$path" is not a tabular type. '
+        'error':
+            'File "$path" is not a tabular type. '
             'Expected extension: .v2d.csv, .v2d.json, or .v2d.jsonl',
       });
     }
@@ -70,8 +69,9 @@ class SpreadsheetAddRowsTool extends Tool {
     try {
       final data = TabularData.parse(content, extension);
 
-      final newRows =
-          rowsRaw.map((r) => Map<String, dynamic>.from(r as Map)).toList();
+      final newRows = rowsRaw
+          .map((r) => Map<String, dynamic>.from(r as Map))
+          .toList();
 
       final updated = data.addRows(newRows);
       final serialized = updated.serialize(extension);
@@ -86,15 +86,9 @@ class SpreadsheetAddRowsTool extends Tool {
         'message': '${newRows.length} row(s) added successfully',
       });
     } on TabularDataException catch (e) {
-      return jsonEncode({
-        'success': false,
-        'error': e.message,
-      });
+      return jsonEncode({'success': false, 'error': e.message});
     } catch (e) {
-      return jsonEncode({
-        'success': false,
-        'error': 'Failed to add rows: $e',
-      });
+      return jsonEncode({'success': false, 'error': 'Failed to add rows: $e'});
     }
   }
 }

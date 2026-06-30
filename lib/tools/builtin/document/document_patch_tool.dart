@@ -76,11 +76,7 @@ int _findNthOccurrence(String content, String target, int occurrence) {
   return idx;
 }
 
-String _applyOperation(
-  String content,
-  Map<String, dynamic> op,
-  int index,
-) {
+String _applyOperation(String content, Map<String, dynamic> op, int index) {
   final opType = op['op'];
   final target = op['target'];
 
@@ -177,7 +173,10 @@ String _applyOperation(
         });
       }
       return content.replaceRange(
-          start + target.length, start + target.length, newText);
+        start + target.length,
+        start + target.length,
+        newText,
+      );
 
     case 'delete':
       return content.replaceRange(start, start + target.length, '');
@@ -198,83 +197,83 @@ class DocumentPatchTool extends Tool {
 
   @override
   ToolDefinition get definition => const ToolDefinition(
-        toolKey: toolKeyName,
-        displayName: 'ドキュメント編集',
-        displayDescription: 'ドキュメントの一部を編集します',
-        categoryKey: 'document',
-        iconKey: 'edit',
-        sourceKey: 'builtin',
-        publishedBy: 'aokiapp',
-        description:
-            'Edit an existing text document using structured patch operations (NOT unified diff). '
-            'Each operation finds an exact target snippet copied from the current document and then replaces/inserts/deletes it. '
-            'This is intended for small localized edits on text documents and path-addressed tabular files. '
-            'For tabular/spreadsheet documents (text/csv, application/vagina-2d+json, application/vagina-2d+jsonl), '
-            'the patched result must remain a valid tabular serialization. '
-            'For row-level operations, prefer spreadsheet_add_rows, spreadsheet_update_rows, or spreadsheet_delete_rows.\n\n'
-            'Patch format example:\n'
-            '{\n'
-            '  "operations": [\n'
-            '    {"op": "replace", "target": "old text", "newText": "new text"},\n'
-            '    {"op": "insert_after", "target": "Heading\\n", "newText": "\\nNew paragraph\\n"}\n'
-            '  ]\n'
-            '}',
-        activation: ToolActivation.forExtensions(kTextDocumentExtensions),
-        parametersSchema: {
+    toolKey: toolKeyName,
+    displayName: 'ドキュメント編集',
+    displayDescription: 'ドキュメントの一部を編集します',
+    categoryKey: 'document',
+    iconKey: 'edit',
+    sourceKey: 'builtin',
+    publishedBy: 'aokiapp',
+    description:
+        'Edit an existing text document using structured patch operations (NOT unified diff). '
+        'Each operation finds an exact target snippet copied from the current document and then replaces/inserts/deletes it. '
+        'This is intended for small localized edits on text documents and path-addressed tabular files. '
+        'For tabular/spreadsheet documents (text/csv, application/vagina-2d+json, application/vagina-2d+jsonl), '
+        'the patched result must remain a valid tabular serialization. '
+        'For row-level operations, prefer spreadsheet_add_rows, spreadsheet_update_rows, or spreadsheet_delete_rows.\n\n'
+        'Patch format example:\n'
+        '{\n'
+        '  "operations": [\n'
+        '    {"op": "replace", "target": "old text", "newText": "new text"},\n'
+        '    {"op": "insert_after", "target": "Heading\\n", "newText": "\\nNew paragraph\\n"}\n'
+        '  ]\n'
+        '}',
+    activation: ToolActivation.forExtensions(kTextDocumentExtensions),
+    parametersSchema: {
+      'type': 'object',
+      'properties': {
+        'path': {
+          'type': 'string',
+          'description': 'Absolute path of the active document to patch',
+        },
+        'patch': {
           'type': 'object',
+          'description':
+              'Structured patch object. Contains an ordered list of operations to apply.',
           'properties': {
-            'path': {
-              'type': 'string',
-              'description': 'Absolute path of the active document to patch',
-            },
-            'patch': {
-              'type': 'object',
-              'description':
-                  'Structured patch object. Contains an ordered list of operations to apply.',
-              'properties': {
-                'operations': {
-                  'type': 'array',
-                  'description': 'Patch operations to apply in order',
-                  'items': {
-                    'type': 'object',
-                    'properties': {
-                      'op': {
-                        'type': 'string',
-                        'enum': [
-                          'replace',
-                          'insert_before',
-                          'insert_after',
-                          'delete',
-                        ],
-                        'description': 'Operation type',
-                      },
-                      'target': {
-                        'type': 'string',
-                        'description':
-                            'Exact text snippet copied from the current document. Can be multiline.',
-                      },
-                      'occurrence': {
-                        'type': 'integer',
-                        'minimum': 1,
-                        'description':
-                            'Which occurrence of target to edit (1-based). Defaults to 1 if omitted.',
-                      },
-                      'newText': {
-                        'type': 'string',
-                        'description':
-                            'New text for replace/insert operations. Omit or empty for delete.',
-                      },
-                    },
-                    'required': ['op', 'target'],
+            'operations': {
+              'type': 'array',
+              'description': 'Patch operations to apply in order',
+              'items': {
+                'type': 'object',
+                'properties': {
+                  'op': {
+                    'type': 'string',
+                    'enum': [
+                      'replace',
+                      'insert_before',
+                      'insert_after',
+                      'delete',
+                    ],
+                    'description': 'Operation type',
+                  },
+                  'target': {
+                    'type': 'string',
+                    'description':
+                        'Exact text snippet copied from the current document. Can be multiline.',
+                  },
+                  'occurrence': {
+                    'type': 'integer',
+                    'minimum': 1,
+                    'description':
+                        'Which occurrence of target to edit (1-based). Defaults to 1 if omitted.',
+                  },
+                  'newText': {
+                    'type': 'string',
+                    'description':
+                        'New text for replace/insert operations. Omit or empty for delete.',
                   },
                 },
+                'required': ['op', 'target'],
               },
-              'required': ['operations'],
             },
           },
-          'required': ['path', 'patch'],
+          'required': ['operations'],
         },
-      );
+      },
+      'required': ['path', 'patch'],
+    },
+  );
 
   @override
   Future<String> execute(Map<String, dynamic> args) async {
@@ -343,11 +342,7 @@ class DocumentPatchTool extends Tool {
 
       try {
         working = _applyOperation(working, op, i);
-        operationResults.add({
-          'index': i,
-          'op': op['op'],
-          'success': true,
-        });
+        operationResults.add({'index': i, 'op': op['op'], 'success': true});
       } on _DocumentPatchFailure catch (e) {
         // Include partial progress for debugging, but treat as tool error.
         final details = Map<String, dynamic>.from(e.details);

@@ -21,10 +21,10 @@ final class PlaybackMetrics {
   });
 
   const PlaybackMetrics.idle()
-      : bufferedBytes = 0,
-        queuedChunks = 0,
-        isInputBound = false,
-        isResponseComplete = false;
+    : bufferedBytes = 0,
+      queuedChunks = 0,
+      isInputBound = false,
+      isResponseComplete = false;
 
   PlaybackMetrics copyWith({
     int? bufferedBytes,
@@ -242,7 +242,7 @@ final class PlaybackService extends SubService {
 
       final shouldStartPlayback =
           _bufferedBytes >= AppConfig.minAudioBufferSizeBeforeStart ||
-              _metrics.isResponseComplete;
+          _metrics.isResponseComplete;
       if (!shouldStartPlayback) {
         _emitMetrics();
         return;

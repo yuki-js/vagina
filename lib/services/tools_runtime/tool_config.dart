@@ -7,10 +7,8 @@ class ToolConfig {
   final FilesystemApi _filesystem;
   final String _configPath;
 
-  ToolConfig(
-    this._filesystem, {
-    String configPath = '/.tool_config.json',
-  }) : _configPath = configPath;
+  ToolConfig(this._filesystem, {String configPath = '/.tool_config.json'})
+    : _configPath = configPath;
 
   /// Load all configuration at once.
   Future<Map<String, dynamic>> loadAll() async {

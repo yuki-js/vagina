@@ -21,15 +21,16 @@ final List<ToolDefinition> _pathBoundDefinitions = <ToolDefinition>[
 
 List<String> _availableToolsForPath(String path) {
   final activeExtensions = <String>{normalizedExtensionFromPath(path)};
-  final keys = _pathBoundDefinitions
-      .where(
-        (definition) =>
-            definition.activation.isEnabledForExtensions(activeExtensions),
-      )
-      .map((definition) => definition.toolKey)
-      .toSet()
-      .toList()
-    ..sort();
+  final keys =
+      _pathBoundDefinitions
+          .where(
+            (definition) =>
+                definition.activation.isEnabledForExtensions(activeExtensions),
+          )
+          .map((definition) => definition.toolKey)
+          .toSet()
+          .toList()
+        ..sort();
   return keys;
 }
 
@@ -38,35 +39,35 @@ class FsOpenTool extends Tool {
 
   @override
   ToolDefinition get definition => const ToolDefinition(
-        toolKey: toolKeyName,
-        displayName: 'ファイルを開く',
-        displayDescription: 'ファイルを開いて作業中ファイルにします',
-        categoryKey: 'filesystem',
-        iconKey: 'folder_open',
-        sourceKey: 'builtin',
-        publishedBy: 'aokiapp',
-        description:
-            'Open a persisted filesystem file into active runtime state by path. '
-            'On success, returns available_tools for that path.'
-            'Supported file extenstion: .md, .csv, .txt, .json, .v2d.jsonl, .v2d.json, .v2d.csv '
-            '.v2d.* files are special files that can only be displayed/edited as spreadsheet, not the plain text.'
-            'Non .v2d files will be treated as plain text files, and user and assistant can read/write as plain text.',
-        parametersSchema: {
-          'type': 'object',
-          'properties': {
-            'path': {
-              'type': 'string',
-              'description': 'Absolute filesystem path to open.',
-            },
-            'createIfMissing': {
-              'type': 'boolean',
-              'description':
-                  'If true, create an empty file when the path does not exist.',
-            },
-          },
-          'required': ['path'],
+    toolKey: toolKeyName,
+    displayName: 'ファイルを開く',
+    displayDescription: 'ファイルを開いて作業中ファイルにします',
+    categoryKey: 'filesystem',
+    iconKey: 'folder_open',
+    sourceKey: 'builtin',
+    publishedBy: 'aokiapp',
+    description:
+        'Open a persisted filesystem file into active runtime state by path. '
+        'On success, returns available_tools for that path.'
+        'Supported file extenstion: .md, .csv, .txt, .json, .v2d.jsonl, .v2d.json, .v2d.csv '
+        '.v2d.* files are special files that can only be displayed/edited as spreadsheet, not the plain text.'
+        'Non .v2d files will be treated as plain text files, and user and assistant can read/write as plain text.',
+    parametersSchema: {
+      'type': 'object',
+      'properties': {
+        'path': {
+          'type': 'string',
+          'description': 'Absolute filesystem path to open.',
         },
-      );
+        'createIfMissing': {
+          'type': 'boolean',
+          'description':
+              'If true, create an empty file when the path does not exist.',
+        },
+      },
+      'required': ['path'],
+    },
+  );
 
   @override
   Future<String> execute(Map<String, dynamic> args) async {
@@ -77,16 +78,10 @@ class FsOpenTool extends Tool {
       var file = await context.filesystemApi.read(path);
       if (file == null && createIfMissing) {
         await context.filesystemApi.write(path, '');
-        file = {
-          'path': path,
-          'content': '',
-        };
+        file = {'path': path, 'content': ''};
       }
       if (file == null) {
-        return jsonEncode({
-          'success': false,
-          'error': 'File not found: $path',
-        });
+        return jsonEncode({'success': false, 'error': 'File not found: $path'});
       }
 
       final content = file['content'] as String? ?? '';
@@ -100,10 +95,7 @@ class FsOpenTool extends Tool {
         'message': 'File opened successfully.',
       });
     } catch (e) {
-      return jsonEncode({
-        'success': false,
-        'error': 'Failed to open file: $e',
-      });
+      return jsonEncode({'success': false, 'error': 'Failed to open file: $e'});
     }
   }
 }
