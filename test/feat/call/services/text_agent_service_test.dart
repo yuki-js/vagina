@@ -153,6 +153,212 @@ void main() {
       expect(adapter.requests, hasLength(1));
     });
 
+    test('fails clearly on an unknown server status', () async {
+      final adapter = _RecordingAdapter((_) async {
+        return _jsonResponse(200, <String, dynamic>{
+          'status': 'paused',
+          'text': 'unused',
+        });
+      });
+      final started = await _startService(
+        adapter: adapter,
+        voiceSessionId: 'vs_0123456789abcdef',
+      );
+      addTearDown(started.dispose);
+
+      await expectLater(
+        started.service.sendQuery('agent-1', 'hello'),
+        throwsA(
+          predicate((error) => error.toString().contains('unknown status')),
+        ),
+      );
+      expect(adapter.requests, hasLength(1));
+    });
+
+    test('fails clearly on completed response without text', () async {
+      final adapter = _RecordingAdapter((_) async {
+        return _jsonResponse(200, <String, dynamic>{'status': 'completed'});
+      });
+      final started = await _startService(
+        adapter: adapter,
+        voiceSessionId: 'vs_0123456789abcdef',
+      );
+      addTearDown(started.dispose);
+
+      await expectLater(
+        started.service.sendQuery('agent-1', 'hello'),
+        throwsA(
+          predicate(
+            (error) =>
+                error.toString().contains('malformed completed response') &&
+                error.toString().contains('missing text'),
+          ),
+        ),
+      );
+      expect(adapter.requests, hasLength(1));
+    });
+
+    test(
+      'fails clearly on requires_tool response without tool calls',
+      () async {
+        final adapter = _RecordingAdapter((_) async {
+          return _jsonResponse(200, <String, dynamic>{
+            'status': 'requires_tool',
+          });
+        });
+        final started = await _startService(
+          adapter: adapter,
+          voiceSessionId: 'vs_0123456789abcdef',
+        );
+        addTearDown(started.dispose);
+
+        await expectLater(
+          started.service.sendQuery('agent-1', 'hello'),
+          throwsA(
+            predicate(
+              (error) =>
+                  error.toString().contains(
+                    'malformed requires_tool response',
+                  ) &&
+                  error.toString().contains('missing toolCalls'),
+            ),
+          ),
+        );
+        expect(adapter.requests, hasLength(1));
+      },
+    );
+
+    test('submits tool execution exceptions as tool errors', () async {
+      var requestCount = 0;
+      final adapter = _RecordingAdapter((_) async {
+        requestCount += 1;
+        if (requestCount == 1) {
+          return _jsonResponse(200, <String, dynamic>{
+            'status': 'requires_tool',
+            'toolCalls': <Map<String, dynamic>>[
+              <String, dynamic>{
+                'id': 'tc_error',
+                'name': 'query_text_agent',
+                'arguments': jsonEncode(<String, dynamic>{
+                  'agent_id': 'agent-1',
+                  'prompt': 'nested query',
+                }),
+              },
+            ],
+          });
+        }
+        return _jsonResponse(200, <String, dynamic>{
+          'status': 'completed',
+          'text': 'Recovered after tool error.',
+        });
+      });
+      final started = await _startService(
+        adapter: adapter,
+        voiceSessionId: 'vs_0123456789abcdef',
+      );
+      addTearDown(started.dispose);
+
+      final text = await started.service.sendQuery('agent-1', 'hello');
+
+      expect(text, 'Recovered after tool error.');
+      expect(adapter.requests, hasLength(2));
+      final toolResult = Map<String, dynamic>.from(
+        adapter.requestJsonBodies[1]['toolResult'] as Map,
+      );
+      expect(toolResult, containsPair('toolCallId', 'tc_error'));
+      expect(toolResult, containsPair('isError', true));
+      final output = Map<String, dynamic>.from(
+        jsonDecode(toolResult['output'] as String) as Map,
+      );
+      expect(output, containsPair('success', false));
+      expect(output['error'], contains('Tool execution failed'));
+    });
+
+    test('submits multiple tool calls in server-provided order', () async {
+      var requestCount = 0;
+      final adapter = _RecordingAdapter((_) async {
+        requestCount += 1;
+        if (requestCount == 1 || requestCount == 2) {
+          return _jsonResponse(200, <String, dynamic>{
+            'status': 'requires_tool',
+            'toolCalls': <Map<String, dynamic>>[
+              <String, dynamic>{
+                'id': 'tc_first',
+                'name': 'get_current_time',
+                'arguments': '{}',
+              },
+              <String, dynamic>{
+                'id': 'tc_second',
+                'name': 'query_text_agent',
+                'arguments': jsonEncode(<String, dynamic>{
+                  'agent_id': 'agent-1',
+                  'prompt': 'nested query',
+                }),
+              },
+            ],
+          });
+        }
+        return _jsonResponse(200, <String, dynamic>{
+          'status': 'completed',
+          'text': 'Both tools handled.',
+        });
+      });
+      final started = await _startService(
+        adapter: adapter,
+        voiceSessionId: 'vs_0123456789abcdef',
+      );
+      addTearDown(started.dispose);
+
+      final text = await started.service.sendQuery('agent-1', 'hello');
+
+      expect(text, 'Both tools handled.');
+      expect(adapter.requests, hasLength(3));
+      final firstToolResult = Map<String, dynamic>.from(
+        adapter.requestJsonBodies[1]['toolResult'] as Map,
+      );
+      final secondToolResult = Map<String, dynamic>.from(
+        adapter.requestJsonBodies[2]['toolResult'] as Map,
+      );
+      expect(firstToolResult, containsPair('toolCallId', 'tc_first'));
+      expect(firstToolResult, containsPair('isError', false));
+      expect(secondToolResult, containsPair('toolCallId', 'tc_second'));
+      expect(secondToolResult, containsPair('isError', true));
+    });
+
+    test('fails clearly after the maximum query iteration count', () async {
+      var requestCount = 0;
+      final adapter = _RecordingAdapter((_) async {
+        requestCount += 1;
+        return _jsonResponse(200, <String, dynamic>{
+          'status': 'requires_tool',
+          'toolCalls': <Map<String, dynamic>>[
+            <String, dynamic>{
+              'id': 'tc_$requestCount',
+              'name': 'get_current_time',
+              'arguments': '{}',
+            },
+          ],
+        });
+      });
+      final started = await _startService(
+        adapter: adapter,
+        voiceSessionId: 'vs_0123456789abcdef',
+      );
+      addTearDown(started.dispose);
+
+      await expectLater(
+        started.service.sendQuery('agent-1', 'hello'),
+        throwsA(
+          predicate(
+            (error) =>
+                error.toString().contains('maximum number of iterations') &&
+                error.toString().contains('20'),
+          ),
+        ),
+      );
+      expect(adapter.requests, hasLength(21));
+    });
+
     test('fails fast when there is no active voice session id', () async {
       final adapter = _RecordingAdapter((_) async {
         return _jsonResponse(200, <String, dynamic>{

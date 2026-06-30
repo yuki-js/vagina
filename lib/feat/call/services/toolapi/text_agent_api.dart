@@ -18,8 +18,8 @@ final class CallTextAgentApi implements TextAgentApi {
   @override
   Future<List<Map<String, dynamic>>> listAgents() async {
     final agents = _textAgentService.agents;
+    final isServiceStarted = _textAgentService.isStarted;
     final hasActiveVoiceSession =
-        _textAgentService.isStarted &&
         _textAgentService.currentVoiceSessionId != null;
 
     return agents
@@ -30,10 +30,17 @@ final class CallTextAgentApi implements TextAgentApi {
               : null;
           final querySupported =
               apiConfig is ServerBackedTextAgentApiConfig &&
+              isServiceStarted &&
               hasActiveVoiceSession;
-          final queryStatus = switch ((apiConfig, hasActiveVoiceSession)) {
-            (ServerBackedTextAgentApiConfig _, true) => 'ready',
-            (ServerBackedTextAgentApiConfig _, false) =>
+          final queryStatus = switch ((
+            apiConfig,
+            isServiceStarted,
+            hasActiveVoiceSession,
+          )) {
+            (ServerBackedTextAgentApiConfig _, true, true) => 'ready',
+            (ServerBackedTextAgentApiConfig _, false, _) =>
+              'Text agent query service is not running.',
+            (ServerBackedTextAgentApiConfig _, true, false) =>
               'Text agent query requires an active voice session.',
             _ => 'Text agent query is not available for this agent.',
           };

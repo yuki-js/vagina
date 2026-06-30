@@ -104,6 +104,7 @@ final class TextAgentService extends SubService {
     final unregisterCancel = onCancel?.call(toolCancellation.cancel);
     final preparedToolResults = <String, TextAgentToolResultSubmission>{};
     final pendingToolCallIds = Queue<String>();
+    final submittedToolCallIds = <String>{};
 
     try {
       if (threadId != null && threadId.isNotEmpty) {
@@ -120,27 +121,17 @@ final class TextAgentService extends SubService {
       var iterationCount = 0;
       while (iterationCount < _maxQueryIterations) {
         iterationCount += 1;
+        response = _validateQueryResponse(response);
 
         switch (response.status) {
           case TextAgentQueryStatus.completed:
-            final text = response.text;
-            if (text == null || text.isEmpty) {
-              throw Exception(
-                'Text agent query completed without returning any text.',
-              );
-            }
-            return text;
+            return response.text!;
           case TextAgentQueryStatus.failed:
             final code = response.errorCode ?? 'unknown_error';
             final message = response.errorMessage ?? 'Text agent query failed.';
             throw Exception('Text agent query failed ($code): $message');
           case TextAgentQueryStatus.requiresTool:
             final toolCalls = response.toolCalls;
-            if (toolCalls.isEmpty) {
-              throw Exception(
-                'Text agent requested tool execution without any tool calls.',
-              );
-            }
 
             await _prepareToolResults(
               agent: agent,
@@ -149,7 +140,8 @@ final class TextAgentService extends SubService {
               cancellation: toolCancellation,
             );
             for (final toolCall in toolCalls) {
-              if (pendingToolCallIds.contains(toolCall.id)) {
+              if (submittedToolCallIds.contains(toolCall.id) ||
+                  pendingToolCallIds.contains(toolCall.id)) {
                 continue;
               }
               pendingToolCallIds.add(toolCall.id);
@@ -168,6 +160,7 @@ final class TextAgentService extends SubService {
                 'Text agent requested a tool result that was not prepared: $nextToolCallId',
               );
             }
+            submittedToolCallIds.add(nextToolCallId);
             response = await _postQuery(
               agentId: agent.id,
               voiceSessionId: voiceSessionId,
@@ -218,6 +211,29 @@ final class TextAgentService extends SubService {
         .toList(growable: false);
   }
 
+  TextAgentQueryResponse _validateQueryResponse(
+    TextAgentQueryResponse response,
+  ) {
+    switch (response.status) {
+      case TextAgentQueryStatus.completed:
+        if (response.text == null || response.text!.isEmpty) {
+          throw Exception(
+            'Text agent query returned a malformed completed response: missing text.',
+          );
+        }
+        return response;
+      case TextAgentQueryStatus.requiresTool:
+        if (response.toolCalls.isEmpty) {
+          throw Exception(
+            'Text agent query returned a malformed requires_tool response: missing toolCalls.',
+          );
+        }
+        return response;
+      case TextAgentQueryStatus.failed:
+        return response;
+    }
+  }
+
   Future<void> _prepareToolResults({
     required TextAgentInfo agent,
     required List<TextAgentToolCallRequest> toolCalls,
@@ -248,14 +264,9 @@ final class TextAgentService extends SubService {
     required ToolCancellation cancellation,
   }) async {
     if (!availableToolKeys.contains(toolCall.name)) {
-      return TextAgentToolResultSubmission(
-        toolCallId: toolCall.id,
-        output: jsonEncode(<String, dynamic>{
-          'success': false,
-          'error':
-              'Tool is not available in the current call session: ${toolCall.name}',
-        }),
-        isError: true,
+      return _toolResultFromError(
+        toolCall.id,
+        'Tool is not available in the current call session: ${toolCall.name}',
       );
     }
 
@@ -265,11 +276,7 @@ final class TextAgentService extends SubService {
         toolCall.arguments,
         cancellation: cancellation,
       );
-      return TextAgentToolResultSubmission(
-        toolCallId: toolCall.id,
-        output: output,
-        isError: _isToolOutputError(output),
-      );
+      return _toolResultFromOutput(toolCall.id, output);
     } catch (error, stackTrace) {
       if (cancellation.isCancelled) {
         rethrow;
@@ -280,32 +287,60 @@ final class TextAgentService extends SubService {
         error,
         stackTrace,
       );
-      return TextAgentToolResultSubmission(
-        toolCallId: toolCall.id,
-        output: jsonEncode(<String, dynamic>{
-          'success': false,
-          'error': 'Tool execution failed: $error',
-        }),
-        isError: true,
-      );
+      return _toolResultFromError(toolCall.id, 'Tool execution failed: $error');
     }
+  }
+
+  TextAgentToolResultSubmission _toolResultFromOutput(
+    String toolCallId,
+    String output,
+  ) {
+    return TextAgentToolResultSubmission(
+      toolCallId: toolCallId,
+      output: output,
+      isError: _isToolOutputError(output),
+    );
+  }
+
+  TextAgentToolResultSubmission _toolResultFromError(
+    String toolCallId,
+    String message,
+  ) {
+    return TextAgentToolResultSubmission(
+      toolCallId: toolCallId,
+      output: jsonEncode(<String, dynamic>{'success': false, 'error': message}),
+      isError: true,
+    );
   }
 
   bool _isToolOutputError(String output) {
     try {
       final decoded = jsonDecode(output);
       if (decoded is Map<String, dynamic>) {
-        final success = decoded['success'];
-        return success is bool && success == false;
+        return _isToolOutputMapError(decoded);
       }
       if (decoded is Map) {
-        final success = decoded['success'];
-        return success is bool && success == false;
+        return _isToolOutputMapError(decoded);
       }
     } catch (_) {
       // Ignore malformed tool output and rely on thrown exceptions instead.
     }
     return false;
+  }
+
+  bool _isToolOutputMapError(Map<dynamic, dynamic> output) {
+    final success = output['success'];
+    if (success is bool) {
+      return !success;
+    }
+
+    final isError = output['isError'];
+    if (isError is bool) {
+      return isError;
+    }
+
+    final error = output['error'];
+    return error is String && error.isNotEmpty;
   }
 
   Future<TextAgentQueryResponse> _postQuery({
@@ -321,21 +356,42 @@ final class TextAgentService extends SubService {
       );
     }
 
-    final response = await _apiClient.textAgents.queryTextAgent(
-      textAgentId: agentId,
-      body: api_models.QueryTextAgentBody(
-        voiceSessionId: voiceSessionId,
-        requestId: requestId,
-        prompt: prompt,
-        toolResult: toolResult?.toGenerated(),
-      ),
-    );
+    final api_responses.QueryTextAgentResponse response;
+    try {
+      response = await _apiClient.textAgents.queryTextAgent(
+        textAgentId: agentId,
+        body: api_models.QueryTextAgentBody(
+          voiceSessionId: voiceSessionId,
+          requestId: requestId,
+          prompt: prompt,
+          toolResult: toolResult?.toGenerated(),
+        ),
+      );
+    } on ArgumentError catch (error) {
+      throw Exception(_describeMalformedQueryResponse(error));
+    } on TypeError catch (error) {
+      throw Exception(_describeMalformedQueryResponse(error));
+    } on FormatException catch (error) {
+      throw Exception(_describeMalformedQueryResponse(error));
+    }
 
     if (response is api_responses.QueryTextAgentResponseSuccess) {
       return TextAgentQueryResponse.fromGenerated(response.data);
     }
 
     throw Exception(_describeQueryErrorResponse(response));
+  }
+
+  String _describeMalformedQueryResponse(Object error) {
+    final description = error.toString();
+    if (description.contains('status') ||
+        (description.contains('supported values') &&
+            description.contains('completed') &&
+            description.contains('requires_tool') &&
+            description.contains('failed'))) {
+      return 'Text agent query returned an unknown status.';
+    }
+    return 'Text agent query returned a malformed response: $description';
   }
 
   String _describeQueryErrorResponse(

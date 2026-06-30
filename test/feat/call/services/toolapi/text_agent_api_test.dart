@@ -67,6 +67,51 @@ void main() {
     );
 
     test(
+      'marks server-backed agents unavailable before service start',
+      () async {
+        final notepadService = createTestNotepadService();
+        final realtimeService = createTestRealtimeService(
+          sessionId: 'vs_0123456789abcdef',
+        );
+        final service = TextAgentService(
+          agents: const <TextAgentInfo>[
+            TextAgentInfo(
+              id: 'agent-1',
+              name: 'Research Assistant',
+              description: 'Looks things up',
+              prompt: 'Help with research',
+              apiConfig: ServerBackedTextAgentApiConfig(
+                textModelId: 'text-agent-prod',
+              ),
+            ),
+          ],
+          notepadService: notepadService,
+          realtimeService: realtimeService,
+          apiClient: createTestApiClient(_NoopAdapter()),
+        );
+        await notepadService.start();
+        await realtimeService.start();
+        addTearDown(() async {
+          await service.dispose();
+          await realtimeService.dispose();
+          await notepadService.dispose();
+        });
+        final api = CallTextAgentApi(textAgentService: service);
+
+        final agents = await api.listAgents();
+
+        expect(agents.single, containsPair('query_supported', false));
+        expect(
+          agents.single,
+          containsPair(
+            'query_status',
+            'Text agent query service is not running.',
+          ),
+        );
+      },
+    );
+
+    test(
       'marks server-backed agents queryable when a voice session is active',
       () async {
         final notepadService = createTestNotepadService();
