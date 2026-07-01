@@ -14,5 +14,7 @@ abstract class TextAgentApi {
   /// List all available text agents.
   ///
   /// Returns safe agent metadata maps suitable for tool/runtime exposure.
+  /// Tool fields use sparse override semantics: empty [enabled_tools] means
+  /// default-enabled catalog tools except policy-denied tools, not "no tools".
   Future<List<Map<String, dynamic>>> listAgents();
 }

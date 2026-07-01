@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -9,9 +10,12 @@ import 'package:vagina/feat/call/services/notepad_service.dart';
 import 'package:vagina/feat/call/services/realtime_service.dart';
 import 'package:vagina/feat/call/services/text_agent_service.dart';
 import 'package:vagina/feat/call/services/tool_runner.dart';
+import 'package:vagina/feat/call/services/toolapi/text_agent_api.dart';
 import 'package:vagina/services/tools_runtime/apis/call_api.dart';
 import 'package:vagina/services/tools_runtime/apis/filesystem_api.dart';
-import 'package:vagina/services/tools_runtime/apis/text_agent_api.dart';
+import 'package:vagina/services/tools_runtime/tool.dart';
+import 'package:vagina/services/tools_runtime/tool_definition.dart';
+import 'package:vagina/tools/tools.dart';
 
 import 'text_agent_service_test_support.dart';
 
@@ -55,6 +59,11 @@ void main() {
         adapter.requestJsonBodies.single,
         containsPair('toolResult', null),
       );
+      final toolSchemaNames = _toolSchemaNames(adapter.requestJsonBodies.single);
+      expect(toolSchemaNames, contains('calculator'));
+      expect(toolSchemaNames, contains('list_available_agents'));
+      expect(toolSchemaNames, isNot(contains('query_text_agent')));
+      expect(toolSchemaNames, isNot(contains('end_call')));
     });
 
     test(
@@ -107,6 +116,8 @@ void main() {
         expect(firstBody['voiceSessionId'], secondBody['voiceSessionId']);
         expect(firstBody, containsPair('prompt', 'What time is it?'));
         expect(secondBody, containsPair('prompt', null));
+        expect(_toolSchemaNames(firstBody), contains('list_available_agents'));
+        expect(_toolSchemaNames(secondBody), _toolSchemaNames(firstBody));
 
         final toolResult = Map<String, dynamic>.from(
           secondBody['toolResult'] as Map,
@@ -121,6 +132,162 @@ void main() {
         expect(toolOutput, containsPair('timezone', 'local'));
       },
     );
+
+    test(
+      'returns nested calculator result through query_text_agent tool execution',
+      () async {
+        var requestCount = 0;
+        final adapter = _RecordingAdapter((_) async {
+          requestCount += 1;
+          if (requestCount == 1) {
+            return _jsonResponse(200, <String, dynamic>{
+              'status': 'requires_tool',
+              'toolCalls': <Map<String, dynamic>>[
+                <String, dynamic>{
+                  'id': 'tc_calc',
+                  'name': 'calculator',
+                  'arguments': jsonEncode(<String, dynamic>{
+                    'expression': '6 * 7',
+                  }),
+                },
+              ],
+            });
+          }
+          if (requestCount == 2) {
+            return _jsonResponse(200, <String, dynamic>{
+              'status': 'completed',
+              'text': 'The answer is 42.',
+            });
+          }
+          fail('Unexpected request count: $requestCount');
+        });
+        final started = await _startService(
+          adapter: adapter,
+          voiceSessionId: 'vs_0123456789abcdef',
+        );
+        addTearDown(started.dispose);
+
+        final parentToolOutput = await started.toolRunner.execute(
+          'query_text_agent',
+          jsonEncode(<String, dynamic>{
+            'agent_id': 'agent-1',
+            'prompt': 'Calculate 6 * 7 for the caller.',
+          }),
+        );
+
+        final parentToolResult = Map<String, dynamic>.from(
+          jsonDecode(parentToolOutput) as Map,
+        );
+        expect(parentToolResult, containsPair('success', true));
+        expect(parentToolResult, containsPair('text', 'The answer is 42.'));
+        expect(adapter.requests, hasLength(2));
+        expect(
+          adapter.requests.map((request) => request.path),
+          everyElement('/text-agents/agent-1/query'),
+        );
+
+        final firstBody = adapter.requestJsonBodies[0];
+        final secondBody = adapter.requestJsonBodies[1];
+        expect(
+          firstBody,
+          containsPair('voiceSessionId', 'vs_0123456789abcdef'),
+        );
+        expect(
+          firstBody,
+          containsPair('prompt', 'Calculate 6 * 7 for the caller.'),
+        );
+        expect(
+          firstBody['requestId'],
+          allOf(isA<String>(), startsWith('req_')),
+        );
+        expect(
+          secondBody,
+          containsPair('voiceSessionId', 'vs_0123456789abcdef'),
+        );
+        expect(secondBody['requestId'], firstBody['requestId']);
+        expect(secondBody, containsPair('prompt', null));
+
+        final toolResult = Map<String, dynamic>.from(
+          secondBody['toolResult'] as Map,
+        );
+        expect(toolResult, containsPair('toolCallId', 'tc_calc'));
+        expect(toolResult, containsPair('isError', false));
+
+        final toolOutput = Map<String, dynamic>.from(
+          jsonDecode(toolResult['output'] as String) as Map,
+        );
+        expect(toolOutput, containsPair('success', true));
+        expect(toolOutput, containsPair('expression', '6 * 7'));
+        expect(toolOutput, containsPair('result', 42.0));
+      },
+    );
+
+    test('denies query_text_agent as a nested requested tool', () async {
+      var requestCount = 0;
+      final adapter = _RecordingAdapter((_) async {
+        requestCount += 1;
+        if (requestCount == 1) {
+          return _jsonResponse(200, <String, dynamic>{
+            'status': 'requires_tool',
+            'toolCalls': <Map<String, dynamic>>[
+              <String, dynamic>{
+                'id': 'tc_nested_text_agent',
+                'name': 'query_text_agent',
+                'arguments': jsonEncode(<String, dynamic>{
+                  'agent_id': 'agent-1',
+                  'prompt': 'Ask the nested text agent for confirmation.',
+                }),
+              },
+            ],
+          });
+        }
+        if (requestCount == 2) {
+          return _jsonResponse(200, <String, dynamic>{
+            'status': 'completed',
+            'text': 'Outer text agent consumed nested denial.',
+          });
+        }
+        fail('Unexpected request count: $requestCount');
+      });
+      final started = await _startService(
+        adapter: adapter,
+        voiceSessionId: 'vs_0123456789abcdef',
+      );
+      addTearDown(started.dispose);
+
+      final text = await started.service.sendQuery('agent-1', 'hello');
+
+      expect(text, 'Outer text agent consumed nested denial.');
+      expect(adapter.requests, hasLength(2));
+      expect(adapter.requestJsonBodies[0], containsPair('prompt', 'hello'));
+      expect(adapter.requestJsonBodies[1], containsPair('prompt', null));
+      expect(
+        adapter.requestJsonBodies.map((body) => body['voiceSessionId']),
+        everyElement('vs_0123456789abcdef'),
+      );
+      expect(
+        adapter.requestJsonBodies[1]['requestId'],
+        adapter.requestJsonBodies[0]['requestId'],
+      );
+
+      final toolResult = Map<String, dynamic>.from(
+        adapter.requestJsonBodies[1]['toolResult'] as Map,
+      );
+      expect(toolResult, containsPair('toolCallId', 'tc_nested_text_agent'));
+      expect(toolResult, containsPair('isError', true));
+
+      final toolOutput = Map<String, dynamic>.from(
+        jsonDecode(toolResult['output'] as String) as Map,
+      );
+      expect(toolOutput, containsPair('success', false));
+      expect(
+        toolOutput['error'],
+        allOf(
+          contains('nested text agent execution'),
+          contains('query_text_agent'),
+        ),
+      );
+    });
 
     test('surfaces server-reported failure responses clearly', () async {
       final adapter = _RecordingAdapter((_) async {
@@ -238,11 +405,8 @@ void main() {
             'toolCalls': <Map<String, dynamic>>[
               <String, dynamic>{
                 'id': 'tc_error',
-                'name': 'query_text_agent',
-                'arguments': jsonEncode(<String, dynamic>{
-                  'agent_id': 'agent-1',
-                  'prompt': 'nested query',
-                }),
+                'name': 'unknown_tool_for_error_path',
+                'arguments': '{}',
               },
             ],
           });
@@ -271,7 +435,365 @@ void main() {
         jsonDecode(toolResult['output'] as String) as Map,
       );
       expect(output, containsPair('success', false));
-      expect(output['error'], contains('Tool execution failed'));
+      expect(
+        output['error'],
+        contains('Tool is not available in the current call session'),
+      );
+    });
+
+    test('normalizes success false tool output as an error', () async {
+      final toolResult = await _submitSingleNormalizationToolResult(
+        jsonEncode(<String, dynamic>{'success': false, 'error': 'failed'}),
+      );
+
+      expect(toolResult, containsPair('toolCallId', 'tc_normalize'));
+      expect(
+        toolResult,
+        containsPair('output', '{"success":false,"error":"failed"}'),
+      );
+      expect(toolResult, containsPair('isError', true));
+    });
+
+    test('normalizes isError true tool output as an error', () async {
+      final toolResult = await _submitSingleNormalizationToolResult(
+        jsonEncode(<String, dynamic>{'isError': true}),
+      );
+
+      expect(toolResult, containsPair('isError', true));
+    });
+
+    test('normalizes non-empty error string tool output as an error', () async {
+      final toolResult = await _submitSingleNormalizationToolResult(
+        jsonEncode(<String, dynamic>{'error': 'message'}),
+      );
+
+      expect(toolResult, containsPair('isError', true));
+    });
+
+    test('normalizes empty error string tool output as non-error', () async {
+      final toolResult = await _submitSingleNormalizationToolResult(
+        jsonEncode(<String, dynamic>{'error': ''}),
+      );
+
+      expect(toolResult, containsPair('isError', false));
+    });
+
+    test('normalizes non-JSON tool output as non-error', () async {
+      final toolResult = await _submitSingleNormalizationToolResult(
+        'plain text',
+      );
+
+      expect(toolResult, containsPair('output', 'plain text'));
+      expect(toolResult, containsPair('isError', false));
+    });
+
+    test(
+      'normalizes JSON array and primitive tool outputs as non-errors',
+      () async {
+        final arrayToolResult = await _submitSingleNormalizationToolResult(
+          jsonEncode(<int>[1, 2, 3]),
+        );
+        final primitiveToolResult = await _submitSingleNormalizationToolResult(
+          jsonEncode(42),
+        );
+
+        expect(arrayToolResult, containsPair('isError', false));
+        expect(primitiveToolResult, containsPair('isError', false));
+      },
+    );
+
+    test(
+      'normalizes success true as non-error even with error fields',
+      () async {
+        final toolResult = await _submitSingleNormalizationToolResult(
+          jsonEncode(<String, dynamic>{
+            'success': true,
+            'isError': true,
+            'error': 'message',
+          }),
+        );
+
+        expect(toolResult, containsPair('isError', false));
+      },
+    );
+
+    test('normalizes success false as error even with isError false', () async {
+      final toolResult = await _submitSingleNormalizationToolResult(
+        jsonEncode(<String, dynamic>{'success': false, 'isError': false}),
+      );
+
+      expect(toolResult, containsPair('isError', true));
+    });
+
+    test(
+      'cancellation before initial completed response ignores the late response',
+      () async {
+        void Function()? cancelQuery;
+        final initialResponse = Completer<ResponseBody>();
+        final adapter = _RecordingAdapter((_) {
+          return initialResponse.future;
+        });
+        final started = await _startService(
+          adapter: adapter,
+          voiceSessionId: 'vs_0123456789abcdef',
+        );
+        addTearDown(started.dispose);
+
+        final query = started.service.sendQuery(
+          'agent-1',
+          'cancel before completed response',
+          onCancel: (cancel) {
+            cancelQuery = cancel;
+            return () {};
+          },
+        );
+        await Future<void>.delayed(Duration.zero);
+        cancelQuery?.call();
+        initialResponse.complete(
+          _jsonResponse(200, <String, dynamic>{
+            'status': 'completed',
+            'text': 'late completed response',
+          }),
+        );
+
+        await expectLater(
+          query,
+          throwsA(predicate((error) => error.toString().contains('cancelled'))),
+        );
+        expect(adapter.requests, hasLength(1));
+      },
+    );
+
+    test(
+      'cancellation before initial requires_tool response ignores nested work',
+      () async {
+        void Function()? cancelQuery;
+        final initialResponse = Completer<ResponseBody>();
+        final probeTool = _CountingProbeTool('ignored');
+        final adapter = _RecordingAdapter((_) {
+          return initialResponse.future;
+        });
+        final started = await _startService(
+          adapter: adapter,
+          voiceSessionId: 'vs_0123456789abcdef',
+          toolbox: _TestToolbox(<Tool>[probeTool]),
+        );
+        addTearDown(started.dispose);
+
+        final query = started.service.sendQuery(
+          'agent-1',
+          'cancel before requires tool response',
+          onCancel: (cancel) {
+            cancelQuery = cancel;
+            return () {};
+          },
+        );
+        await Future<void>.delayed(Duration.zero);
+        cancelQuery?.call();
+        initialResponse.complete(
+          _jsonResponse(200, <String, dynamic>{
+            'status': 'requires_tool',
+            'toolCalls': <Map<String, dynamic>>[
+              <String, dynamic>{
+                'id': 'tc_late',
+                'name': _CountingProbeTool.toolKeyName,
+                'arguments': '{}',
+              },
+            ],
+          }),
+        );
+
+        await expectLater(
+          query,
+          throwsA(predicate((error) => error.toString().contains('cancelled'))),
+        );
+        expect(adapter.requests, hasLength(1));
+        expect(probeTool.executionCount, 0);
+      },
+    );
+
+    test('does not submit cancellation as a normal tool error', () async {
+      void Function()? cancelQuery;
+      var requestCount = 0;
+      final adapter = _RecordingAdapter((_) async {
+        requestCount += 1;
+        if (requestCount == 1) {
+          return _jsonResponse(200, <String, dynamic>{
+            'status': 'requires_tool',
+            'toolCalls': <Map<String, dynamic>>[
+              <String, dynamic>{
+                'id': 'tc_cancel',
+                'name': _CancellationProbeTool.toolKeyName,
+                'arguments': '{}',
+              },
+            ],
+          });
+        }
+        return _jsonResponse(200, <String, dynamic>{
+          'status': 'completed',
+          'text': 'unexpected',
+        });
+      });
+      final started = await _startService(
+        adapter: adapter,
+        voiceSessionId: 'vs_0123456789abcdef',
+        toolbox: _TestToolbox(<Tool>[_CancellationProbeTool()]),
+      );
+      addTearDown(started.dispose);
+
+      final query = started.service.sendQuery(
+        'agent-1',
+        'cancel',
+        onCancel: (cancel) {
+          cancelQuery = cancel;
+          return () {};
+        },
+      );
+      await Future<void>.delayed(Duration.zero);
+      cancelQuery?.call();
+
+      await expectLater(
+        query,
+        throwsA(predicate((error) => error.toString().contains('cancelled'))),
+      );
+      expect(adapter.requests, hasLength(1));
+    });
+
+    test(
+      'cancellation during continuation ignores the late completed response',
+      () async {
+        void Function()? cancelQuery;
+        var requestCount = 0;
+        final continuationResponse = Completer<ResponseBody>();
+        final adapter = _RecordingAdapter((_) {
+          requestCount += 1;
+          if (requestCount == 1) {
+            return Future<ResponseBody>.value(
+              _jsonResponse(200, <String, dynamic>{
+                'status': 'requires_tool',
+                'toolCalls': <Map<String, dynamic>>[
+                  <String, dynamic>{
+                    'id': 'tc_continue',
+                    'name': 'get_current_time',
+                    'arguments': '{}',
+                  },
+                ],
+              }),
+            );
+          }
+          return continuationResponse.future;
+        });
+        final started = await _startService(
+          adapter: adapter,
+          voiceSessionId: 'vs_0123456789abcdef',
+        );
+        addTearDown(started.dispose);
+
+        final query = started.service.sendQuery(
+          'agent-1',
+          'cancel during continuation',
+          onCancel: (cancel) {
+            cancelQuery = cancel;
+            return () {};
+          },
+        );
+        while (adapter.requests.length < 2) {
+          await Future<void>.delayed(Duration.zero);
+        }
+        cancelQuery?.call();
+        continuationResponse.complete(
+          _jsonResponse(200, <String, dynamic>{
+            'status': 'completed',
+            'text': 'late continuation response',
+          }),
+        );
+
+        await expectLater(
+          query,
+          throwsA(predicate((error) => error.toString().contains('cancelled'))),
+        );
+        expect(adapter.requests, hasLength(2));
+      },
+    );
+
+    test(
+      'duplicate tool call ids in one response are not executed twice',
+      () async {
+        var requestCount = 0;
+        final probeTool = _CountingProbeTool('counted');
+        final adapter = _RecordingAdapter((_) async {
+          requestCount += 1;
+          if (requestCount == 1) {
+            return _jsonResponse(200, <String, dynamic>{
+              'status': 'requires_tool',
+              'toolCalls': <Map<String, dynamic>>[
+                <String, dynamic>{
+                  'id': 'tc_duplicate',
+                  'name': _CountingProbeTool.toolKeyName,
+                  'arguments': '{}',
+                },
+                <String, dynamic>{
+                  'id': 'tc_duplicate',
+                  'name': _CountingProbeTool.toolKeyName,
+                  'arguments': '{}',
+                },
+              ],
+            });
+          }
+          return _jsonResponse(200, <String, dynamic>{
+            'status': 'completed',
+            'text': 'Duplicate handled once.',
+          });
+        });
+        final started = await _startService(
+          adapter: adapter,
+          voiceSessionId: 'vs_0123456789abcdef',
+          toolbox: _TestToolbox(<Tool>[probeTool]),
+        );
+        addTearDown(started.dispose);
+
+        final text = await started.service.sendQuery('agent-1', 'duplicate');
+
+        expect(text, 'Duplicate handled once.');
+        expect(probeTool.executionCount, 1);
+        expect(adapter.requests, hasLength(2));
+        final toolResult = Map<String, dynamic>.from(
+          adapter.requestJsonBodies[1]['toolResult'] as Map,
+        );
+        expect(toolResult, containsPair('toolCallId', 'tc_duplicate'));
+      },
+    );
+
+    test('fails clearly on repeated already submitted tool call ids', () async {
+      final adapter = _RecordingAdapter((_) async {
+        return _jsonResponse(200, <String, dynamic>{
+          'status': 'requires_tool',
+          'toolCalls': <Map<String, dynamic>>[
+            <String, dynamic>{
+              'id': 'tc_repeat',
+              'name': 'get_current_time',
+              'arguments': '{}',
+            },
+          ],
+        });
+      });
+      final started = await _startService(
+        adapter: adapter,
+        voiceSessionId: 'vs_0123456789abcdef',
+      );
+      addTearDown(started.dispose);
+
+      await expectLater(
+        started.service.sendQuery('agent-1', 'repeat'),
+        throwsA(
+          predicate(
+            (error) =>
+                error.toString().contains('already submitted tool call id') &&
+                error.toString().contains('tc_repeat'),
+          ),
+        ),
+      );
+      expect(adapter.requests, hasLength(2));
     });
 
     test('submits multiple tool calls in server-provided order', () async {
@@ -289,11 +811,8 @@ void main() {
               },
               <String, dynamic>{
                 'id': 'tc_second',
-                'name': 'query_text_agent',
-                'arguments': jsonEncode(<String, dynamic>{
-                  'agent_id': 'agent-1',
-                  'prompt': 'nested query',
-                }),
+                'name': 'unknown_tool_for_error_path',
+                'arguments': '{}',
               },
             ],
           });
@@ -388,9 +907,56 @@ void main() {
   });
 }
 
+Future<Map<String, dynamic>> _submitSingleNormalizationToolResult(
+  String output,
+) async {
+  var requestCount = 0;
+  final adapter = _RecordingAdapter((_) async {
+    requestCount += 1;
+    if (requestCount == 1) {
+      return _jsonResponse(200, <String, dynamic>{
+        'status': 'requires_tool',
+        'toolCalls': <Map<String, dynamic>>[
+          <String, dynamic>{
+            'id': 'tc_normalize',
+            'name': _OutputProbeTool.toolKeyName,
+            'arguments': '{}',
+          },
+        ],
+      });
+    }
+    return _jsonResponse(200, <String, dynamic>{
+      'status': 'completed',
+      'text': 'Tool result accepted.',
+    });
+  });
+  final started = await _startService(
+    adapter: adapter,
+    voiceSessionId: 'vs_0123456789abcdef',
+    toolbox: _TestToolbox(<Tool>[_OutputProbeTool(output)]),
+  );
+  addTearDown(started.dispose);
+
+  final text = await started.service.sendQuery('agent-1', 'normalize');
+
+  expect(text, 'Tool result accepted.');
+  expect(adapter.requests, hasLength(2));
+  return Map<String, dynamic>.from(
+    adapter.requestJsonBodies[1]['toolResult'] as Map,
+  );
+}
+
+List<String> _toolSchemaNames(Map<String, dynamic> body) {
+  final toolSchemas = body['toolSchemas'] as List<dynamic>;
+  return toolSchemas
+      .map((schema) => (schema as Map<String, dynamic>)['name'] as String)
+      .toList(growable: false);
+}
+
 Future<_StartedTextAgentService> _startService({
   required HttpClientAdapter adapter,
   required String? voiceSessionId,
+  Toolbox? toolbox,
 }) async {
   final notepadService = createTestNotepadService();
   final realtimeService = createTestRealtimeService(sessionId: voiceSessionId);
@@ -413,7 +979,8 @@ Future<_StartedTextAgentService> _startService({
   final toolRunner = ToolRunner(
     filesystemApi: _NoopFilesystemApi(),
     callApi: _NoopCallApi(),
-    textAgentApi: _NoopTextAgentApi(),
+    textAgentApi: CallTextAgentApi(textAgentService: service),
+    toolbox: toolbox,
   );
 
   service.setToolRunner(toolRunner);
@@ -459,6 +1026,107 @@ final class _StartedTextAgentService {
     await toolRunner.dispose();
     await realtimeService.dispose();
     await notepadService.dispose();
+  }
+}
+
+final class _TestToolbox extends Toolbox {
+  final List<Tool> _tools;
+
+  _TestToolbox(this._tools);
+
+  @override
+  List<Tool> create() {
+    return _tools;
+  }
+}
+
+final class _OutputProbeTool extends Tool {
+  static const String toolKeyName = 'normalization_probe';
+  final String _output;
+
+  _OutputProbeTool(this._output);
+
+  @override
+  ToolDefinition get definition => const ToolDefinition(
+    toolKey: toolKeyName,
+    displayName: 'Normalization Probe',
+    displayDescription: 'Returns configured test output.',
+    categoryKey: 'test',
+    iconKey: 'test',
+    sourceKey: 'test',
+    publishedBy: 'test',
+    description: 'Returns configured test output.',
+    parametersSchema: <String, dynamic>{},
+  );
+
+  @override
+  Future<String> execute(Map<String, dynamic> args) async {
+    return _output;
+  }
+}
+
+final class _CountingProbeTool extends Tool {
+  static const String toolKeyName = 'counting_probe';
+  final String _output;
+  int executionCount = 0;
+
+  _CountingProbeTool(this._output);
+
+  @override
+  ToolDefinition get definition => const ToolDefinition(
+    toolKey: toolKeyName,
+    displayName: 'Counting Probe',
+    displayDescription: 'Counts executions and returns configured output.',
+    categoryKey: 'test',
+    iconKey: 'test',
+    sourceKey: 'test',
+    publishedBy: 'test',
+    description: 'Counts executions and returns configured output.',
+    parametersSchema: <String, dynamic>{},
+  );
+
+  @override
+  Future<String> execute(Map<String, dynamic> args) async {
+    executionCount += 1;
+    return _output;
+  }
+}
+
+final class _CancellationProbeTool extends Tool {
+  static const String toolKeyName = 'cancellation_probe';
+
+  @override
+  ToolDefinition get definition => const ToolDefinition(
+    toolKey: toolKeyName,
+    displayName: 'Cancellation Probe',
+    displayDescription: 'Throws after cancellation.',
+    categoryKey: 'test',
+    iconKey: 'test',
+    sourceKey: 'test',
+    publishedBy: 'test',
+    description: 'Throws after cancellation.',
+    parametersSchema: <String, dynamic>{},
+  );
+
+  @override
+  Future<String> execute(Map<String, dynamic> args) async {
+    final cancellation = ToolCancellation.current;
+    final completer = Completer<void>();
+    var wasCancelled = false;
+    cancellation?.onCancel(() {
+      wasCancelled = true;
+      if (!completer.isCompleted) {
+        completer.complete();
+      }
+    });
+    if (cancellation == null || cancellation.isCancelled) {
+      throw StateError('cancelled');
+    }
+    await completer.future;
+    if (wasCancelled) {
+      throw StateError('cancelled');
+    }
+    throw StateError('unreachable');
   }
 }
 
@@ -543,20 +1211,4 @@ final class _NoopFilesystemApi implements FilesystemApi {
 
   @override
   Future<void> write(String path, String content) async {}
-}
-
-final class _NoopTextAgentApi implements TextAgentApi {
-  @override
-  Future<List<Map<String, dynamic>>> listAgents() async {
-    return const <Map<String, dynamic>>[];
-  }
-
-  @override
-  Future<String> sendQuery(
-    String agentId,
-    String prompt, {
-    void Function() Function(void Function())? onCancel,
-  }) {
-    throw UnimplementedError('sendQuery() is not used in this test.');
-  }
 }

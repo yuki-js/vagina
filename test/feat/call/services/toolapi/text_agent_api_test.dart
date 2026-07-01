@@ -59,6 +59,21 @@ void main() {
           agents.single,
           containsPair('enabled_tools', <String, bool>{'list': true}),
         );
+        expect(
+          agents.single,
+          containsPair('enabled_tool_overrides', <String, bool>{'list': true}),
+        );
+        expect(
+          agents.single,
+          containsPair('effective_tools_default_enabled', true),
+        );
+        expect(
+          agents.single,
+          containsPair(
+            'enabled_tools_semantics',
+            'Sparse override map: absent keys are enabled by default; explicit false disables; policy-denied tools remain unavailable.',
+          ),
+        );
         expect(agents.single, isNot(contains('provider')));
         expect(agents.single, isNot(contains('config')));
         expect(agents.single, isNot(contains('apiKey')));
@@ -108,6 +123,15 @@ void main() {
             'Text agent query service is not running.',
           ),
         );
+        expect(agents.single, containsPair('enabled_tools', <String, bool>{}));
+        expect(
+          agents.single,
+          containsPair('enabled_tool_overrides', <String, bool>{}),
+        );
+        expect(
+          agents.single,
+          containsPair('effective_tools_default_enabled', true),
+        );
       },
     );
 
@@ -148,6 +172,7 @@ void main() {
 
         expect(agents.single, containsPair('query_supported', true));
         expect(agents.single, containsPair('query_status', 'ready'));
+        expect(agents.single, contains('enabled_tool_overrides'));
       },
     );
   });

@@ -19,7 +19,7 @@ final class ToolRunner extends SubService {
   final FilesystemApi _filesystemApi;
   final CallApi _callApi;
   final TextAgentApi _textAgentApi;
-  final Toolbox _toolbox = RootToolbox();
+  final Toolbox _toolbox;
 
   final Map<String, Tool> _tools = <String, Tool>{};
 
@@ -27,9 +27,11 @@ final class ToolRunner extends SubService {
     required FilesystemApi filesystemApi,
     required CallApi callApi,
     required TextAgentApi textAgentApi,
+    Toolbox? toolbox,
   }) : _filesystemApi = filesystemApi,
        _callApi = callApi,
-       _textAgentApi = textAgentApi;
+       _textAgentApi = textAgentApi,
+       _toolbox = toolbox ?? RootToolbox();
 
   /// Tool definitions registered for this session.
   List<ToolDefinition> get allDefinitions {

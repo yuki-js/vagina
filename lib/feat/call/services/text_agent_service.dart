@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
 
@@ -16,10 +17,13 @@ import 'package:vagina/feat/call/services/subservice.dart';
 import 'package:vagina/feat/call/services/tool_runner.dart';
 import 'package:vagina/services/tools_runtime/tool.dart';
 import 'package:vagina/services/tools_runtime/tool_definition.dart';
+import 'package:vagina/tools/builtin/call/end_call_tool.dart';
+import 'package:vagina/tools/builtin/text_agent/query_text_agent_tool.dart';
 
 /// Session-scoped text-agent domain service for a single CallService session.
 final class TextAgentService extends SubService {
   static const int _maxQueryIterations = 20;
+  static final Object _queryDepthZoneKey = Object();
   static final Uuid _uuid = Uuid();
 
   final Map<String, TextAgentInfo> _agentsById = <String, TextAgentInfo>{};
@@ -98,93 +102,90 @@ final class TextAgentService extends SubService {
       throw StateError('Text agent query requires an active voice session.');
     }
 
-    final requestId = 'req_${_uuid.v4().replaceAll('-', '')}';
-    final toolCancellation = ToolCancellation();
-    final unregisterCancel = onCancel?.call(toolCancellation.cancel);
-    final preparedToolResults = <String, TextAgentToolResultSubmission>{};
-    final pendingToolCallIds = Queue<String>();
-    final submittedToolCallIds = <String>{};
-
-    try {
-      var response = await _postQuery(
-        agentId: agent.id,
-        voiceSessionId: voiceSessionId,
-        requestId: requestId,
-        prompt: normalizedPrompt,
-      );
-
-      var iterationCount = 0;
-      while (iterationCount < _maxQueryIterations) {
-        iterationCount += 1;
-        response = _validateQueryResponse(response);
-
-        switch (response.status) {
-          case TextAgentQueryStatus.completed:
-            return response.text!;
-          case TextAgentQueryStatus.failed:
-            final code = response.errorCode ?? 'unknown_error';
-            final message = response.errorMessage ?? 'Text agent query failed.';
-            throw Exception('Text agent query failed ($code): $message');
-          case TextAgentQueryStatus.requiresTool:
-            final toolCalls = response.toolCalls;
-
-            await _prepareToolResults(
-              agent: agent,
-              toolCalls: toolCalls,
-              preparedToolResults: preparedToolResults,
-              cancellation: toolCancellation,
-            );
-            for (final toolCall in toolCalls) {
-              if (submittedToolCallIds.contains(toolCall.id) ||
-                  pendingToolCallIds.contains(toolCall.id)) {
-                continue;
-              }
-              pendingToolCallIds.add(toolCall.id);
-            }
-
-            if (pendingToolCallIds.isEmpty) {
-              throw Exception(
-                'Text agent requested tool execution but no pending tool results remain.',
-              );
-            }
-
-            final nextToolCallId = pendingToolCallIds.removeFirst();
-            final nextToolResult = preparedToolResults[nextToolCallId];
-            if (nextToolResult == null) {
-              throw Exception(
-                'Text agent requested a tool result that was not prepared: $nextToolCallId',
-              );
-            }
-            submittedToolCallIds.add(nextToolCallId);
-            response = await _postQuery(
-              agentId: agent.id,
-              voiceSessionId: voiceSessionId,
-              requestId: requestId,
-              toolResult: nextToolResult,
-            );
-        }
-      }
-
-      throw Exception(
-        'Text agent query exceeded the maximum number of iterations ($_maxQueryIterations).',
-      );
-    } on DioException catch (error, stackTrace) {
-      logger.severe(
-        'Text agent query request failed for agent: $agentId',
-        error,
-        stackTrace,
-      );
-      throw Exception(_describeTransportError(error));
-    } catch (error, stackTrace) {
-      logger.severe(
-        'Text agent query failed for agent: $agentId',
-        error,
-        stackTrace,
-      );
-      rethrow;
-    } finally {
-      unregisterCancel?.call();
+    final currentQueryDepth = Zone.current[_queryDepthZoneKey];
+    if (currentQueryDepth is int && currentQueryDepth > 0) {
+      throw StateError('Nested text agent queries are not allowed.');
     }
+
+    return runZoned(() async {
+      final requestId = 'req_${_uuid.v4().replaceAll('-', '')}';
+      final toolCancellation = ToolCancellation();
+      final unregisterCancel = onCancel?.call(toolCancellation.cancel);
+      final submittedToolCallIds = <String>{};
+
+      try {
+        _throwIfCancelled(toolCancellation);
+        var response = await _postQuery(
+          agentId: agent.id,
+          voiceSessionId: voiceSessionId,
+          requestId: requestId,
+          prompt: normalizedPrompt,
+        );
+        _throwIfCancelled(toolCancellation);
+
+        var iterationCount = 0;
+        while (iterationCount < _maxQueryIterations) {
+          iterationCount += 1;
+          response = _validateQueryResponse(response);
+
+          switch (response.status) {
+            case TextAgentQueryStatus.completed:
+              return response.text!;
+            case TextAgentQueryStatus.failed:
+              final code = response.errorCode ?? 'unknown_error';
+              final message =
+                  response.errorMessage ?? 'Text agent query failed.';
+              throw Exception('Text agent query failed ($code): $message');
+            case TextAgentQueryStatus.requiresTool:
+              final nextToolCall = _nextToolCallToSubmit(
+                response.toolCalls,
+                submittedToolCallIds,
+              );
+              _throwIfCancelled(toolCancellation);
+              final nextToolResult = await _executeToolCall(
+                agent,
+                nextToolCall,
+                cancellation: toolCancellation,
+              );
+              _throwIfCancelled(toolCancellation);
+              submittedToolCallIds.add(nextToolCall.id);
+              response = await _postQuery(
+                agentId: agent.id,
+                voiceSessionId: voiceSessionId,
+                requestId: requestId,
+                toolResult: nextToolResult,
+              );
+              _throwIfCancelled(toolCancellation);
+          }
+        }
+
+        throw Exception(
+          'Text agent query exceeded the maximum number of iterations ($_maxQueryIterations).',
+        );
+      } on DioException catch (error, stackTrace) {
+        if (toolCancellation.isCancelled) {
+          _throwIfCancelled(toolCancellation);
+        }
+        logger.severe(
+          'Text agent query request failed for agent: $agentId',
+          error,
+          stackTrace,
+        );
+        throw Exception(_describeTransportError(error));
+      } catch (error, stackTrace) {
+        if (toolCancellation.isCancelled) {
+          rethrow;
+        }
+        logger.severe(
+          'Text agent query failed for agent: $agentId',
+          error,
+          stackTrace,
+        );
+        rethrow;
+      } finally {
+        unregisterCancel?.call();
+      }
+    }, zoneValues: <Object, Object>{_queryDepthZoneKey: 1});
   }
 
   List<ToolDefinition> _getAvailableToolsForAgent(
@@ -195,11 +196,15 @@ final class TextAgentService extends SubService {
       activeExtensions,
     );
 
+    final policyFilteredTools = extensionFilteredTools
+        .where((tool) => !_isDeniedNestedTool(tool.toolKey))
+        .toList(growable: false);
+
     if (agent.enabledTools.isEmpty) {
-      return extensionFilteredTools;
+      return policyFilteredTools;
     }
 
-    return extensionFilteredTools
+    return policyFilteredTools
         .where((tool) {
           return agent.enabledTools[tool.toolKey] ?? true;
         })
@@ -229,35 +234,50 @@ final class TextAgentService extends SubService {
     }
   }
 
-  Future<void> _prepareToolResults({
-    required TextAgentInfo agent,
-    required List<TextAgentToolCallRequest> toolCalls,
-    required Map<String, TextAgentToolResultSubmission> preparedToolResults,
+  TextAgentToolCallRequest _nextToolCallToSubmit(
+    List<TextAgentToolCallRequest> toolCalls,
+    Set<String> submittedToolCallIds,
+  ) {
+    final seenToolCallIds = <String>{};
+    final repeatedSubmittedToolCallIds = <String>{};
+
+    for (final toolCall in toolCalls) {
+      if (!seenToolCallIds.add(toolCall.id)) {
+        continue;
+      }
+      if (submittedToolCallIds.contains(toolCall.id)) {
+        repeatedSubmittedToolCallIds.add(toolCall.id);
+        continue;
+      }
+      return toolCall;
+    }
+
+    if (repeatedSubmittedToolCallIds.isNotEmpty) {
+      throw Exception(
+        'Text agent repeated already submitted tool call ids: ${repeatedSubmittedToolCallIds.join(', ')}',
+      );
+    }
+    throw Exception(
+      'Text agent requested tool execution but no pending tool results remain.',
+    );
+  }
+
+  Future<TextAgentToolResultSubmission> _executeToolCall(
+    TextAgentInfo agent,
+    TextAgentToolCallRequest toolCall, {
     required ToolCancellation cancellation,
   }) async {
+    if (_isDeniedNestedTool(toolCall.name)) {
+      return _toolResultFromError(
+        toolCall.id,
+        'Tool is not available for nested text agent execution: ${toolCall.name}',
+      );
+    }
+
     final availableToolKeys = _getAvailableToolsForAgent(
       agent,
       _getCurrentActiveExtensions(),
     ).map((tool) => tool.toolKey).toSet();
-
-    for (final toolCall in toolCalls) {
-      if (preparedToolResults.containsKey(toolCall.id)) {
-        continue;
-      }
-
-      preparedToolResults[toolCall.id] = await _executeToolCall(
-        toolCall,
-        availableToolKeys: availableToolKeys,
-        cancellation: cancellation,
-      );
-    }
-  }
-
-  Future<TextAgentToolResultSubmission> _executeToolCall(
-    TextAgentToolCallRequest toolCall, {
-    required Set<String> availableToolKeys,
-    required ToolCancellation cancellation,
-  }) async {
     if (!availableToolKeys.contains(toolCall.name)) {
       return _toolResultFromError(
         toolCall.id,
@@ -286,6 +306,16 @@ final class TextAgentService extends SubService {
     }
   }
 
+  void _throwIfCancelled(ToolCancellation cancellation) {
+    if (cancellation.isCancelled) {
+      throw StateError('Text agent query cancelled.');
+    }
+  }
+
+  bool _isDeniedNestedTool(String toolKey) {
+    return toolKey == QueryTextAgentTool.toolKeyName;
+  }
+
   TextAgentToolResultSubmission _toolResultFromOutput(
     String toolCallId,
     String output,
@@ -293,7 +323,7 @@ final class TextAgentService extends SubService {
     return TextAgentToolResultSubmission(
       toolCallId: toolCallId,
       output: output,
-      isError: _isToolOutputError(output),
+      isError: _classifyToolOutputAsError(output),
     );
   }
 
@@ -308,22 +338,29 @@ final class TextAgentService extends SubService {
     );
   }
 
-  bool _isToolOutputError(String output) {
+  bool _classifyToolOutputAsError(String output) {
+    final Object? decoded;
     try {
-      final decoded = jsonDecode(output);
-      if (decoded is Map<String, dynamic>) {
-        return _isToolOutputMapError(decoded);
-      }
-      if (decoded is Map) {
-        return _isToolOutputMapError(decoded);
-      }
+      decoded = jsonDecode(output);
     } catch (_) {
-      // Ignore malformed tool output and rely on thrown exceptions instead.
+      // Non-JSON strings are valid tool outputs and are not errors by shape.
+      return false;
     }
+
+    if (decoded is Map<String, dynamic>) {
+      return _classifyToolOutputMapAsError(decoded);
+    }
+    if (decoded is Map) {
+      return _classifyToolOutputMapAsError(decoded);
+    }
+
+    // JSON arrays and primitives are valid tool outputs and are not errors by
+    // shape. Tool failures must be signalled by the agreed object conventions
+    // below or by throwing.
     return false;
   }
 
-  bool _isToolOutputMapError(Map<dynamic, dynamic> output) {
+  bool _classifyToolOutputMapAsError(Map<dynamic, dynamic> output) {
     final success = output['success'];
     if (success is bool) {
       return !success;
@@ -359,6 +396,12 @@ final class TextAgentService extends SubService {
           voiceSessionId: voiceSessionId,
           requestId: requestId,
           prompt: prompt,
+          // Product intent: Text Agent schemas are supplied by the client because
+          // ToolRunner executes client tools. Do not derive this list from VA
+          // tools.set or Speed Dial exposed tools; VA and TA allow-lists are
+          // intentionally independent so a VA can delegate to a TA with tools
+          // unavailable to the VA.
+          toolSchemas: _textAgentToolSchemas(),
           toolResult: toolResult?.toGenerated(),
         ),
       );
@@ -375,6 +418,24 @@ final class TextAgentService extends SubService {
     }
 
     throw Exception(_describeQueryErrorResponse(response));
+  }
+
+  List<api_models.QueryTextAgentBodyToolSchemasItem> _textAgentToolSchemas() {
+    return _toolRunner.allDefinitions
+        .where((tool) => !_isDeniedTextAgentSchemaTool(tool.toolKey))
+        .map(
+          (tool) => api_models.QueryTextAgentBodyToolSchemasItem(
+            name: tool.toolKey,
+            description: tool.description,
+            parameters: Map<String, dynamic>.from(tool.realtimeParametersSchema),
+          ),
+        )
+        .toList(growable: false);
+  }
+
+  bool _isDeniedTextAgentSchemaTool(String toolKey) {
+    return toolKey == QueryTextAgentTool.toolKeyName ||
+        toolKey == EndCallTool.toolKeyName;
   }
 
   String _describeMalformedQueryResponse(Object error) {

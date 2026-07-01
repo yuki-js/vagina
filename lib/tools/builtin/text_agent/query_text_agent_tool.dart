@@ -55,20 +55,12 @@ class QueryTextAgentTool extends Tool {
 
     final cancellation = ToolCancellation.current;
 
-    try {
-      // Call the text agent API
-      final text = await context.textAgentApi.sendQuery(
-        agentId,
-        prompt,
-        onCancel: cancellation?.onCancel,
-      );
+    final text = await context.textAgentApi.sendQuery(
+      agentId,
+      prompt,
+      onCancel: cancellation?.onCancel,
+    );
 
-      return jsonEncode({'success': true, 'text': text});
-    } catch (_) {
-      if (cancellation?.isCancelled ?? false) {
-        rethrow;
-      }
-      rethrow;
-    }
+    return jsonEncode({'success': true, 'text': text});
   }
 }

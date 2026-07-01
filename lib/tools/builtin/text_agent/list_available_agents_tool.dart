@@ -16,7 +16,7 @@ class ListAvailableAgentsTool extends Tool {
     sourceKey: 'builtin',
     publishedBy: 'aokiapp',
     description:
-        'Get a list of all available text agents with their IDs, names, and capabilities.',
+        'Get available text agents with IDs, names, query support, and tool override metadata. enabled_tools is a sparse override map: {} means default-enabled catalog tools except policy-denied tools, absent keys are enabled, and false disables a tool.',
     parametersSchema: {'type': 'object', 'properties': {}},
   );
 

@@ -50,7 +50,14 @@ final class CallTextAgentApi implements TextAgentApi {
             'name': agent.name,
             'description': agent.description,
             if (textModelId != null) 'text_model_id': textModelId,
+            // Backward-compatible field: this is an override map, not the
+            // effective catalog. Empty means default-enabled tools minus
+            // policy-denied tools, matching sparse Text Agent semantics.
             'enabled_tools': agent.enabledTools,
+            'enabled_tool_overrides': agent.enabledTools,
+            'effective_tools_default_enabled': true,
+            'enabled_tools_semantics':
+                'Sparse override map: absent keys are enabled by default; explicit false disables; policy-denied tools remain unavailable.',
             'query_supported': querySupported,
             'query_status': queryStatus,
           };
