@@ -109,6 +109,22 @@ class _SessionDetailContent extends StatelessWidget {
               : RealtimeThreadView(
                   items: thread!.items,
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                  onToolTap: (item) {
+                    showModalBottomSheet<void>(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: AppTheme.surfaceColor,
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(20),
+                        ),
+                      ),
+                      builder: (context) => RealtimeThreadToolDetailsSheet(
+                        itemId: item.id,
+                        initialItems: thread.items,
+                      ),
+                    );
+                  },
                 ),
         ),
       ],
