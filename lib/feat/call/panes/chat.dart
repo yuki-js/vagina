@@ -1,8 +1,8 @@
 import 'dart:async';
-import 'dart:typed_data';
-
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:pasteboard/pasteboard.dart';
 
 import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/l10n/app_localizations.dart';
@@ -437,6 +437,7 @@ class _ChatInputShellState extends State<_ChatInputShell> {
   bool _isAddMode = false;
   bool _isPickingImages = false;
   bool _isSending = false;
+  bool _isPastingImage = false;
   int _nextAttachmentId = 0;
 
   @override
@@ -506,13 +507,7 @@ class _ChatInputShellState extends State<_ChatInputShell> {
         }
 
         acceptedAttachments.add(
-          _PendingAttachment(
-            id: 'image-${_nextAttachmentId++}',
-            kind: _PendingAttachmentKind.image,
-            name: file.name,
-            size: file.size,
-            bytes: bytes,
-          ),
+          _buildImageAttachment(name: file.name, bytes: bytes),
         );
       }
 
@@ -543,6 +538,19 @@ class _ChatInputShellState extends State<_ChatInputShell> {
         });
       }
     }
+  }
+
+  _PendingAttachment _buildImageAttachment({
+    required String name,
+    required Uint8List bytes,
+  }) {
+    return _PendingAttachment(
+      id: 'image-${_nextAttachmentId++}',
+      kind: _PendingAttachmentKind.image,
+      name: name,
+      size: bytes.length,
+      bytes: bytes,
+    );
   }
 
   bool _isSupportedImageFile(String name, Uint8List bytes) {
@@ -600,6 +608,99 @@ class _ChatInputShellState extends State<_ChatInputShell> {
   void _showSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+    );
+  }
+
+  Future<void> _handlePasteShortcut() async {
+    if (!widget.enabled || _isSending) {
+      return;
+    }
+
+    final didPasteImage = await _tryPasteClipboardImage();
+    if (didPasteImage) {
+      return;
+    }
+
+    await _pasteClipboardText();
+  }
+
+  Future<bool> _tryPasteClipboardImage() async {
+    if (_isPastingImage) {
+      return false;
+    }
+
+    setState(() {
+      _isPastingImage = true;
+    });
+
+    try {
+      final bytes = await Pasteboard.image;
+      if (!mounted || bytes == null || bytes.isEmpty) {
+        return false;
+      }
+
+      final remainingSlots = _maxImageAttachmentCount - _attachments.length;
+      if (remainingSlots <= 0) {
+        _showSnackBar(
+          AppLocalizations.of(
+            context,
+          ).callChatImageAttachmentLimitExceeded(_maxImageAttachmentCount),
+        );
+        return true;
+      }
+
+      if (bytes.length > _maxImageAttachmentBytes) {
+        _showSnackBar(AppLocalizations.of(context).callChatImageTooLarge);
+        return true;
+      }
+
+      final name = _pastedImageName(bytes);
+      if (!_isSupportedImageFile(name, bytes)) {
+        _showSnackBar(
+          AppLocalizations.of(context).callChatImageUnsupportedFormat,
+        );
+        return true;
+      }
+
+      setState(() {
+        _attachments.add(_buildImageAttachment(name: name, bytes: bytes));
+        _isAddMode = false;
+      });
+      return true;
+    } catch (_) {
+      return false;
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isPastingImage = false;
+        });
+      }
+    }
+  }
+
+  String _pastedImageName(Uint8List bytes) {
+    final extension = _hasJpegMagicBytes(bytes) ? 'jpg' : 'png';
+    return 'pasted-image-${_nextAttachmentId + 1}.$extension';
+  }
+
+  Future<void> _pasteClipboardText() async {
+    final data = await Clipboard.getData(Clipboard.kTextPlain);
+    final text = data?.text;
+    if (text == null || text.isEmpty) {
+      return;
+    }
+
+    final value = widget.controller.value;
+    final selection = value.selection;
+    final range = selection.isValid
+        ? TextRange(start: selection.start, end: selection.end)
+        : TextRange.collapsed(value.text.length);
+    final newText = value.text.replaceRange(range.start, range.end, text);
+    final newOffset = range.start + text.length;
+    widget.controller.value = value.copyWith(
+      text: newText,
+      selection: TextSelection.collapsed(offset: newOffset),
+      composing: TextRange.empty,
     );
   }
 
@@ -691,6 +792,7 @@ class _ChatInputShellState extends State<_ChatInputShell> {
                           controller: widget.controller,
                           enabled: widget.enabled && !_isSending,
                           onSend: _submit,
+                          onPaste: _handlePasteShortcut,
                           enabledHintText: widget.enabledHintText,
                           disabledHintText: widget.disabledHintText,
                         ),
@@ -751,10 +853,15 @@ class _AttachmentModeButton extends StatelessWidget {
   }
 }
 
+class _PasteIntoChatInputIntent extends Intent {
+  const _PasteIntoChatInputIntent();
+}
+
 class _MessageInputRow extends StatelessWidget {
   final TextEditingController controller;
   final bool enabled;
   final Future<void> Function()? onSend;
+  final Future<void> Function()? onPaste;
   final String enabledHintText;
   final String disabledHintText;
 
@@ -763,6 +870,7 @@ class _MessageInputRow extends StatelessWidget {
     required this.controller,
     required this.enabled,
     this.onSend,
+    this.onPaste,
     required this.enabledHintText,
     required this.disabledHintText,
   });
@@ -772,23 +880,44 @@ class _MessageInputRow extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: TextField(
-            controller: controller,
-            enabled: enabled,
-            maxLines: null,
-            textInputAction: TextInputAction.send,
-            onSubmitted: enabled ? (_) => onSend?.call() : null,
-            decoration: InputDecoration(
-              hintText: enabled ? enabledHintText : disabledHintText,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(24),
-                borderSide: BorderSide.none,
-              ),
-              filled: true,
-              fillColor: AppTheme.backgroundStart,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 12,
+          child: Shortcuts(
+            shortcuts: const <ShortcutActivator, Intent>{
+              SingleActivator(LogicalKeyboardKey.keyV, control: true):
+                  _PasteIntoChatInputIntent(),
+              SingleActivator(LogicalKeyboardKey.keyV, meta: true):
+                  _PasteIntoChatInputIntent(),
+            },
+            child: Actions(
+              actions: <Type, Action<Intent>>{
+                _PasteIntoChatInputIntent:
+                    CallbackAction<_PasteIntoChatInputIntent>(
+                      onInvoke: (intent) {
+                        if (enabled) {
+                          onPaste?.call();
+                        }
+                        return null;
+                      },
+                    ),
+              },
+              child: TextField(
+                controller: controller,
+                enabled: enabled,
+                maxLines: null,
+                textInputAction: TextInputAction.send,
+                onSubmitted: enabled ? (_) => onSend?.call() : null,
+                decoration: InputDecoration(
+                  hintText: enabled ? enabledHintText : disabledHintText,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    borderSide: BorderSide.none,
+                  ),
+                  filled: true,
+                  fillColor: AppTheme.backgroundStart,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                ),
               ),
             ),
           ),
