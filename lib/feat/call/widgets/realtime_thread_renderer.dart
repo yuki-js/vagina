@@ -663,12 +663,15 @@ class _ImageAttachmentContentState extends State<_ImageAttachmentContent> {
       heightFactor: 1,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 320, maxHeight: 320),
-        child: Image(
-          key: ValueKey<String>(widget.imageUrl),
-          image: provider,
-          fit: BoxFit.contain,
-          gaplessPlayback: true,
-          errorBuilder: _buildError,
+        child: DecoratedBox(
+          decoration: const BoxDecoration(color: Colors.black),
+          child: Image(
+            key: ValueKey<String>(widget.imageUrl),
+            image: provider,
+            fit: BoxFit.contain,
+            gaplessPlayback: true,
+            errorBuilder: _buildError,
+          ),
         ),
       ),
     );
