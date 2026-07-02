@@ -430,6 +430,15 @@ class CallService {
     await _realtimeService.sendText(trimmed);
   }
 
+  Future<void> sendImageMessage(Uint8List imageBytes) async {
+    if (imageBytes.isEmpty || state != CallState.active) {
+      return;
+    }
+
+    await _interruptAssistantOutput();
+    await _realtimeService.sendImage(imageBytes);
+  }
+
   /// Called on every thread mutation. Scans for completed function-call items
   /// that have not yet been dispatched.
   void _onThreadUpdate(RealtimeThread thread) {

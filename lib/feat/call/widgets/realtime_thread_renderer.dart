@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 
 import 'package:vagina/core/theme/app_theme.dart';
@@ -214,6 +216,9 @@ class _RealtimeThreadBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final contentWidgets = _buildMessageParts(context);
+    if (contentWidgets.isEmpty && !_isIncomplete) {
+      return const SizedBox.shrink();
+    }
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -232,27 +237,36 @@ class _RealtimeThreadBubble extends StatelessWidget {
             const SizedBox(width: 8),
           ],
           Flexible(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              decoration: BoxDecoration(
-                color: _bubbleColor,
-                borderRadius: BorderRadius.only(
-                  topLeft: const Radius.circular(18),
-                  topRight: const Radius.circular(18),
-                  bottomLeft: Radius.circular(_isUser ? 18 : 4),
-                  bottomRight: Radius.circular(_isUser ? 4 : 18),
+            child: Align(
+              alignment: _isUser ? Alignment.centerRight : Alignment.centerLeft,
+              widthFactor: 1,
+              child: Container(
+                clipBehavior: Clip.antiAlias,
+                decoration: BoxDecoration(
+                  color: _bubbleColor,
+                  borderRadius: BorderRadius.only(
+                    topLeft: const Radius.circular(18),
+                    topRight: const Radius.circular(18),
+                    bottomLeft: Radius.circular(_isUser ? 18 : 4),
+                    bottomRight: Radius.circular(_isUser ? 4 : 18),
+                  ),
                 ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (contentWidgets.isNotEmpty) ...contentWidgets,
-                  if (_isIncomplete)
-                    const Padding(
-                      padding: EdgeInsets.only(top: 6),
-                      child: _TypingIndicator(),
-                    ),
-                ],
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (contentWidgets.isNotEmpty) ...contentWidgets,
+                    if (_isIncomplete)
+                      Padding(
+                        padding: EdgeInsets.fromLTRB(
+                          16,
+                          contentWidgets.isEmpty ? 10 : 6,
+                          16,
+                          10,
+                        ),
+                        child: const _TypingIndicator(),
+                      ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -262,20 +276,20 @@ class _RealtimeThreadBubble extends StatelessWidget {
   }
 
   List<Widget> _buildMessageParts(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
     final widgets = <Widget>[];
 
     for (int i = 0; i < item.content.length; i++) {
       final part = item.content[i];
-      if (widgets.isNotEmpty) {
-        widgets.add(const SizedBox(height: 8));
-      }
+      final widgetCountBeforePart = widgets.length;
 
       if (part is RealtimeThreadTextPart && part.text.isNotEmpty) {
         widgets.add(
-          SelectableText(
-            part.text,
-            style: TextStyle(color: _textColor, fontSize: 15),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            child: SelectableText(
+              part.text,
+              style: TextStyle(color: _textColor, fontSize: 15),
+            ),
           ),
         );
       } else if (part is RealtimeThreadAudioPart) {
@@ -283,19 +297,22 @@ class _RealtimeThreadBubble extends StatelessWidget {
             ? part.transcript!
             : '[Audio Input]';
         widgets.add(
-          SelectableText(
-            displayTxt,
-            style: TextStyle(color: _textColor, fontSize: 15),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            child: SelectableText(
+              displayTxt,
+              style: TextStyle(color: _textColor, fontSize: 15),
+            ),
           ),
         );
       } else if (part is RealtimeThreadImagePart) {
-        widgets.add(
-          _AttachmentBadge(
-            icon: Icons.image_outlined,
-            label: part.imageUrl,
-            sublabel: l10n.callChatImageDetail(part.detail),
-          ),
-        );
+        if (part.imageUrl.trim().isNotEmpty) {
+          widgets.add(_ImageAttachmentContent(imageUrl: part.imageUrl));
+        }
+      }
+
+      if (widgets.length > widgetCountBeforePart && widgetCountBeforePart > 0) {
+        widgets.insert(widgetCountBeforePart, const SizedBox(height: 8));
       }
     }
 
@@ -604,16 +621,97 @@ class _ToolDetailsCodeBlock extends StatelessWidget {
   }
 }
 
+class _ImageAttachmentContent extends StatefulWidget {
+  final String imageUrl;
+
+  const _ImageAttachmentContent({required this.imageUrl});
+
+  @override
+  State<_ImageAttachmentContent> createState() =>
+      _ImageAttachmentContentState();
+}
+
+class _ImageAttachmentContentState extends State<_ImageAttachmentContent> {
+  String? _resolvedImageUrl;
+  Uint8List? _bytes;
+  ImageProvider? _imageProvider;
+
+  @override
+  void initState() {
+    super.initState();
+    _resolveImageProvider();
+  }
+
+  @override
+  void didUpdateWidget(covariant _ImageAttachmentContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.imageUrl != widget.imageUrl) {
+      _resolveImageProvider();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final provider = _imageProvider;
+    if (provider == null || widget.imageUrl.trim().isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Align(
+      alignment: Alignment.centerLeft,
+      widthFactor: 1,
+      heightFactor: 1,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 320, maxHeight: 320),
+        child: Image(
+          key: ValueKey<String>(widget.imageUrl),
+          image: provider,
+          fit: BoxFit.contain,
+          gaplessPlayback: true,
+          errorBuilder: _buildError,
+        ),
+      ),
+    );
+  }
+
+  void _resolveImageProvider() {
+    final imageUrl = widget.imageUrl;
+    _resolvedImageUrl = imageUrl;
+    _bytes = _tryDecodeDataUri(imageUrl);
+    _imageProvider = _bytes == null
+        ? NetworkImage(imageUrl)
+        : MemoryImage(_bytes!);
+  }
+
+  Uint8List? _tryDecodeDataUri(String value) {
+    if (!value.startsWith('data:')) {
+      return null;
+    }
+    try {
+      return UriData.parse(value).contentAsBytes();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Widget _buildError(
+    BuildContext context,
+    Object error,
+    StackTrace? stackTrace,
+  ) {
+    final imageUrl = _resolvedImageUrl ?? widget.imageUrl;
+    if (imageUrl.trim().isEmpty) {
+      return const SizedBox.shrink();
+    }
+    return _AttachmentBadge(icon: Icons.broken_image_outlined, label: imageUrl);
+  }
+}
+
 class _AttachmentBadge extends StatelessWidget {
   final IconData icon;
   final String label;
-  final String? sublabel;
 
-  const _AttachmentBadge({
-    required this.icon,
-    required this.label,
-    this.sublabel,
-  });
+  const _AttachmentBadge({required this.icon, required this.label});
 
   @override
   Widget build(BuildContext context) {
@@ -640,16 +738,6 @@ class _AttachmentBadge extends StatelessWidget {
                     fontSize: 13,
                   ),
                 ),
-                if ((sublabel ?? '').isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    sublabel!,
-                    style: const TextStyle(
-                      color: AppTheme.textSecondary,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
               ],
             ),
           ),

@@ -66,6 +66,8 @@ final class FakeRealtimeAdapter implements RealtimeAdapter {
   RealtimeAdapterConnectionState _connectionState =
       const RealtimeAdapterConnectionState.idle();
   bool _disposed = false;
+  final List<String> sentTexts = <String>[];
+  final List<Uint8List> sentImages = <Uint8List>[];
 
   FakeRealtimeAdapter({this.sessionId});
 
@@ -150,13 +152,17 @@ final class FakeRealtimeAdapter implements RealtimeAdapter {
   }
 
   @override
-  Future<String> sendText(String text) {
-    throw UnimplementedError('sendText() is not used in this test.');
+  Future<String> sendText(String text) async {
+    _ensureNotDisposed();
+    sentTexts.add(text);
+    return 'text-${sentTexts.length}';
   }
 
   @override
-  Future<String> sendImage(Uint8List imageBytes) {
-    throw UnimplementedError('sendImage() is not used in this test.');
+  Future<String> sendImage(Uint8List imageBytes) async {
+    _ensureNotDisposed();
+    sentImages.add(Uint8List.fromList(imageBytes));
+    return 'image-${sentImages.length}';
   }
 
   @override

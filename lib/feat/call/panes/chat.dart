@@ -214,20 +214,29 @@ class _ChatPaneState extends State<ChatPane> {
     );
   }
 
-  void _handleSendMessage() {
+  Future<bool> _handleSendMessage(List<_PendingAttachment> attachments) async {
     final text = _textController.text.trim();
-    if (text.isEmpty) {
-      return;
+    if (text.isEmpty && attachments.isEmpty) {
+      return false;
     }
 
     final callService = widget.callService;
     if (callService.state != CallState.active) {
-      return;
+      return false;
     }
 
-    // Send text through CallService to ensure interrupt logic is executed
-    callService.sendTextMessage(text);
+    if (text.isNotEmpty) {
+      await callService.sendTextMessage(text);
+    }
+    for (final attachment in attachments) {
+      switch (attachment.kind) {
+        case _PendingAttachmentKind.image:
+          await callService.sendImageMessage(attachment.bytes);
+      }
+    }
+
     _textController.clear();
+    return true;
   }
 }
 
@@ -400,7 +409,7 @@ final class _PendingAttachment {
 class _ChatInputShell extends StatefulWidget {
   final TextEditingController controller;
   final bool enabled;
-  final VoidCallback? onSend;
+  final Future<bool> Function(List<_PendingAttachment> attachments)? onSend;
   final String enabledHintText;
   final String disabledHintText;
 
@@ -424,6 +433,7 @@ class _ChatInputShellState extends State<_ChatInputShell> {
   final List<_PendingAttachment> _attachments = <_PendingAttachment>[];
   bool _isAddMode = false;
   bool _isPickingImages = false;
+  bool _isSending = false;
   int _nextAttachmentId = 0;
 
   @override
@@ -597,12 +607,39 @@ class _ChatInputShellState extends State<_ChatInputShell> {
   }
 
   void _toggleAddMode() {
-    if (!widget.enabled || _isPickingImages) {
+    if (!widget.enabled || _isPickingImages || _isSending) {
       return;
     }
     setState(() {
       _isAddMode = !_isAddMode;
     });
+  }
+
+  Future<void> _submit() async {
+    if (!widget.enabled || _isSending) {
+      return;
+    }
+
+    final attachments = List<_PendingAttachment>.of(_attachments);
+    setState(() {
+      _isSending = true;
+    });
+    try {
+      final succeeded = await widget.onSend?.call(attachments) ?? false;
+      if (!mounted || !succeeded) {
+        return;
+      }
+      setState(() {
+        _attachments.clear();
+        _isAddMode = false;
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSending = false;
+        });
+      }
+    }
   }
 
   @override
@@ -627,7 +664,7 @@ class _ChatInputShellState extends State<_ChatInputShell> {
           Row(
             children: [
               _AttachmentModeButton(
-                enabled: widget.enabled && !_isPickingImages,
+                enabled: widget.enabled && !_isPickingImages && !_isSending,
                 isAddMode: _isAddMode,
                 onPressed: _toggleAddMode,
               ),
@@ -640,14 +677,17 @@ class _ChatInputShellState extends State<_ChatInputShell> {
                   child: _isAddMode
                       ? _AttachmentActionRow(
                           key: const ValueKey<String>('attachment-actions'),
-                          enabled: widget.enabled && !_isPickingImages,
+                          enabled:
+                              widget.enabled &&
+                              !_isPickingImages &&
+                              !_isSending,
                           onPickImages: _pickImages,
                         )
                       : _MessageInputRow(
                           key: const ValueKey<String>('message-input'),
                           controller: widget.controller,
-                          enabled: widget.enabled,
-                          onSend: widget.onSend,
+                          enabled: widget.enabled && !_isSending,
+                          onSend: _submit,
                           enabledHintText: widget.enabledHintText,
                           disabledHintText: widget.disabledHintText,
                         ),
@@ -711,7 +751,7 @@ class _AttachmentModeButton extends StatelessWidget {
 class _MessageInputRow extends StatelessWidget {
   final TextEditingController controller;
   final bool enabled;
-  final VoidCallback? onSend;
+  final Future<void> Function()? onSend;
   final String enabledHintText;
   final String disabledHintText;
 
