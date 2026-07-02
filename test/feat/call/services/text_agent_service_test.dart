@@ -59,11 +59,54 @@ void main() {
         adapter.requestJsonBodies.single,
         containsPair('toolResult', null),
       );
-      final toolSchemaNames = _toolSchemaNames(adapter.requestJsonBodies.single);
+      final toolSchemaNames = _toolSchemaNames(
+        adapter.requestJsonBodies.single,
+      );
       expect(toolSchemaNames, contains('calculator'));
       expect(toolSchemaNames, contains('list_available_agents'));
       expect(toolSchemaNames, isNot(contains('query_text_agent')));
       expect(toolSchemaNames, isNot(contains('end_call')));
+    });
+
+    test('attaches the remembered last user image when requested', () async {
+      final adapter = _RecordingAdapter((_) async {
+        return _jsonResponse(200, <String, dynamic>{
+          'status': 'completed',
+          'text': 'The image was reviewed.',
+        });
+      });
+      final started = await _startService(
+        adapter: adapter,
+        voiceSessionId: 'vs_0123456789abcdef',
+      );
+      addTearDown(started.dispose);
+      started.service.rememberLastUserImage(
+        Uint8List.fromList(<int>[
+          0x89,
+          0x50,
+          0x4E,
+          0x47,
+          0x0D,
+          0x0A,
+          0x1A,
+          0x0A,
+        ]),
+        name: 'whiteboard.png',
+      );
+
+      final text = await started.service.sendQuery(
+        'agent-1',
+        'Analyze the last image.',
+        attachLastUserImage: true,
+      );
+
+      expect(text, 'The image was reviewed.');
+      final images =
+          adapter.requestJsonBodies.single['images'] as List<dynamic>;
+      final image = Map<String, dynamic>.from(images.single as Map);
+      expect(image['dataUri'], startsWith('data:image/png;base64,'));
+      expect(image['detail'], 'auto');
+      expect(image['name'], 'whiteboard.png');
     });
 
     test(

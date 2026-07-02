@@ -27,7 +27,7 @@ void main() {
             filesystemApi: _NoopFilesystemApi(),
             callApi: _NoopCallApi(),
             textAgentApi: _FakeTextAgentApi(
-              onSendQuery: ({onCancel}) {
+              onSendQuery: ({attachLastUserImage = false, onCancel}) {
                 onCancel?.call(() {
                   subAgentCancelCount += 1;
                   subAgentResponse.completeError(
@@ -63,7 +63,8 @@ void main() {
           filesystemApi: _NoopFilesystemApi(),
           callApi: _NoopCallApi(),
           textAgentApi: _FakeTextAgentApi(
-            onSendQuery: ({onCancel}) => Future<String>.value('unused'),
+            onSendQuery: ({attachLastUserImage = false, onCancel}) =>
+                Future<String>.value('unused'),
           ),
         ),
       );
@@ -87,6 +88,36 @@ void main() {
     });
 
     test(
+      'passes attach_last_user_image through to the text agent API',
+      () async {
+        var observedAttachLastUserImage = false;
+        final tool = QueryTextAgentTool();
+        await tool.init(
+          ToolContext(
+            toolKey: QueryTextAgentTool.toolKeyName,
+            filesystemApi: _NoopFilesystemApi(),
+            callApi: _NoopCallApi(),
+            textAgentApi: _FakeTextAgentApi(
+              onSendQuery: ({attachLastUserImage = false, onCancel}) {
+                observedAttachLastUserImage = attachLastUserImage;
+                return Future<String>.value('ok');
+              },
+            ),
+          ),
+        );
+
+        final output = await tool.execute(<String, dynamic>{
+          'agent_id': 'agent-1',
+          'prompt': 'inspect image',
+          'attach_last_user_image': true,
+        });
+
+        expect(output, contains('ok'));
+        expect(observedAttachLastUserImage, isTrue);
+      },
+    );
+
+    test(
       'throws text agent query failures instead of returning failure JSON',
       () async {
         final tool = QueryTextAgentTool();
@@ -96,11 +127,12 @@ void main() {
             filesystemApi: _NoopFilesystemApi(),
             callApi: _NoopCallApi(),
             textAgentApi: _FakeTextAgentApi(
-              onSendQuery: ({onCancel}) => Future<String>.error(
-                Exception(
-                  'Text agent query request failed (409): active voice session ended',
-                ),
-              ),
+              onSendQuery: ({attachLastUserImage = false, onCancel}) =>
+                  Future<String>.error(
+                    Exception(
+                      'Text agent query request failed (409): active voice session ended',
+                    ),
+                  ),
             ),
           ),
         );
@@ -130,6 +162,7 @@ Future<void> _flushAsyncWork() async {
 
 final class _FakeTextAgentApi implements TextAgentApi {
   final Future<String> Function({
+    bool attachLastUserImage,
     void Function() Function(void Function())? onCancel,
   })
   onSendQuery;
@@ -140,9 +173,13 @@ final class _FakeTextAgentApi implements TextAgentApi {
   Future<String> sendQuery(
     String agentId,
     String prompt, {
+    bool attachLastUserImage = false,
     void Function() Function(void Function())? onCancel,
   }) {
-    return onSendQuery(onCancel: onCancel);
+    return onSendQuery(
+      attachLastUserImage: attachLastUserImage,
+      onCancel: onCancel,
+    );
   }
 
   @override

@@ -430,11 +430,12 @@ class CallService {
     await _realtimeService.sendText(trimmed);
   }
 
-  Future<void> sendImageMessage(Uint8List imageBytes) async {
+  Future<void> sendImageMessage(Uint8List imageBytes, {String? name}) async {
     if (imageBytes.isEmpty || state != CallState.active) {
       return;
     }
 
+    _textAgentService.rememberLastUserImage(imageBytes, name: name);
     await _interruptAssistantOutput();
     await _realtimeService.sendImage(imageBytes);
   }

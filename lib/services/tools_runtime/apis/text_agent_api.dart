@@ -1,3 +1,16 @@
+/// Image input resolved by the call host before a text-agent query is sent.
+final class TextAgentQueryImageInput {
+  final String dataUri;
+  final String detail;
+  final String? name;
+
+  const TextAgentQueryImageInput({
+    required this.dataUri,
+    this.detail = 'auto',
+    this.name,
+  });
+}
+
 /// Abstract API for text agent query operations.
 ///
 /// This API allows tools to query text agents through the current call/session
@@ -8,6 +21,7 @@ abstract class TextAgentApi {
   Future<String> sendQuery(
     String agentId,
     String prompt, {
+    bool attachLastUserImage = false,
     void Function() Function(void Function())? onCancel,
   });
 

@@ -31,6 +31,11 @@ class QueryTextAgentTool extends Tool {
           'type': 'string',
           'description': 'The query or prompt to send to the agent',
         },
+        'attach_last_user_image': {
+          'type': 'boolean',
+          'description':
+              'Attach the most recent user image from the current call to this text-agent query. Use this instead of passing image bytes or data URIs in tool arguments.',
+        },
       },
       'required': ['agent_id', 'prompt'],
     },
@@ -50,14 +55,23 @@ class QueryTextAgentTool extends Tool {
       throw ArgumentError('Missing or empty required parameter: prompt');
     }
 
+    final attachLastUserImageValue = args['attach_last_user_image'];
+    if (attachLastUserImageValue != null && attachLastUserImageValue is! bool) {
+      throw ArgumentError(
+        'Invalid optional parameter: attach_last_user_image must be a boolean',
+      );
+    }
+
     final agentId = agentIdValue;
     final prompt = promptValue;
+    final attachLastUserImage = attachLastUserImageValue as bool? ?? false;
 
     final cancellation = ToolCancellation.current;
 
     final text = await context.textAgentApi.sendQuery(
       agentId,
       prompt,
+      attachLastUserImage: attachLastUserImage,
       onCancel: cancellation?.onCancel,
     );
 

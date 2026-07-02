@@ -231,7 +231,10 @@ class _ChatPaneState extends State<ChatPane> {
     for (final attachment in attachments) {
       switch (attachment.kind) {
         case _PendingAttachmentKind.image:
-          await callService.sendImageMessage(attachment.bytes);
+          await callService.sendImageMessage(
+            attachment.bytes,
+            name: attachment.name,
+          );
       }
     }
 

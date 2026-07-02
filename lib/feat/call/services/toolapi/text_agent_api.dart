@@ -69,8 +69,14 @@ final class CallTextAgentApi implements TextAgentApi {
   Future<String> sendQuery(
     String agentId,
     String prompt, {
+    bool attachLastUserImage = false,
     void Function() Function(void Function())? onCancel,
   }) async {
-    return _textAgentService.sendQuery(agentId, prompt, onCancel: onCancel);
+    return _textAgentService.sendQuery(
+      agentId,
+      prompt,
+      attachLastUserImage: attachLastUserImage,
+      onCancel: onCancel,
+    );
   }
 }

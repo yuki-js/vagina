@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:uuid/uuid.dart';
@@ -31,6 +32,8 @@ final class TextAgentService extends SubService {
   final RealtimeService _realtimeService;
   final VaginaApiClient _apiClient;
 
+  _LastUserImage? _lastUserImage;
+
   late final ToolRunner _toolRunner;
 
   TextAgentService({
@@ -49,6 +52,14 @@ final class TextAgentService extends SubService {
       UnmodifiableListView<TextAgentInfo>(_agentsById.values);
 
   String? get currentVoiceSessionId => _realtimeService.currentSessionId;
+
+  /// Remember the latest user-submitted image for semantic text-agent delegation.
+  void rememberLastUserImage(Uint8List imageBytes, {String? name}) {
+    if (imageBytes.isEmpty) {
+      return;
+    }
+    _lastUserImage = _LastUserImage(Uint8List.fromList(imageBytes), name);
+  }
 
   /// Inject ToolRunner for tool execution support.
   ///
@@ -77,6 +88,7 @@ final class TextAgentService extends SubService {
   Future<String> sendQuery(
     String agentId,
     String prompt, {
+    bool attachLastUserImage = false,
     void Function() Function(void Function())? onCancel,
   }) async {
     ensureNotDisposed();
@@ -120,6 +132,7 @@ final class TextAgentService extends SubService {
           voiceSessionId: voiceSessionId,
           requestId: requestId,
           prompt: normalizedPrompt,
+          images: attachLastUserImage ? _resolvedLastUserImage() : const [],
         );
         _throwIfCancelled(toolCancellation);
 
@@ -380,6 +393,7 @@ final class TextAgentService extends SubService {
     required String voiceSessionId,
     required String requestId,
     String? prompt,
+    List<api_models.QueryTextAgentBodyImagesItem> images = const [],
     TextAgentToolResultSubmission? toolResult,
   }) async {
     if ((prompt == null) == (toolResult == null)) {
@@ -396,6 +410,7 @@ final class TextAgentService extends SubService {
           voiceSessionId: voiceSessionId,
           requestId: requestId,
           prompt: prompt,
+          images: images.isEmpty ? null : images,
           // Product intent: Text Agent schemas are supplied by the client because
           // ToolRunner executes client tools. Do not derive this list from VA
           // tools.set or Speed Dial exposed tools; VA and TA allow-lists are
@@ -420,6 +435,20 @@ final class TextAgentService extends SubService {
     throw Exception(_describeQueryErrorResponse(response));
   }
 
+  List<api_models.QueryTextAgentBodyImagesItem> _resolvedLastUserImage() {
+    final image = _lastUserImage;
+    if (image == null) {
+      throw StateError('No user image is available to attach.');
+    }
+    return <api_models.QueryTextAgentBodyImagesItem>[
+      api_models.QueryTextAgentBodyImagesItem(
+        dataUri: image.dataUri,
+        detail: api_models.QueryTextAgentBodyImagesItemDetail.auto,
+        name: image.name,
+      ),
+    ];
+  }
+
   List<api_models.QueryTextAgentBodyToolSchemasItem> _textAgentToolSchemas() {
     return _toolRunner.allDefinitions
         .where((tool) => !_isDeniedTextAgentSchemaTool(tool.toolKey))
@@ -427,7 +456,9 @@ final class TextAgentService extends SubService {
           (tool) => api_models.QueryTextAgentBodyToolSchemasItem(
             name: tool.toolKey,
             description: tool.description,
-            parameters: Map<String, dynamic>.from(tool.realtimeParametersSchema),
+            parameters: Map<String, dynamic>.from(
+              tool.realtimeParametersSchema,
+            ),
           ),
         )
         .toList(growable: false);
@@ -454,24 +485,44 @@ final class TextAgentService extends SubService {
     api_responses.QueryTextAgentResponse response,
   ) {
     if (response is api_responses.QueryTextAgentResponseBadRequest) {
-      return 'Text agent query request failed (400): ${response.data.message}';
+      return 'Text agent query request failed (400): ${_errorResponseMessage(response.data)}';
     }
     if (response is api_responses.QueryTextAgentResponseUnauthorized) {
-      return 'Text agent query request failed (401): ${response.data.message}';
+      return 'Text agent query request failed (401): ${_errorResponseMessage(response.data)}';
     }
     if (response is api_responses.QueryTextAgentResponseNotFound) {
-      return 'Text agent query request failed (404): ${response.data.message}';
+      return 'Text agent query request failed (404): ${_errorResponseMessage(response.data)}';
     }
     if (response is api_responses.QueryTextAgentResponseConflict) {
-      return 'Text agent query request failed (409): ${response.data.message}';
+      return 'Text agent query request failed (409): ${_errorResponseMessage(response.data)}';
     }
     if (response is api_responses.QueryTextAgentResponseServerError) {
-      return 'Text agent query request failed (500): ${response.data.message}';
+      return 'Text agent query request failed (500): ${_errorResponseMessage(response.data)}';
     }
     if (response is api_responses.QueryTextAgentResponseUnknown) {
       return 'Text agent query request failed with status ${response.statusCode}.';
     }
     return 'Text agent query request failed.';
+  }
+
+  String _errorResponseMessage(Object data) {
+    if (data is Map<String, dynamic>) {
+      final message = data['message'];
+      if (message is String && message.isNotEmpty) {
+        return message;
+      }
+    }
+    final dynamic maybeData = data;
+    try {
+      final message = maybeData.message;
+      if (message is String && message.isNotEmpty) {
+        return message;
+      }
+    } catch (_) {
+      // Fall through to string fallback for generated model variants that do not
+      // expose a statically visible message getter during partial generation.
+    }
+    return data.toString();
   }
 
   String _describeTransportError(DioException error) {
@@ -533,5 +584,38 @@ final class TextAgentService extends SubService {
   Future<void> dispose() async {
     await super.dispose();
     _agentsById.clear();
+  }
+}
+
+final class _LastUserImage {
+  final Uint8List bytes;
+  final String? name;
+
+  const _LastUserImage(this.bytes, this.name);
+
+  String get dataUri {
+    final mimeType = _sniffImageMime(bytes);
+    return 'data:$mimeType;base64,${base64Encode(bytes)}';
+  }
+
+  static String _sniffImageMime(Uint8List bytes) {
+    if (bytes.length >= 8 &&
+        bytes[0] == 0x89 &&
+        bytes[1] == 0x50 &&
+        bytes[2] == 0x4E &&
+        bytes[3] == 0x47 &&
+        bytes[4] == 0x0D &&
+        bytes[5] == 0x0A &&
+        bytes[6] == 0x1A &&
+        bytes[7] == 0x0A) {
+      return 'image/png';
+    }
+    if (bytes.length >= 3 &&
+        bytes[0] == 0xFF &&
+        bytes[1] == 0xD8 &&
+        bytes[2] == 0xFF) {
+      return 'image/jpeg';
+    }
+    return 'image/png';
   }
 }
