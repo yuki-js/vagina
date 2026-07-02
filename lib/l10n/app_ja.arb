@@ -822,6 +822,58 @@
   "@callChatInputHintDisabled": {
     "description": "通話がアクティブでないためチャット入力欄が無効になっているときのプレースホルダー。"
   },
+  "callChatAddAttachmentTooltip": "添付を追加",
+  "@callChatAddAttachmentTooltip": {
+    "description": "通話中チャット入力欄でインライン添付アクション行を開く + ボタンのツールチップ。"
+  },
+  "callChatCloseAttachmentMenuTooltip": "添付メニューを閉じる",
+  "@callChatCloseAttachmentMenuTooltip": {
+    "description": "通話中チャット入力欄を添付アクションモードから通常のテキスト入力モードへ戻す閉じるボタンのツールチップ。"
+  },
+  "callChatImageAttachmentAction": "画像",
+  "@callChatImageAttachmentAction": {
+    "description": "通話中チャット入力欄で画像ファイルを選ぶインライン添付アクションラベル。"
+  },
+  "callChatRemoveImageAttachmentTooltip": "画像を削除",
+  "@callChatRemoveImageAttachmentTooltip": {
+    "description": "通話中チャット入力欄から選択済み画像添付プレビューを削除するボタンのツールチップ。"
+  },
+  "callChatSelectedImageAttachment": "選択済み画像: {name}",
+  "@callChatSelectedImageAttachment": {
+    "description": "通話中チャット入力欄の選択済み画像添付プレビューに付けるアクセシビリティラベル。",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "description": "選択済み画像ファイル名。"
+      }
+    }
+  },
+  "callChatImageAttachmentLimitExceeded": "添付できる画像は最大 {count} 枚です",
+  "@callChatImageAttachmentLimitExceeded": {
+    "description": "通話中チャット入力欄で許可数を超える画像が選択されたときに表示するスナックバー。",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "description": "添付できる画像の最大枚数。"
+      }
+    }
+  },
+  "callChatImageUnsupportedFormat": "PNG または JPEG 画像のみ対応しています",
+  "@callChatImageUnsupportedFormat": {
+    "description": "HEIC、WebP、GIF など非対応の画像形式が選択されたときに表示するスナックバー。"
+  },
+  "callChatImageTooLarge": "画像は 8 MiB 以下にしてください",
+  "@callChatImageTooLarge": {
+    "description": "初回版の添付サイズ上限を超える画像が選択されたときに表示するスナックバー。"
+  },
+  "callChatImageReadFailed": "一部の画像を読み込めませんでした",
+  "@callChatImageReadFailed": {
+    "description": "プレビュー用の画像バイト列を読み込めないときに表示するスナックバー。"
+  },
+  "callChatImagePickFailed": "画像を選択できませんでした",
+  "@callChatImagePickFailed": {
+    "description": "画像ピッカーを開く、または使用する処理が失敗したときに表示するスナックバー。"
+  },
   "callChatImageDetail": "detail: {detail}",
   "@callChatImageDetail": {
     "description": "チャットペイン内の画像添付の下に表示する補足ラベル。プロバイダーから渡される画像 detail 値を示す。製品用語として detail は英字で維持する。",

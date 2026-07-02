@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:typed_data';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import 'package:vagina/core/theme/app_theme.dart';
@@ -377,7 +379,25 @@ class _ChatEmptyState extends StatelessWidget {
   }
 }
 
-class _ChatInputShell extends StatelessWidget {
+enum _PendingAttachmentKind { image }
+
+final class _PendingAttachment {
+  final String id;
+  final _PendingAttachmentKind kind;
+  final String name;
+  final int size;
+  final Uint8List bytes;
+
+  const _PendingAttachment({
+    required this.id,
+    required this.kind,
+    required this.name,
+    required this.size,
+    required this.bytes,
+  });
+}
+
+class _ChatInputShell extends StatefulWidget {
   final TextEditingController controller;
   final bool enabled;
   final VoidCallback? onSend;
@@ -393,6 +413,199 @@ class _ChatInputShell extends StatelessWidget {
   });
 
   @override
+  State<_ChatInputShell> createState() => _ChatInputShellState();
+}
+
+class _ChatInputShellState extends State<_ChatInputShell> {
+  static const int _maxImageAttachmentCount = 4;
+  static const int _maxImageAttachmentBytes = 8 * 1024 * 1024;
+  static const Set<String> _allowedImageExtensions = {'jpg', 'jpeg', 'png'};
+
+  final List<_PendingAttachment> _attachments = <_PendingAttachment>[];
+  bool _isAddMode = false;
+  bool _isPickingImages = false;
+  int _nextAttachmentId = 0;
+
+  @override
+  void didUpdateWidget(covariant _ChatInputShell oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (!widget.enabled && _isAddMode) {
+      _isAddMode = false;
+    }
+  }
+
+  Future<void> _pickImages() async {
+    if (!widget.enabled || _isPickingImages) {
+      return;
+    }
+
+    final remainingSlots = _maxImageAttachmentCount - _attachments.length;
+    if (remainingSlots <= 0) {
+      _showSnackBar(
+        AppLocalizations.of(
+          context,
+        ).callChatImageAttachmentLimitExceeded(_maxImageAttachmentCount),
+      );
+      return;
+    }
+
+    setState(() {
+      _isPickingImages = true;
+    });
+
+    try {
+      final result = await FilePicker.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: _allowedImageExtensions.toList(growable: false),
+        allowMultiple: true,
+        withData: true,
+      );
+      if (!mounted || result == null) {
+        return;
+      }
+
+      final acceptedAttachments = <_PendingAttachment>[];
+      var rejectedForCount = 0;
+      var rejectedForFormat = 0;
+      var rejectedForSize = 0;
+      var rejectedForRead = 0;
+
+      for (final file in result.files) {
+        if (acceptedAttachments.length >= remainingSlots) {
+          rejectedForCount++;
+          continue;
+        }
+
+        final bytes = file.bytes;
+        if (bytes == null) {
+          rejectedForRead++;
+          continue;
+        }
+        if (file.size > _maxImageAttachmentBytes ||
+            bytes.length > _maxImageAttachmentBytes) {
+          rejectedForSize++;
+          continue;
+        }
+        if (!_isSupportedImageFile(file.name, bytes)) {
+          rejectedForFormat++;
+          continue;
+        }
+
+        acceptedAttachments.add(
+          _PendingAttachment(
+            id: 'image-${_nextAttachmentId++}',
+            kind: _PendingAttachmentKind.image,
+            name: file.name,
+            size: file.size,
+            bytes: bytes,
+          ),
+        );
+      }
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _attachments.addAll(acceptedAttachments);
+        _isAddMode = false;
+      });
+
+      _showValidationSnackBars(
+        rejectedForCount: rejectedForCount,
+        rejectedForFormat: rejectedForFormat,
+        rejectedForSize: rejectedForSize,
+        rejectedForRead: rejectedForRead,
+      );
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      _showSnackBar(AppLocalizations.of(context).callChatImagePickFailed);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isPickingImages = false;
+        });
+      }
+    }
+  }
+
+  bool _isSupportedImageFile(String name, Uint8List bytes) {
+    final extension = name.split('.').last.toLowerCase();
+    if (!_allowedImageExtensions.contains(extension)) {
+      return false;
+    }
+
+    return _hasPngMagicBytes(bytes) || _hasJpegMagicBytes(bytes);
+  }
+
+  bool _hasPngMagicBytes(Uint8List bytes) {
+    return bytes.length >= 8 &&
+        bytes[0] == 0x89 &&
+        bytes[1] == 0x50 &&
+        bytes[2] == 0x4E &&
+        bytes[3] == 0x47 &&
+        bytes[4] == 0x0D &&
+        bytes[5] == 0x0A &&
+        bytes[6] == 0x1A &&
+        bytes[7] == 0x0A;
+  }
+
+  bool _hasJpegMagicBytes(Uint8List bytes) {
+    return bytes.length >= 3 &&
+        bytes[0] == 0xFF &&
+        bytes[1] == 0xD8 &&
+        bytes[2] == 0xFF;
+  }
+
+  void _showValidationSnackBars({
+    required int rejectedForCount,
+    required int rejectedForFormat,
+    required int rejectedForSize,
+    required int rejectedForRead,
+  }) {
+    final l10n = AppLocalizations.of(context);
+
+    if (rejectedForCount > 0) {
+      _showSnackBar(
+        l10n.callChatImageAttachmentLimitExceeded(_maxImageAttachmentCount),
+      );
+    }
+    if (rejectedForFormat > 0) {
+      _showSnackBar(l10n.callChatImageUnsupportedFormat);
+    }
+    if (rejectedForSize > 0) {
+      _showSnackBar(l10n.callChatImageTooLarge);
+    }
+    if (rejectedForRead > 0) {
+      _showSnackBar(l10n.callChatImageReadFailed);
+    }
+  }
+
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+    );
+  }
+
+  void _removeAttachment(String id) {
+    setState(() {
+      _attachments.removeWhere((attachment) => attachment.id == id);
+    });
+  }
+
+  void _toggleAddMode() {
+    if (!widget.enabled || _isPickingImages) {
+      return;
+    }
+    setState(() {
+      _isAddMode = !_isAddMode;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -400,45 +613,294 @@ class _ChatInputShell extends StatelessWidget {
         color: AppTheme.surfaceColor.withValues(alpha: 0.8),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Expanded(
-            child: TextField(
-              controller: controller,
-              enabled: enabled,
-              maxLines: null,
-              textInputAction: TextInputAction.send,
-              onSubmitted: enabled ? (_) => onSend?.call() : null,
-              decoration: InputDecoration(
-                hintText: enabled ? enabledHintText : disabledHintText,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(24),
-                  borderSide: BorderSide.none,
-                ),
-                filled: true,
-                fillColor: AppTheme.backgroundStart,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
+          if (_attachments.isNotEmpty) ...[
+            _AttachmentPreviewTray(
+              attachments: _attachments,
+              onRemove: _removeAttachment,
+            ),
+            const SizedBox(height: 12),
+          ],
+          Row(
+            children: [
+              _AttachmentModeButton(
+                enabled: widget.enabled && !_isPickingImages,
+                isAddMode: _isAddMode,
+                onPressed: _toggleAddMode,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 160),
+                  switchInCurve: Curves.easeOut,
+                  switchOutCurve: Curves.easeIn,
+                  child: _isAddMode
+                      ? _AttachmentActionRow(
+                          key: const ValueKey<String>('attachment-actions'),
+                          enabled: widget.enabled && !_isPickingImages,
+                          onPickImages: _pickImages,
+                        )
+                      : _MessageInputRow(
+                          key: const ValueKey<String>('message-input'),
+                          controller: widget.controller,
+                          enabled: widget.enabled,
+                          onSend: widget.onSend,
+                          enabledHintText: widget.enabledHintText,
+                          disabledHintText: widget.disabledHintText,
+                        ),
                 ),
               ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          IconButton(
-            onPressed: enabled ? onSend : null,
-            icon: const Icon(Icons.send, color: Colors.white),
-            style: IconButton.styleFrom(
-              backgroundColor: enabled
-                  ? AppTheme.primaryColor
-                  : AppTheme.textSecondary,
-              padding: const EdgeInsets.all(12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
-              ),
-            ),
+            ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _AttachmentModeButton extends StatelessWidget {
+  static const double _closedTurns = 0;
+  static const double _openTurns = 0.125;
+
+  final bool enabled;
+  final bool isAddMode;
+  final VoidCallback onPressed;
+
+  const _AttachmentModeButton({
+    required this.enabled,
+    required this.isAddMode,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
+    return IconButton(
+      tooltip: isAddMode
+          ? l10n.callChatCloseAttachmentMenuTooltip
+          : l10n.callChatAddAttachmentTooltip,
+      onPressed: enabled ? onPressed : null,
+      icon: AnimatedRotation(
+        turns: isAddMode ? _openTurns : _closedTurns,
+        duration: const Duration(milliseconds: 160),
+        curve: Curves.easeOutCubic,
+        child: Icon(
+          Icons.add,
+          size: 30,
+          color: enabled
+              ? AppTheme.textSecondary
+              : AppTheme.textSecondary.withValues(alpha: 0.45),
+        ),
+      ),
+      style: IconButton.styleFrom(
+        backgroundColor: Colors.transparent,
+        foregroundColor: AppTheme.textSecondary,
+        disabledForegroundColor: AppTheme.textSecondary.withValues(alpha: 0.45),
+        padding: const EdgeInsets.all(8),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        shape: const CircleBorder(),
+      ),
+    );
+  }
+}
+
+class _MessageInputRow extends StatelessWidget {
+  final TextEditingController controller;
+  final bool enabled;
+  final VoidCallback? onSend;
+  final String enabledHintText;
+  final String disabledHintText;
+
+  const _MessageInputRow({
+    super.key,
+    required this.controller,
+    required this.enabled,
+    this.onSend,
+    required this.enabledHintText,
+    required this.disabledHintText,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: TextField(
+            controller: controller,
+            enabled: enabled,
+            maxLines: null,
+            textInputAction: TextInputAction.send,
+            onSubmitted: enabled ? (_) => onSend?.call() : null,
+            decoration: InputDecoration(
+              hintText: enabled ? enabledHintText : disabledHintText,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(24),
+                borderSide: BorderSide.none,
+              ),
+              filled: true,
+              fillColor: AppTheme.backgroundStart,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        IconButton(
+          onPressed: enabled ? onSend : null,
+          icon: const Icon(Icons.send, color: Colors.white),
+          style: IconButton.styleFrom(
+            backgroundColor: enabled
+                ? AppTheme.primaryColor
+                : AppTheme.textSecondary,
+            padding: const EdgeInsets.all(12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _AttachmentActionRow extends StatelessWidget {
+  final bool enabled;
+  final VoidCallback onPickImages;
+
+  const _AttachmentActionRow({
+    super.key,
+    required this.enabled,
+    required this.onPickImages,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
+    return Row(
+      children: [
+        FilledButton.icon(
+          onPressed: enabled ? onPickImages : null,
+          icon: const Icon(Icons.image_outlined),
+          label: Text(l10n.callChatImageAttachmentAction),
+          style: FilledButton.styleFrom(
+            backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.16),
+            foregroundColor: AppTheme.primaryColor,
+            disabledBackgroundColor: AppTheme.textSecondary.withValues(
+              alpha: 0.12,
+            ),
+            disabledForegroundColor: AppTheme.textSecondary.withValues(
+              alpha: 0.6,
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _AttachmentPreviewTray extends StatelessWidget {
+  final List<_PendingAttachment> attachments;
+  final ValueChanged<String> onRemove;
+
+  const _AttachmentPreviewTray({
+    required this.attachments,
+    required this.onRemove,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 88,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: attachments.length,
+        separatorBuilder: (context, index) => const SizedBox(width: 10),
+        itemBuilder: (context, index) {
+          final attachment = attachments[index];
+          return _ImageAttachmentPreviewCard(
+            attachment: attachment,
+            onRemove: () => onRemove(attachment.id),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _ImageAttachmentPreviewCard extends StatelessWidget {
+  final _PendingAttachment attachment;
+  final VoidCallback onRemove;
+
+  const _ImageAttachmentPreviewCard({
+    required this.attachment,
+    required this.onRemove,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
+    return Semantics(
+      label: l10n.callChatSelectedImageAttachment(attachment.name),
+      child: SizedBox(
+        width: 88,
+        height: 88,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Positioned.fill(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: AppTheme.backgroundStart,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: AppTheme.textSecondary.withValues(alpha: 0.2),
+                    ),
+                  ),
+                  child: Image.memory(
+                    attachment.bytes,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Icon(
+                        Icons.image_not_supported_outlined,
+                        color: AppTheme.textSecondary.withValues(alpha: 0.7),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: -6,
+              right: -6,
+              child: IconButton.filled(
+                tooltip: l10n.callChatRemoveImageAttachmentTooltip,
+                onPressed: onRemove,
+                icon: const Icon(Icons.close, size: 16),
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.black.withValues(alpha: 0.72),
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(28, 28),
+                  fixedSize: const Size(28, 28),
+                  padding: EdgeInsets.zero,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

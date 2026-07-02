@@ -822,6 +822,58 @@
   "@callChatInputHintDisabled": {
     "description": "Placeholder text in the disabled chat input field when the call is not active."
   },
+  "callChatAddAttachmentTooltip": "Add attachment",
+  "@callChatAddAttachmentTooltip": {
+    "description": "Tooltip for the plus button that opens the inline attachment action row in the call chat input."
+  },
+  "callChatCloseAttachmentMenuTooltip": "Close attachment menu",
+  "@callChatCloseAttachmentMenuTooltip": {
+    "description": "Tooltip for the close button that returns the call chat input from attachment action mode to normal text input mode."
+  },
+  "callChatImageAttachmentAction": "Image",
+  "@callChatImageAttachmentAction": {
+    "description": "Inline attachment action label for choosing image files in the call chat input."
+  },
+  "callChatRemoveImageAttachmentTooltip": "Remove image",
+  "@callChatRemoveImageAttachmentTooltip": {
+    "description": "Tooltip for the button that removes a selected image attachment preview from the call chat input."
+  },
+  "callChatSelectedImageAttachment": "Selected image: {name}",
+  "@callChatSelectedImageAttachment": {
+    "description": "Accessibility label for a selected image attachment preview in the call chat input.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "description": "Selected image file name."
+      }
+    }
+  },
+  "callChatImageAttachmentLimitExceeded": "You can attach up to {count} images",
+  "@callChatImageAttachmentLimitExceeded": {
+    "description": "Snackbar shown when the user selects more images than the call chat input allows.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "description": "Maximum number of image attachments allowed."
+      }
+    }
+  },
+  "callChatImageUnsupportedFormat": "Only PNG and JPEG images are supported",
+  "@callChatImageUnsupportedFormat": {
+    "description": "Snackbar shown when the user selects an unsupported image format such as HEIC, WebP, or GIF."
+  },
+  "callChatImageTooLarge": "Images must be 8 MiB or smaller",
+  "@callChatImageTooLarge": {
+    "description": "Snackbar shown when the user selects an image that exceeds the first-version attachment size limit."
+  },
+  "callChatImageReadFailed": "Could not read one or more images",
+  "@callChatImageReadFailed": {
+    "description": "Snackbar shown when the app cannot read selected image bytes for preview."
+  },
+  "callChatImagePickFailed": "Could not select images",
+  "@callChatImagePickFailed": {
+    "description": "Snackbar shown when opening or using the image picker fails."
+  },
   "callChatImageDetail": "Detail: {detail}",
   "@callChatImageDetail": {
     "description": "Supplementary label shown under an image attachment inside the chat pane, indicating the provider-supplied image detail level.",
