@@ -80,8 +80,7 @@ void main() {
           type: RealtimeThreadItemType.functionCallOutput,
           status: RealtimeThreadItemStatus.completed,
           callId: 'call-1',
-          output:
-              '{"success":false,"error":"Text agent query request failed"}',
+          output: '{"success":false,"error":"Text agent query request failed"}',
           toolOutputDisposition: RealtimeToolOutputDisposition.error,
           toolErrorMessage: 'Text agent query request failed',
         ),

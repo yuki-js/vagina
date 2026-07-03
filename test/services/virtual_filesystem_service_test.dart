@@ -20,7 +20,8 @@ void main() {
     test('does not enforce client-side file-size or quota limits', () async {
       final repository = _RecordingVirtualFilesystemRepository();
       final service = VirtualFilesystemService(repository);
-      final oversized = 'x' * (VirtualFilesystemService.defaultMaxPathLength * 4096);
+      final oversized =
+          'x' * (VirtualFilesystemService.defaultMaxPathLength * 4096);
 
       await service.write(VirtualFile(path: '/huge.txt', content: oversized));
 
@@ -32,7 +33,9 @@ void main() {
       final service = VirtualFilesystemService(repository);
 
       expect(
-        () => service.write(const VirtualFile(path: 'relative.txt', content: 'x')),
+        () => service.write(
+          const VirtualFile(path: 'relative.txt', content: 'x'),
+        ),
         throwsA(isA<VirtualFilesystemException>()),
       );
       expect(repository.writtenFiles, isEmpty);
