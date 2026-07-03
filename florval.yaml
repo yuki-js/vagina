@@ -1,5 +1,5 @@
 florval:
-  schema_path: ../server/build/openapi-compiled/openapi.yaml
+  schema_path: openapi/openapi.yaml
   output_directory: lib/api/generated
 
   client:
