@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:vagina/interfaces/virtual_filesystem_repository.dart';
 import 'package:vagina/models/virtual_file.dart';
 
@@ -12,26 +10,22 @@ class VirtualFilesystemException implements Exception {
   String toString() => 'VirtualFilesystemException: $message';
 }
 
-/// Service layer for filesystem validation, normalization, and quotas.
+/// Client-side VFS facade.
+///
+/// Persistent VFS policy is server-authoritative. This service keeps only cheap
+/// path normalization checks needed by the in-call UI/tool host before making
+/// repository calls; size, quota, and final conflict semantics belong to the API.
 class VirtualFilesystemService {
-  static const int defaultMaxFileSizeBytes = 1024 * 1024; // 1 MB
-  static const int defaultMaxTotalSizeBytes = 100 * 1024 * 1024; // 100 MB
   static const int defaultMaxPathLength = 512;
 
   final VirtualFilesystemRepository _repository;
-  final int _maxFileSizeBytes;
-  final int _maxTotalSizeBytes;
   final int _maxPathLength;
   final Set<String> _systemPaths = <String>{};
 
   VirtualFilesystemService(
     this._repository, {
-    int maxFileSizeBytes = defaultMaxFileSizeBytes,
-    int maxTotalSizeBytes = defaultMaxTotalSizeBytes,
     int maxPathLength = defaultMaxPathLength,
-  }) : _maxFileSizeBytes = maxFileSizeBytes,
-       _maxTotalSizeBytes = maxTotalSizeBytes,
-       _maxPathLength = maxPathLength;
+  }) : _maxPathLength = maxPathLength;
 
   Future<void> initialize() async {
     await _repository.initialize();
@@ -54,25 +48,6 @@ class VirtualFilesystemService {
 
   Future<void> write(VirtualFile file) async {
     final normalizedPath = _validateFilePath(file.path);
-    final contentSize = _byteSize(file.content);
-
-    if (contentSize > _maxFileSizeBytes) {
-      throw VirtualFilesystemException(
-        'File too large (max $_maxFileSizeBytes bytes)',
-      );
-    }
-
-    final current = await _repository.read(normalizedPath);
-    final currentSize = current == null ? 0 : _byteSize(current.content);
-    final totalSize = await _getTotalSizeBytes();
-    final nextTotalSize = totalSize - currentSize + contentSize;
-
-    if (nextTotalSize > _maxTotalSizeBytes) {
-      throw VirtualFilesystemException(
-        'Filesystem quota exceeded (max $_maxTotalSizeBytes bytes)',
-      );
-    }
-
     await _repository.write(
       VirtualFile(path: normalizedPath, content: file.content),
     );
@@ -111,24 +86,6 @@ class VirtualFilesystemService {
   Future<List<String>> list(String path, {bool recursive = false}) async {
     final normalizedPath = _validatePath(path);
     return _repository.list(normalizedPath, recursive: recursive);
-  }
-
-  int _byteSize(String value) => utf8.encode(value).length;
-
-  Future<int> _getTotalSizeBytes() async {
-    final relativePaths = await _repository.list('/', recursive: true);
-    var total = 0;
-
-    for (final relativePath in relativePaths) {
-      final absolutePath = '/$relativePath';
-      final file = await _repository.read(absolutePath);
-      if (file == null) {
-        continue;
-      }
-      total += _byteSize(file.content);
-    }
-
-    return total;
   }
 
   String _validateFilePath(String path) {
