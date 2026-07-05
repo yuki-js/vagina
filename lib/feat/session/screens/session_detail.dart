@@ -1,9 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/feat/call/widgets/realtime_thread_renderer.dart';
+import 'package:vagina/feat/session/session_formatters.dart';
 import 'package:vagina/feat/session/state/session_history_providers.dart';
 import 'package:vagina/l10n/app_localizations.dart';
 import 'package:vagina/models/call_session.dart';
@@ -174,16 +174,16 @@ class _SessionMetadataHeader extends StatelessWidget {
           const SizedBox(height: 12),
           _MetadataRow(
             label: l10n.sessionDetailStartTime,
-            value: _formatDateTime(context, session.startedAt),
+            value: formatSessionDateTime(context, session.startedAt),
           ),
           if (session.endedAt != null)
             _MetadataRow(
               label: l10n.sessionDetailEndTime,
-              value: _formatDateTime(context, session.endedAt!),
+              value: formatSessionDateTime(context, session.endedAt!),
             ),
           _MetadataRow(
             label: l10n.sessionDetailCallDuration,
-            value: _formatDuration(context, session.duration),
+            value: formatSessionDuration(context, session.duration),
           ),
           _MetadataRow(
             label: l10n.sessionDetailMessageCount,
@@ -204,18 +204,6 @@ class _SessionMetadataHeader extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  String _formatDateTime(BuildContext context, DateTime value) {
-    final locale = AppLocalizations.of(context).localeName;
-    return DateFormat.yMd(locale).add_Hms().format(value);
-  }
-
-  String _formatDuration(BuildContext context, int seconds) {
-    final l10n = AppLocalizations.of(context);
-    final minutes = seconds ~/ 60;
-    final remainingSeconds = seconds % 60;
-    return l10n.sessionDetailDurationValue(minutes, remainingSeconds);
   }
 }
 

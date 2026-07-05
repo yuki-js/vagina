@@ -1,4 +1,5 @@
 import 'package:vagina/api/api_exception.dart';
+import 'package:vagina/repositories/api_repository_error.dart';
 import 'package:vagina/api/generated/models/list_text_agent_models_success_body_item.dart'
     as api_model;
 import 'package:vagina/api/generated/responses/list_text_agent_models_response.dart';
@@ -31,7 +32,7 @@ class ApiTextAgentModelRepository implements TextAgentModelRepository {
           operation: 'List text agent models',
         );
       case ListTextAgentModelsResponseUnknown(:final statusCode, :final body):
-        throw _unknownResponseError(
+        throw unknownApiResponseError(
           operation: 'List text agent models',
           statusCode: statusCode,
           body: body,
@@ -47,30 +48,5 @@ class ApiTextAgentModelRepository implements TextAgentModelRepository {
       displayName: item.displayName,
       isDefault: item.isDefault,
     );
-  }
-
-  ApiException _unknownResponseError({
-    required String operation,
-    required int statusCode,
-    required dynamic body,
-  }) {
-    return ApiException.unknown(
-      _extractMessage(
-        body,
-        fallback: '$operation failed (status: $statusCode).',
-      ),
-      statusCode: statusCode,
-      operation: operation,
-    );
-  }
-
-  String _extractMessage(dynamic body, {required String fallback}) {
-    if (body is Map) {
-      final message = body['message'];
-      if (message is String && message.trim().isNotEmpty) {
-        return message;
-      }
-    }
-    return fallback;
   }
 }

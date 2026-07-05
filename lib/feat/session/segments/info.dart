@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:logging/logging.dart';
 import 'package:vagina/core/app/app_container.dart';
+import 'package:vagina/feat/session/session_formatters.dart';
 import 'package:vagina/models/call_session.dart';
 import 'package:vagina/models/speed_dial.dart';
 import 'package:vagina/core/theme/app_theme.dart';
@@ -36,16 +36,16 @@ class SessionDetailInfoSegment extends ConsumerWidget {
               _buildInfoCard([
                 _buildInfoRow(
                   l10n.sessionDetailStartTime,
-                  _formatDateTime(context, session.startedAt),
+                  formatSessionDateTime(context, session.startedAt),
                 ),
                 if (session.endedAt != null)
                   _buildInfoRow(
                     l10n.sessionDetailEndTime,
-                    _formatDateTime(context, session.endedAt!),
+                    formatSessionDateTime(context, session.endedAt!),
                   ),
                 _buildInfoRow(
                   l10n.sessionDetailCallDuration,
-                  _formatDuration(context, session.duration),
+                  formatSessionDuration(context, session.duration),
                 ),
                 _buildInfoRow(
                   l10n.sessionDetailMessageCount,
@@ -276,17 +276,5 @@ class SessionDetailInfoSegment extends ConsumerWidget {
         ),
       ),
     );
-  }
-
-  String _formatDateTime(BuildContext context, DateTime value) {
-    final locale = AppLocalizations.of(context).localeName;
-    return DateFormat.yMd(locale).add_Hms().format(value);
-  }
-
-  String _formatDuration(BuildContext context, int seconds) {
-    final l10n = AppLocalizations.of(context);
-    final minutes = seconds ~/ 60;
-    final remainingSeconds = seconds % 60;
-    return l10n.sessionDetailDurationValue(minutes, remainingSeconds);
   }
 }

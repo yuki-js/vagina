@@ -3,27 +3,20 @@ import 'dart:convert';
 import 'package:vagina/feat/call/services/subservice.dart';
 import 'package:vagina/interfaces/virtual_filesystem_repository.dart';
 import 'package:vagina/models/virtual_file.dart';
-
-class VirtualFilesystemException implements Exception {
-  final String message;
-
-  VirtualFilesystemException(this.message);
-
-  @override
-  String toString() => 'VirtualFilesystemException: $message';
-}
+import 'package:vagina/services/virtual_filesystem_service.dart'
+    show VirtualFilesystemException, VirtualFilesystemPolicy;
 
 /// Session-scoped filesystem backing service for a single call.
 final class VirtualFilesystemService extends SubService {
   static const int defaultMaxFileSizeBytes = 1024 * 1024; // 1 MB
   static const int defaultMaxTotalSizeBytes = 100 * 1024 * 1024; // 100 MB
-  static const int defaultMaxPathLength = 512;
+  static const int defaultMaxPathLength =
+      VirtualFilesystemPolicy.defaultMaxPathLength;
 
   final VirtualFilesystemRepository _repository;
   final int _maxFileSizeBytes;
   final int _maxTotalSizeBytes;
-  final int _maxPathLength;
-  final Set<String> _systemPaths = <String>{};
+  final VirtualFilesystemPolicy _policy;
 
   VirtualFilesystemService(
     this._repository, {
@@ -32,7 +25,7 @@ final class VirtualFilesystemService extends SubService {
     int maxPathLength = defaultMaxPathLength,
   }) : _maxFileSizeBytes = maxFileSizeBytes,
        _maxTotalSizeBytes = maxTotalSizeBytes,
-       _maxPathLength = maxPathLength;
+       _policy = VirtualFilesystemPolicy(maxPathLength: maxPathLength);
 
   @override
   Future<void> start() async {
@@ -43,30 +36,28 @@ final class VirtualFilesystemService extends SubService {
   @override
   Future<void> dispose() async {
     await super.dispose();
-    _systemPaths.clear();
+    _policy.clearReservedPaths();
   }
 
   void reservePath(String path) {
     _ensureReady();
-    final normalizedPath = _normalizeAndValidatePath(path);
-    _systemPaths.add(normalizedPath);
+    _policy.reservePath(path);
   }
 
   void unreservePath(String path) {
     _ensureReady();
-    final normalizedPath = _normalizeAndValidatePath(path);
-    _systemPaths.remove(normalizedPath);
+    _policy.unreservePath(path);
   }
 
   Future<VirtualFile?> read(String path) async {
     _ensureReady();
-    final normalizedPath = _validateFilePath(path);
+    final normalizedPath = _policy.validateFilePath(path);
     return _repository.read(normalizedPath);
   }
 
   Future<void> write(VirtualFile file) async {
     _ensureReady();
-    final normalizedPath = _validateFilePath(file.path);
+    final normalizedPath = _policy.validateFilePath(file.path);
     final contentSize = _byteSize(file.content);
 
     if (contentSize > _maxFileSizeBytes) {
@@ -93,14 +84,14 @@ final class VirtualFilesystemService extends SubService {
 
   Future<void> delete(String path) async {
     _ensureReady();
-    final normalizedPath = _validateFilePath(path);
+    final normalizedPath = _policy.validateFilePath(path);
     await _repository.delete(normalizedPath);
   }
 
   Future<void> move(String fromPath, String toPath) async {
     _ensureReady();
-    final normalizedFromPath = _validateFilePath(fromPath);
-    final normalizedToPath = _validateFilePath(toPath);
+    final normalizedFromPath = _policy.validateFilePath(fromPath);
+    final normalizedToPath = _policy.validateFilePath(toPath);
 
     if (normalizedFromPath == normalizedToPath) {
       return;
@@ -125,7 +116,7 @@ final class VirtualFilesystemService extends SubService {
 
   Future<List<String>> list(String path, {bool recursive = false}) async {
     _ensureReady();
-    final normalizedPath = _validatePath(path);
+    final normalizedPath = _policy.validatePath(path);
     return _repository.list(normalizedPath, recursive: recursive);
   }
 
@@ -145,81 +136,6 @@ final class VirtualFilesystemService extends SubService {
     }
 
     return total;
-  }
-
-  String _validateFilePath(String path) {
-    final normalizedPath = _validatePath(path);
-    if (normalizedPath == '/') {
-      throw VirtualFilesystemException('Path must target a file: $path');
-    }
-    return normalizedPath;
-  }
-
-  String _validatePath(String path) {
-    final normalizedPath = _normalizeAndValidatePath(path);
-    _checkReservedPath(normalizedPath);
-
-    return normalizedPath;
-  }
-
-  String _normalizeAndValidatePath(String path) {
-    if (path.length > _maxPathLength) {
-      throw VirtualFilesystemException(
-        'Path too long (max $_maxPathLength chars)',
-      );
-    }
-
-    if (path.contains('\x00')) {
-      throw VirtualFilesystemException('Path contains null byte');
-    }
-
-    final normalizedPath = _normalizePath(path);
-    return normalizedPath;
-  }
-
-  String _normalizePath(String path) {
-    if (!path.startsWith('/')) {
-      throw VirtualFilesystemException('Path must be absolute: $path');
-    }
-
-    var normalizedInput = path;
-    if (normalizedInput != '/' && normalizedInput.endsWith('/')) {
-      normalizedInput = normalizedInput.substring(
-        0,
-        normalizedInput.length - 1,
-      );
-    }
-
-    final parts = normalizedInput
-        .split('/')
-        .where((part) => part.isNotEmpty && part != '.')
-        .toList();
-
-    final normalizedParts = <String>[];
-    for (final part in parts) {
-      if (part == '..') {
-        if (normalizedParts.isNotEmpty) {
-          normalizedParts.removeLast();
-        }
-      } else {
-        normalizedParts.add(part);
-      }
-    }
-
-    if (normalizedParts.isEmpty) {
-      return '/';
-    }
-    return '/${normalizedParts.join('/')}';
-  }
-
-  void _checkReservedPath(String path) {
-    if (_systemPaths.contains(path) ||
-        path == '/system' ||
-        path.startsWith('/system/') ||
-        path == '/tmp' ||
-        path.startsWith('/tmp/')) {
-      throw VirtualFilesystemException('Access denied: reserved path');
-    }
   }
 
   void _ensureReady() {

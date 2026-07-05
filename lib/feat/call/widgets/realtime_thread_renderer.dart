@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/feat/call/models/realtime/realtime_thread.dart';
 import 'package:vagina/feat/call/models/realtime/tool_call_resolution.dart';
+import 'package:vagina/core/widgets/tool_badge.dart';
 import 'package:vagina/feat/call/services/realtime_service.dart';
 import 'package:vagina/l10n/app_localizations.dart';
 
@@ -186,7 +187,7 @@ class _ToolCallBubble extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
           const SizedBox(width: 40),
-          _ToolBadge(
+          ToolBadge(
             icon: details.badgeIcon,
             label: details.displayTitle(AppLocalizations.of(context)),
             color: details.statusColor,
@@ -317,68 +318,6 @@ class _RealtimeThreadBubble extends StatelessWidget {
     }
 
     return widgets;
-  }
-}
-
-class _ToolBadge extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-  final bool active;
-  final VoidCallback? onTap;
-
-  const _ToolBadge({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.active,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final content = Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.25)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 12, color: color),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              color: color,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(width: 4),
-          if (active)
-            SizedBox(
-              width: 10,
-              height: 10,
-              child: CircularProgressIndicator(strokeWidth: 1.5, color: color),
-            )
-          else if (onTap != null)
-            Icon(
-              Icons.chevron_right,
-              size: 12,
-              color: color.withValues(alpha: 0.7),
-            ),
-        ],
-      ),
-    );
-
-    if (onTap == null) {
-      return content;
-    }
-
-    return GestureDetector(onTap: onTap, child: content);
   }
 }
 

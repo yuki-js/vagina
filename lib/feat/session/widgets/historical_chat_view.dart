@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:vagina/core/theme/app_theme.dart';
+import 'package:vagina/core/widgets/tool_badge.dart';
 import 'package:intl/intl.dart';
 import 'package:vagina/l10n/app_localizations.dart';
 
@@ -190,7 +191,7 @@ class _ToolCallItem extends StatelessWidget {
                   spacing: 8,
                   runSpacing: 8,
                   children: toolCalls.map((toolCall) {
-                    return _ToolBadge(
+                    return ToolBadge.fromStatus(
                       name:
                           toolCall['name'] as String? ??
                           l10n.callChatToolFallbackName,
@@ -231,74 +232,6 @@ class _ToolCallItem extends StatelessWidget {
   }
 }
 
-/// Tool badge widget matching CallService design
-class _ToolBadge extends StatelessWidget {
-  final String name;
-  final String status;
-  final VoidCallback onTap;
-
-  const _ToolBadge({
-    required this.name,
-    required this.status,
-    required this.onTap,
-  });
-
-  Color get _statusColor {
-    return switch (status) {
-      'executing' || 'generating' => AppTheme.secondaryColor,
-      'completed' => Colors.green,
-      'error' => Colors.red,
-      'cancelled' => Colors.grey,
-      _ => Colors.green,
-    };
-  }
-
-  IconData get _icon {
-    return switch (status) {
-      'error' => Icons.error_outline,
-      'cancelled' => Icons.cancel_outlined,
-      _ => Icons.build,
-    };
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: _statusColor.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: _statusColor.withValues(alpha: 0.25)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(_icon, size: 12, color: _statusColor),
-            const SizedBox(width: 4),
-            Text(
-              name,
-              style: TextStyle(
-                fontSize: 11,
-                color: _statusColor,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(width: 4),
-            Icon(
-              Icons.chevron_right,
-              size: 12,
-              color: _statusColor.withValues(alpha: 0.7),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Tool details bottom sheet
 class _ToolDetailsSheet extends StatelessWidget {
   final Map<String, dynamic> toolCall;
 

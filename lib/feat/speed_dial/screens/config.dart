@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vagina/core/app/app_container.dart';
 import 'package:vagina/core/theme/app_theme.dart';
-import 'package:vagina/feat/shared/widgets/tool_config_section.dart';
+import 'package:vagina/core/widgets/tool_config_section.dart';
 import 'package:vagina/feat/speed_dial/state/speed_dial_providers.dart';
 import 'package:vagina/feat/speed_dial/widgets/emoji_picker.dart';
 import 'package:vagina/feat/speed_dial/widgets/reasoning_effort_slider.dart';

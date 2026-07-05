@@ -1,5 +1,6 @@
 import 'package:logging/logging.dart';
 import 'package:vagina/api/api_exception.dart';
+import 'package:vagina/repositories/api_repository_error.dart';
 import 'package:vagina/api/generated/core/json_optional.dart';
 import 'package:vagina/api/generated/models/text_agent.dart' as api_model;
 import 'package:vagina/api/generated/models/text_agent_write_request.dart';
@@ -61,7 +62,7 @@ class ApiTextAgentRepository implements TextAgentRepository {
           operation: 'Create text agent',
         );
       case CreateTextAgentResponseUnknown(:final statusCode, :final body):
-        throw _unknownResponseError(
+        throw unknownApiResponseError(
           operation: 'Create text agent',
           statusCode: statusCode,
           body: body,
@@ -89,7 +90,7 @@ class ApiTextAgentRepository implements TextAgentRepository {
           operation: 'List text agents',
         );
       case ListTextAgentsResponseUnknown(:final statusCode, :final body):
-        throw _unknownResponseError(
+        throw unknownApiResponseError(
           operation: 'List text agents',
           statusCode: statusCode,
           body: body,
@@ -119,7 +120,7 @@ class ApiTextAgentRepository implements TextAgentRepository {
           operation: 'Get text agent',
         );
       case GetTextAgentResponseUnknown(:final statusCode, :final body):
-        throw _unknownResponseError(
+        throw unknownApiResponseError(
           operation: 'Get text agent',
           statusCode: statusCode,
           body: body,
@@ -165,7 +166,7 @@ class ApiTextAgentRepository implements TextAgentRepository {
           operation: 'Update text agent',
         );
       case UpdateTextAgentResponseUnknown(:final statusCode, :final body):
-        throw _unknownResponseError(
+        throw unknownApiResponseError(
           operation: 'Update text agent',
           statusCode: statusCode,
           body: body,
@@ -197,7 +198,7 @@ class ApiTextAgentRepository implements TextAgentRepository {
           operation: 'Delete text agent',
         );
       case DeleteTextAgentResponseUnknown(:final statusCode, :final body):
-        throw _unknownResponseError(
+        throw unknownApiResponseError(
           operation: 'Delete text agent',
           statusCode: statusCode,
           body: body,
@@ -212,37 +213,12 @@ class ApiTextAgentRepository implements TextAgentRepository {
       prompt: textAgent.prompt,
       description: textAgent.description,
       textModelId: textAgent.textModelId,
-      enabledTools: _boolMap(textAgent.enabledTools),
+      enabledTools: boolMapFromDynamic(textAgent.enabledTools),
       createdAt: textAgent.createdAt,
     );
   }
 
-  Map<String, bool> _boolMap(Map<String, dynamic> value) {
+  Map<String, bool> boolMapFromDynamic(Map<String, dynamic> value) {
     return value.map((key, value) => MapEntry(key, value == true));
-  }
-
-  ApiException _unknownResponseError({
-    required String operation,
-    required int statusCode,
-    required dynamic body,
-  }) {
-    return ApiException.unknown(
-      _extractMessage(
-        body,
-        fallback: '$operation failed (status: $statusCode).',
-      ),
-      statusCode: statusCode,
-      operation: operation,
-    );
-  }
-
-  String _extractMessage(dynamic body, {required String fallback}) {
-    if (body is Map) {
-      final message = body['message'];
-      if (message is String && message.trim().isNotEmpty) {
-        return message;
-      }
-    }
-    return fallback;
   }
 }

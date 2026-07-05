@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vagina/core/app/app_container.dart';
 import 'package:vagina/core/theme/app_theme.dart';
-import 'package:vagina/feat/shared/widgets/tool_config_section.dart';
+import 'package:vagina/core/widgets/tool_config_section.dart';
 import 'package:vagina/feat/text_agents/state/text_agent_providers.dart';
 import 'package:vagina/l10n/app_localizations.dart';
 import 'package:vagina/models/text_agent_definition.dart';

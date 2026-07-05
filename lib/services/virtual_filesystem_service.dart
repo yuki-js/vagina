@@ -10,103 +10,47 @@ class VirtualFilesystemException implements Exception {
   String toString() => 'VirtualFilesystemException: $message';
 }
 
-/// Client-side VFS facade.
-///
-/// Persistent VFS policy is server-authoritative. This service keeps only cheap
-/// path normalization checks needed by the in-call UI/tool host before making
-/// repository calls; size, quota, and final conflict semantics belong to the API.
-class VirtualFilesystemService {
+final class VirtualFilesystemPolicy {
   static const int defaultMaxPathLength = 512;
 
-  final VirtualFilesystemRepository _repository;
-  final int _maxPathLength;
-  final Set<String> _systemPaths = <String>{};
+  final int maxPathLength;
+  final Set<String> _reservedPaths = <String>{};
 
-  VirtualFilesystemService(
-    this._repository, {
-    int maxPathLength = defaultMaxPathLength,
-  }) : _maxPathLength = maxPathLength;
-
-  Future<void> initialize() async {
-    await _repository.initialize();
-  }
+  VirtualFilesystemPolicy({this.maxPathLength = defaultMaxPathLength});
 
   void reservePath(String path) {
-    final normalizedPath = _normalizeAndValidatePath(path);
-    _systemPaths.add(normalizedPath);
+    final normalizedPath = normalizeAndValidatePath(path);
+    _reservedPaths.add(normalizedPath);
   }
 
   void unreservePath(String path) {
-    final normalizedPath = _normalizeAndValidatePath(path);
-    _systemPaths.remove(normalizedPath);
+    final normalizedPath = normalizeAndValidatePath(path);
+    _reservedPaths.remove(normalizedPath);
   }
 
-  Future<VirtualFile?> read(String path) async {
-    final normalizedPath = _validateFilePath(path);
-    return _repository.read(normalizedPath);
+  void clearReservedPaths() {
+    _reservedPaths.clear();
   }
 
-  Future<void> write(VirtualFile file) async {
-    final normalizedPath = _validateFilePath(file.path);
-    await _repository.write(
-      VirtualFile(path: normalizedPath, content: file.content),
-    );
-  }
-
-  Future<void> delete(String path) async {
-    final normalizedPath = _validateFilePath(path);
-    await _repository.delete(normalizedPath);
-  }
-
-  Future<void> move(String fromPath, String toPath) async {
-    final normalizedFromPath = _validateFilePath(fromPath);
-    final normalizedToPath = _validateFilePath(toPath);
-
-    if (normalizedFromPath == normalizedToPath) {
-      return;
-    }
-
-    final fromFile = await _repository.read(normalizedFromPath);
-    if (fromFile == null) {
-      throw VirtualFilesystemException(
-        'Source file not found: $normalizedFromPath',
-      );
-    }
-
-    final toFile = await _repository.read(normalizedToPath);
-    if (toFile != null) {
-      throw VirtualFilesystemException(
-        'Destination already exists: $normalizedToPath',
-      );
-    }
-
-    await _repository.move(normalizedFromPath, normalizedToPath);
-  }
-
-  Future<List<String>> list(String path, {bool recursive = false}) async {
-    final normalizedPath = _validatePath(path);
-    return _repository.list(normalizedPath, recursive: recursive);
-  }
-
-  String _validateFilePath(String path) {
-    final normalizedPath = _validatePath(path);
+  String validateFilePath(String path) {
+    final normalizedPath = validatePath(path);
     if (normalizedPath == '/') {
       throw VirtualFilesystemException('Path must target a file: $path');
     }
     return normalizedPath;
   }
 
-  String _validatePath(String path) {
-    final normalizedPath = _normalizeAndValidatePath(path);
-    _checkReservedPath(normalizedPath);
+  String validatePath(String path) {
+    final normalizedPath = normalizeAndValidatePath(path);
+    checkReservedPath(normalizedPath);
 
     return normalizedPath;
   }
 
-  String _normalizeAndValidatePath(String path) {
-    if (path.length > _maxPathLength) {
+  String normalizeAndValidatePath(String path) {
+    if (path.length > maxPathLength) {
       throw VirtualFilesystemException(
-        'Path too long (max $_maxPathLength chars)',
+        'Path too long (max $maxPathLength chars)',
       );
     }
 
@@ -114,11 +58,10 @@ class VirtualFilesystemService {
       throw VirtualFilesystemException('Path contains null byte');
     }
 
-    final normalizedPath = _normalizePath(path);
-    return normalizedPath;
+    return normalizePath(path);
   }
 
-  String _normalizePath(String path) {
+  String normalizePath(String path) {
     if (!path.startsWith('/')) {
       throw VirtualFilesystemException('Path must be absolute: $path');
     }
@@ -153,13 +96,90 @@ class VirtualFilesystemService {
     return '/${normalizedParts.join('/')}';
   }
 
-  void _checkReservedPath(String path) {
-    if (_systemPaths.contains(path) ||
+  void checkReservedPath(String path) {
+    if (_reservedPaths.contains(path) ||
         path == '/system' ||
         path.startsWith('/system/') ||
         path == '/tmp' ||
         path.startsWith('/tmp/')) {
       throw VirtualFilesystemException('Access denied: reserved path');
     }
+  }
+}
+
+/// Client-side VFS facade.
+///
+/// Persistent VFS policy is server-authoritative. This service keeps only cheap
+/// path normalization checks needed by the in-call UI/tool host before making
+/// repository calls; size, quota, and final conflict semantics belong to the API.
+class VirtualFilesystemService {
+  static const int defaultMaxPathLength =
+      VirtualFilesystemPolicy.defaultMaxPathLength;
+
+  final VirtualFilesystemRepository _repository;
+  final VirtualFilesystemPolicy _policy;
+
+  VirtualFilesystemService(
+    this._repository, {
+    int maxPathLength = defaultMaxPathLength,
+  }) : _policy = VirtualFilesystemPolicy(maxPathLength: maxPathLength);
+
+  Future<void> initialize() async {
+    await _repository.initialize();
+  }
+
+  void reservePath(String path) {
+    _policy.reservePath(path);
+  }
+
+  void unreservePath(String path) {
+    _policy.unreservePath(path);
+  }
+
+  Future<VirtualFile?> read(String path) async {
+    final normalizedPath = _policy.validateFilePath(path);
+    return _repository.read(normalizedPath);
+  }
+
+  Future<void> write(VirtualFile file) async {
+    final normalizedPath = _policy.validateFilePath(file.path);
+    await _repository.write(
+      VirtualFile(path: normalizedPath, content: file.content),
+    );
+  }
+
+  Future<void> delete(String path) async {
+    final normalizedPath = _policy.validateFilePath(path);
+    await _repository.delete(normalizedPath);
+  }
+
+  Future<void> move(String fromPath, String toPath) async {
+    final normalizedFromPath = _policy.validateFilePath(fromPath);
+    final normalizedToPath = _policy.validateFilePath(toPath);
+
+    if (normalizedFromPath == normalizedToPath) {
+      return;
+    }
+
+    final fromFile = await _repository.read(normalizedFromPath);
+    if (fromFile == null) {
+      throw VirtualFilesystemException(
+        'Source file not found: $normalizedFromPath',
+      );
+    }
+
+    final toFile = await _repository.read(normalizedToPath);
+    if (toFile != null) {
+      throw VirtualFilesystemException(
+        'Destination already exists: $normalizedToPath',
+      );
+    }
+
+    await _repository.move(normalizedFromPath, normalizedToPath);
+  }
+
+  Future<List<String>> list(String path, {bool recursive = false}) async {
+    final normalizedPath = _policy.validatePath(path);
+    return _repository.list(normalizedPath, recursive: recursive);
   }
 }

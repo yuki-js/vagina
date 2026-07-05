@@ -1,4 +1,5 @@
 import 'package:vagina/api/api_exception.dart';
+import 'package:vagina/repositories/api_repository_error.dart';
 import 'package:vagina/api/generated/models/json_rpc_version.dart';
 import 'package:vagina/api/generated/models/vfs_method.dart';
 import 'package:vagina/api/generated/models/vfs_rpc_params.dart';
@@ -56,7 +57,7 @@ class ApiVirtualFilesystemRepository implements VirtualFilesystemRepository {
       case VfsRpcResponseServerError(:final data):
         throw ApiException.serverError(data.message, operation: 'VFS read');
       case VfsRpcResponseUnknown(:final statusCode, :final body):
-        throw _unknownResponseError(
+        throw unknownApiResponseError(
           operation: 'VFS read',
           statusCode: statusCode,
           body: body,
@@ -100,7 +101,7 @@ class ApiVirtualFilesystemRepository implements VirtualFilesystemRepository {
       case VfsRpcResponseServerError(:final data):
         throw ApiException.serverError(data.message, operation: 'VFS delete');
       case VfsRpcResponseUnknown(:final statusCode, :final body):
-        throw _unknownResponseError(
+        throw unknownApiResponseError(
           operation: 'VFS delete',
           statusCode: statusCode,
           body: body,
@@ -154,7 +155,7 @@ class ApiVirtualFilesystemRepository implements VirtualFilesystemRepository {
       case VfsRpcResponseServerError(:final data):
         throw ApiException.serverError(data.message, operation: 'VFS RPC');
       case VfsRpcResponseUnknown(:final statusCode, :final body):
-        throw _unknownResponseError(
+        throw unknownApiResponseError(
           operation: 'VFS RPC',
           statusCode: statusCode,
           body: body,
@@ -173,30 +174,5 @@ class ApiVirtualFilesystemRepository implements VirtualFilesystemRepository {
       method: method,
       params: params,
     );
-  }
-
-  ApiException _unknownResponseError({
-    required String operation,
-    required int statusCode,
-    required dynamic body,
-  }) {
-    return ApiException.unknown(
-      _extractMessage(
-        body,
-        fallback: '$operation failed (status: $statusCode).',
-      ),
-      statusCode: statusCode,
-      operation: operation,
-    );
-  }
-
-  String _extractMessage(dynamic body, {required String fallback}) {
-    if (body is Map) {
-      final message = body['message'];
-      if (message is String && message.trim().isNotEmpty) {
-        return message;
-      }
-    }
-    return fallback;
   }
 }

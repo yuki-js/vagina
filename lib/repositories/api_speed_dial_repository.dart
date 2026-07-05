@@ -1,5 +1,6 @@
 import 'package:logging/logging.dart';
 import 'package:vagina/api/api_exception.dart';
+import 'package:vagina/repositories/api_repository_error.dart';
 import 'package:vagina/api/generated/core/json_optional.dart';
 import 'package:vagina/api/generated/models/speed_dial.dart' as api_model;
 import 'package:vagina/api/generated/models/speed_dial_create_request.dart';
@@ -68,7 +69,7 @@ class ApiSpeedDialRepository implements SpeedDialRepository {
           operation: 'Create speed dial',
         );
       case CreateSpeedDialResponseUnknown(:final statusCode, :final body):
-        throw _unknownResponseError(
+        throw unknownApiResponseError(
           operation: 'Create speed dial',
           statusCode: statusCode,
           body: body,
@@ -90,7 +91,7 @@ class ApiSpeedDialRepository implements SpeedDialRepository {
           operation: 'List speed dials',
         );
       case ListSpeedDialsResponseUnknown(:final statusCode, :final body):
-        throw _unknownResponseError(
+        throw unknownApiResponseError(
           operation: 'List speed dials',
           statusCode: statusCode,
           body: body,
@@ -114,7 +115,7 @@ class ApiSpeedDialRepository implements SpeedDialRepository {
           operation: 'Get speed dial',
         );
       case GetSpeedDialResponseUnknown(:final statusCode, :final body):
-        throw _unknownResponseError(
+        throw unknownApiResponseError(
           operation: 'Get speed dial',
           statusCode: statusCode,
           body: body,
@@ -161,7 +162,7 @@ class ApiSpeedDialRepository implements SpeedDialRepository {
           operation: 'Update speed dial',
         );
       case UpdateSpeedDialResponseUnknown(:final statusCode, :final body):
-        throw _unknownResponseError(
+        throw unknownApiResponseError(
           operation: 'Update speed dial',
           statusCode: statusCode,
           body: body,
@@ -188,7 +189,7 @@ class ApiSpeedDialRepository implements SpeedDialRepository {
           operation: 'Delete speed dial',
         );
       case DeleteSpeedDialResponseUnknown(:final statusCode, :final body):
-        throw _unknownResponseError(
+        throw unknownApiResponseError(
           operation: 'Delete speed dial',
           statusCode: statusCode,
           body: body,
@@ -205,14 +206,14 @@ class ApiSpeedDialRepository implements SpeedDialRepository {
       iconEmoji: speedDial.iconEmoji,
       voice: speedDial.voice,
       voiceAgentId: speedDial.voiceAgentId,
-      enabledTools: _boolMap(speedDial.enabledTools),
+      enabledTools: boolMapFromDynamic(speedDial.enabledTools),
       reasoningEffort: _reasoningEffortFromApi(speedDial.reasoningEffort),
       toolChoiceRequired: speedDial.toolChoiceRequired,
       createdAt: speedDial.createdAt,
     );
   }
 
-  Map<String, bool> _boolMap(Map<String, dynamic> value) {
+  Map<String, bool> boolMapFromDynamic(Map<String, dynamic> value) {
     return value.map((key, value) => MapEntry(key, value == true));
   }
 
@@ -247,30 +248,5 @@ class ApiSpeedDialRepository implements SpeedDialRepository {
       }
     }
     return api_update_reasoning.SpeedDialUpdateRequestReasoningEffort.off;
-  }
-
-  ApiException _unknownResponseError({
-    required String operation,
-    required int statusCode,
-    required dynamic body,
-  }) {
-    return ApiException.unknown(
-      _extractMessage(
-        body,
-        fallback: '$operation failed (status: $statusCode).',
-      ),
-      statusCode: statusCode,
-      operation: operation,
-    );
-  }
-
-  String _extractMessage(dynamic body, {required String fallback}) {
-    if (body is Map) {
-      final message = body['message'];
-      if (message is String && message.trim().isNotEmpty) {
-        return message;
-      }
-    }
-    return fallback;
   }
 }

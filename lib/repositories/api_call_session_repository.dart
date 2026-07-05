@@ -1,4 +1,5 @@
 import 'package:vagina/api/api_exception.dart';
+import 'package:vagina/repositories/api_repository_error.dart';
 import 'package:vagina/api/generated/models/bulk_delete_sessions_body.dart';
 import 'package:vagina/api/generated/models/get_session_success_body.dart'
     as api_model;
@@ -51,7 +52,7 @@ class ApiCallSessionRepository implements CallSessionRepository {
           operation: 'List sessions',
         );
       case ListSessionsResponseUnknown(:final statusCode, :final body):
-        throw _unknownResponseError(
+        throw unknownApiResponseError(
           operation: 'List sessions',
           statusCode: statusCode,
           body: body,
@@ -71,7 +72,7 @@ class ApiCallSessionRepository implements CallSessionRepository {
       case GetSessionResponseServerError(:final data):
         throw ApiException.serverError(data.message, operation: 'Get session');
       case GetSessionResponseUnknown(:final statusCode, :final body):
-        throw _unknownResponseError(
+        throw unknownApiResponseError(
           operation: 'Get session',
           statusCode: statusCode,
           body: body,
@@ -94,7 +95,7 @@ class ApiCallSessionRepository implements CallSessionRepository {
           operation: 'Delete session',
         );
       case DeleteSessionResponseUnknown(:final statusCode, :final body):
-        throw _unknownResponseError(
+        throw unknownApiResponseError(
           operation: 'Delete session',
           statusCode: statusCode,
           body: body,
@@ -122,7 +123,7 @@ class ApiCallSessionRepository implements CallSessionRepository {
           operation: 'Bulk delete sessions',
         );
       case BulkDeleteSessionsResponseUnknown(:final statusCode, :final body):
-        throw _unknownResponseError(
+        throw unknownApiResponseError(
           operation: 'Bulk delete sessions',
           statusCode: statusCode,
           body: body,
@@ -161,30 +162,5 @@ class ApiCallSessionRepository implements CallSessionRepository {
     } on TypeError catch (error) {
       throw SavedThreadCannotBeDisplayedException(error);
     }
-  }
-
-  ApiException _unknownResponseError({
-    required String operation,
-    required int statusCode,
-    required dynamic body,
-  }) {
-    return ApiException.unknown(
-      _extractMessage(
-        body,
-        fallback: '$operation failed (status: $statusCode).',
-      ),
-      statusCode: statusCode,
-      operation: operation,
-    );
-  }
-
-  String _extractMessage(dynamic body, {required String fallback}) {
-    if (body is Map) {
-      final message = body['message'];
-      if (message is String && message.trim().isNotEmpty) {
-        return message;
-      }
-    }
-    return fallback;
   }
 }
