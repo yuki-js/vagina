@@ -55,7 +55,7 @@ class _FileBrowserScreenState extends State<FileBrowserScreen> {
     });
 
     try {
-      final entries = await _fsService.list(_path);
+      final entries = List<String>.of(await _fsService.list(_path));
       if (!mounted) return;
       // Sort: directories first, then files, alphabetically within each group.
       entries.sort((a, b) {
