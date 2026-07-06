@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:vagina/services/tools_runtime/tool.dart';
@@ -5,6 +6,12 @@ import 'package:vagina/services/tools_runtime/tool_definition.dart';
 
 class QueryTextAgentTool extends Tool {
   static const String toolKeyName = 'query_text_agent';
+  static const Duration defaultAsyncFallbackDelay = Duration(seconds: 20);
+
+  final Duration asyncFallbackDelay;
+
+  QueryTextAgentTool({this.asyncFallbackDelay = defaultAsyncFallbackDelay});
+
   @override
   ToolDefinition get definition => const ToolDefinition(
     toolKey: toolKeyName,
@@ -15,7 +22,8 @@ class QueryTextAgentTool extends Tool {
     sourceKey: 'builtin',
     publishedBy: 'aokiapp',
     description:
-        'Query a text-based AI agent and return its response text (synchronous, ~30s timeout). '
+        'Query a text-based AI agent and return its response text. '
+        'If the query is still running after about 20 seconds, this tool returns an async-mode notice; call get_last_text_agent_response later to retrieve the latest result. '
         'IMPORTANT: Conversation history is maintained per agent_id during the call session. '
         'You can call the same agent multiple times to build on previous responses - '
         'the agent will remember the context of earlier queries in the same call. '
@@ -68,13 +76,51 @@ class QueryTextAgentTool extends Tool {
 
     final cancellation = ToolCancellation.current;
 
-    final text = await context.textAgentApi.sendQuery(
+    final query = context.textAgentApi.sendQuery(
       agentId,
       prompt,
       attachLastUserImage: attachLastUserImage,
       onCancel: cancellation?.onCancel,
     );
 
-    return jsonEncode({'success': true, 'text': text});
+    try {
+      final text = await query.timeout(asyncFallbackDelay);
+      return jsonEncode({'success': true, 'text': text});
+    } on TimeoutException {
+      final pendingResult = <String, dynamic>{
+        'status': 'pending',
+        'agent_id': agentId,
+      };
+      await context.textAgentApi.setLastAsyncQueryResult(pendingResult);
+      unawaited(
+        query
+            .then((text) {
+              return context.textAgentApi.setLastAsyncQueryResult(
+                <String, dynamic>{
+                  'status': 'completed',
+                  'agent_id': agentId,
+                  'success': true,
+                  'text': text,
+                },
+              );
+            })
+            .catchError((Object error) {
+              return context.textAgentApi
+                  .setLastAsyncQueryResult(<String, dynamic>{
+                    'status': 'failed',
+                    'agent_id': agentId,
+                    'success': false,
+                    'error': error.toString(),
+                  });
+            }),
+      );
+      return jsonEncode(<String, dynamic>{
+        'success': true,
+        'async': true,
+        ...pendingResult,
+        'message':
+            'The text agent query is still running asynchronously. Wait for user answer and call get_last_text_agent_response later for the next time.',
+      });
+    }
   }
 }

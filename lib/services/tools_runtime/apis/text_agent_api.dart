@@ -25,6 +25,12 @@ abstract class TextAgentApi {
     void Function() Function(void Function())? onCancel,
   });
 
+  /// Store the latest asynchronous text-agent result for this call session.
+  Future<void> setLastAsyncQueryResult(Map<String, dynamic> result);
+
+  /// Get the latest asynchronous text-agent result for this call session.
+  Future<Map<String, dynamic>> getLastAsyncQueryResult();
+
   /// List all available text agents.
   ///
   /// Returns safe agent metadata maps suitable for tool/runtime exposure.

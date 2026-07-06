@@ -33,6 +33,7 @@ final class TextAgentService extends SubService {
   final VaginaApiClient _apiClient;
 
   _LastUserImage? _lastUserImage;
+  Map<String, dynamic>? _lastAsyncQueryResult;
 
   late final ToolRunner _toolRunner;
 
@@ -52,6 +53,16 @@ final class TextAgentService extends SubService {
       UnmodifiableListView<TextAgentInfo>(_agentsById.values);
 
   String? get currentVoiceSessionId => _realtimeService.currentSessionId;
+
+  void setLastAsyncQueryResult(Map<String, dynamic> result) {
+    _lastAsyncQueryResult = Map<String, dynamic>.from(result);
+  }
+
+  Map<String, dynamic> getLastAsyncQueryResult() {
+    return Map<String, dynamic>.from(
+      _lastAsyncQueryResult ?? const <String, dynamic>{'status': 'none'},
+    );
+  }
 
   /// Remember the latest user-submitted image for semantic text-agent delegation.
   void rememberLastUserImage(Uint8List imageBytes, {String? name}) {
@@ -584,6 +595,7 @@ final class TextAgentService extends SubService {
   Future<void> dispose() async {
     await super.dispose();
     _agentsById.clear();
+    _lastAsyncQueryResult = null;
   }
 }
 

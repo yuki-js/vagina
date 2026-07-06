@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vagina/services/tools_runtime/apis/call_api.dart';
 import 'package:vagina/services/tools_runtime/apis/filesystem_api.dart';
 import 'package:vagina/services/tools_runtime/apis/text_agent_api.dart';
 import 'package:vagina/services/tools_runtime/tool.dart';
 import 'package:vagina/services/tools_runtime/tool_context.dart';
+import 'package:vagina/tools/builtin/text_agent/get_last_text_agent_response_tool.dart';
 import 'package:vagina/tools/builtin/text_agent/query_text_agent_tool.dart';
 
 void main() {
@@ -117,6 +119,58 @@ void main() {
       },
     );
 
+    test('switches long-running query to async result retrieval', () async {
+      final subAgentResponse = Completer<String>();
+      final textAgentApi = _FakeTextAgentApi(
+        onSendQuery: ({attachLastUserImage = false, onCancel}) {
+          return subAgentResponse.future;
+        },
+      );
+      final queryTool = QueryTextAgentTool(asyncFallbackDelay: Duration.zero);
+      await queryTool.init(
+        ToolContext(
+          toolKey: QueryTextAgentTool.toolKeyName,
+          filesystemApi: _NoopFilesystemApi(),
+          callApi: _NoopCallApi(),
+          textAgentApi: textAgentApi,
+        ),
+      );
+
+      final initialOutput =
+          jsonDecode(
+                await queryTool.execute(<String, dynamic>{
+                  'agent_id': 'agent-1',
+                  'prompt': 'slow research',
+                }),
+              )
+              as Map<String, dynamic>;
+      expect(initialOutput['async'], isTrue);
+      expect(initialOutput['status'], 'pending');
+
+      final getTool = GetLastTextAgentResponseTool();
+      await getTool.init(
+        ToolContext(
+          toolKey: GetLastTextAgentResponseTool.toolKeyName,
+          filesystemApi: _NoopFilesystemApi(),
+          callApi: _NoopCallApi(),
+          textAgentApi: textAgentApi,
+        ),
+      );
+      var lastOutput =
+          jsonDecode(await getTool.execute(<String, dynamic>{}))
+              as Map<String, dynamic>;
+      expect(lastOutput['status'], 'pending');
+
+      subAgentResponse.complete('done later');
+      await _flushAsyncWork();
+
+      lastOutput =
+          jsonDecode(await getTool.execute(<String, dynamic>{}))
+              as Map<String, dynamic>;
+      expect(lastOutput['status'], 'completed');
+      expect(lastOutput['text'], 'done later');
+    });
+
     test(
       'throws text agent query failures instead of returning failure JSON',
       () async {
@@ -167,6 +221,10 @@ final class _FakeTextAgentApi implements TextAgentApi {
   })
   onSendQuery;
 
+  Map<String, dynamic> _lastAsyncQueryResult = const <String, dynamic>{
+    'status': 'none',
+  };
+
   _FakeTextAgentApi({required this.onSendQuery});
 
   @override
@@ -185,6 +243,16 @@ final class _FakeTextAgentApi implements TextAgentApi {
   @override
   Future<List<Map<String, dynamic>>> listAgents() async {
     return const <Map<String, dynamic>>[];
+  }
+
+  @override
+  Future<void> setLastAsyncQueryResult(Map<String, dynamic> result) async {
+    _lastAsyncQueryResult = Map<String, dynamic>.from(result);
+  }
+
+  @override
+  Future<Map<String, dynamic>> getLastAsyncQueryResult() async {
+    return Map<String, dynamic>.from(_lastAsyncQueryResult);
   }
 }
 

@@ -15,6 +15,7 @@ import 'builtin/call/end_call_tool.dart';
 import 'builtin/spreadsheet/spreadsheet_add_rows_tool.dart';
 import 'builtin/spreadsheet/spreadsheet_delete_rows_tool.dart';
 import 'builtin/spreadsheet/spreadsheet_update_rows_tool.dart';
+import 'builtin/text_agent/get_last_text_agent_response_tool.dart';
 import 'builtin/text_agent/list_available_agents_tool.dart';
 import 'builtin/text_agent/query_text_agent_tool.dart';
 
@@ -59,6 +60,7 @@ class RootToolbox extends Toolbox {
       SpreadsheetUpdateRowsTool(),
       ListAvailableAgentsTool(),
       QueryTextAgentTool(),
+      GetLastTextAgentResponseTool(),
     ];
   }
 }

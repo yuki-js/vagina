@@ -79,4 +79,14 @@ final class CallTextAgentApi implements TextAgentApi {
       onCancel: onCancel,
     );
   }
+
+  @override
+  Future<void> setLastAsyncQueryResult(Map<String, dynamic> result) async {
+    _textAgentService.setLastAsyncQueryResult(result);
+  }
+
+  @override
+  Future<Map<String, dynamic>> getLastAsyncQueryResult() async {
+    return _textAgentService.getLastAsyncQueryResult();
+  }
 }
