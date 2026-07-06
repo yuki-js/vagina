@@ -1,6 +1,8 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vagina/core/config/app_config.dart';
 import 'package:vagina/core/data/in_memory_store.dart';
+import 'package:vagina/models/push_to_talk_key_binding.dart';
 import 'package:vagina/repositories/preferences_repository.dart';
 
 void main() {
@@ -34,6 +36,49 @@ void main() {
       await repository.setPreferredCallPushToTalkEnabled(false);
 
       expect(await repository.getPreferredCallPushToTalkEnabled(), isFalse);
+    });
+  });
+
+  group('PreferencesRepository keyboard push-to-talk key preference', () {
+    test('defaults to unset when not saved', () async {
+      final store = InMemoryStore();
+      await store.initialize();
+      final repository = PreferencesRepository(store);
+
+      final binding = await repository.getPreferredCallPushToTalkKeyBinding();
+
+      expect(binding, isNull);
+    });
+
+    test('persists keyboard push-to-talk binding', () async {
+      final store = InMemoryStore();
+      await store.initialize();
+      final repository = PreferencesRepository(store);
+      final binding = PushToTalkKeyBinding(
+        primaryLogicalKeyId: LogicalKeyboardKey.space.keyId,
+        modifiers: const [PushToTalkKeyModifier.control],
+        displayTokens: const ['Ctrl', 'Space'],
+      );
+
+      await repository.setPreferredCallPushToTalkKeyBinding(binding);
+
+      expect(await repository.getPreferredCallPushToTalkKeyBinding(), binding);
+    });
+
+    test('clears keyboard push-to-talk binding', () async {
+      final store = InMemoryStore();
+      await store.initialize();
+      final repository = PreferencesRepository(store);
+      final binding = PushToTalkKeyBinding(
+        primaryLogicalKeyId: LogicalKeyboardKey.keyV.keyId,
+        modifiers: const [],
+        displayTokens: const ['V'],
+      );
+
+      await repository.setPreferredCallPushToTalkKeyBinding(binding);
+      await repository.setPreferredCallPushToTalkKeyBinding(null);
+
+      expect(await repository.getPreferredCallPushToTalkKeyBinding(), isNull);
     });
   });
 

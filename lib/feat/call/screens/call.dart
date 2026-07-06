@@ -12,6 +12,7 @@ import 'package:vagina/feat/call/panes/chat.dart';
 import 'package:vagina/feat/call/panes/notepad.dart';
 import 'package:vagina/feat/call/services/call_service.dart';
 import 'package:vagina/feat/call/widgets/call_screen_shell.dart';
+import 'package:vagina/models/push_to_talk_key_binding.dart';
 import 'package:vagina/models/speed_dial.dart';
 
 /// Layout scaffold for the call screen.
@@ -32,6 +33,7 @@ class _CallScreenState extends State<CallScreen> {
   late final CallService _callService;
   StreamSubscription<CallState>? _callStateSubscription;
   bool _preferredPushToTalkEnabled = false;
+  PushToTalkKeyBinding? _preferredPushToTalkKeyBinding;
 
   @override
   void initState() {
@@ -61,12 +63,15 @@ class _CallScreenState extends State<CallScreen> {
           .getPreferredCallPushToTalkEnabled();
       final idleDisconnectTimeoutSeconds = await AppContainer.preferences
           .getPreferredCallIdleDisconnectTimeoutSeconds();
+      final pushToTalkKeyBinding = await AppContainer.preferences
+          .getPreferredCallPushToTalkKeyBinding();
       final voiceAgent = VoiceAgentInfo.fromSpeedDial(widget.speedDial);
       final textAgents = await _buildTextAgents();
       if (!mounted) return;
 
       setState(() {
         _preferredPushToTalkEnabled = preferredPushToTalkEnabled;
+        _preferredPushToTalkKeyBinding = pushToTalkKeyBinding;
       });
       await _callService.setPushToTalkEnabled(preferredPushToTalkEnabled);
       _callService.setSilenceTimeout(
@@ -156,6 +161,7 @@ class _CallScreenState extends State<CallScreen> {
               speedDial: widget.speedDial,
               callService: _callService,
               initialPushToTalkEnabled: _preferredPushToTalkEnabled,
+              pushToTalkKeyBinding: _preferredPushToTalkKeyBinding,
               onPushToTalkPreferenceChanged: _savePushToTalkPreference,
               onChatPressed: _layoutController.goToLeft,
               onNotepadPressed: _layoutController.goToRight,

@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:vagina/core/config/app_config.dart';
 import 'package:vagina/core/state/locale_providers.dart';
 import 'package:vagina/core/app/app_container.dart';
 import 'package:vagina/core/theme/app_theme.dart';
+import 'package:vagina/core/widgets/keycap.dart';
 import 'package:vagina/feat/oobe/screens/oobe_flow.dart';
 import 'package:vagina/feat/settings/widgets/settings_card.dart';
 import 'package:vagina/l10n/app_localizations.dart';
+import 'package:vagina/models/push_to_talk_key_binding.dart';
 
 /// 設定画面 - API設定など
 class SettingsScreen extends StatelessWidget {
@@ -257,6 +260,7 @@ class _CallPreferencesCard extends StatefulWidget {
 
 class _CallPreferencesCardState extends State<_CallPreferencesCard> {
   int _selectedTimeoutSeconds = AppConfig.defaultSilenceTimeoutSeconds;
+  PushToTalkKeyBinding? _pushToTalkKeyBinding;
   bool _isLoading = true;
 
   @override
@@ -266,14 +270,18 @@ class _CallPreferencesCardState extends State<_CallPreferencesCard> {
   }
 
   Future<void> _loadPreference() async {
-    final timeoutSeconds = await AppContainer.preferences
+    final preferences = AppContainer.preferences;
+    final timeoutSeconds = await preferences
         .getPreferredCallIdleDisconnectTimeoutSeconds();
+    final pushToTalkKeyBinding = await preferences
+        .getPreferredCallPushToTalkKeyBinding();
     if (!mounted) {
       return;
     }
 
     setState(() {
       _selectedTimeoutSeconds = timeoutSeconds;
+      _pushToTalkKeyBinding = pushToTalkKeyBinding;
       _isLoading = false;
     });
   }
@@ -284,6 +292,29 @@ class _CallPreferencesCardState extends State<_CallPreferencesCard> {
     });
     await AppContainer.preferences.setPreferredCallIdleDisconnectTimeoutSeconds(
       timeoutSeconds,
+    );
+  }
+
+  Future<void> _openPushToTalkKeyRecorder() async {
+    final result = await showDialog<_PushToTalkKeyRecorderResult>(
+      context: context,
+      builder: (context) =>
+          _PushToTalkKeyRecorderDialog(initialBinding: _pushToTalkKeyBinding),
+    );
+    if (!mounted || result == null) {
+      return;
+    }
+
+    final binding = result.binding;
+    if (binding == _pushToTalkKeyBinding) {
+      return;
+    }
+
+    setState(() {
+      _pushToTalkKeyBinding = binding;
+    });
+    await AppContainer.preferences.setPreferredCallPushToTalkKeyBinding(
+      binding,
     );
   }
 
@@ -348,8 +379,169 @@ class _CallPreferencesCardState extends State<_CallPreferencesCard> {
                     _handleTimeoutChanged(value);
                   },
           ),
+          const SizedBox(height: 20),
+          Material(
+            type: MaterialType.transparency,
+            child: ListTile(
+              contentPadding: EdgeInsets.zero,
+              enabled: !_isLoading,
+              title: Text(
+                l10n.settingsCallPushToTalkKeyLabel,
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+              ),
+              subtitle: Text(l10n.settingsCallPushToTalkKeyHelper),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _PushToTalkKeyBindingPreview(
+                    binding: _pushToTalkKeyBinding,
+                    unsetLabel: l10n.settingsCallPushToTalkKeyUnset,
+                  ),
+                  const SizedBox(width: 8),
+                  const Icon(Icons.chevron_right),
+                ],
+              ),
+              onTap: _openPushToTalkKeyRecorder,
+            ),
+          ),
         ],
       ),
+    );
+  }
+}
+
+class _PushToTalkKeyBindingPreview extends StatelessWidget {
+  final PushToTalkKeyBinding? binding;
+  final String unsetLabel;
+
+  const _PushToTalkKeyBindingPreview({
+    required this.binding,
+    required this.unsetLabel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final binding = this.binding;
+    if (binding == null) {
+      return Keycap(token: unsetLabel, isMuted: true);
+    }
+
+    return KeycapSequence(tokens: binding.displayTokens);
+  }
+}
+
+class _PushToTalkKeyRecorderResult {
+  final PushToTalkKeyBinding? binding;
+
+  const _PushToTalkKeyRecorderResult(this.binding);
+}
+
+class _PushToTalkKeyRecorderDialog extends StatefulWidget {
+  final PushToTalkKeyBinding? initialBinding;
+
+  const _PushToTalkKeyRecorderDialog({required this.initialBinding});
+
+  @override
+  State<_PushToTalkKeyRecorderDialog> createState() =>
+      _PushToTalkKeyRecorderDialogState();
+}
+
+class _PushToTalkKeyRecorderDialogState
+    extends State<_PushToTalkKeyRecorderDialog> {
+  late final FocusNode _focusNode;
+  PushToTalkKeyBinding? _candidateBinding;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode = FocusNode();
+    _candidateBinding = widget.initialBinding;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _focusNode.requestFocus();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent) {
+      return KeyEventResult.handled;
+    }
+    if (event.logicalKey == LogicalKeyboardKey.escape) {
+      Navigator.of(context).pop();
+      return KeyEventResult.handled;
+    }
+
+    final pressedKeys = HardwareKeyboard.instance.logicalKeysPressed.toSet()
+      ..add(event.logicalKey);
+    final binding = PushToTalkKeyBinding.fromPressedKeys(pressedKeys);
+    if (binding != null) {
+      setState(() {
+        _candidateBinding = binding;
+      });
+    }
+
+    return KeyEventResult.handled;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final candidateBinding = _candidateBinding;
+
+    return AlertDialog(
+      title: Text(l10n.settingsCallPushToTalkKeyDialogTitle),
+      content: Focus(
+        focusNode: _focusNode,
+        onKeyEvent: _handleKeyEvent,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minWidth: 280),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(l10n.settingsCallPushToTalkKeyDialogPrompt),
+              const SizedBox(height: 16),
+              Center(
+                child: candidateBinding == null
+                    ? Keycap(
+                        token: l10n.settingsCallPushToTalkKeyUnset,
+                        isMuted: true,
+                      )
+                    : KeycapSequence(tokens: candidateBinding.displayTokens),
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(l10n.settingsCommonCancel),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(
+            context,
+          ).pop(const _PushToTalkKeyRecorderResult(null)),
+          child: Text(l10n.settingsCommonClear),
+        ),
+        FilledButton(
+          onPressed: candidateBinding == null
+              ? null
+              : () => Navigator.of(
+                  context,
+                ).pop(_PushToTalkKeyRecorderResult(candidateBinding)),
+          child: Text(l10n.settingsCommonSave),
+        ),
+      ],
     );
   }
 }

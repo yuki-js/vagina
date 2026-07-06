@@ -3,11 +3,13 @@ import 'dart:math';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:vagina/core/config/app_config.dart';
 import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/l10n/app_localizations.dart';
 import 'package:vagina/feat/call/services/call_service.dart';
 import 'package:vagina/feat/call/services/realtime/realtime_provider_extensions.dart';
+import 'package:vagina/models/push_to_talk_key_binding.dart';
 import 'package:vagina/models/speed_dial.dart';
 import 'package:vagina/utils/duration_formatter.dart';
 
@@ -19,6 +21,7 @@ class CallPane extends StatefulWidget {
   final SpeedDial speedDial;
   final CallService callService;
   final bool initialPushToTalkEnabled;
+  final PushToTalkKeyBinding? pushToTalkKeyBinding;
   final Future<void> Function(bool enabled) onPushToTalkPreferenceChanged;
   final VoidCallback onChatPressed;
   final VoidCallback onNotepadPressed;
@@ -29,6 +32,7 @@ class CallPane extends StatefulWidget {
     required this.speedDial,
     required this.callService,
     required this.initialPushToTalkEnabled,
+    required this.pushToTalkKeyBinding,
     required this.onPushToTalkPreferenceChanged,
     required this.onChatPressed,
     required this.onNotepadPressed,
@@ -42,25 +46,39 @@ class CallPane extends StatefulWidget {
 class _CallPaneState extends State<CallPane> {
   late _TalkMode _talkMode;
   _NoiseReductionMode _noiseReductionMode = _NoiseReductionMode.nearField;
+  bool _keyboardPttActive = false;
+  bool _pttActive = false;
 
   @override
   void initState() {
     super.initState();
     _talkMode = widget.initialPushToTalkEnabled ? _TalkMode.ptt : _TalkMode.hf;
+    HardwareKeyboard.instance.addHandler(_handleHardwareKeyEvent);
   }
 
   @override
   void didUpdateWidget(covariant CallPane oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.initialPushToTalkEnabled == widget.initialPushToTalkEnabled) {
-      return;
+    if (oldWidget.initialPushToTalkEnabled != widget.initialPushToTalkEnabled) {
+      setState(() {
+        _talkMode = widget.initialPushToTalkEnabled
+            ? _TalkMode.ptt
+            : _TalkMode.hf;
+      });
     }
 
-    setState(() {
-      _talkMode = widget.initialPushToTalkEnabled
-          ? _TalkMode.ptt
-          : _TalkMode.hf;
-    });
+    if ((!_isPttMode || widget.pushToTalkKeyBinding == null) &&
+        _keyboardPttActive) {
+      _setPttActive(false);
+      _keyboardPttActive = false;
+      unawaited(widget.callService.cancelPushToTalk());
+    }
+  }
+
+  @override
+  void dispose() {
+    HardwareKeyboard.instance.removeHandler(_handleHardwareKeyEvent);
+    super.dispose();
   }
 
   CallService? get _activeCallService {
@@ -101,6 +119,58 @@ class _CallPaneState extends State<CallPane> {
   }
 
   bool get _showsNoiseReductionSettings => false;
+
+  bool _handleHardwareKeyEvent(KeyEvent event) {
+    final binding = widget.pushToTalkKeyBinding;
+    if (binding == null || !_isPttMode || _isEditableFocusActive) {
+      if (_keyboardPttActive && event is KeyUpEvent) {
+        _setPttActive(false);
+        _keyboardPttActive = false;
+        unawaited(widget.callService.endPushToTalk());
+      }
+      return false;
+    }
+
+    if (event is KeyRepeatEvent) {
+      return binding.matchesPressedKeys(
+        HardwareKeyboard.instance.logicalKeysPressed,
+      );
+    }
+
+    if (event is KeyDownEvent) {
+      if (!binding.matchesPressedKeys(
+        HardwareKeyboard.instance.logicalKeysPressed,
+      )) {
+        return false;
+      }
+      if (!_keyboardPttActive) {
+        _keyboardPttActive = true;
+        _handlePttPressStart();
+      }
+      return true;
+    }
+
+    if (event is KeyUpEvent && _keyboardPttActive) {
+      if (!binding.matchesPressedKeys(
+        HardwareKeyboard.instance.logicalKeysPressed,
+      )) {
+        _keyboardPttActive = false;
+        _handlePttPressEnd();
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  bool get _isEditableFocusActive {
+    final focusContext = FocusManager.instance.primaryFocus?.context;
+    if (focusContext == null) {
+      return false;
+    }
+    return focusContext.widget is EditableText ||
+        focusContext.findAncestorWidgetOfExactType<EditableText>() != null;
+  }
 
   List<Widget> _buildPrimaryControls({
     required bool isSpeakerMuted,
@@ -231,30 +301,44 @@ class _CallPaneState extends State<CallPane> {
     );
   }
 
+  void _setPttActive(bool value) {
+    if (_pttActive == value) {
+      return;
+    }
+    setState(() {
+      _pttActive = value;
+    });
+  }
+
   void _handlePttPressStart() {
     final callService = _activeCallService;
     if (callService == null) {
       return;
     }
 
+    _setPttActive(true);
     unawaited(callService.beginPushToTalk());
   }
 
   void _handlePttPressEnd() {
     final callService = _activeCallService;
     if (callService == null) {
+      _setPttActive(false);
       return;
     }
 
+    _setPttActive(false);
     unawaited(callService.endPushToTalk());
   }
 
   void _handlePttPressCancel() {
     final callService = _activeCallService;
     if (callService == null) {
+      _setPttActive(false);
       return;
     }
 
+    _setPttActive(false);
     unawaited(callService.cancelPushToTalk());
   }
 
@@ -504,6 +588,7 @@ class _CallPaneState extends State<CallPane> {
                                       const SizedBox(width: 12),
                                       Expanded(
                                         child: _PttHoldButton(
+                                          isActive: _pttActive,
                                           onPressStart: _handlePttPressStart,
                                           onPressEnd: _handlePttPressEnd,
                                           onPressCancel: _handlePttPressCancel,
@@ -688,43 +773,29 @@ class _ControlButton extends StatelessWidget {
   }
 }
 
-class _PttHoldButton extends StatefulWidget {
+class _PttHoldButton extends StatelessWidget {
+  final bool isActive;
   final VoidCallback onPressStart;
   final VoidCallback onPressEnd;
   final VoidCallback onPressCancel;
 
   const _PttHoldButton({
+    required this.isActive,
     required this.onPressStart,
     required this.onPressEnd,
     required this.onPressCancel,
   });
 
   @override
-  State<_PttHoldButton> createState() => _PttHoldButtonState();
-}
-
-class _PttHoldButtonState extends State<_PttHoldButton> {
-  bool _isPressed = false;
-
-  void _setPressed(bool value) {
-    if (_isPressed == value) {
-      return;
-    }
-    setState(() {
-      _isPressed = value;
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final backgroundColor = _isPressed
+    final backgroundColor = isActive
         ? AppTheme.primaryColor.withValues(alpha: 0.22)
         : Colors.white.withValues(alpha: 0.04);
-    final borderColor = _isPressed
+    final borderColor = isActive
         ? AppTheme.primaryColor
         : AppTheme.textSecondary.withValues(alpha: 0.16);
-    final contentColor = _isPressed
+    final contentColor = isActive
         ? AppTheme.textPrimary
         : AppTheme.primaryColor;
 
@@ -733,16 +804,13 @@ class _PttHoldButtonState extends State<_PttHoldButton> {
       width: double.infinity,
       child: GestureDetector(
         onTapDown: (_) {
-          _setPressed(true);
-          widget.onPressStart();
+          onPressStart();
         },
         onTapUp: (_) {
-          _setPressed(false);
-          widget.onPressEnd();
+          onPressEnd();
         },
         onTapCancel: () {
-          _setPressed(false);
-          widget.onPressCancel();
+          onPressCancel();
         },
         behavior: HitTestBehavior.opaque,
         child: AnimatedContainer(
@@ -753,7 +821,7 @@ class _PttHoldButtonState extends State<_PttHoldButton> {
             color: backgroundColor,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: borderColor),
-            boxShadow: _isPressed
+            boxShadow: isActive
                 ? [
                     BoxShadow(
                       color: AppTheme.primaryColor.withValues(alpha: 0.18),
@@ -767,14 +835,14 @@ class _PttHoldButtonState extends State<_PttHoldButton> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
-                _isPressed ? Icons.mic : Icons.mic_none,
+                isActive ? Icons.mic : Icons.mic_none,
                 color: contentColor,
                 size: 28,
               ),
               const SizedBox(width: 12),
               Flexible(
                 child: Text(
-                  _isPressed
+                  isActive
                       ? l10n.callPanePttReleaseToFinish
                       : l10n.callPanePttPressToTalk,
                   style: TextStyle(

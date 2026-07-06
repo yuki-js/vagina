@@ -322,6 +322,26 @@
   "@settingsCallIdleDisconnectTimeout30Minutes": {
     "description": "Dropdown label for a 30 minute idle auto-disconnect timeout."
   },
+  "settingsCallPushToTalkKeyLabel": "Push-to-talk key",
+  "@settingsCallPushToTalkKeyLabel": {
+    "description": "Label for the setting that configures the keyboard shortcut used for push-to-talk."
+  },
+  "settingsCallPushToTalkKeyHelper": "Used in push-to-talk mode.",
+  "@settingsCallPushToTalkKeyHelper": {
+    "description": "Short helper text for the keyboard push-to-talk key setting."
+  },
+  "settingsCallPushToTalkKeyUnset": "Not set",
+  "@settingsCallPushToTalkKeyUnset": {
+    "description": "Keycap label shown when no keyboard push-to-talk key is configured."
+  },
+  "settingsCallPushToTalkKeyDialogTitle": "Push-to-talk key",
+  "@settingsCallPushToTalkKeyDialogTitle": {
+    "description": "Title of the dialog used to record a keyboard push-to-talk shortcut."
+  },
+  "settingsCallPushToTalkKeyDialogPrompt": "Press the key combination to use.",
+  "@settingsCallPushToTalkKeyDialogPrompt": {
+    "description": "Prompt shown in the keyboard push-to-talk shortcut recorder dialog."
+  },
   "settingsTermsOfServiceTitle": "Terms of Service",
   "@settingsTermsOfServiceTitle": {
     "description": "Placeholder row title for the future terms of service link on the settings screen."

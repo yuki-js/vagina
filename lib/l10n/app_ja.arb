@@ -322,6 +322,26 @@
   "@settingsCallIdleDisconnectTimeout30Minutes": {
     "description": "アイドル時の自動切断時間 30 分のドロップダウン表示。"
   },
+  "settingsCallPushToTalkKeyLabel": "押して話すキー",
+  "@settingsCallPushToTalkKeyLabel": {
+    "description": "プッシュトゥトークに使うキーボードショートカットを設定する項目ラベル。"
+  },
+  "settingsCallPushToTalkKeyHelper": "PTTモード中に使います。",
+  "@settingsCallPushToTalkKeyHelper": {
+    "description": "キーボードのプッシュトゥトークキー設定に表示する短い補助文。"
+  },
+  "settingsCallPushToTalkKeyUnset": "未設定",
+  "@settingsCallPushToTalkKeyUnset": {
+    "description": "キーボードのプッシュトゥトークキーが未設定のときに表示するキーキャップラベル。"
+  },
+  "settingsCallPushToTalkKeyDialogTitle": "押して話すキー",
+  "@settingsCallPushToTalkKeyDialogTitle": {
+    "description": "キーボードのプッシュトゥトークショートカットを記録するダイアログのタイトル。"
+  },
+  "settingsCallPushToTalkKeyDialogPrompt": "使うキーの組み合わせを押してください。",
+  "@settingsCallPushToTalkKeyDialogPrompt": {
+    "description": "キーボードのプッシュトゥトークショートカット記録ダイアログに表示する案内文。"
+  },
   "settingsTermsOfServiceTitle": "利用規約",
   "@settingsTermsOfServiceTitle": {
     "description": "設定画面に将来の利用規約リンクとして表示するプレースホルダー行タイトル。"

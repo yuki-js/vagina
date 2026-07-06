@@ -1,5 +1,6 @@
 import 'package:vagina/core/config/app_config.dart';
 import 'package:vagina/interfaces/key_value_store.dart';
+import 'package:vagina/models/push_to_talk_key_binding.dart';
 
 /// Repository for app preferences and settings
 ///
@@ -15,6 +16,8 @@ class PreferencesRepository {
       'preferred_call_push_to_talk_enabled';
   static const String _keyPreferredCallIdleDisconnectTimeoutSeconds =
       'preferred_call_idle_disconnect_timeout_seconds';
+  static const String _keyPreferredCallPushToTalkKeyBinding =
+      'preferred_call_push_to_talk_key_binding';
   static const String _keyAuthRefreshToken = 'auth_refresh_token';
   static const String _keyLegacyAuthSession = 'auth_session';
   static const String _keyPendingPkceVerifier = 'pending_pkce_verifier';
@@ -184,6 +187,26 @@ class PreferencesRepository {
       _keyPreferredCallIdleDisconnectTimeoutSeconds,
       timeoutSeconds,
     );
+  }
+
+  /// Returns the persisted keyboard push-to-talk binding, if present.
+  Future<PushToTalkKeyBinding?> getPreferredCallPushToTalkKeyBinding() async {
+    final binding = await _store.get(_keyPreferredCallPushToTalkKeyBinding);
+    return PushToTalkKeyBinding.fromJson(binding);
+  }
+
+  /// Persists the keyboard push-to-talk binding.
+  ///
+  /// Passing `null` clears the binding and disables keyboard PTT.
+  Future<void> setPreferredCallPushToTalkKeyBinding(
+    PushToTalkKeyBinding? binding,
+  ) async {
+    if (binding == null) {
+      await _store.delete(_keyPreferredCallPushToTalkKeyBinding);
+      return;
+    }
+
+    await _store.set(_keyPreferredCallPushToTalkKeyBinding, binding.toJson());
   }
 
   /// Returns the persisted authentication refresh token, if present.
