@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:vagina/core/theme/app_theme.dart';
-import 'package:vagina/feat/home/tools/tool_icon_mapper.dart';
+import 'package:vagina/core/widgets/tool_icon_mapper.dart';
 import 'package:vagina/l10n/app_localizations.dart';
 import 'package:vagina/services/tool_registry.dart';
 import 'package:vagina/models/tool_metadata.dart';
