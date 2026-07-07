@@ -1,6 +1,6 @@
 import 'dart:ui';
 
-import 'package:vagina/core/config/app_config.dart';
+import 'package:vagina/core/config/constants.dart';
 
 /// Configuration for the AI assistant
 class AssistantConfig {
@@ -15,6 +15,7 @@ class AssistantConfig {
 
   /// Available voices for the assistant
   static const List<String> availableVoices = ['alloy', 'echo', 'shimmer'];
+  static const String _defaultVoice = 'alloy';
 
   static const String _defaultInstructionsTemplateJa =
       '''あなたは「{appName}」（{appSubtitle}）という名前の音声AIアシスタントです。
@@ -65,8 +66,8 @@ You support the user through voice conversation. Avoid overly long responses and
   /// assistant configurations.
   static String defaultInstructionsForLocale(
     Locale? locale, {
-    String appName = AppConfig.appName,
-    String appSubtitle = AppConfig.appSubtitle,
+    String appName = Constants.appName,
+    String appSubtitle = Constants.appSubtitle,
   }) {
     final template = locale?.languageCode == 'en'
         ? _defaultInstructionsTemplateEn
@@ -85,9 +86,9 @@ You support the user through voice conversation. Avoid overly long responses and
     Locale? locale,
   }) {
     return AssistantConfig._(
-      name: name ?? AppConfig.appName,
+      name: name ?? Constants.appName,
       instructions: instructions ?? defaultInstructionsForLocale(locale),
-      voice: voice ?? AppConfig.defaultVoice,
+      voice: voice ?? _defaultVoice,
     );
   }
 
@@ -118,11 +119,11 @@ You support the user through voice conversation. Avoid overly long responses and
     Locale? locale,
   }) {
     return AssistantConfig._(
-      name: json['name'] as String? ?? AppConfig.appName,
+      name: json['name'] as String? ?? Constants.appName,
       instructions:
           json['instructions'] as String? ??
           defaultInstructionsForLocale(locale),
-      voice: json['voice'] as String? ?? AppConfig.defaultVoice,
+      voice: json['voice'] as String? ?? _defaultVoice,
     );
   }
 }

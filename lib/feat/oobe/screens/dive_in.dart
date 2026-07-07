@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:vagina/core/config/app_config.dart';
+import 'package:vagina/core/config/constants.dart';
 import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/l10n/app_localizations.dart';
 
@@ -102,7 +102,7 @@ class _DiveInScreenState extends State<DiveInScreen>
                     const SizedBox(height: 16),
 
                     Text(
-                      l10n.diveInReady(AppConfig.appName),
+                      l10n.diveInReady(Constants.appName),
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 16,

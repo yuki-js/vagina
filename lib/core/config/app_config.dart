@@ -1,168 +1,63 @@
 import 'package:flutter/foundation.dart';
+import 'package:vagina/core/config/constants.dart';
 
-/// Application configuration
-///
-/// Contains all application-wide configuration constants.
-/// Audio-related constants should be kept in sync with the hosted realtime
-/// voice transport format (24kHz, 16-bit, mono PCM).
+/// Application configuration.
 class AppConfig {
   const AppConfig._();
 
-  // ==========================================================================
-  // Application Identity
-  // ==========================================================================
-
-  /// Application display name (shown in UI)
-  /// Note: Codename "vagina" is used throughout codebase but display name
-  /// can be different for branding purposes
-  static const String appName = 'VAGINA';
-
-  /// Application subtitle/tagline
-  static const String appSubtitle = 'Voice AGI Notepad Agent';
-
-  /// Remote JSON endpoint for app announcements.
-  ///
-  /// Configure with either an absolute URL or a Flutter Web-served relative
-  /// path:
-  /// `flutter run --dart-define=ANNOUNCEMENT_JSON_URL=https://example.com/announcements.json`
-  /// `flutter run -d chrome --dart-define=ANNOUNCEMENT_JSON_URL=assets/announcements/dev.json`
-  ///
-  /// When no explicit override is provided, Flutter Web debug builds fall back
-  /// to the local dev fixture for announcement previewing.
-  static const String announcementJsonUrl = String.fromEnvironment(
-    'ANNOUNCEMENT_JSON_URL',
-    defaultValue: 'https://vagina.app/announcement.json',
-  );
-
-  /// Default asset path for local announcement preview fixtures.
-  static const String devAnnouncementJsonAssetPath =
-      'assets/announcements/dev.json';
-
-  /// OAuth callback SSOT.
-  static const String callbackScheme = 'https';
-  static const String callbackHost = 'vagina.app';
-  static const String callbackPath = '/callback';
-  static String get callbackUrl =>
-      '$callbackScheme://$callbackHost$callbackPath';
-
-  static const String _apiBaseUrlEnvKey = 'VAGINA_API_BASE_URL';
-  static const String defaultDebugApiBaseUrl = 'http://localhost:8080/api';
-  static const String defaultReleaseApiBaseUrl =
-      'https://vagina-api.ouchiserver.aokiapp.com/api';
-
   static String resolveApiBaseUrl({required bool isDebugMode}) {
-    const configured = String.fromEnvironment(
-      _apiBaseUrlEnvKey,
-      defaultValue: '',
-    );
-    final trimmed = configured.trim();
-    if (trimmed.isNotEmpty) {
-      return trimmed;
-    }
-    return isDebugMode ? defaultDebugApiBaseUrl : defaultReleaseApiBaseUrl;
+    return isDebugMode
+        ? Constants.defaultDebugApiBaseUrl
+        : Constants.defaultReleaseApiBaseUrl;
   }
 
   /// Parsed announcement endpoint URI, or `null` when not configured.
   static Uri? get announcementJsonUri {
     return resolveAnnouncementJsonUri(
-      resolveAnnouncementJsonUrl(
-        announcementJsonUrl,
-        isWeb: kIsWeb,
-        isDebugMode: kDebugMode,
-      ),
+      isWeb: kIsWeb,
+      isDebugMode: kDebugMode,
+      baseUri: Uri.base,
     );
   }
 
-  /// Resolves the configured announcement endpoint string.
+  /// Resolves the announcement endpoint URI.
   ///
-  /// Explicit environment overrides always win. Otherwise, Flutter Web debug
-  /// builds default to the local dev fixture.
-  static String resolveAnnouncementJsonUrl(
-    String rawUrl, {
+  /// Web builds infer dev/prod from the serving origin. Native builds use
+  /// debug/release because there is no serving origin; native debug intentionally
+  /// returns `null` instead of inventing a localhost port that may not exist.
+  static Uri? resolveAnnouncementJsonUri({
     required bool isWeb,
     required bool isDebugMode,
+    Uri? baseUri,
   }) {
-    final trimmedUrl = rawUrl.trim();
-    if (trimmedUrl.isNotEmpty) {
-      return trimmedUrl;
+    if (isWeb) {
+      final currentBaseUri = baseUri ?? Uri.base;
+      final host = currentBaseUri.host.toLowerCase();
+      if (_isLocalhost(host)) {
+        return Uri(
+          scheme: 'https',
+          host: host,
+          port: currentBaseUri.hasPort ? currentBaseUri.port : null,
+          path: '/announcement.json',
+        );
+      }
+      if (host == 'vagina.app') {
+        return Uri.parse(Constants.announcementProdUrl);
+      }
+      return isDebugMode ? null : Uri.parse(Constants.announcementProdUrl);
     }
 
-    if (isWeb && isDebugMode) {
-      return devAnnouncementJsonAssetPath;
-    }
-
-    return '';
-  }
-
-  /// Resolves an announcement endpoint into a fetchable URI.
-  ///
-  /// Relative paths are resolved against `Uri.base`, which allows Flutter Web
-  /// dev builds to fetch announcement fixtures served from local assets.
-  static Uri? resolveAnnouncementJsonUri(String rawUrl) {
-    final trimmedUrl = rawUrl.trim();
-    if (trimmedUrl.isEmpty) {
+    if (isDebugMode) {
       return null;
     }
-
-    final parsedUri = Uri.parse(trimmedUrl);
-    if (parsedUri.hasScheme || parsedUri.host.isNotEmpty) {
-      return parsedUri;
-    }
-
-    return Uri.base.resolveUri(parsedUri);
+    return Uri.parse(Constants.announcementProdUrl);
   }
 
-  /// Default assistant voice
-  static const String defaultVoice = 'alloy';
+  static bool _isLocalhost(String host) {
+    return host == 'localhost' ||
+        host == '127.0.0.1' ||
+        host == '::1' ||
+        host.endsWith('.localhost');
+  }
 
-  // ==========================================================================
-  // Audio Configuration
-  // ==========================================================================
-
-  /// Audio sample rate (Hz) used by the hosted realtime voice transport.
-  static const int sampleRate = 24000;
-
-  /// Audio channels used by the hosted realtime voice transport.
-  static const int channels = 1;
-
-  /// Audio bit depth used by the hosted realtime voice transport.
-  static const int bitDepth = 16;
-
-  /// Minimum audio buffer size (bytes) before starting playback
-  /// This prevents choppy playback by buffering enough data first.
-  /// Value: 4800 bytes = 100ms of audio at 24kHz mono 16-bit
-  static const int minAudioBufferSizeBeforeStart = 4800;
-
-  /// Minimum captured duration required for a PTT turn to be committed.
-  static const Duration minPttAudioDuration = Duration(milliseconds: 500);
-
-  /// Delay before finalizing a PTT release so brief chatter can be absorbed.
-  static const Duration pttReleaseDebounce = Duration(milliseconds: 200);
-
-  // ==========================================================================
-  // Logging Configuration
-  // ==========================================================================
-
-  /// Log audio chunks sent/received every N chunks to reduce log noise
-  static const int logAudioChunkInterval = 250;
-
-  // ==========================================================================
-  // Call Configuration
-  // ==========================================================================
-
-  /// Minimum configurable idle disconnect timeout in seconds.
-  static const int minSilenceTimeoutSeconds = 30;
-
-  /// Default idle disconnect timeout in seconds.
-  static const int defaultSilenceTimeoutSeconds = 180;
-
-  /// Allowed idle disconnect timeout options in seconds.
-  static const List<int> silenceTimeoutSecondsOptions = [
-    30,
-    60,
-    180,
-    300,
-    600,
-    1800,
-  ];
 }

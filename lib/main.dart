@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logging/logging.dart';
 import 'package:window_manager/window_manager.dart';
 import 'core/app/app_container.dart';
-import 'core/config/app_config.dart';
+import 'core/config/constants.dart';
 import 'core/state/locale_providers.dart';
 import 'feat/home/screens/home.dart';
 import 'feat/oobe/screens/oobe_flow.dart';
@@ -164,7 +164,7 @@ class _VaginaAppState extends ConsumerState<VaginaApp> {
 
     return MaterialApp(
       onGenerateTitle: (context) =>
-          AppLocalizations.of(context).appTitle(AppConfig.appName),
+          AppLocalizations.of(context).appTitle(Constants.appName),
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,

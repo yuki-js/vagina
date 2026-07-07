@@ -1,4 +1,3 @@
-import 'package:vagina/core/config/app_config.dart';
 import 'package:vagina/interfaces/key_value_store.dart';
 import 'package:vagina/models/push_to_talk_key_binding.dart';
 
@@ -23,6 +22,15 @@ class PreferencesRepository {
   static const String _keyPendingPkceVerifier = 'pending_pkce_verifier';
   static const String _keyPendingOidcProvider = 'pending_oidc_provider';
   static const Set<String> _supportedLocaleCodes = {'ja', 'en'};
+  static const int _defaultCallIdleDisconnectTimeoutSeconds = 180;
+  static const List<int> _callIdleDisconnectTimeoutSecondsOptions = [
+    30,
+    60,
+    180,
+    300,
+    600,
+    1800,
+  ];
 
   final KeyValueStore _store;
 
@@ -161,11 +169,11 @@ class PreferencesRepository {
       _keyPreferredCallIdleDisconnectTimeoutSeconds,
     );
     if (timeoutSeconds is! int) {
-      return AppConfig.defaultSilenceTimeoutSeconds;
+      return _defaultCallIdleDisconnectTimeoutSeconds;
     }
 
-    if (!AppConfig.silenceTimeoutSecondsOptions.contains(timeoutSeconds)) {
-      return AppConfig.defaultSilenceTimeoutSeconds;
+    if (!_callIdleDisconnectTimeoutSecondsOptions.contains(timeoutSeconds)) {
+      return _defaultCallIdleDisconnectTimeoutSeconds;
     }
 
     return timeoutSeconds;
@@ -175,11 +183,11 @@ class PreferencesRepository {
   Future<void> setPreferredCallIdleDisconnectTimeoutSeconds(
     int timeoutSeconds,
   ) async {
-    if (!AppConfig.silenceTimeoutSecondsOptions.contains(timeoutSeconds)) {
+    if (!_callIdleDisconnectTimeoutSecondsOptions.contains(timeoutSeconds)) {
       throw ArgumentError.value(
         timeoutSeconds,
         'timeoutSeconds',
-        'Unsupported idle disconnect timeout. Expected one of: ${AppConfig.silenceTimeoutSecondsOptions.join(', ')}',
+        'Unsupported idle disconnect timeout. Expected one of: ${_callIdleDisconnectTimeoutSecondsOptions.join(', ')}',
       );
     }
 

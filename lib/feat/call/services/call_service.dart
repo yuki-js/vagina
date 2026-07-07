@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:vagina/core/config/app_config.dart';
 import 'package:vagina/feat/call/models/active_file.dart';
 import 'package:vagina/feat/call/models/realtime/realtime_adapter_models.dart';
 import 'package:vagina/feat/call/models/realtime/realtime_thread.dart';
@@ -82,8 +81,12 @@ class CallService {
   bool _pushToTalkActive = false;
   int _pushToTalkGeneration = 0;
   Future<void>? _pendingPushToTalkRelease;
+  static const int _defaultSilenceTimeoutSeconds = 180;
+  static const Duration _pttReleaseDebounce = Duration(milliseconds: 200);
+  static const Duration _minPttAudioDuration = Duration(milliseconds: 500);
+
   Duration _silenceTimeout = const Duration(
-    seconds: AppConfig.defaultSilenceTimeoutSeconds,
+    seconds: _defaultSilenceTimeoutSeconds,
   );
 
   CallService({required VirtualFilesystemRepository filesystemRepository})
@@ -200,7 +203,7 @@ class CallService {
     final completer = Completer<void>();
     _pendingPushToTalkRelease = completer.future;
 
-    await Future<void>.delayed(AppConfig.pttReleaseDebounce);
+    await Future<void>.delayed(_pttReleaseDebounce);
 
     if (_pushToTalkGeneration != releaseGeneration || !_pushToTalkActive) {
       completer.complete();
@@ -211,7 +214,7 @@ class CallService {
     _realtimeService.projectManualAudioTurnSpeakingState(false);
     try {
       final manualAudioTurn = _manualAudioTurnBuffer.finish(
-        minAudioDuration: AppConfig.minPttAudioDuration,
+        minAudioDuration: _minPttAudioDuration,
       );
       if (manualAudioTurn == null) {
         return false;

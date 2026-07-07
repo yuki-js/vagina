@@ -1,6 +1,5 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vagina/core/config/app_config.dart';
 import 'package:vagina/core/data/in_memory_store.dart';
 import 'package:vagina/models/push_to_talk_key_binding.dart';
 import 'package:vagina/repositories/preferences_repository.dart';
@@ -91,7 +90,7 @@ void main() {
       final timeoutSeconds = await repository
           .getPreferredCallIdleDisconnectTimeoutSeconds();
 
-      expect(timeoutSeconds, AppConfig.defaultSilenceTimeoutSeconds);
+      expect(timeoutSeconds, 180);
     });
 
     test('persists all supported idle disconnect timeout options', () async {
@@ -99,7 +98,7 @@ void main() {
       await store.initialize();
       final repository = PreferencesRepository(store);
 
-      for (final timeoutSeconds in AppConfig.silenceTimeoutSecondsOptions) {
+      for (final timeoutSeconds in const [30, 60, 180, 300, 600, 1800]) {
         await repository.setPreferredCallIdleDisconnectTimeoutSeconds(
           timeoutSeconds,
         );

@@ -3,7 +3,6 @@ florval:
   output_directory: lib/api/generated
 
   client:
-    base_url_env: VAGINA_API_BASE_URL
     timeout: 30000
 
   riverpod:

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:vagina/core/config/app_config.dart';
+import 'package:vagina/core/config/constants.dart';
 import 'package:vagina/core/state/locale_providers.dart';
 import 'package:vagina/core/app/app_container.dart';
 import 'package:vagina/core/theme/app_theme.dart';
@@ -155,12 +155,8 @@ class _OtherSettingsCard extends StatefulWidget {
 }
 
 class _OtherSettingsCardState extends State<_OtherSettingsCard> {
-  static final Uri _termsOfServiceUrl = Uri.parse(
-    'https://example.invalid/terms-of-service',
-  );
-  static final Uri _privacyPolicyUrl = Uri.parse(
-    'https://example.invalid/privacy-policy',
-  );
+  static final Uri _termsOfServiceUrl = Uri.parse(Constants.termsOfServiceUrl);
+  static final Uri _privacyPolicyUrl = Uri.parse(Constants.privacyPolicyUrl);
 
   bool _isLoggingOut = false;
 
@@ -259,7 +255,17 @@ class _CallPreferencesCard extends StatefulWidget {
 }
 
 class _CallPreferencesCardState extends State<_CallPreferencesCard> {
-  int _selectedTimeoutSeconds = AppConfig.defaultSilenceTimeoutSeconds;
+  static const int _defaultSilenceTimeoutSeconds = 180;
+  static const List<int> _silenceTimeoutSecondsOptions = [
+    30,
+    60,
+    180,
+    300,
+    600,
+    1800,
+  ];
+
+  int _selectedTimeoutSeconds = _defaultSilenceTimeoutSeconds;
   PushToTalkKeyBinding? _pushToTalkKeyBinding;
   bool _isLoading = true;
 
@@ -363,8 +369,7 @@ class _CallPreferencesCardState extends State<_CallPreferencesCard> {
               ),
             ),
             items: [
-              for (final timeoutSeconds
-                  in AppConfig.silenceTimeoutSecondsOptions)
+              for (final timeoutSeconds in _silenceTimeoutSecondsOptions)
                 DropdownMenuItem<int>(
                   value: timeoutSeconds,
                   child: Text(_formatTimeoutLabel(l10n, timeoutSeconds)),

@@ -1,7 +1,5 @@
 import 'dart:typed_data';
 
-import 'package:vagina/core/config/app_config.dart';
-
 /// A completed client-managed manual audio turn captured from the microphone.
 final class ManualAudioTurn {
   final Uint8List audioBytes;
@@ -15,6 +13,10 @@ final class ManualAudioTurn {
 /// This class intentionally does not know about realtime providers. It only
 /// gates raw PCM microphone chunks into a single completed manual turn.
 final class ManualAudioTurnBuffer {
+  static const int _sampleRate = 24000;
+  static const int _channels = 1;
+  static const int _bitDepth = 16;
+
   final BytesBuilder _builder = BytesBuilder(copy: false);
   bool _isCapturing = false;
   int _capturedBytes = 0;
@@ -69,9 +71,8 @@ final class ManualAudioTurnBuffer {
   }
 
   Duration _durationForBytes(int bytes) {
-    final bytesPerSample = AppConfig.bitDepth ~/ 8;
-    final bytesPerSecond =
-        AppConfig.sampleRate * AppConfig.channels * bytesPerSample;
+    final bytesPerSample = _bitDepth ~/ 8;
+    final bytesPerSecond = _sampleRate * _channels * bytesPerSample;
     return Duration(
       microseconds: (bytes * Duration.microsecondsPerSecond) ~/ bytesPerSecond,
     );

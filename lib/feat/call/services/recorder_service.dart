@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:record/record.dart';
-import 'package:vagina/core/config/app_config.dart';
 import 'package:vagina/feat/call/services/subservice.dart';
 import 'package:vagina/utils/audio_utils.dart';
 
@@ -13,6 +12,8 @@ import 'package:vagina/utils/audio_utils.dart';
 final class RecorderService extends SubService {
   /// Interval for amplitude updates
   static const Duration amplitudeUpdateInterval = Duration(milliseconds: 100);
+  static const int _sampleRate = 24000;
+  static const int _channels = 1;
 
   final StreamController<Uint8List> _audioController =
       StreamController<Uint8List>.broadcast();
@@ -82,8 +83,8 @@ final class RecorderService extends SubService {
       final rawStream = await _recorder.startStream(
         RecordConfig(
           encoder: AudioEncoder.pcm16bits,
-          sampleRate: AppConfig.sampleRate,
-          numChannels: AppConfig.channels,
+          sampleRate: _sampleRate,
+          numChannels: _channels,
           echoCancel: true,
           noiseSuppress: true,
           androidConfig: AndroidRecordConfig(

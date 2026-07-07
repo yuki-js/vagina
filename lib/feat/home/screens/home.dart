@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:vagina/core/config/app_config.dart';
+import 'package:vagina/core/config/constants.dart';
 import 'package:vagina/core/app/app_container.dart';
 import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/feat/announcement/services/announcement_service.dart';
@@ -102,7 +102,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         const Spacer(),
                         // Title
                         Text(
-                          l10n.appTitle(AppConfig.appName),
+                          l10n.appTitle(Constants.appName),
                           style: const TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,

@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:vagina/core/config/app_config.dart';
+import 'package:vagina/core/config/constants.dart';
 import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/l10n/app_localizations.dart';
 
@@ -61,7 +61,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final welcomeMessages = [
-      l10n.welcomeTitle(AppConfig.appName),
+      l10n.welcomeTitle(Constants.appName),
       l10n.welcomeHeroMessageThoughts,
       l10n.welcomeHeroMessageRealtimeAi,
       l10n.welcomeHeroMessageCreativePartner,

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:vagina/core/config/app_config.dart';
+import 'package:vagina/core/config/constants.dart';
 import 'package:vagina/core/data/permission_manager.dart';
 import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/feat/oobe/widgets/permission_card.dart';
@@ -192,7 +192,7 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
                     const SizedBox(height: 12),
 
                     Text(
-                      l10n.permissionsIntro(AppConfig.appName),
+                      l10n.permissionsIntro(Constants.appName),
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.white.withValues(alpha: 0.7),

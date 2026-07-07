@@ -4,7 +4,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:vagina/core/config/app_config.dart';
+import 'package:vagina/core/config/constants.dart';
 import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/l10n/app_localizations.dart';
 import 'package:vagina/feat/call/services/call_service.dart';
@@ -473,7 +473,7 @@ class _CallPaneState extends State<CallPane> {
                           const SizedBox(height: 16),
                           Text(
                             widget.speedDial.isDefault
-                                ? AppConfig.appName
+                                ? Constants.appName
                                 : widget.speedDial.name,
                             style: const TextStyle(
                               fontSize: 32,
@@ -485,7 +485,7 @@ class _CallPaneState extends State<CallPane> {
                           const SizedBox(height: 4),
                           if (widget.speedDial.isDefault)
                             Text(
-                              AppConfig.appSubtitle,
+                              Constants.appSubtitle,
                               style: TextStyle(
                                 fontSize: 14,
                                 color: AppTheme.textSecondary,

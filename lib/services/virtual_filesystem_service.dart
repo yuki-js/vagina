@@ -1,3 +1,4 @@
+import 'package:vagina/core/config/constants.dart';
 import 'package:vagina/interfaces/virtual_filesystem_repository.dart';
 import 'package:vagina/models/virtual_file.dart';
 
@@ -11,7 +12,7 @@ class VirtualFilesystemException implements Exception {
 }
 
 final class VirtualFilesystemPolicy {
-  static const int defaultMaxPathLength = 512;
+  static const int defaultMaxPathLength = Constants.vfsDefaultMaxPathLength;
 
   final int maxPathLength;
   final Set<String> _reservedPaths = <String>{};
@@ -97,11 +98,10 @@ final class VirtualFilesystemPolicy {
   }
 
   void checkReservedPath(String path) {
+    const reservedSystemPath = Constants.vfsReservedSystemPath;
     if (_reservedPaths.contains(path) ||
-        path == '/system' ||
-        path.startsWith('/system/') ||
-        path == '/tmp' ||
-        path.startsWith('/tmp/')) {
+        path == reservedSystemPath ||
+        path.startsWith('$reservedSystemPath/')) {
       throw VirtualFilesystemException('Access denied: reserved path');
     }
   }

@@ -18,7 +18,6 @@ import 'package:vagina/api/generated/responses/logout_response.dart';
 import 'package:vagina/api/generated/responses/refresh_session_response.dart';
 import 'package:vagina/api/generated/responses/start_oidc_login_response.dart';
 import 'package:vagina/api/vagina_api_client.dart';
-import 'package:vagina/core/config/app_config.dart';
 import 'package:vagina/repositories/preferences_repository.dart';
 import 'package:vagina/utils/platform_compat.dart';
 
@@ -33,7 +32,6 @@ typedef AuthenticatedApiClientFactory =
     );
 
 class AuthService extends ChangeNotifier {
-  static final String callbackUrl = AppConfig.callbackUrl;
   static const String defaultProvider = 'github';
   static const Duration accessTokenRefreshLeeway = Duration(seconds: 60);
 

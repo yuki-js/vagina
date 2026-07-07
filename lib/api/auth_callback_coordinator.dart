@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:app_links/app_links.dart';
 import 'package:flutter/foundation.dart';
 import 'package:vagina/api/auth_service.dart';
+import 'package:vagina/core/config/constants.dart';
 import 'package:vagina/feat/oobe/utils/oidc_callback_parser.dart';
 import 'package:vagina/utils/browser_history.dart';
 import 'package:vagina/utils/platform_compat.dart';
@@ -189,7 +190,7 @@ class AuthCallbackCoordinator {
   }
 
   bool _isExpectedCallbackUri(Uri uri) {
-    final expected = Uri.parse(AuthService.callbackUrl);
+    final expected = Uri.parse(Constants.oauthCallbackUrl);
     if (_matchesCallbackUri(uri, expected)) {
       return true;
     }

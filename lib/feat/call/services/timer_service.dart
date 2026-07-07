@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:vagina/core/config/app_config.dart';
 import 'package:vagina/feat/call/models/realtime/realtime_thread.dart';
 import 'package:vagina/feat/call/services/call_service.dart';
 import 'package:vagina/feat/call/services/subservice.dart';
@@ -16,8 +15,11 @@ import 'package:vagina/feat/call/services/subservice.dart';
 /// Uses a single timer for both duration updates and timeout detection.
 final class TimerService extends SubService {
   /// Minimum allowed silence timeout duration.
+  static const int _minSilenceTimeoutSeconds = 30;
+  static const int _defaultSilenceTimeoutSeconds = 180;
+
   static const Duration minSilenceTimeout = Duration(
-    seconds: AppConfig.minSilenceTimeoutSeconds,
+    seconds: _minSilenceTimeoutSeconds,
   );
 
   final CallService _callService;
@@ -39,7 +41,7 @@ final class TimerService extends SubService {
   TimerService(
     this._callService, {
     Duration silenceTimeout = const Duration(
-      seconds: AppConfig.defaultSilenceTimeoutSeconds,
+      seconds: _defaultSilenceTimeoutSeconds,
     ),
   }) : _silenceTimeout = silenceTimeout;
 

@@ -28,6 +28,31 @@ void main() {
       expect(repository.writtenFiles.single.content.length, oversized.length);
     });
 
+    test('allows tmp paths as normal writable VFS paths', () async {
+      final repository = _RecordingVirtualFilesystemRepository();
+      final service = VirtualFilesystemService(repository);
+
+      await service.write(
+        const VirtualFile(path: '/tmp/file.txt', content: 'scratch'),
+      );
+
+      expect(repository.writtenFiles.single.path, '/tmp/file.txt');
+      expect(repository.writtenFiles.single.content, 'scratch');
+    });
+
+    test('rejects system paths as reserved', () async {
+      final repository = _RecordingVirtualFilesystemRepository();
+      final service = VirtualFilesystemService(repository);
+
+      expect(
+        () => service.write(
+          const VirtualFile(path: '/system/file.txt', content: 'x'),
+        ),
+        throwsA(isA<VirtualFilesystemException>()),
+      );
+      expect(repository.writtenFiles, isEmpty);
+    });
+
     test('keeps cheap client-side path validation', () async {
       final repository = _RecordingVirtualFilesystemRepository();
       final service = VirtualFilesystemService(repository);

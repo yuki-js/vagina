@@ -3,7 +3,6 @@ import 'dart:collection';
 import 'dart:typed_data';
 
 import 'package:taudio/taudio.dart';
-import 'package:vagina/core/config/app_config.dart';
 import 'package:vagina/feat/call/services/subservice.dart';
 
 /// Immutable snapshot of [PlaybackService] buffering state.
@@ -49,6 +48,9 @@ final class PlaybackService extends SubService {
   /// Buffer size for audio playback streaming
   static const int playbackBufferSize = 8192;
   static const Duration drainCancellationTimeout = Duration(milliseconds: 100);
+  static const int _sampleRate = 24000;
+  static const int _channels = 1;
+  static const int _minAudioBufferSizeBeforeStart = 4800;
 
   final Queue<Uint8List> _bufferQueue = Queue<Uint8List>();
   final StreamController<bool> _playingStateController =
@@ -241,7 +243,7 @@ final class PlaybackService extends SubService {
       }
 
       final shouldStartPlayback =
-          _bufferedBytes >= AppConfig.minAudioBufferSizeBeforeStart ||
+          _bufferedBytes >= _minAudioBufferSizeBeforeStart ||
           _metrics.isResponseComplete;
       if (!shouldStartPlayback) {
         _emitMetrics();
@@ -302,8 +304,8 @@ final class PlaybackService extends SubService {
     try {
       await _player.startPlayerFromStream(
         codec: Codec.pcm16,
-        sampleRate: AppConfig.sampleRate,
-        numChannels: AppConfig.channels,
+        sampleRate: _sampleRate,
+        numChannels: _channels,
         bufferSize: playbackBufferSize,
         interleaved: true,
       );
