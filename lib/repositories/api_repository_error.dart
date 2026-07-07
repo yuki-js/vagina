@@ -24,7 +24,3 @@ String extractApiErrorMessage(dynamic body, {required String fallback}) {
   }
   return fallback;
 }
-
-Map<String, bool> boolMapFromDynamic(Map<String, dynamic> value) {
-  return value.map((key, value) => MapEntry(key, value == true));
-}

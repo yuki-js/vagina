@@ -206,14 +206,14 @@ class ApiSpeedDialRepository implements SpeedDialRepository {
       iconEmoji: speedDial.iconEmoji,
       voice: speedDial.voice,
       voiceAgentId: speedDial.voiceAgentId,
-      enabledTools: boolMapFromDynamic(speedDial.enabledTools),
+      enabledTools: _boolMapFromDynamic(speedDial.enabledTools),
       reasoningEffort: _reasoningEffortFromApi(speedDial.reasoningEffort),
       toolChoiceRequired: speedDial.toolChoiceRequired,
       createdAt: speedDial.createdAt,
     );
   }
 
-  Map<String, bool> boolMapFromDynamic(Map<String, dynamic> value) {
+  Map<String, bool> _boolMapFromDynamic(Map<String, dynamic> value) {
     return value.map((key, value) => MapEntry(key, value == true));
   }
 

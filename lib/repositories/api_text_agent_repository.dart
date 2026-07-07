@@ -213,12 +213,12 @@ class ApiTextAgentRepository implements TextAgentRepository {
       prompt: textAgent.prompt,
       description: textAgent.description,
       textModelId: textAgent.textModelId,
-      enabledTools: boolMapFromDynamic(textAgent.enabledTools),
+      enabledTools: _boolMapFromDynamic(textAgent.enabledTools),
       createdAt: textAgent.createdAt,
     );
   }
 
-  Map<String, bool> boolMapFromDynamic(Map<String, dynamic> value) {
+  Map<String, bool> _boolMapFromDynamic(Map<String, dynamic> value) {
     return value.map((key, value) => MapEntry(key, value == true));
   }
 }
