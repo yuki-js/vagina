@@ -127,8 +127,7 @@ class _ToolConfigSectionState extends State<ToolConfigSection> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final toolRegistry = ToolRegistry();
-    final toolList = toolRegistry.registeredToolMeta;
+    final toolList = registeredToolMetadata();
 
     // カテゴリ別にグルーピング
     final toolsByCategory = toolList
