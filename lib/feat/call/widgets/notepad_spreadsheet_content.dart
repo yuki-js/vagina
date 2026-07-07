@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/l10n/app_localizations.dart';
 import 'package:vagina/models/tabular_data.dart';
-import 'spreadsheet/editable_spreadsheet_table.dart';
+import 'package:vagina/core/widgets/spreadsheet/editable_spreadsheet_table.dart';
 
 /// Spreadsheet content renderer with unified read-only and editable modes.
 class SpreadsheetContent extends StatefulWidget {
