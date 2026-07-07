@@ -5,7 +5,7 @@ import 'package:vagina/services/tools_runtime/tool_definition.dart';
 import 'package:vagina/tools/builtin/document/document_overwrite_tool.dart';
 import 'package:vagina/tools/builtin/document/document_patch_tool.dart';
 import 'package:vagina/tools/builtin/document/document_read_tool.dart';
-import 'package:vagina/tools/builtin/shared/file_type_support.dart';
+import 'package:vagina/models/file_type_support.dart';
 import 'package:vagina/tools/builtin/spreadsheet/spreadsheet_add_rows_tool.dart';
 import 'package:vagina/tools/builtin/spreadsheet/spreadsheet_delete_rows_tool.dart';
 import 'package:vagina/tools/builtin/spreadsheet/spreadsheet_update_rows_tool.dart';

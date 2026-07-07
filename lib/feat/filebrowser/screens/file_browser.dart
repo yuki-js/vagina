@@ -9,7 +9,7 @@ import 'package:vagina/utils/file_icon_utils.dart';
 import 'package:vagina/feat/filebrowser/screens/text_viewer_screen.dart';
 import 'package:vagina/feat/filebrowser/screens/table_viewer_screen.dart';
 import 'package:vagina/feat/filebrowser/screens/file_info_viewer_screen.dart';
-import 'package:vagina/tools/builtin/shared/file_type_support.dart';
+import 'package:vagina/models/file_type_support.dart';
 
 /// File browser screen - browse virtual filesystem with hierarchical navigation.
 ///

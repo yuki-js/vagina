@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:vagina/models/tabular_data.dart';
 import 'package:vagina/services/tools_runtime/tool.dart';
 import 'package:vagina/services/tools_runtime/tool_definition.dart';
+import 'package:vagina/models/file_type_support.dart';
 import 'package:vagina/tools/builtin/shared/file_type_support.dart';
 
 class _DocumentPatchFailure implements Exception {

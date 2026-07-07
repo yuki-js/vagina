@@ -5,7 +5,7 @@ import 'package:vagina/l10n/app_localizations.dart';
 import 'package:vagina/models/virtual_file.dart';
 import 'package:vagina/services/virtual_filesystem_service.dart';
 import 'package:vagina/utils/file_icon_utils.dart';
-import 'package:vagina/tools/builtin/shared/file_type_support.dart';
+import 'package:vagina/models/file_type_support.dart';
 
 /// File info viewer screen - view file metadata and information.
 class FileInfoViewerScreen extends StatefulWidget {

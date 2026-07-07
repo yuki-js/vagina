@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:vagina/tools/builtin/shared/file_type_support.dart';
+import 'package:vagina/models/file_type_support.dart';
 
 /// Get the appropriate Flutter icon for a given file extension.
 ///
