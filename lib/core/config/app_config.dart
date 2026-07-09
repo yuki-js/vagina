@@ -59,5 +59,4 @@ class AppConfig {
         host == '::1' ||
         host.endsWith('.localhost');
   }
-
 }
