@@ -1374,7 +1374,6 @@ components:
           type: string
           example: Research Assistant
         prompt:
-          minLength: 1
           type: string
           example: You are a careful research assistant.
         description:
@@ -1782,7 +1781,6 @@ components:
           type: string
           example: Research Assistant
         prompt:
-          minLength: 1
           type: string
           example: You are a careful research assistant.
         description:
