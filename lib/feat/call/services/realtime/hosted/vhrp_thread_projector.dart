@@ -162,9 +162,26 @@ final class VhrpThreadProjector {
         }
       }
     } else {
-      thread.addItem(incoming);
+      _addItemAfter(thread, op.previousItemId, incoming);
     }
     return const ProjectResult.ok();
+  }
+
+  void _addItemAfter(
+    RealtimeThread thread,
+    String? previousItemId,
+    RealtimeThreadItem incoming,
+  ) {
+    if (previousItemId == null || previousItemId.isEmpty) {
+      thread.addItem(incoming);
+      return;
+    }
+    final index = thread.items.indexWhere((item) => item.id == previousItemId);
+    if (index < 0) {
+      thread.addItem(incoming);
+      return;
+    }
+    thread.items.insert(index + 1, incoming);
   }
 
   // ── remove_item ───────────────────────────────────────────────────────────

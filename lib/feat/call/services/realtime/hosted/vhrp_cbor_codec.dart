@@ -273,6 +273,7 @@ class VhrpCborCodec {
               ? raw[CborString('item')] as CborMap
               : CborMap({}),
         ),
+        previousItemId: _getText(raw, 'previousItemId'),
       ),
       'remove_item' => RemoveItemOp(itemId: _requireText(raw, 'itemId')),
       'set_status' => SetStatusOp(

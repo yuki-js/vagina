@@ -445,8 +445,9 @@ final class AddItemOp extends ThreadPatchOp {
   String get op => 'add_item';
 
   final Map<String, Object?> item;
+  final String? previousItemId;
 
-  AddItemOp({required this.item});
+  AddItemOp({required this.item, this.previousItemId});
 }
 
 /// `remove_item`: removes an item by [itemId].
