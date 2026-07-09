@@ -118,7 +118,7 @@ class SpeedDial {
   static SpeedDialReasoningEffort _reasoningEffortFromJson(Object? value) {
     if (value is String) {
       for (final effort in SpeedDialReasoningEffort.values) {
-        if (effort.name == value) {
+        if (effort.name == value.toLowerCase()) {
           return effort;
         }
       }
