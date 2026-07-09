@@ -7,6 +7,42 @@ servers:
 - url: /api
   description: API base path
 paths:
+  /auth/oidc/providers:
+    get:
+      tags:
+      - auth
+      summary: List enabled OIDC providers
+      description: Return OIDC providers that are implemented and configured on this
+        server.
+      operationId: listOidcProviders
+      responses:
+        "200":
+          description: Enabled OIDC providers.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  required:
+                  - displayName
+                  - id
+                  type: object
+                  properties:
+                    id:
+                      minLength: 1
+                      type: string
+                      example: github
+                    displayName:
+                      minLength: 1
+                      type: string
+                      example: GitHub
+        "500":
+          description: Unexpected error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security: []
   /auth/oidc/{provider}/start:
     post:
       tags:
@@ -699,12 +735,12 @@ paths:
       summary: VHRP/1 WebSocket upgrade (discoverability stub)
       description: "WebSocket upgrade entry point for the hosted realtime voice protocol\
         \ (VHRP/1). This is a discoverability stub only: the connection is a binary\
-        \ WebSocket negotiating the `vhrp.cbor.v1` subprotocol and exchanges CBOR\
-        \ frames, which OpenAPI cannot describe. No request/response body is modeled\
-        \ here on purpose. Authentication is NOT performed at upgrade time; the first\
-        \ application message MUST be `session.open` carrying a JWT in `body.token`.\
-        \ See the linked design docs for the full wire contract, message types, and\
-        \ thread projection rules."
+        \ WebSocket exchanging CBOR frames, which OpenAPI cannot describe. Clients\
+        \ may offer the `vhrp.cbor.v1` subprotocol, but it is not required. No request/response\
+        \ body is modeled here on purpose. Authentication is NOT performed at upgrade\
+        \ time; the first application message MUST be `session.open` carrying a JWT\
+        \ in `body.token`. See the linked design docs for the full wire contract,\
+        \ message types, and thread projection rules."
       externalDocs:
         description: VHRP/1 wire protocol and adapter design set
         url: https://github.com/vagina-ai/server/blob/main/../client/docs/hosted_realtime/02_vhrp_wire_protocol.md
@@ -712,8 +748,8 @@ paths:
       parameters:
       - name: Sec-WebSocket-Protocol
         in: header
-        description: Must include the `vhrp.cbor.v1` subprotocol token.
-        required: true
+        description: Optional `vhrp.cbor.v1` subprotocol token.
+        required: false
         schema:
           type: string
           example: vhrp.cbor.v1
@@ -723,7 +759,7 @@ paths:
             WebSocket speaking VHRP/1 over CBOR. All subsequent communication is out
             of OpenAPI scope.
         "400":
-          description: Malformed upgrade request or unsupported subprotocol.
+          description: Malformed upgrade request.
           content:
             application/json:
               schema:
@@ -1375,6 +1411,7 @@ components:
           example: Research Assistant
         prompt:
           type: string
+          nullable: true
           example: You are a careful research assistant.
         description:
           maxLength: 512

@@ -7,6 +7,7 @@ import 'package:vagina/api/auth_exception.dart';
 import 'package:vagina/api/generated/models/auth_token_response.dart';
 import 'package:vagina/api/generated/models/exchange_oidc_login_body.dart';
 import 'package:vagina/api/generated/models/logout_body.dart';
+import 'package:vagina/api/generated/models/list_oidc_providers_success_body_item.dart';
 import 'package:vagina/api/generated/models/refresh_session_body.dart';
 import 'package:vagina/api/generated/models/start_oidc_login_body.dart';
 import 'package:vagina/api/generated/models/start_oidc_login_body_client_type.dart';
@@ -14,6 +15,7 @@ import 'package:vagina/api/generated/models/start_oidc_login_body_code_challenge
 import 'package:vagina/api/generated/models/user.dart';
 import 'package:vagina/api/generated/responses/exchange_oidc_login_response.dart';
 import 'package:vagina/api/generated/responses/get_current_user_response.dart';
+import 'package:vagina/api/generated/responses/list_oidc_providers_response.dart';
 import 'package:vagina/api/generated/responses/logout_response.dart';
 import 'package:vagina/api/generated/responses/refresh_session_response.dart';
 import 'package:vagina/api/generated/responses/start_oidc_login_response.dart';
@@ -38,6 +40,8 @@ class AuthService extends ChangeNotifier {
   final PreferencesRepository _preferencesRepository;
   final Random _random;
   late final VaginaApiClient _apiClient;
+  late final Future<ListOidcProvidersResponse> Function()
+  _listOidcProvidersCall;
   late final Future<StartOidcLoginResponse> Function(
     String provider,
     StartOidcLoginBody body,
@@ -63,6 +67,7 @@ class AuthService extends ChangeNotifier {
     required PreferencesRepository preferencesRepository,
     Random? random,
     AuthenticatedApiClientFactory? apiClientFactory,
+    Future<ListOidcProvidersResponse> Function()? listOidcProvidersCall,
     Future<StartOidcLoginResponse> Function(
       String provider,
       StartOidcLoginBody body,
@@ -83,6 +88,8 @@ class AuthService extends ChangeNotifier {
       getAccessToken,
       discardSession,
     );
+    _listOidcProvidersCall =
+        listOidcProvidersCall ?? () => _apiClient.auth.listOidcProviders();
     _startOidcLoginCall =
         startOidcLoginCall ??
         (provider, body) =>
@@ -114,6 +121,23 @@ class AuthService extends ChangeNotifier {
   AuthState get authState => _authState;
 
   String? get tokenType => _accessToken == null ? null : _tokenType;
+
+  Future<List<ListOidcProvidersSuccessBodyItem>> listOidcProviders() async {
+    final response = await _listOidcProvidersCall();
+    return switch (response) {
+      ListOidcProvidersResponseSuccess(:final data) => data,
+      ListOidcProvidersResponseServerError(:final data) => throw AuthException(
+        data.message,
+      ),
+      ListOidcProvidersResponseUnknown(:final statusCode, :final body) =>
+        throw AuthException(
+          _extractErrorMessage(
+            body,
+            fallback: 'List OIDC providers failed (status: $statusCode).',
+          ),
+        ),
+    };
+  }
 
   Future<Uri> startOidcLogin({String provider = defaultProvider}) async {
     final normalizedProvider = provider.trim();

@@ -210,7 +210,7 @@ class ApiTextAgentRepository implements TextAgentRepository {
     return TextAgentDefinition(
       id: textAgent.id,
       name: textAgent.name,
-      prompt: textAgent.prompt,
+      prompt: textAgent.prompt ?? '',
       description: textAgent.description,
       textModelId: textAgent.textModelId,
       enabledTools: _boolMapFromDynamic(textAgent.enabledTools),

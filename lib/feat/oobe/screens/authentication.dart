@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:vagina/api/generated/models/list_oidc_providers_success_body_item.dart'
+    as api_model;
 import 'package:vagina/feat/announcement/services/announcement_service.dart';
 import 'package:vagina/feat/announcement/widgets/home_announcement_host.dart';
 import 'package:vagina/l10n/app_localizations.dart';
@@ -16,51 +18,55 @@ class AuthProvider {
     required this.icon,
     required this.color,
   });
+
+  factory AuthProvider.fromApi(
+    api_model.ListOidcProvidersSuccessBodyItem provider,
+  ) {
+    return switch (provider.id) {
+      'github' => AuthProvider(
+        id: provider.id,
+        name: provider.displayName,
+        icon: Icons.code,
+        color: const Color(0xFF181717),
+      ),
+      'harigata' => AuthProvider(
+        id: provider.id,
+        name: provider.displayName,
+        icon: Icons.vpn_key,
+        color: const Color(0xFF5E35B1),
+      ),
+      _ => AuthProvider(
+        id: provider.id,
+        name: provider.displayName,
+        icon: Icons.login,
+        color: const Color(0xFF455A64),
+      ),
+    };
+  }
 }
 
 /// Second OOBE screen - Authentication options
 class AuthenticationScreen extends StatelessWidget {
   final AnnouncementService announcementService;
+  final List<AuthProvider> providers;
+  final bool isLoadingProviders;
+  final String? providerLoadError;
   final Future<void> Function(AuthProvider provider) onProviderTap;
   final bool isAuthenticating;
+  final VoidCallback onRetryLoadProviders;
   final VoidCallback onBack;
 
   const AuthenticationScreen({
     super.key,
     required this.announcementService,
+    required this.providers,
+    this.isLoadingProviders = false,
+    this.providerLoadError,
     required this.onProviderTap,
     this.isAuthenticating = false,
+    required this.onRetryLoadProviders,
     required this.onBack,
   });
-
-  // Predefined authentication providers
-  // In the future, this could be loaded from an external configuration file
-  static const List<AuthProvider> _providers = [
-    AuthProvider(
-      id: 'google',
-      name: 'Google',
-      icon: Icons.g_mobiledata,
-      color: Color(0xFF4285F4),
-    ),
-    AuthProvider(
-      id: 'github',
-      name: 'GitHub',
-      icon: Icons.code,
-      color: Color(0xFF181717),
-    ),
-    AuthProvider(
-      id: 'twitter',
-      name: 'X (Twitter)',
-      icon: Icons.close, // X symbol
-      color: Color(0xFF000000),
-    ),
-    AuthProvider(
-      id: 'apple',
-      name: 'Apple',
-      icon: Icons.apple,
-      color: Color(0xFF000000),
-    ),
-  ];
 
   void _handleProviderTap(BuildContext context, AuthProvider provider) {
     onProviderTap(provider);
@@ -103,13 +109,7 @@ class AuthenticationScreen extends StatelessWidget {
 
                     const SizedBox(height: 24),
 
-                    // Authentication provider buttons
-                    ..._providers.map(
-                      (provider) => Padding(
-                        padding: const EdgeInsets.only(bottom: 16),
-                        child: _buildProviderButton(context, provider),
-                      ),
-                    ),
+                    _buildProviderArea(context),
 
                     if (isAuthenticating) ...[
                       const SizedBox(height: 8),
@@ -167,6 +167,43 @@ class AuthenticationScreen extends StatelessWidget {
     );
   }
 
+  Widget _buildProviderArea(BuildContext context) {
+    if (isLoadingProviders) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 24),
+        child: CircularProgressIndicator(color: Colors.white),
+      );
+    }
+
+    final error = providerLoadError;
+    if (error != null) {
+      return _ProviderStateMessage(
+        icon: Icons.error_outline,
+        message: error,
+        actionLabel: 'Retry',
+        onAction: onRetryLoadProviders,
+      );
+    }
+
+    if (providers.isEmpty) {
+      return const _ProviderStateMessage(
+        icon: Icons.no_accounts,
+        message: 'No sign-in providers are configured for this server.',
+      );
+    }
+
+    return Column(
+      children: providers
+          .map(
+            (provider) => Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: _buildProviderButton(context, provider),
+            ),
+          )
+          .toList(growable: false),
+    );
+  }
+
   Widget _buildProviderButton(BuildContext context, AuthProvider provider) {
     final l10n = AppLocalizations.of(context);
 
@@ -189,6 +226,50 @@ class AuthenticationScreen extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _ProviderStateMessage extends StatelessWidget {
+  final IconData icon;
+  final String message;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+
+  const _ProviderStateMessage({
+    required this.icon,
+    required this.message,
+    this.actionLabel,
+    this.onAction,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Column(
+        children: [
+          Icon(icon, color: Colors.white.withValues(alpha: 0.75), size: 32),
+          const SizedBox(height: 12),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.75),
+              fontSize: 14,
+              height: 1.4,
+            ),
+          ),
+          if (actionLabel != null && onAction != null) ...[
+            const SizedBox(height: 12),
+            OutlinedButton(
+              onPressed: onAction,
+              style: OutlinedButton.styleFrom(foregroundColor: Colors.white),
+              child: Text(actionLabel!),
+            ),
+          ],
+        ],
       ),
     );
   }

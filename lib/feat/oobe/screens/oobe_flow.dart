@@ -28,6 +28,9 @@ class _OobeFlowScreenState extends State<OobeFlowScreen> {
   int _currentPageIndex = 0;
   bool _isAuthenticating = false;
   bool _isSignedIn = false;
+  bool _isLoadingAuthProviders = true;
+  List<AuthProvider> _authProviders = const <AuthProvider>[];
+  String? _authProviderLoadError;
   late final AnnouncementService _announcementService;
   late final AuthService _authService;
   StreamSubscription<AuthCallbackEvent>? _authCallbackSubscription;
@@ -45,6 +48,7 @@ class _OobeFlowScreenState extends State<OobeFlowScreen> {
       unawaited(_handleAuthCallbackEvent(event));
     });
     unawaited(_restoreSignInStateIfAvailable());
+    unawaited(_loadAuthProviders());
   }
 
   @override
@@ -79,6 +83,47 @@ class _OobeFlowScreenState extends State<OobeFlowScreen> {
             : AppTheme.successColor,
       ),
     );
+  }
+
+  Future<void> _loadAuthProviders() async {
+    if (mounted) {
+      setState(() {
+        _isLoadingAuthProviders = true;
+        _authProviderLoadError = null;
+      });
+    }
+
+    try {
+      final providers = await _authService.listOidcProviders();
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _authProviders = providers
+            .map(AuthProvider.fromApi)
+            .toList(growable: false);
+        _isLoadingAuthProviders = false;
+        _authProviderLoadError = null;
+      });
+    } on AuthException catch (e) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _authProviders = const <AuthProvider>[];
+        _isLoadingAuthProviders = false;
+        _authProviderLoadError = e.message;
+      });
+    } catch (e) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _authProviders = const <AuthProvider>[];
+        _isLoadingAuthProviders = false;
+        _authProviderLoadError = e.toString();
+      });
+    }
   }
 
   Future<void> _handleProviderTap(AuthProvider provider) async {
@@ -293,8 +338,12 @@ class _OobeFlowScreenState extends State<OobeFlowScreen> {
         return AuthenticationScreen(
           key: const ValueKey('auth'),
           announcementService: _announcementService,
+          providers: _authProviders,
+          isLoadingProviders: _isLoadingAuthProviders,
+          providerLoadError: _authProviderLoadError,
           onProviderTap: _handleProviderTap,
           isAuthenticating: _isAuthenticating,
+          onRetryLoadProviders: () => unawaited(_loadAuthProviders()),
           onBack: _goToPreviousPage,
         );
       case 2:
