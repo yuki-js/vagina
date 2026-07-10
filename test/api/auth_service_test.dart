@@ -167,6 +167,7 @@ AuthTokenResponse _tokenResponse({required String accessToken}) {
     user: User(
       id: 'user-1',
       accountLifecycle: UserAccountLifecycle.active,
+      entitlements: const [],
       createdAt: DateTime.utc(2024),
     ),
   );

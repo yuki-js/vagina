@@ -1314,6 +1314,7 @@ components:
       required:
       - accountLifecycle
       - createdAt
+      - entitlements
       - id
       type: object
       properties:
@@ -1335,6 +1336,12 @@ components:
           type: string
           nullable: true
           example: https://avatars.githubusercontent.com/u/1?v=4
+        entitlements:
+          type: array
+          description: Active entitlement keys currently effective for this user.
+          items:
+            type: string
+            example: premium.voice
         createdAt:
           type: string
           format: date-time
