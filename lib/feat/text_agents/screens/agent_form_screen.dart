@@ -79,7 +79,10 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
     }
 
     final textModelId = _effectiveSelectedTextModelId(modelPresets);
-    if (textModelId == null) {
+    if (textModelId == null ||
+        !modelPresets.any(
+          (preset) => preset.id == textModelId && preset.isAvailable,
+        )) {
       return;
     }
 
@@ -382,7 +385,9 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
       return null;
     }
     return presetsAsync.maybeWhen(
-      data: (presets) => presets.isEmpty ? null : () => _saveAgent(presets),
+      data: (presets) => presets.any((preset) => preset.isAvailable)
+          ? () => _saveAgent(presets)
+          : null,
       orElse: () => null,
     );
   }
@@ -423,7 +428,8 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
           items: presets.map((preset) {
             return DropdownMenuItem(
               value: preset.id,
-              child: Text(_modelPresetLabel(preset, l10n)),
+              enabled: preset.isAvailable,
+              child: _buildModelPresetDropdownItem(preset, l10n),
             );
           }).toList(),
           onChanged: (value) {
@@ -448,14 +454,51 @@ class _AgentFormScreenState extends ConsumerState<AgentFormScreen> {
 
     final selectedTextModelId = _selectedTextModelId;
     if (selectedTextModelId != null &&
-        presets.any((preset) => preset.id == selectedTextModelId)) {
+        presets.any(
+          (preset) => preset.id == selectedTextModelId && preset.isAvailable,
+        )) {
       return selectedTextModelId;
     }
 
     final defaultPreset = presets
-        .where((preset) => preset.isDefault)
+        .where((preset) => preset.isDefault && preset.isAvailable)
         .firstOrNull;
-    return defaultPreset?.id ?? presets.first.id;
+    if (defaultPreset != null) {
+      return defaultPreset.id;
+    }
+
+    return presets.where((preset) => preset.isAvailable).firstOrNull?.id;
+  }
+
+  Widget _buildModelPresetDropdownItem(
+    TextAgentModelPreset preset,
+    AppLocalizations l10n,
+  ) {
+    final color = preset.isAvailable
+        ? AppTheme.lightTextPrimary
+        : AppTheme.lightTextSecondary;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Flexible(
+          fit: FlexFit.loose,
+          child: Text(
+            _modelPresetLabel(preset, l10n),
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(color: color),
+          ),
+        ),
+        if (!preset.isAvailable) ...[
+          const SizedBox(width: 8),
+          const Icon(
+            Icons.lock_outline,
+            size: 16,
+            color: AppTheme.lightTextSecondary,
+          ),
+        ],
+      ],
+    );
   }
 
   String _modelPresetLabel(TextAgentModelPreset preset, AppLocalizations l10n) {

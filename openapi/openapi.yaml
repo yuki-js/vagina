@@ -785,6 +785,7 @@ paths:
                   required:
                   - displayName
                   - id
+                  - isAvailable
                   - isDefault
                   type: object
                   properties:
@@ -798,6 +799,13 @@ paths:
                       example: voice-agent-prod
                     isDefault:
                       type: boolean
+                      example: true
+                    isAvailable:
+                      type: boolean
+                      description: >-
+                        Whether the authenticated user may select and use this
+                        voice agent. Public catalog items can be returned with
+                        false so clients can render them as locked.
                       example: true
                   additionalProperties: false
         "401":
@@ -1277,6 +1285,7 @@ paths:
                   required:
                   - displayName
                   - id
+                  - isAvailable
                   - isDefault
                   type: object
                   properties:
@@ -1292,6 +1301,13 @@ paths:
                       example: text-agent-prod
                     isDefault:
                       type: boolean
+                      example: true
+                    isAvailable:
+                      type: boolean
+                      description: >-
+                        Whether the authenticated user may select and use this
+                        text agent model. Public catalog items can be returned
+                        with false so clients can render them as locked.
                       example: true
                   additionalProperties: false
         "401":

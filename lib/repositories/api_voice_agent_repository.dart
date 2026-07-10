@@ -45,6 +45,7 @@ class ApiVoiceAgentRepository implements VoiceAgentRepository {
       id: item.id,
       displayName: item.displayName,
       isDefault: item.isDefault,
+      isAvailable: item.isAvailable,
     );
   }
 }

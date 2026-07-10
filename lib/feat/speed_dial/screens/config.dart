@@ -102,12 +102,48 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
   }
 
   String _defaultVoiceAgentId(List<VoiceAgent> voiceAgents) {
-    for (final voiceAgent in voiceAgents) {
-      if (voiceAgent.isDefault) {
-        return voiceAgent.id;
-      }
+    final availableDefault = voiceAgents
+        .where((voiceAgent) => voiceAgent.isAvailable && voiceAgent.isDefault)
+        .firstOrNull;
+    if (availableDefault != null) {
+      return availableDefault.id;
     }
-    return voiceAgents.first.id;
+
+    final availableFirst = voiceAgents
+        .where((voiceAgent) => voiceAgent.isAvailable)
+        .firstOrNull;
+    return availableFirst?.id ?? voiceAgents.first.id;
+  }
+
+  Widget _buildVoiceAgentDropdownItem(VoiceAgent agent, AppLocalizations l10n) {
+    final label = agent.isDefault
+        ? l10n.speedDialConfigVoiceAgentDefault(agent.displayName)
+        : agent.displayName;
+    final color = agent.isAvailable
+        ? AppTheme.lightTextPrimary
+        : AppTheme.lightTextSecondary;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Flexible(
+          fit: FlexFit.loose,
+          child: Text(
+            label,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(color: color),
+          ),
+        ),
+        if (!agent.isAvailable) ...[
+          const SizedBox(width: 8),
+          const Icon(
+            Icons.lock_outline,
+            size: 16,
+            color: AppTheme.lightTextSecondary,
+          ),
+        ],
+      ],
+    );
   }
 
   @override
@@ -170,7 +206,9 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
       return;
     }
 
-    if (!_voiceAgents.any((agent) => agent.id == _selectedVoiceAgentId)) {
+    if (!_voiceAgents.any(
+      (agent) => agent.id == _selectedVoiceAgentId && agent.isAvailable,
+    )) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(l10n.speedDialConfigVoiceAgentInvalidSelection)),
       );
@@ -581,12 +619,10 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
                             .map(
                               (agent) => DropdownMenuItem<String>(
                                 value: agent.id,
-                                child: Text(
-                                  agent.isDefault
-                                      ? l10n.speedDialConfigVoiceAgentDefault(
-                                          agent.displayName,
-                                        )
-                                      : agent.displayName,
+                                enabled: agent.isAvailable,
+                                child: _buildVoiceAgentDropdownItem(
+                                  agent,
+                                  l10n,
                                 ),
                               ),
                             )

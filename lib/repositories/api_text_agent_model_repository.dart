@@ -47,6 +47,7 @@ class ApiTextAgentModelRepository implements TextAgentModelRepository {
       id: item.id,
       displayName: item.displayName,
       isDefault: item.isDefault,
+      isAvailable: item.isAvailable,
     );
   }
 }

@@ -19,11 +19,13 @@ void main() {
               'id': 'voice-agent-prod',
               'displayName': 'Production',
               'isDefault': true,
+              'isAvailable': true,
             },
             {
               'id': 'voice-agent-prod-cc',
               'displayName': 'Production CC',
               'isDefault': false,
+              'isAvailable': false,
             },
           ]);
         });
@@ -36,8 +38,10 @@ void main() {
         expect(voiceAgents.first.id, 'voice-agent-prod');
         expect(voiceAgents.first.displayName, 'Production');
         expect(voiceAgents.first.isDefault, isTrue);
+        expect(voiceAgents.first.isAvailable, isTrue);
         expect(voiceAgents.last.id, 'voice-agent-prod-cc');
         expect(voiceAgents.last.isDefault, isFalse);
+        expect(voiceAgents.last.isAvailable, isFalse);
       },
     );
 
