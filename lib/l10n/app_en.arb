@@ -366,6 +366,32 @@
   "@settingsCommonSave": {
     "description": "Primary save button label used on the settings screen."
   },
+  "unsavedChangesMessage": "You have unsaved changes",
+  "@unsavedChangesMessage": {
+    "description": "Message in the floating edit bar while a form differs from its persisted state."
+  },
+  "unsavedChangesDiscard": "Discard changes",
+  "@unsavedChangesDiscard": {
+    "description": "Action in the floating edit bar that restores the last persisted form state."
+  },
+  "unsavedChangesDiscardCompact": "Discard",
+  "@unsavedChangesDiscardCompact": {
+    "description": "Short discard action label used in the floating edit bar on narrow screens."
+  },
+  "unsavedChangesSaving": "Saving",
+  "@unsavedChangesSaving": {
+    "description": "Progress label in the floating edit bar while a save request is running."
+  },
+  "unsavedChangesSaveFailed": "Could not save your changes: {error}",
+  "@unsavedChangesSaveFailed": {
+    "description": "Error banner shown at the top of an edit form after saving fails.",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "Details from the failed save operation."
+      }
+    }
+  },
   "settingsCommonClear": "Clear",
   "@settingsCommonClear": {
     "description": "Generic clear button label used in settings dialogs."
@@ -400,10 +426,6 @@
   "@speedDialConfigEditTitle": {
     "description": "App bar title on the speed dial configuration screen when editing an existing speed dial."
   },
-  "speedDialConfigAddAction": "Add",
-  "@speedDialConfigAddAction": {
-    "description": "Primary action button label on the speed dial configuration screen when creating a new speed dial."
-  },
   "speedDialConfigNameRequired": "Enter a name",
   "@speedDialConfigNameRequired": {
     "description": "Validation message shown when the speed dial name field is empty."
@@ -411,22 +433,6 @@
   "speedDialConfigSystemPromptRequired": "Enter the system prompt",
   "@speedDialConfigSystemPromptRequired": {
     "description": "Validation message shown when the speed dial system prompt field is empty."
-  },
-  "speedDialConfigAdded": "Speed dial added",
-  "@speedDialConfigAdded": {
-    "description": "Snackbar shown after a new speed dial is saved successfully."
-  },
-  "speedDialConfigUpdated": "Speed dial updated",
-  "@speedDialConfigUpdated": {
-    "description": "Snackbar shown after an existing speed dial is updated successfully."
-  },
-  "speedDialConfigDeleted": "Speed dial deleted",
-  "@speedDialConfigDeleted": {
-    "description": "Snackbar shown after a speed dial is deleted successfully."
-  },
-  "speedDialConfigDefaultDeleteBlocked": "The default speed dial cannot be deleted",
-  "@speedDialConfigDefaultDeleteBlocked": {
-    "description": "Snackbar shown when the user tries to delete the protected default speed dial."
   },
   "speedDialConfigDeleteConfirmTitle": "Delete speed dial",
   "@speedDialConfigDeleteConfirmTitle": {
@@ -636,24 +642,6 @@
       }
     }
   },
-  "textAgentsSaveCreated": "Agent created",
-  "@textAgentsSaveCreated": {
-    "description": "Snackbar shown after a new text agent is saved successfully."
-  },
-  "textAgentsSaveUpdated": "Agent updated",
-  "@textAgentsSaveUpdated": {
-    "description": "Snackbar shown after an existing text agent is updated successfully."
-  },
-  "textAgentsSaveFailed": "Failed to save: {error}",
-  "@textAgentsSaveFailed": {
-    "description": "Snackbar shown when saving a text agent fails.",
-    "placeholders": {
-      "error": {
-        "type": "String",
-        "description": "Error details from the failed text agent save operation."
-      }
-    }
-  },
   "textAgentsDeleteDialogTitle": "Delete agent",
   "@textAgentsDeleteDialogTitle": {
     "description": "Confirmation dialog title shown before deleting a text agent."
@@ -665,20 +653,6 @@
       "name": {
         "type": "String",
         "description": "Display name of the text agent being deleted."
-      }
-    }
-  },
-  "textAgentsDeleteSuccess": "Agent deleted",
-  "@textAgentsDeleteSuccess": {
-    "description": "Snackbar shown after deleting a text agent successfully."
-  },
-  "textAgentsDeleteFailed": "Failed to delete: {error}",
-  "@textAgentsDeleteFailed": {
-    "description": "Snackbar shown when deleting a text agent fails.",
-    "placeholders": {
-      "error": {
-        "type": "String",
-        "description": "Error details from the failed text agent delete operation."
       }
     }
   },
@@ -733,10 +707,6 @@
   "textAgentsSectionToolSettings": "Tool settings",
   "@textAgentsSectionToolSettings": {
     "description": "Section header above the shared tool configuration widget on the text agent form screen."
-  },
-  "textAgentsActionCreate": "Create",
-  "@textAgentsActionCreate": {
-    "description": "Primary button label on the text agent form screen when creating a new text agent."
   },
   "textAgentsFieldModel": "Model",
   "@textAgentsFieldModel": {

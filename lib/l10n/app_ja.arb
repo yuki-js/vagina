@@ -366,6 +366,32 @@
   "@settingsCommonSave": {
     "description": "設定画面で使う主要な保存ボタンのラベル。"
   },
+  "unsavedChangesMessage": "未保存の変更があります",
+  "@unsavedChangesMessage": {
+    "description": "フォーム内容が保存済み状態と異なる間、固定編集バーに表示するメッセージ。"
+  },
+  "unsavedChangesDiscard": "変更を破棄",
+  "@unsavedChangesDiscard": {
+    "description": "フォームを最後に保存された状態へ戻す固定編集バーの操作。"
+  },
+  "unsavedChangesDiscardCompact": "破棄",
+  "@unsavedChangesDiscardCompact": {
+    "description": "狭い画面の固定編集バーで使う短い変更破棄ラベル。"
+  },
+  "unsavedChangesSaving": "保存中",
+  "@unsavedChangesSaving": {
+    "description": "保存リクエストの実行中に固定編集バーへ表示する進捗ラベル。"
+  },
+  "unsavedChangesSaveFailed": "変更を保存できませんでした: {error}",
+  "@unsavedChangesSaveFailed": {
+    "description": "保存失敗後に編集フォーム上部へ表示するエラーバナー。",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "保存処理から返されたエラー詳細。"
+      }
+    }
+  },
   "settingsCommonClear": "クリア",
   "@settingsCommonClear": {
     "description": "設定ダイアログで使う汎用的なクリアボタンラベル。"
@@ -400,10 +426,6 @@
   "@speedDialConfigEditTitle": {
     "description": "既存のスピードダイヤルを編集するときの設定画面アプリバータイトル。"
   },
-  "speedDialConfigAddAction": "追加",
-  "@speedDialConfigAddAction": {
-    "description": "新しいスピードダイヤルを作成するときの主操作ボタンラベル。"
-  },
   "speedDialConfigNameRequired": "名前を入力してください",
   "@speedDialConfigNameRequired": {
     "description": "スピードダイヤル名が未入力のときに表示するバリデーション文言。"
@@ -411,22 +433,6 @@
   "speedDialConfigSystemPromptRequired": "システムプロンプトを入力してください",
   "@speedDialConfigSystemPromptRequired": {
     "description": "システムプロンプトが未入力のときに表示するバリデーション文言。"
-  },
-  "speedDialConfigAdded": "スピードダイヤルを追加しました",
-  "@speedDialConfigAdded": {
-    "description": "新しいスピードダイヤルの保存に成功したあとに表示するスナックバー文言。"
-  },
-  "speedDialConfigUpdated": "スピードダイヤルを更新しました",
-  "@speedDialConfigUpdated": {
-    "description": "既存のスピードダイヤルの更新に成功したあとに表示するスナックバー文言。"
-  },
-  "speedDialConfigDeleted": "スピードダイヤルを削除しました",
-  "@speedDialConfigDeleted": {
-    "description": "スピードダイヤルの削除に成功したあとに表示するスナックバー文言。"
-  },
-  "speedDialConfigDefaultDeleteBlocked": "デフォルトのスピードダイヤルは削除できません",
-  "@speedDialConfigDefaultDeleteBlocked": {
-    "description": "保護されたデフォルトのスピードダイヤルを削除しようとしたときに表示するスナックバー文言。"
   },
   "speedDialConfigDeleteConfirmTitle": "スピードダイヤルを削除",
   "@speedDialConfigDeleteConfirmTitle": {
@@ -636,24 +642,6 @@
       }
     }
   },
-  "textAgentsSaveCreated": "エージェントを作成しました",
-  "@textAgentsSaveCreated": {
-    "description": "新しいテキストエージェントの保存に成功したあとに表示するスナックバー文言。"
-  },
-  "textAgentsSaveUpdated": "エージェントを更新しました",
-  "@textAgentsSaveUpdated": {
-    "description": "既存のテキストエージェントの更新に成功したあとに表示するスナックバー文言。"
-  },
-  "textAgentsSaveFailed": "保存に失敗しました: {error}",
-  "@textAgentsSaveFailed": {
-    "description": "テキストエージェントの保存に失敗したときに表示するスナックバー文言。",
-    "placeholders": {
-      "error": {
-        "type": "String",
-        "description": "テキストエージェント保存失敗時の詳細エラー文字列。"
-      }
-    }
-  },
   "textAgentsDeleteDialogTitle": "エージェントを削除",
   "@textAgentsDeleteDialogTitle": {
     "description": "テキストエージェント削除前に表示する確認ダイアログのタイトル。"
@@ -665,20 +653,6 @@
       "name": {
         "type": "String",
         "description": "削除対象のテキストエージェント表示名。"
-      }
-    }
-  },
-  "textAgentsDeleteSuccess": "エージェントを削除しました",
-  "@textAgentsDeleteSuccess": {
-    "description": "テキストエージェントの削除に成功したあとに表示するスナックバー文言。"
-  },
-  "textAgentsDeleteFailed": "削除に失敗しました: {error}",
-  "@textAgentsDeleteFailed": {
-    "description": "テキストエージェントの削除に失敗したときに表示するスナックバー文言。",
-    "placeholders": {
-      "error": {
-        "type": "String",
-        "description": "テキストエージェント削除失敗時の詳細エラー文字列。"
       }
     }
   },
@@ -733,10 +707,6 @@
   "textAgentsSectionToolSettings": "ツール設定",
   "@textAgentsSectionToolSettings": {
     "description": "テキストエージェントフォームの共有ツール設定ウィジェット見出し。"
-  },
-  "textAgentsActionCreate": "作成",
-  "@textAgentsActionCreate": {
-    "description": "新しいテキストエージェントを作成するときの主ボタンラベル。"
   },
   "textAgentsFieldModel": "モデル",
   "@textAgentsFieldModel": {

@@ -245,10 +245,7 @@ class SpeedDialTab extends ConsumerWidget {
   Future<void> _editSpeedDial(BuildContext context, SpeedDial speedDial) async {
     await Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => SpeedDialConfigScreen(
-          speedDialId: speedDial.id,
-          speedDial: speedDial,
-        ),
+        builder: (context) => SpeedDialConfigScreen(speedDial: speedDial),
       ),
     );
   }
