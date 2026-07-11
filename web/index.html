@@ -39,8 +39,71 @@
 
   <title>VAGINA</title>
   <link rel="manifest" href="manifest.json">
+  <style>
+    #oauth-callback-status {
+      display: none;
+      min-height: 100vh;
+      box-sizing: border-box;
+      padding: 48px 24px;
+      font: 16px/1.5 system-ui, sans-serif;
+      text-align: center;
+    }
+  </style>
 </head>
 <body>
-  <script src="flutter_bootstrap.js" async></script>
+  <main id="oauth-callback-status" role="status"></main>
+  <script>
+    (() => {
+      const callbackPath = '/callback';
+      const nativeCallback = 'app.aoki.yuki.vagina://oauth/callback';
+      const allowedParameters = ['code', 'state', 'error', 'error_description'];
+      const parameters = new URLSearchParams(window.location.search);
+      const isCallback = window.location.pathname === callbackPath &&
+          allowedParameters.some((name) => parameters.has(name));
+
+      if (!isCallback) {
+        window.__vaginaLoadFlutter = true;
+        return;
+      }
+
+      const state = (parameters.get('state') || '').trim();
+      const match = /^([wmd])\.(.+)$/.exec(state);
+      if (!match) {
+        showStatus('Sign-in callback failed because its state is invalid.');
+        window.__vaginaLoadFlutter = false;
+        return;
+      }
+
+      if (match[1] === 'w') {
+        window.__vaginaLoadFlutter = true;
+        return;
+      }
+
+      const forwarded = new URLSearchParams();
+      for (const name of allowedParameters) {
+        if (parameters.has(name)) {
+          forwarded.set(name, parameters.get(name));
+        }
+      }
+
+      window.__vaginaLoadFlutter = false;
+      showStatus('Returning to the VAGINA app… If it does not open, return to the app manually.');
+      window.location.replace(`${nativeCallback}?${forwarded.toString()}`);
+
+      function showStatus(message) {
+        const status = document.getElementById('oauth-callback-status');
+        status.textContent = message;
+        status.style.display = 'block';
+      }
+    })();
+  </script>
+  <script>
+    if (window.__vaginaLoadFlutter) {
+      const bootstrap = document.createElement('script');
+      bootstrap.src = 'flutter_bootstrap.js';
+      bootstrap.async = true;
+      document.body.appendChild(bootstrap);
+    }
+  </script>
 </body>
 </html>

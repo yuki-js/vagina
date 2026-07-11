@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logging/logging.dart';
 import 'package:window_manager/window_manager.dart';
+import 'package:vagina/api/native_oauth_protocol.dart';
 import 'package:vagina/app.dart';
 import 'package:vagina/core/app/app_container.dart';
 import 'package:vagina/utils/platform_compat.dart';
@@ -48,8 +49,10 @@ void main() async {
   // Initialize logging
   _setupLogging();
 
-  // Initialize repositories
+  // Initialize repositories and native callback registration before listening
+  // for cold-start or warm OAuth callback activation.
   await AppContainer.initialize();
+  await registerNativeOAuthProtocol();
   await AppContainer.authCallbacks.start();
 
   // Initialize window manager ONLY for desktop platforms

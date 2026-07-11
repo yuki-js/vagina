@@ -8,7 +8,10 @@ final class Constants {
   static const int vfsDefaultMaxPathLength = 512;
   static const String vfsReservedSystemPath = '/system';
 
-  static const String oauthCallbackUrl = 'https://vagina.app/callback';
+  static const String oauthWebCallbackUrl = 'https://vagina.app/callback';
+  static const String oauthNativeCallbackUrl =
+      'app.aoki.yuki.vagina://oauth/callback';
+  static const String oauthNativeCallbackScheme = 'app.aoki.yuki.vagina';
 
   static const String defaultDebugApiBaseUrl = 'http://localhost:8080/api';
   static const String defaultReleaseApiBaseUrl =

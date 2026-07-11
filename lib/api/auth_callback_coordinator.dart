@@ -3,8 +3,8 @@ import 'dart:async';
 import 'package:app_links/app_links.dart';
 import 'package:flutter/foundation.dart';
 import 'package:vagina/api/auth_service.dart';
-import 'package:vagina/core/config/constants.dart';
 import 'package:vagina/api/oidc_callback_parser.dart';
+import 'package:vagina/core/config/constants.dart';
 import 'package:vagina/utils/browser_history.dart';
 import 'package:vagina/utils/platform_compat.dart';
 
@@ -33,17 +33,17 @@ class AuthCallbackEvent {
   }) : this._(isSuccess: false, failureReason: reason, detail: detail);
 }
 
-typedef MobileInitialLinkProvider = Future<Uri?> Function();
-typedef MobileUriStreamProvider = Stream<Uri> Function();
+typedef NativeInitialLinkProvider = Future<Uri?> Function();
+typedef NativeUriStreamProvider = Stream<Uri> Function();
 typedef WebBaseUriProvider = Uri Function();
 typedef ClearWebTransientParams = void Function();
 
 class AuthCallbackCoordinator {
   final AuthService _authService;
   final bool _isWeb;
-  final bool _isMobile;
-  final MobileInitialLinkProvider? _mobileInitialLinkProvider;
-  final MobileUriStreamProvider? _mobileUriStreamProvider;
+  final bool _isNative;
+  final NativeInitialLinkProvider? _nativeInitialLinkProvider;
+  final NativeUriStreamProvider? _nativeUriStreamProvider;
   final WebBaseUriProvider _webBaseUriProvider;
   final ClearWebTransientParams _clearWebTransientParams;
 
@@ -51,23 +51,23 @@ class AuthCallbackCoordinator {
       StreamController<AuthCallbackEvent>.broadcast();
 
   AppLinks? _appLinks;
-  StreamSubscription<Uri>? _mobileUriSubscription;
+  StreamSubscription<Uri>? _nativeUriSubscription;
   bool _started = false;
   String? _lastHandledCallbackState;
 
   AuthCallbackCoordinator({
     required AuthService authService,
     bool? isWeb,
-    bool? isMobile,
-    MobileInitialLinkProvider? mobileInitialLinkProvider,
-    MobileUriStreamProvider? mobileUriStreamProvider,
+    bool? isNative,
+    NativeInitialLinkProvider? nativeInitialLinkProvider,
+    NativeUriStreamProvider? nativeUriStreamProvider,
     WebBaseUriProvider? webBaseUriProvider,
     ClearWebTransientParams? clearWebTransientParams,
   }) : _authService = authService,
        _isWeb = isWeb ?? kIsWeb,
-       _isMobile = isMobile ?? PlatformCompat.isMobile,
-       _mobileInitialLinkProvider = mobileInitialLinkProvider,
-       _mobileUriStreamProvider = mobileUriStreamProvider,
+       _isNative = isNative ?? PlatformCompat.isNative,
+       _nativeInitialLinkProvider = nativeInitialLinkProvider,
+       _nativeUriStreamProvider = nativeUriStreamProvider,
        _webBaseUriProvider = webBaseUriProvider ?? _defaultWebBaseUriProvider,
        _clearWebTransientParams =
            clearWebTransientParams ?? clearBrowserUrlTransientParams;
@@ -85,19 +85,20 @@ class AuthCallbackCoordinator {
         _webBaseUriProvider(),
         clearWebQueryAfterRead: true,
       );
+      return;
     }
 
-    if (_isMobile) {
+    if (_isNative) {
       final streamProvider =
-          _mobileUriStreamProvider ?? _defaultMobileUriStreamProvider;
-      _mobileUriSubscription = streamProvider().listen((uri) {
+          _nativeUriStreamProvider ?? _defaultNativeUriStreamProvider;
+      _nativeUriSubscription = streamProvider().listen((uri) {
         unawaited(
           _handlePotentialOidcCallback(uri, clearWebQueryAfterRead: false),
         );
       });
 
       final initialLinkProvider =
-          _mobileInitialLinkProvider ?? _defaultMobileInitialLinkProvider;
+          _nativeInitialLinkProvider ?? _defaultNativeInitialLinkProvider;
       final initialUri = await initialLinkProvider();
       if (initialUri != null) {
         await _handlePotentialOidcCallback(
@@ -109,7 +110,7 @@ class AuthCallbackCoordinator {
   }
 
   Future<void> dispose() async {
-    await _mobileUriSubscription?.cancel();
+    await _nativeUriSubscription?.cancel();
     if (!_eventsController.isClosed) {
       await _eventsController.close();
     }
@@ -190,16 +191,26 @@ class AuthCallbackCoordinator {
   }
 
   bool _isExpectedCallbackUri(Uri uri) {
-    final expected = Uri.parse(Constants.oauthCallbackUrl);
-    if (_matchesCallbackUri(uri, expected)) {
-      return true;
-    }
-
-    if (_isWeb && kDebugMode) {
-      final debugExpected = Uri.parse('http://localhost:3000${expected.path}');
-      if (_matchesCallbackUri(uri, debugExpected)) {
+    if (_isWeb) {
+      final expected = Uri.parse(Constants.oauthWebCallbackUrl);
+      if (_matchesCallbackUri(uri, expected)) {
         return true;
       }
+
+      if (kDebugMode) {
+        final debugExpected = Uri.parse(
+          'http://localhost:3000${expected.path}',
+        );
+        return _matchesCallbackUri(uri, debugExpected);
+      }
+      return false;
+    }
+
+    if (_isNative) {
+      return _matchesCallbackUri(
+        uri,
+        Uri.parse(Constants.oauthNativeCallbackUrl),
+      );
     }
 
     return false;
@@ -235,12 +246,12 @@ class AuthCallbackCoordinator {
     return path;
   }
 
-  Future<Uri?> _defaultMobileInitialLinkProvider() async {
+  Future<Uri?> _defaultNativeInitialLinkProvider() async {
     _appLinks ??= AppLinks();
     return _appLinks!.getInitialLink();
   }
 
-  Stream<Uri> _defaultMobileUriStreamProvider() {
+  Stream<Uri> _defaultNativeUriStreamProvider() {
     _appLinks ??= AppLinks();
     return _appLinks!.uriLinkStream;
   }
