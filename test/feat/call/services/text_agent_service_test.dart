@@ -64,7 +64,7 @@ void main() {
       );
       expect(toolSchemaNames, contains('calculator'));
       expect(toolSchemaNames, contains('list_available_agents'));
-      expect(toolSchemaNames, isNot(contains('say_hello_to_agent')));
+      expect(toolSchemaNames, contains('say_hello_to_agent'));
       expect(toolSchemaNames, isNot(contains('end_call')));
     });
 
@@ -265,72 +265,70 @@ void main() {
       },
     );
 
-    test('denies say_hello_to_agent as a nested requested tool', () async {
-      var requestCount = 0;
-      final adapter = _RecordingAdapter((_) async {
-        requestCount += 1;
-        if (requestCount == 1) {
-          return _jsonResponse(200, <String, dynamic>{
-            'status': 'requires_tool',
-            'toolCalls': <Map<String, dynamic>>[
-              <String, dynamic>{
-                'id': 'tc_nested_text_agent',
-                'name': 'say_hello_to_agent',
-                'arguments': jsonEncode(<String, dynamic>{
-                  'agent_id': 'agent-1',
-                  'prompt': 'Ask the nested text agent for confirmation.',
-                }),
-              },
-            ],
-          });
-        }
-        if (requestCount == 2) {
-          return _jsonResponse(200, <String, dynamic>{
-            'status': 'completed',
-            'text': 'Outer text agent consumed nested denial.',
-          });
-        }
-        fail('Unexpected request count: $requestCount');
-      });
-      final started = await _startService(
-        adapter: adapter,
-        voiceSessionId: 'vs_0123456789abcdef',
-      );
-      addTearDown(started.dispose);
+    test(
+      'executes same-agent recursion as an ordinary nested tool call',
+      () async {
+        var requestCount = 0;
+        final adapter = _RecordingAdapter((_) async {
+          requestCount += 1;
+          if (requestCount == 1) {
+            return _jsonResponse(200, <String, dynamic>{
+              'status': 'requires_tool',
+              'toolCalls': <Map<String, dynamic>>[
+                <String, dynamic>{
+                  'id': 'tc_nested_text_agent',
+                  'name': 'say_hello_to_agent',
+                  'arguments': jsonEncode(<String, dynamic>{
+                    'agent_id': 'agent-1',
+                    'prompt': 'Confirm recursively.',
+                  }),
+                },
+              ],
+            });
+          }
+          if (requestCount == 2) {
+            return _jsonResponse(200, <String, dynamic>{
+              'status': 'completed',
+              'text': 'Nested confirmation.',
+            });
+          }
+          if (requestCount == 3) {
+            return _jsonResponse(200, <String, dynamic>{
+              'status': 'completed',
+              'text': 'Outer agent consumed nested confirmation.',
+            });
+          }
+          fail('Unexpected request count: $requestCount');
+        });
+        final started = await _startService(
+          adapter: adapter,
+          voiceSessionId: 'vs_0123456789abcdef',
+        );
+        addTearDown(started.dispose);
 
-      final text = await started.service.sendQuery('agent-1', 'hello');
+        final text = await started.service.sendQuery('agent-1', 'hello');
 
-      expect(text, 'Outer text agent consumed nested denial.');
-      expect(adapter.requests, hasLength(2));
-      expect(adapter.requestJsonBodies[0], containsPair('prompt', 'hello'));
-      expect(adapter.requestJsonBodies[1], containsPair('prompt', null));
-      expect(
-        adapter.requestJsonBodies.map((body) => body['voiceSessionId']),
-        everyElement('vs_0123456789abcdef'),
-      );
-      expect(
-        adapter.requestJsonBodies[1]['requestId'],
-        adapter.requestJsonBodies[0]['requestId'],
-      );
+        expect(text, 'Outer agent consumed nested confirmation.');
+        expect(adapter.requests, hasLength(3));
+        expect(adapter.requestJsonBodies[0], containsPair('prompt', 'hello'));
+        expect(
+          adapter.requestJsonBodies[1],
+          containsPair('prompt', 'Confirm recursively.'),
+        );
+        expect(adapter.requestJsonBodies[2], containsPair('prompt', null));
 
-      final toolResult = Map<String, dynamic>.from(
-        adapter.requestJsonBodies[1]['toolResult'] as Map,
-      );
-      expect(toolResult, containsPair('toolCallId', 'tc_nested_text_agent'));
-      expect(toolResult, containsPair('isError', true));
-
-      final toolOutput = Map<String, dynamic>.from(
-        jsonDecode(toolResult['output'] as String) as Map,
-      );
-      expect(toolOutput, containsPair('success', false));
-      expect(
-        toolOutput['error'],
-        allOf(
-          contains('nested text agent execution'),
-          contains('say_hello_to_agent'),
-        ),
-      );
-    });
+        final toolResult = Map<String, dynamic>.from(
+          adapter.requestJsonBodies[2]['toolResult'] as Map,
+        );
+        expect(toolResult, containsPair('toolCallId', 'tc_nested_text_agent'));
+        expect(toolResult, containsPair('isError', false));
+        final toolOutput = Map<String, dynamic>.from(
+          jsonDecode(toolResult['output'] as String) as Map,
+        );
+        expect(toolOutput, containsPair('success', true));
+        expect(toolOutput, containsPair('text', 'Nested confirmation.'));
+      },
+    );
 
     test('surfaces server-reported failure responses clearly', () async {
       final adapter = _RecordingAdapter((_) async {
