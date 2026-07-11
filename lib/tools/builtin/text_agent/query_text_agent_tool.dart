@@ -5,7 +5,7 @@ import 'package:vagina/services/tools_runtime/tool.dart';
 import 'package:vagina/services/tools_runtime/tool_definition.dart';
 
 class QueryTextAgentTool extends Tool {
-  static const String toolKeyName = 'query_text_agent';
+  static const String toolKeyName = 'say_hello_to_agent';
   static const Duration defaultAsyncFallbackDelay = Duration(seconds: 20);
 
   final Duration asyncFallbackDelay;
@@ -15,29 +15,28 @@ class QueryTextAgentTool extends Tool {
   @override
   ToolDefinition get definition => const ToolDefinition(
     toolKey: toolKeyName,
-    displayName: 'テキストエージェントクエリ',
-    displayDescription: 'テキストAIエージェントに問い合わせます',
+    displayName: 'エージェントと会話',
+    displayDescription: 'テキストAIエージェントに話しかけ、会話を続けます',
     categoryKey: 'text_agent',
     iconKey: 'chat',
     sourceKey: 'builtin',
     publishedBy: 'aokiapp',
     description:
-        'Query a text-based AI agent and return its response text. '
-        'If the query is still running after about 20 seconds, this tool returns an async-mode notice; call get_last_text_agent_response later to retrieve the latest result. '
-        'IMPORTANT: Conversation history is maintained per agent_id during the call session. '
-        'You can call the same agent multiple times to build on previous responses - '
-        'the agent will remember the context of earlier queries in the same call. '
-        'Use this for complex tasks that require multiple steps or clarifications.',
+        'Start or continue a conversation with a text-based AI agent and return what it says. '
+        'Speak naturally and treat the agent as a conversation partner, not as a stateless query processor. '
+        'If the conversation turn is still running after about 20 seconds, this tool returns an async-mode notice; call get_last_text_agent_response later to retrieve the latest reply. '
+        'You can talk to the same agent multiple times to build on previous turns, and the agent will remember the context of earlier conversation in the same call. '
+        'You are encourage to talk multiple turns for refinement of answer, complex tasks, clarification, and collaborative thinking.',
     parametersSchema: {
       'type': 'object',
       'properties': {
         'agent_id': {
           'type': 'string',
-          'description': 'ID of the text agent to query',
+          'description': 'ID of the text agent to talk to',
         },
         'prompt': {
           'type': 'string',
-          'description': 'The query or prompt to send to the agent',
+          'description': 'What to say to the agent in this conversation turn',
         },
         'attach_last_user_image': {
           'type': 'boolean',

@@ -64,7 +64,7 @@ void main() {
       );
       expect(toolSchemaNames, contains('calculator'));
       expect(toolSchemaNames, contains('list_available_agents'));
-      expect(toolSchemaNames, isNot(contains('query_text_agent')));
+      expect(toolSchemaNames, isNot(contains('say_hello_to_agent')));
       expect(toolSchemaNames, isNot(contains('end_call')));
     });
 
@@ -177,7 +177,7 @@ void main() {
     );
 
     test(
-      'returns nested calculator result through query_text_agent tool execution',
+      'returns nested calculator result through say_hello_to_agent tool execution',
       () async {
         var requestCount = 0;
         final adapter = _RecordingAdapter((_) async {
@@ -211,7 +211,7 @@ void main() {
         addTearDown(started.dispose);
 
         final parentToolOutput = await started.toolRunner.execute(
-          'query_text_agent',
+          'say_hello_to_agent',
           jsonEncode(<String, dynamic>{
             'agent_id': 'agent-1',
             'prompt': 'Calculate 6 * 7 for the caller.',
@@ -265,7 +265,7 @@ void main() {
       },
     );
 
-    test('denies query_text_agent as a nested requested tool', () async {
+    test('denies say_hello_to_agent as a nested requested tool', () async {
       var requestCount = 0;
       final adapter = _RecordingAdapter((_) async {
         requestCount += 1;
@@ -275,7 +275,7 @@ void main() {
             'toolCalls': <Map<String, dynamic>>[
               <String, dynamic>{
                 'id': 'tc_nested_text_agent',
-                'name': 'query_text_agent',
+                'name': 'say_hello_to_agent',
                 'arguments': jsonEncode(<String, dynamic>{
                   'agent_id': 'agent-1',
                   'prompt': 'Ask the nested text agent for confirmation.',
@@ -327,7 +327,7 @@ void main() {
         toolOutput['error'],
         allOf(
           contains('nested text agent execution'),
-          contains('query_text_agent'),
+          contains('say_hello_to_agent'),
         ),
       );
     });
@@ -655,7 +655,7 @@ void main() {
       },
     );
 
-    test('does not submit cancellation as a normal tool error', () async {
+    test('submits cancellation step instead of a normal tool error', () async {
       void Function()? cancelQuery;
       var requestCount = 0;
       final adapter = _RecordingAdapter((_) async {
@@ -674,7 +674,7 @@ void main() {
         }
         return _jsonResponse(200, <String, dynamic>{
           'status': 'completed',
-          'text': 'unexpected',
+          'text': '',
         });
       });
       final started = await _startService(
@@ -699,7 +699,16 @@ void main() {
         query,
         throwsA(predicate((error) => error.toString().contains('cancelled'))),
       );
-      expect(adapter.requests, hasLength(1));
+      while (adapter.requests.length < 2) {
+        await Future<void>.delayed(Duration.zero);
+      }
+      expect(adapter.requests, hasLength(2));
+      final promptBody = adapter.requestJsonBodies[0];
+      final cancelBody = adapter.requestJsonBodies[1];
+      expect(cancelBody['requestId'], promptBody['requestId']);
+      expect(cancelBody['cancel'], isTrue);
+      expect(cancelBody['prompt'], isNull);
+      expect(cancelBody['toolResult'], isNull);
     });
 
     test(

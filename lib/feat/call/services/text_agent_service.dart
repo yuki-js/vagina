@@ -135,9 +135,12 @@ final class TextAgentService extends SubService {
       final toolCancellation = ToolCancellation();
       final unregisterCancel = onCancel?.call(toolCancellation.cancel);
       final submittedToolCallIds = <String>{};
+      var requestStarted = false;
+      var requestFinished = false;
 
       try {
         _throwIfCancelled(toolCancellation);
+        requestStarted = true;
         var response = await _postQuery(
           agentId: agent.id,
           voiceSessionId: voiceSessionId,
@@ -154,8 +157,10 @@ final class TextAgentService extends SubService {
 
           switch (response.status) {
             case TextAgentQueryStatus.completed:
+              requestFinished = true;
               return response.text!;
             case TextAgentQueryStatus.failed:
+              requestFinished = true;
               final code = response.errorCode ?? 'unknown_error';
               final message =
                   response.errorMessage ?? 'Text agent query failed.';
@@ -208,6 +213,17 @@ final class TextAgentService extends SubService {
         rethrow;
       } finally {
         unregisterCancel?.call();
+        if (toolCancellation.isCancelled &&
+            requestStarted &&
+            !requestFinished) {
+          unawaited(
+            _cancelQuery(
+              agentId: agent.id,
+              voiceSessionId: voiceSessionId,
+              requestId: requestId,
+            ),
+          );
+        }
       }
     }, zoneValues: <Object, Object>{_queryDepthZoneKey: 1});
   }
@@ -399,6 +415,27 @@ final class TextAgentService extends SubService {
     return error is String && error.isNotEmpty;
   }
 
+  Future<void> _cancelQuery({
+    required String agentId,
+    required String voiceSessionId,
+    required String requestId,
+  }) async {
+    try {
+      await _postQuery(
+        agentId: agentId,
+        voiceSessionId: voiceSessionId,
+        requestId: requestId,
+        cancel: true,
+      );
+    } catch (error, stackTrace) {
+      logger.warning(
+        'Failed to cancel text agent request for agent: $agentId',
+        error,
+        stackTrace,
+      );
+    }
+  }
+
   Future<TextAgentQueryResponse> _postQuery({
     required String agentId,
     required String voiceSessionId,
@@ -406,10 +443,13 @@ final class TextAgentService extends SubService {
     String? prompt,
     List<api_models.QueryTextAgentBodyImagesItem> images = const [],
     TextAgentToolResultSubmission? toolResult,
+    bool cancel = false,
   }) async {
-    if ((prompt == null) == (toolResult == null)) {
+    final selectedStepCount =
+        (prompt == null ? 0 : 1) + (toolResult == null ? 0 : 1) + (cancel ? 1 : 0);
+    if (selectedStepCount != 1) {
       throw ArgumentError(
-        'Exactly one of prompt or toolResult must be provided.',
+        'Exactly one of prompt, toolResult, or cancel must be provided.',
       );
     }
 
@@ -421,6 +461,7 @@ final class TextAgentService extends SubService {
           voiceSessionId: voiceSessionId,
           requestId: requestId,
           prompt: prompt,
+          cancel: cancel ? true : null,
           images: images.isEmpty ? null : images,
           // Product intent: Text Agent schemas are supplied by the client because
           // ToolRunner executes client tools. Do not derive this list from VA

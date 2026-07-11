@@ -12,7 +12,7 @@ import 'package:vagina/tools/builtin/text_agent/query_text_agent_tool.dart';
 void main() {
   group('QueryTextAgentTool user-facing cancellation contract', () {
     test(
-      // Contract: after the user interrupts a parent turn while query_text_agent
+      // Contract: after the user interrupts a parent turn while say_hello_to_agent
       // is waiting on a sub-agent:
       // - the sub-agent request receives the same cancellation signal;
       // - the tool stops instead of turning cancellation into a normal result;

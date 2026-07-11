@@ -25,7 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Optional context parameter for state preservation
   - Graceful call ending with session save
   
-- **query_text_agent Tool**: Query text agents from voice calls
+- **say_hello_to_agent Tool**: Converse with text agents from voice calls
   - Select agent by ID
   - Returns response synchronously with 30-second timeout
   

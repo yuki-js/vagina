@@ -72,7 +72,7 @@ void main() {
           type: RealtimeThreadItemType.functionCall,
           status: RealtimeThreadItemStatus.completed,
           callId: 'call-1',
-          name: 'query_text_agent',
+          name: 'say_hello_to_agent',
           arguments: '{"question":"hello"}',
         ),
         RealtimeThreadItem(

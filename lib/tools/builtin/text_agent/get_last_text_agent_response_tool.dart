@@ -17,7 +17,7 @@ class GetLastTextAgentResponseTool extends Tool {
     publishedBy: 'aokiapp',
     description:
         'Get the latest asynchronous text-agent response from this call session. '
-        'Use this after query_text_agent reports that a long-running query has switched to async mode. '
+        'Use this after say_hello_to_agent reports that a long-running conversation turn has switched to async mode. '
         'No ID is required; this returns the latest async result/status for the current call.',
     parametersSchema: {'type': 'object', 'properties': <String, dynamic>{}},
   );
