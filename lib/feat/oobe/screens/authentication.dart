@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:vagina/api/generated/models/list_oidc_providers_success_body_item.dart'
     as api_model;
+import 'package:vagina/core/config/constants.dart';
 import 'package:vagina/feat/announcement/services/announcement_service.dart';
 import 'package:vagina/feat/announcement/widgets/home_announcement_host.dart';
 import 'package:vagina/l10n/app_localizations.dart';
@@ -47,6 +49,9 @@ class AuthProvider {
 
 /// Second OOBE screen - Authentication options
 class AuthenticationScreen extends StatelessWidget {
+  static final Uri _termsOfServiceUrl = Uri.parse(Constants.termsOfServiceUrl);
+  static final Uri _privacyPolicyUrl = Uri.parse(Constants.privacyPolicyUrl);
+
   final AnnouncementService announcementService;
   final List<AuthProvider> providers;
   final bool isLoadingProviders;
@@ -55,6 +60,7 @@ class AuthenticationScreen extends StatelessWidget {
   final bool isAuthenticating;
   final VoidCallback onRetryLoadProviders;
   final VoidCallback onBack;
+  final Future<bool> Function(Uri url) openLegalDocument;
 
   const AuthenticationScreen({
     super.key,
@@ -66,10 +72,23 @@ class AuthenticationScreen extends StatelessWidget {
     this.isAuthenticating = false,
     required this.onRetryLoadProviders,
     required this.onBack,
-  });
+    Future<bool> Function(Uri url)? openLegalDocument,
+  }) : openLegalDocument = openLegalDocument ?? _openLegalDocument;
+
+  static Future<bool> _openLegalDocument(Uri url) {
+    return launchUrl(url, mode: LaunchMode.platformDefault);
+  }
 
   void _handleProviderTap(BuildContext context, AuthProvider provider) {
     onProviderTap(provider);
+  }
+
+  Future<void> _handleLegalDocumentTap(Uri url) async {
+    try {
+      await openLegalDocument(url);
+    } on Exception {
+      // A browser launch failure must not interrupt or crash authentication.
+    }
   }
 
   @override
@@ -139,8 +158,37 @@ class AuthenticationScreen extends StatelessWidget {
                     const SizedBox(height: 32),
 
                     // Terms and privacy notice
-                    Text(
-                      l10n.oobeAuthenticationTermsNotice,
+                    Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(
+                            text: l10n.oobeAuthenticationTermsNoticePrefix,
+                          ),
+                          WidgetSpan(
+                            alignment: PlaceholderAlignment.middle,
+                            child: _LegalDocumentLink(
+                              label: l10n.oobeAuthenticationTermsOfServiceLink,
+                              onTap: () =>
+                                  _handleLegalDocumentTap(_termsOfServiceUrl),
+                            ),
+                          ),
+                          TextSpan(
+                            text:
+                                l10n.oobeAuthenticationTermsNoticeBetweenLinks,
+                          ),
+                          WidgetSpan(
+                            alignment: PlaceholderAlignment.middle,
+                            child: _LegalDocumentLink(
+                              label: l10n.oobeAuthenticationPrivacyPolicyLink,
+                              onTap: () =>
+                                  _handleLegalDocumentTap(_privacyPolicyUrl),
+                            ),
+                          ),
+                          TextSpan(
+                            text: l10n.oobeAuthenticationTermsNoticeSuffix,
+                          ),
+                        ],
+                      ),
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 12,
@@ -271,6 +319,32 @@ class _ProviderStateMessage extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+class _LegalDocumentLink extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+
+  const _LegalDocumentLink({required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return TextButton(
+      onPressed: onTap,
+      style: TextButton.styleFrom(
+        foregroundColor: Colors.white.withValues(alpha: 0.85),
+        minimumSize: Size.zero,
+        padding: const EdgeInsets.symmetric(horizontal: 2),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        textStyle: const TextStyle(
+          fontSize: 12,
+          height: 1.5,
+          decoration: TextDecoration.underline,
+        ),
+      ),
+      child: Text(label),
     );
   }
 }

@@ -254,13 +254,29 @@
   "@oobeAuthenticationSignInSuccess": {
     "description": "OOBE サインイン成功時に表示するスナックバー文言。"
   },
-  "oobeAuthenticationSignInRequired": "セットアップを続けるには GitHub でのサインインが必要です。",
+  "oobeAuthenticationSignInRequired": "セットアップを続けるにはサインインが必要です。",
   "@oobeAuthenticationSignInRequired": {
-    "description": "GitHub サインイン前に OOBE を進めようとしたときのスナックバー文言。"
+    "description": "サインイン前に OOBE を進めようとしたときのスナックバー文言。"
   },
-  "oobeAuthenticationTermsNotice": "続行することで、利用規約とプライバシーポリシーに同意したものとみなされます",
-  "@oobeAuthenticationTermsNotice": {
-    "description": "OOBE 認証画面の下部に表示する小さな法的同意文。"
+  "oobeAuthenticationTermsNoticePrefix": "続行することで、",
+  "@oobeAuthenticationTermsNoticePrefix": {
+    "description": "OOBE 認証画面の法的同意文で、利用規約リンクの前に表示する文言。"
+  },
+  "oobeAuthenticationTermsOfServiceLink": "利用規約",
+  "@oobeAuthenticationTermsOfServiceLink": {
+    "description": "OOBE 認証画面から利用規約を開くリンクのラベル。"
+  },
+  "oobeAuthenticationTermsNoticeBetweenLinks": "と",
+  "@oobeAuthenticationTermsNoticeBetweenLinks": {
+    "description": "OOBE 認証画面の法的同意文で、利用規約とプライバシーポリシーのリンク間に表示する文言。"
+  },
+  "oobeAuthenticationPrivacyPolicyLink": "プライバシーポリシー",
+  "@oobeAuthenticationPrivacyPolicyLink": {
+    "description": "OOBE 認証画面からプライバシーポリシーを開くリンクのラベル。"
+  },
+  "oobeAuthenticationTermsNoticeSuffix": "に同意したものとみなされます",
+  "@oobeAuthenticationTermsNoticeSuffix": {
+    "description": "OOBE 認証画面の法的同意文で、プライバシーポリシーリンクの後に表示する文言。"
   },
   "settingsLanguageSectionTitle": "言語",
   "@settingsLanguageSectionTitle": {

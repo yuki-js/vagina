@@ -254,13 +254,29 @@
   "@oobeAuthenticationSignInSuccess": {
     "description": "Snackbar message shown when OOBE sign-in succeeds and tokens are saved."
   },
-  "oobeAuthenticationSignInRequired": "Please sign in with GitHub before continuing setup.",
+  "oobeAuthenticationSignInRequired": "Please sign in before continuing setup.",
   "@oobeAuthenticationSignInRequired": {
-    "description": "Snackbar message shown when the user attempts to proceed in OOBE without completing GitHub sign-in."
+    "description": "Snackbar message shown when the user attempts to proceed in OOBE without completing sign-in."
   },
-  "oobeAuthenticationTermsNotice": "By continuing, you agree to the Terms of Service and Privacy Policy.",
-  "@oobeAuthenticationTermsNotice": {
-    "description": "Small legal notice near the bottom of the OOBE authentication screen."
+  "oobeAuthenticationTermsNoticePrefix": "By continuing, you agree to the ",
+  "@oobeAuthenticationTermsNoticePrefix": {
+    "description": "Text before the Terms of Service link in the OOBE authentication legal notice."
+  },
+  "oobeAuthenticationTermsOfServiceLink": "Terms of Service",
+  "@oobeAuthenticationTermsOfServiceLink": {
+    "description": "Link label that opens the Terms of Service from the OOBE authentication screen."
+  },
+  "oobeAuthenticationTermsNoticeBetweenLinks": " and ",
+  "@oobeAuthenticationTermsNoticeBetweenLinks": {
+    "description": "Text between the Terms of Service and Privacy Policy links in the OOBE authentication legal notice."
+  },
+  "oobeAuthenticationPrivacyPolicyLink": "Privacy Policy",
+  "@oobeAuthenticationPrivacyPolicyLink": {
+    "description": "Link label that opens the Privacy Policy from the OOBE authentication screen."
+  },
+  "oobeAuthenticationTermsNoticeSuffix": ".",
+  "@oobeAuthenticationTermsNoticeSuffix": {
+    "description": "Text after the Privacy Policy link in the OOBE authentication legal notice."
   },
   "settingsLanguageSectionTitle": "Language",
   "@settingsLanguageSectionTitle": {

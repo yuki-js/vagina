@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:vagina/core/config/constants.dart';
 import 'package:vagina/feat/announcement/services/announcement_service.dart';
 import 'package:vagina/feat/oobe/screens/authentication.dart';
 import 'package:vagina/interfaces/key_value_store.dart';
@@ -62,6 +63,80 @@ void main() {
       findsOneWidget,
     );
     expect(find.byType(ElevatedButton), findsNothing);
+  });
+
+  testWidgets('opens each legal document without starting authentication', (
+    tester,
+  ) async {
+    final openedUrls = <Uri>[];
+    var providerTapCount = 0;
+
+    await tester.pumpWidget(
+      _LocalizedApp(
+        child: AuthenticationScreen(
+          announcementService: AnnouncementService(
+            preferencesRepository: PreferencesRepository(
+              _MemoryKeyValueStore(),
+            ),
+          ),
+          providers: const <AuthProvider>[
+            AuthProvider(
+              id: 'github',
+              name: 'GitHub',
+              icon: Icons.code,
+              color: Color(0xFF181717),
+            ),
+          ],
+          onProviderTap: (_) async {
+            providerTapCount++;
+          },
+          onRetryLoadProviders: () {},
+          onBack: () {},
+          openLegalDocument: (url) async {
+            openedUrls.add(url);
+            return true;
+          },
+        ),
+      ),
+    );
+
+    expect(find.text('Terms of Service'), findsOneWidget);
+    expect(find.text('Privacy Policy'), findsOneWidget);
+
+    await tester.tap(find.text('Terms of Service'));
+    await tester.pump();
+    await tester.tap(find.text('Privacy Policy'));
+    await tester.pump();
+
+    expect(openedUrls, <Uri>[
+      Uri.parse(Constants.termsOfServiceUrl),
+      Uri.parse(Constants.privacyPolicyUrl),
+    ]);
+    expect(providerTapCount, 0);
+  });
+
+  testWidgets('ignores a legal document launch failure', (tester) async {
+    await tester.pumpWidget(
+      _LocalizedApp(
+        child: AuthenticationScreen(
+          announcementService: AnnouncementService(
+            preferencesRepository: PreferencesRepository(
+              _MemoryKeyValueStore(),
+            ),
+          ),
+          providers: const <AuthProvider>[],
+          onProviderTap: (_) async {},
+          onRetryLoadProviders: () {},
+          onBack: () {},
+          openLegalDocument: (_) async => throw Exception('launch failed'),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Terms of Service'));
+    await tester.pump();
+
+    expect(tester.takeException(), isNull);
   });
 }
 
