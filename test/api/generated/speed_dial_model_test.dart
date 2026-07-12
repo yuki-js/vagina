@@ -61,9 +61,11 @@ void main() {
       expect(speedDial.toJson()['toolChoiceRequired'], isFalse);
     });
 
-    test('accepts legacy uppercase reasoning effort but emits canonical lowercase', () {
-      final decoded =
-          jsonDecode('''
+    test(
+      'accepts legacy uppercase reasoning effort but emits canonical lowercase',
+      () {
+        final decoded =
+            jsonDecode('''
         {
           "id": "default",
           "name": "Default",
@@ -75,13 +77,14 @@ void main() {
           "enabledTools": {}
         }
       ''')
-              as Map<String, dynamic>;
+                as Map<String, dynamic>;
 
-      final speedDial = SpeedDial.fromJson(decoded);
+        final speedDial = SpeedDial.fromJson(decoded);
 
-      expect(speedDial.reasoningEffort, SpeedDialReasoningEffort.off);
-      expect(speedDial.toJson()['reasoningEffort'], 'off');
-    });
+        expect(speedDial.reasoningEffort, SpeedDialReasoningEffort.off);
+        expect(speedDial.toJson()['reasoningEffort'], 'off');
+      },
+    );
 
     test('request enum parsers accept legacy uppercase values', () {
       expect(

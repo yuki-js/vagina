@@ -38,19 +38,22 @@ void main() {
   });
 
   group('SpeedDial reasoningEffort', () {
-    test('accepts legacy uppercase local JSON but emits canonical lowercase', () {
-      final speedDial = SpeedDial.fromJson({
-        'id': 'legacy',
-        'name': 'Legacy',
-        'systemPrompt': 'You are legacy.',
-        'voice': 'alloy',
-        'voiceAgentId': SpeedDial.defaultVoiceAgentId,
-        'enabledTools': <String, bool>{},
-        'reasoningEffort': 'OFF',
-      });
+    test(
+      'accepts legacy uppercase local JSON but emits canonical lowercase',
+      () {
+        final speedDial = SpeedDial.fromJson({
+          'id': 'legacy',
+          'name': 'Legacy',
+          'systemPrompt': 'You are legacy.',
+          'voice': 'alloy',
+          'voiceAgentId': SpeedDial.defaultVoiceAgentId,
+          'enabledTools': <String, bool>{},
+          'reasoningEffort': 'OFF',
+        });
 
-      expect(speedDial.reasoningEffort, SpeedDialReasoningEffort.off);
-      expect(speedDial.toJson()['reasoningEffort'], 'off');
-    });
+        expect(speedDial.reasoningEffort, SpeedDialReasoningEffort.off);
+        expect(speedDial.toJson()['reasoningEffort'], 'off');
+      },
+    );
   });
 }
