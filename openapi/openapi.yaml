@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
-  title: Vagina Server API
-  description: REST API for the Vagina application backend
+  title: VAGINA Server API
+  description: REST API for the VAGINA application backend
   version: 0.0.1
 servers:
 - url: /api
@@ -123,7 +123,7 @@ paths:
       tags:
       - auth
       summary: Exchange OIDC authorization code
-      description: Exchange an OIDC authorization code for Vagina server tokens.
+      description: Exchange an OIDC authorization code for VAGINA server tokens.
       operationId: exchangeOidcLogin
       parameters:
       - name: provider
@@ -154,7 +154,7 @@ paths:
         required: true
       responses:
         "200":
-          description: OIDC login exchanged for Vagina server tokens.
+          description: OIDC login exchanged for VAGINA server tokens.
           content:
             application/json:
               schema:

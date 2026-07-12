@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "app.aoki.yuki" "\0"
-            VALUE "FileDescription", "vagina" "\0"
+            VALUE "FileDescription", "VAGINA" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "vagina" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2025 app.aoki.yuki. All rights reserved." "\0"
             VALUE "OriginalFilename", "vagina.exe" "\0"
-            VALUE "ProductName", "vagina" "\0"
+            VALUE "ProductName", "VAGINA" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END
