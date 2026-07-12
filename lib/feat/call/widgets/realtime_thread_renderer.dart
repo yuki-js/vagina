@@ -16,6 +16,7 @@ import 'package:vagina/l10n/app_localizations.dart';
 /// active call chat pane.
 class RealtimeThreadView extends StatelessWidget {
   final List<RealtimeThreadItem> items;
+  final Widget? leading;
   final ScrollController? scrollController;
   final ValueChanged<RealtimeThreadItem>? onToolTap;
   final EdgeInsetsGeometry padding;
@@ -25,6 +26,7 @@ class RealtimeThreadView extends StatelessWidget {
   const RealtimeThreadView({
     super.key,
     required this.items,
+    this.leading,
     this.scrollController,
     this.onToolTap,
     this.padding = const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -36,14 +38,18 @@ class RealtimeThreadView extends StatelessWidget {
   Widget build(BuildContext context) {
     final matchedToolOutputIndices = matchCompletedToolOutputIndices(items);
 
+    final leadingItemCount = leading == null ? 0 : 1;
     return ListView.builder(
       controller: scrollController,
       padding: padding,
       shrinkWrap: shrinkWrap,
       physics: physics,
-      itemCount: items.length,
+      itemCount: items.length + leadingItemCount,
       itemBuilder: (context, index) {
-        final item = items[index];
+        if (leading != null && index == 0) {
+          return leading!;
+        }
+        final item = items[index - leadingItemCount];
         if (!item.isVisible) {
           return const SizedBox.shrink();
         }

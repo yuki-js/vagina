@@ -70,6 +70,48 @@ void main() {
       expect(find.byIcon(Icons.chevron_right), findsNothing);
     },
   );
+  testWidgets('leading content scrolls away before later thread messages', (
+    tester,
+  ) async {
+    final items = List<RealtimeThreadItem>.generate(
+      20,
+      (index) => RealtimeThreadItem(
+        id: 'message-$index',
+        type: RealtimeThreadItemType.message,
+        role: RealtimeThreadItemRole.assistant,
+        status: RealtimeThreadItemStatus.completed,
+        content: <RealtimeThreadContentPart>[
+          RealtimeThreadTextPart(
+            text: 'Historical message $index',
+            isDone: true,
+          ),
+        ],
+      ),
+    );
+
+    await tester.pumpWidget(
+      _LocalizedApp(
+        child: RealtimeThreadView(
+          items: items,
+          leading: const SizedBox(
+            height: 300,
+            child: Center(child: Text('Session information')),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Session information'), findsOneWidget);
+    expect(find.text('Historical message 0'), findsOneWidget);
+    expect(find.text('Historical message 19'), findsNothing);
+
+    await tester.drag(find.byType(ListView), const Offset(0, -1200));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Session information'), findsNothing);
+    expect(find.text('Historical message 19'), findsOneWidget);
+  });
+
   testWidgets('renders product-usable saved multi-turn tool history', (
     tester,
   ) async {
