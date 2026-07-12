@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:vagina/core/config/constants.dart';
-import 'package:vagina/core/data/permission_manager.dart';
 import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/feat/oobe/widgets/permission_card.dart';
 import 'package:vagina/l10n/app_localizations.dart';
@@ -22,8 +21,6 @@ class PermissionsScreen extends StatefulWidget {
 }
 
 class _PermissionsScreenState extends State<PermissionsScreen> {
-  final PermissionManager _permissionManager = PermissionManager();
-
   late List<PermissionItem> _permissions;
   bool _isLoading = true;
   Locale? _lastInitializedLocale;
@@ -42,9 +39,7 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
   Future<void> _initializePermissions() async {
     final l10n = AppLocalizations.of(context);
 
-    // Check current permission states
     final micStatus = await Permission.microphone.status;
-    final storageGranted = await _permissionManager.hasStoragePermission();
 
     if (mounted) {
       setState(() {
@@ -55,13 +50,6 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
             icon: Icons.mic,
             isRequired: true,
             isGranted: micStatus.isGranted,
-          ),
-          PermissionItem(
-            title: l10n.permissionsStorageTitle,
-            description: l10n.permissionsStorageDescription,
-            icon: Icons.storage,
-            isRequired: false,
-            isGranted: storageGranted,
           ),
         ];
         _isLoading = false;
@@ -74,24 +62,12 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
     bool granted = false;
 
     try {
-      if (permission.icon == Icons.mic) {
-        final status = await Permission.microphone.request();
-        granted = status.isGranted;
+      final status = await Permission.microphone.request();
+      granted = status.isGranted;
 
-        if (status.isPermanentlyDenied) {
-          _showSettingsDialog(permission.title);
-          return;
-        }
-      } else if (permission.icon == Icons.storage) {
-        granted = await _permissionManager.requestStoragePermission();
-
-        if (!granted) {
-          final status = await Permission.storage.status;
-          if (status.isPermanentlyDenied) {
-            _showSettingsDialog(permission.title);
-            return;
-          }
-        }
+      if (status.isPermanentlyDenied) {
+        _showSettingsDialog(permission.title);
+        return;
       }
 
       setState(() {

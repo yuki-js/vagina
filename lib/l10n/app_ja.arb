@@ -98,14 +98,6 @@
   "@permissionsMicrophoneDescription": {
     "description": "OOBE 権限画面でマイク権限の必要性を説明する文。"
   },
-  "permissionsStorageTitle": "ストレージ",
-  "@permissionsStorageTitle": {
-    "description": "OOBE 権限画面でストレージ権限カードに表示するタイトル。"
-  },
-  "permissionsStorageDescription": "会話履歴やメモを保存します",
-  "@permissionsStorageDescription": {
-    "description": "OOBE 権限画面でストレージ権限の用途を説明する文。"
-  },
   "permissionsGranted": "{permissionName}の権限を許可しました",
   "@permissionsGranted": {
     "description": "OOBE 権限画面で権限付与後に表示するスナックバー文。",

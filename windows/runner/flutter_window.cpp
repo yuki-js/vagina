@@ -1,8 +1,15 @@
 #include "flutter_window.h"
 
+#include <flutter/method_channel.h>
+#include <flutter/standard_method_codec.h>
+
+#include <memory>
 #include <optional>
+#include <string>
 
 #include "flutter/generated_plugin_registrant.h"
+#include "non_backup_storage.h"
+#include "utils.h"
 
 FlutterWindow::FlutterWindow(const flutter::DartProject& project)
     : project_(project) {}
@@ -25,6 +32,35 @@ bool FlutterWindow::OnCreate() {
     return false;
   }
   RegisterPlugins(flutter_controller_->engine());
+
+  auto storage_channel =
+      std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
+          flutter_controller_->engine()->messenger(),
+          "app.aoki.yuki.vagina/non_backup_storage",
+          &flutter::StandardMethodCodec::GetInstance());
+  storage_channel->SetMethodCallHandler(
+      [](const flutter::MethodCall<flutter::EncodableValue>& call,
+         std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result) {
+        if (call.method_name() != "getNonBackupStorageRoot") {
+          result->NotImplemented();
+          return;
+        }
+
+        try {
+          const std::string root =
+              Utf8FromUtf16(GetNonBackupStorageRoot().c_str());
+          if (root.empty()) {
+            result->Error("non_backup_storage_unavailable",
+                          "Resolved non-backup storage path is empty.");
+            return;
+          }
+          result->Success(flutter::EncodableValue(root));
+        } catch (const std::exception& exception) {
+          result->Error("non_backup_storage_unavailable", exception.what());
+        }
+      });
+  non_backup_storage_channel_ = std::move(storage_channel);
+
   SetChildContent(flutter_controller_->view()->GetNativeWindow());
 
   flutter_controller_->engine()->SetNextFrameCallback([&]() {
@@ -40,6 +76,7 @@ bool FlutterWindow::OnCreate() {
 }
 
 void FlutterWindow::OnDestroy() {
+  non_backup_storage_channel_.reset();
   if (flutter_controller_) {
     flutter_controller_ = nullptr;
   }

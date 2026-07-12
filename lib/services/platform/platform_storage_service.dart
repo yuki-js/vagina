@@ -1,79 +1,79 @@
 import 'dart:io';
+
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
+import 'package:logging/logging.dart';
+import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:vagina/utils/platform_compat.dart';
-import 'package:logging/logging.dart';
-import 'package:vagina/core/data/permission_manager.dart';
 
-/// Platform-specific storage path resolution
+/// Resolves durable application storage that is excluded from platform backup
+/// and roaming where the supported platform provides such a facility.
 class PlatformStorageService {
+  static const MethodChannel _storageChannel = MethodChannel(
+    'app.aoki.yuki.vagina/non_backup_storage',
+  );
   static final Logger _logger = Logger('PlatformStorageService');
 
-  final PermissionManager _permissionManager;
+  final Future<String> Function()? _nativeStorageRootProvider;
 
-  PlatformStorageService({PermissionManager? permissionManager})
-    : _permissionManager = permissionManager ?? PermissionManager();
+  PlatformStorageService({Future<String> Function()? nativeStorageRootProvider})
+    : _nativeStorageRootProvider = nativeStorageRootProvider;
 
-  /// Get the appropriate storage directory for the platform
+  /// Returns the application storage directory used for local configuration.
   ///
-  /// On Android with permissions: /storage/emulated/0/Documents/{folderName}
-  /// Otherwise: Application documents directory/{folderName}
+  /// Android, iOS, and Windows resolve a native, device-local, non-backup root.
+  /// Other native platforms retain application-support storage until an
+  /// equivalent platform contract is implemented. Web storage is handled by
+  /// JsonFileStore and does not use this directory.
   Future<Directory> getStorageDirectory({String? folderName}) async {
     if (kIsWeb) {
-      // Web doesn't use directories
       return Directory('');
     }
 
-    Directory? directory;
-
-    // Android-specific: Try external storage if permission granted
-    if (PlatformCompat.isAndroid && folderName != null) {
-      final hasPermission = await _permissionManager.hasStoragePermission();
-
-      if (hasPermission) {
-        try {
-          directory = Directory('/storage/emulated/0/Documents/$folderName');
-          if (!await directory.exists()) {
-            await directory.create(recursive: true);
-          }
-          _logger.info('Using Android external storage: ${directory.path}');
-          return directory;
-        } catch (e) {
-          _logger.warning('Cannot access Android external storage: $e');
-        }
-      } else {
-        _logger.info('Storage permission not granted, using app directory');
-      }
+    final rootPath = await _getStorageRootPath();
+    final directory = Directory(
+      folderName == null ? rootPath : path.join(rootPath, folderName),
+    );
+    if (!await directory.exists()) {
+      await directory.create(recursive: true);
     }
 
-    // Fallback: Use platform-appropriate app documents directory
-    directory = await getApplicationDocumentsDirectory();
-
-    // Create subfolder if specified
-    if (folderName != null) {
-      directory = Directory('${directory.path}/$folderName');
-      if (!await directory.exists()) {
-        await directory.create(recursive: true);
-      }
-    }
-
-    _logger.info('Using app directory: ${directory.path}');
+    _logger.info('Using non-backup app storage: ${directory.path}');
     return directory;
   }
 
-  /// Get platform-specific file path for a named file
   Future<String> getFilePath(String fileName, {String? folderName}) async {
     final directory = await getStorageDirectory(folderName: folderName);
-    return '${directory.path}/$fileName';
+    return path.join(directory.path, fileName);
   }
 
-  /// Check if external storage is available (Android only)
-  Future<bool> isExternalStorageAvailable() async {
-    if (!PlatformCompat.isAndroid) return false;
-    return await _permissionManager.hasStoragePermission();
+  Future<String> _getStorageRootPath() async {
+    final injectedProvider = _nativeStorageRootProvider;
+    if (injectedProvider != null) {
+      return _requirePath(await injectedProvider());
+    }
+
+    if (PlatformCompat.isAndroid ||
+        PlatformCompat.isIOS ||
+        PlatformCompat.isWindows) {
+      final rootPath = await _storageChannel.invokeMethod<String>(
+        'getNonBackupStorageRoot',
+      );
+      return _requirePath(rootPath);
+    }
+
+    return (await getApplicationSupportDirectory()).path;
   }
 
-  /// Get platform name for logging/debugging
+  String _requirePath(String? value) {
+    final normalized = value?.trim();
+    if (normalized == null || normalized.isEmpty) {
+      throw StateError('Platform returned an empty non-backup storage path.');
+    }
+    return normalized;
+  }
+
   String get platformName {
     if (kIsWeb) return 'Web';
     if (PlatformCompat.isAndroid) return 'Android';

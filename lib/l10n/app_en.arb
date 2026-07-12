@@ -98,14 +98,6 @@
   "@permissionsMicrophoneDescription": {
     "description": "Permission card description explaining why microphone access is needed during OOBE."
   },
-  "permissionsStorageTitle": "Storage",
-  "@permissionsStorageTitle": {
-    "description": "Permission card title for storage access on the OOBE permissions screen."
-  },
-  "permissionsStorageDescription": "Saves conversation history and notes",
-  "@permissionsStorageDescription": {
-    "description": "Permission card description explaining why storage access is useful during OOBE."
-  },
   "permissionsGranted": "{permissionName} access granted",
   "@permissionsGranted": {
     "description": "Snackbar message shown after a permission is granted from the OOBE permissions screen.",
