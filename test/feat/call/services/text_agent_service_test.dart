@@ -653,7 +653,7 @@ void main() {
       },
     );
 
-    test('submits cancellation step instead of a normal tool error', () async {
+    test('does not submit cancellation as a normal tool error', () async {
       void Function()? cancelQuery;
       var requestCount = 0;
       final adapter = _RecordingAdapter((_) async {
@@ -697,16 +697,7 @@ void main() {
         query,
         throwsA(predicate((error) => error.toString().contains('cancelled'))),
       );
-      while (adapter.requests.length < 2) {
-        await Future<void>.delayed(Duration.zero);
-      }
-      expect(adapter.requests, hasLength(2));
-      final promptBody = adapter.requestJsonBodies[0];
-      final cancelBody = adapter.requestJsonBodies[1];
-      expect(cancelBody['requestId'], promptBody['requestId']);
-      expect(cancelBody['cancel'], isTrue);
-      expect(cancelBody['prompt'], isNull);
-      expect(cancelBody['toolResult'], isNull);
+      expect(adapter.requests, hasLength(1));
     });
 
     test(
