@@ -5,11 +5,12 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vagina/api/vagina_api_client.dart';
+import 'package:vagina/models/speed_dial.dart';
 import 'package:vagina/repositories/api_speed_dial_repository.dart';
 
 void main() {
-  group('ApiSpeedDialRepository voiceAgentId mapping', () {
-    test('maps voiceAgentId from API responses', () async {
+  group('ApiSpeedDialRepository API mapping', () {
+    test('maps API response fields into the domain model', () async {
       final adapter = _RecordingAdapter((_) async {
         return _jsonResponse(200, [
           {
@@ -18,9 +19,12 @@ void main() {
             'systemPrompt': 'You are custom.',
             'voice': 'alloy',
             'voiceAgentId': 'voice-agent-prod-cc',
-            'enabledTools': <String, bool>{},
-            'reasoningEffort': 'off',
-            'toolChoiceRequired': false,
+            'enabledTools': <String, bool>{
+              'document_read': true,
+              'document_patch': false,
+            },
+            'reasoningEffort': 'high',
+            'toolChoiceRequired': true,
           },
         ]);
       });
@@ -28,7 +32,14 @@ void main() {
 
       final speedDials = await repository.getAll();
 
-      expect(speedDials.single.voiceAgentId, 'voice-agent-prod-cc');
+      final speedDial = speedDials.single;
+      expect(speedDial.voiceAgentId, 'voice-agent-prod-cc');
+      expect(speedDial.enabledTools, <String, bool>{
+        'document_read': true,
+        'document_patch': false,
+      });
+      expect(speedDial.reasoningEffort, SpeedDialReasoningEffort.high);
+      expect(speedDial.toolChoiceRequired, isTrue);
     });
 
     test('sends voiceAgentId when creating', () async {
