@@ -205,24 +205,33 @@ jobs:
       - name: Sign executable
         if: ${{ env.WINDOWS_CERT_PFX != '' && env.WINDOWS_CERT_PASSWORD != '' }}
         run: |
-          # Find signtool.exe (Windows SDK)
-          $signtool = Get-ChildItem -Path "C:\Program Files (x86)\Windows Kits" -Recurse -Filter "signtool.exe" | Select-Object -First 1 -ExpandProperty FullName
+          # Prefer the newest x64 SignTool from the installed Windows SDK.
+          $signtool = Get-ChildItem -Path "C:\Program Files (x86)\Windows Kits" -Recurse -Filter "signtool.exe" |
+            Where-Object { $_.FullName -match '\\x64\\signtool\.exe$' } |
+            Sort-Object FullName -Descending |
+            Select-Object -First 1 -ExpandProperty FullName
 
           if (-not $signtool) {
             Write-Error "SignTool not found"
             exit 1
           }
 
-          # Sign the executable
           $exePath = "build\windows\x64\runner\Release\vagina.exe"
-          & $signtool sign /f "$env:TEMP\cert.pfx" /p "$env:WINDOWS_CERT_PASSWORD" /t http://timestamp.digicert.com /fd SHA256 /v $exePath
+          & $signtool sign /f "$env:TEMP\cert.pfx" /p "$env:WINDOWS_CERT_PASSWORD" /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 /v $exePath
 
           if ($LASTEXITCODE -ne 0) {
             Write-Error "Signing failed with exit code $LASTEXITCODE"
             exit 1
           }
 
-          Write-Host "Successfully signed $exePath"
+          $signature = Get-AuthenticodeSignature -FilePath $exePath
+          if ($signature.Status -eq 'NotSigned' -or -not $signature.SignerCertificate) {
+            Write-Error "Authenticode signature was not embedded in $exePath"
+            exit 1
+          }
+
+          Write-Host "Signed $exePath with certificate $($signature.SignerCertificate.Thumbprint)"
+          Write-Host "Signature status: $($signature.Status)"
         shell: powershell
 
       - name: Cleanup certificate

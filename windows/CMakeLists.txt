@@ -57,6 +57,16 @@ add_subdirectory("runner")
 # them to the application.
 include(flutter/generated_plugins.cmake)
 
+# permission_handler_windows 0.2.1 still enables MSVC's deprecated /await
+# option. Visual Studio 2026 rejects the resulting <experimental/coroutine>
+# include unless this compatibility definition is set. Keep the workaround
+# scoped to the affected plugin until the upstream issue is released:
+# https://github.com/Baseflow/flutter-permission-handler/issues/1534
+if(TARGET permission_handler_windows_plugin)
+  target_compile_definitions(permission_handler_windows_plugin PRIVATE
+    _SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS)
+endif()
+
 
 # === Installation ===
 # Support files are copied into place next to the executable, so that it can
