@@ -39,7 +39,7 @@ RUN mkdir -p $FVM_HOME && \
 FROM ghcr.io/yuki-js/dotfiles/dotimage:latest
 USER root
 RUN apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends openjdk-21-jdk git && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends openjdk-21-jdk git poppler-utils && \
     rm -rf /var/lib/apt/lists/*
 # Android/Flutter environment
 ENV ANDROID_SDK_ROOT=/opt/android-sdk
