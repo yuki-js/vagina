@@ -28,8 +28,11 @@ abstract class TextAgentApi {
   /// Store the latest asynchronous text-agent result for this call session.
   Future<void> setLastAsyncQueryResult(Map<String, dynamic> result);
 
-  /// Get the latest asynchronous text-agent result for this call session.
-  Future<Map<String, dynamic>> getLastAsyncQueryResult();
+  /// Poll the asynchronous text-agent result for this call session.
+  ///
+  /// Pending results remain available for later polls. Terminal completed and
+  /// failed results are consumed atomically and can only be returned once.
+  Future<Map<String, dynamic>> pollLastAsyncQueryResult();
 
   /// List all available text agents.
   ///
