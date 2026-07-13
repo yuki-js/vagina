@@ -90,8 +90,9 @@ Requirements:
 - Flutter and Dart matching the project;
 - Visual Studio Windows desktop toolchain;
 - Windows SDK containing MakeAppx and SignTool;
-- the committed package identity matching Partner Center;
-- a publisher PFX only for sideload mode.
+- the committed Store package identity matching Partner Center;
+- a publisher PFX only for sideload mode; its subject becomes the sideload
+  manifest publisher and does not need to match the Partner Center publisher.
 
 Build the payload first:
 
@@ -124,7 +125,7 @@ The packaging script fails when:
 
 - an identity value is blank;
 - the project version cannot become a four-component MSIX version;
-- the PFX is missing, lacks a private key, or has a different publisher subject;
+- the PFX is missing or lacks a private key;
 - the MSIX is not created;
 - manifest identity, publisher, or version differs from the requested values;
 - the OAuth protocol declaration is absent;
