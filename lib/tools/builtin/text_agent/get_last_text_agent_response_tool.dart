@@ -24,6 +24,10 @@ class GetLastTextAgentResponseTool extends Tool {
 
   @override
   Future<String> execute(Map<String, dynamic> args) async {
-    return jsonEncode(await context.textAgentApi.getLastAsyncQueryResult());
+    final result = await context.textAgentApi.pollLastAsyncQueryResult();
+    if (result['status'] == 'none') {
+      throw StateError('No asynchronous text-agent response is available.');
+    }
+    return jsonEncode(result);
   }
 }

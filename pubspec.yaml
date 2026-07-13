@@ -77,6 +77,20 @@ dev_dependencies:
   custom_lint: ^0.8.1
   florval: ^0.3.14
   mockito: ^5.6.4
+  msix: 3.18.0
+
+msix_config:
+  display_name: VAGINA
+  identity_name: app.aoki.yuki.vagina
+  publisher: CN=AokiApp Inc.
+  publisher_display_name: AokiApp Inc.
+  logo_path: assets/icons/ios/iTunesArtwork@3x.png
+  capabilities: internetClient, microphone
+  protocol_activation: app.aoki.yuki.vagina
+  architecture: x64
+  build_windows: false
+  output_path: build/windows/msix
+  trim_logo: false
 
 flutter:
   generate: true

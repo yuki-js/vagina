@@ -45,6 +45,10 @@ std::wstring GetCurrentPackageFamilyNameIfPackaged() {
 
 }  // namespace
 
+bool HasPackageIdentity() {
+  return !GetCurrentPackageFamilyNameIfPackaged().empty();
+}
+
 std::filesystem::path GetNonBackupStorageRoot() {
   const std::filesystem::path local_app_data = GetLocalAppDataPath();
   const std::wstring package_family = GetCurrentPackageFamilyNameIfPackaged();

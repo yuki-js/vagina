@@ -194,62 +194,71 @@ jobs:
           path: build\windows\vagina-release-windows.zip
           retention-days: 30
 
-      # Code signing (optional - requires secrets)
-      - name: Decode certificate
-        if: ${{ env.WINDOWS_CERT_PFX != '' && env.WINDOWS_CERT_PASSWORD != '' }}
+      - name: Build and validate Microsoft Store MSIX
+        if: >-
+          ${{
+            github.event_name != 'pull_request' ||
+            github.event.pull_request.head.repo.full_name == github.repository
+          }}
         run: |
-          $certBytes = [Convert]::FromBase64String("$env:WINDOWS_CERT_PFX")
-          [IO.File]::WriteAllBytes("$env:TEMP\cert.pfx", $certBytes)
+          .\scripts\package_windows_msix.ps1 -Mode Store
         shell: powershell
 
-      - name: Sign executable
-        if: ${{ env.WINDOWS_CERT_PFX != '' && env.WINDOWS_CERT_PASSWORD != '' }}
-        run: |
-          # Prefer the newest x64 SignTool from the installed Windows SDK.
-          $signtool = Get-ChildItem -Path "C:\Program Files (x86)\Windows Kits" -Recurse -Filter "signtool.exe" |
-            Where-Object { $_.FullName -match '\\x64\\signtool\.exe$' } |
-            Sort-Object FullName -Descending |
-            Select-Object -First 1 -ExpandProperty FullName
-
-          if (-not $signtool) {
-            Write-Error "SignTool not found"
-            exit 1
-          }
-
-          $exePath = "build\windows\x64\runner\Release\vagina.exe"
-          & $signtool sign /f "$env:TEMP\cert.pfx" /p "$env:WINDOWS_CERT_PASSWORD" /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 /v $exePath
-
-          if ($LASTEXITCODE -ne 0) {
-            Write-Error "Signing failed with exit code $LASTEXITCODE"
-            exit 1
-          }
-
-          $signature = Get-AuthenticodeSignature -FilePath $exePath
-          if ($signature.Status -eq 'NotSigned' -or -not $signature.SignerCertificate) {
-            Write-Error "Authenticode signature was not embedded in $exePath"
-            exit 1
-          }
-
-          Write-Host "Signed $exePath with certificate $($signature.SignerCertificate.Thumbprint)"
-          Write-Host "Signature status: $($signature.Status)"
-        shell: powershell
-
-      - name: Cleanup certificate
-        if: ${{ always() && env.WINDOWS_CERT_PFX != '' && env.WINDOWS_CERT_PASSWORD != '' }}
-        run: |
-          Remove-Item "$env:TEMP\cert.pfx" -ErrorAction SilentlyContinue
-        shell: powershell
-
-      - name: Package signed release build
-        if: ${{ env.WINDOWS_CERT_PFX != '' && env.WINDOWS_CERT_PASSWORD != '' }}
-        run: |
-          Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath build\windows\vagina-release-windows-signed.zip -Force
-        shell: powershell
-
-      - name: Upload Signed Release Build
-        if: ${{ env.WINDOWS_CERT_PFX != '' && env.WINDOWS_CERT_PASSWORD != '' }}
+      - name: Upload Microsoft Store MSIX
+        if: >-
+          ${{
+            github.event_name != 'pull_request' ||
+            github.event.pull_request.head.repo.full_name == github.repository
+          }}
         uses: actions/upload-artifact@v7
         with:
-          name: windows-release-build-signed
-          path: build\windows\vagina-release-windows-signed.zip
+          name: windows-store-msix
+          path: build\windows\msix\store\*.msix
+          if-no-files-found: error
           retention-days: 30
+
+      - name: Decode sideload certificate
+        if: >-
+          ${{
+            (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) &&
+            env.WINDOWS_CERT_PFX != '' &&
+            env.WINDOWS_CERT_PASSWORD != ''
+          }}
+        run: |
+          $certBytes = [Convert]::FromBase64String("$env:WINDOWS_CERT_PFX")
+          [IO.File]::WriteAllBytes("$env:RUNNER_TEMP\vagina-sideload.pfx", $certBytes)
+        shell: powershell
+
+      - name: Build and validate signed sideload MSIX
+        if: >-
+          ${{
+            (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) &&
+            env.WINDOWS_CERT_PFX != '' &&
+            env.WINDOWS_CERT_PASSWORD != ''
+          }}
+        run: |
+          .\scripts\package_windows_msix.ps1 `
+            -Mode Sideload `
+            -CertificatePath "$env:RUNNER_TEMP\vagina-sideload.pfx" `
+            -CertificatePassword "$env:WINDOWS_CERT_PASSWORD"
+        shell: powershell
+
+      - name: Upload signed sideload MSIX
+        if: >-
+          ${{
+            (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) &&
+            env.WINDOWS_CERT_PFX != '' &&
+            env.WINDOWS_CERT_PASSWORD != ''
+          }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: windows-sideload-msix
+          path: build\windows\msix\sideload\*.msix
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Cleanup sideload certificate
+        if: ${{ always() }}
+        run: |
+          Remove-Item "$env:RUNNER_TEMP\vagina-sideload.pfx" -ErrorAction SilentlyContinue
+        shell: powershell

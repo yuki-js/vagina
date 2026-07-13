@@ -56,10 +56,18 @@ final class TextAgentService extends SubService {
     _lastAsyncQueryResult = Map<String, dynamic>.from(result);
   }
 
-  Map<String, dynamic> getLastAsyncQueryResult() {
-    return Map<String, dynamic>.from(
-      _lastAsyncQueryResult ?? const <String, dynamic>{'status': 'none'},
-    );
+  Map<String, dynamic> pollLastAsyncQueryResult() {
+    final result = _lastAsyncQueryResult;
+    if (result == null) {
+      return const <String, dynamic>{'status': 'none'};
+    }
+
+    final snapshot = Map<String, dynamic>.from(result);
+    final status = snapshot['status'];
+    if (status == 'completed' || status == 'failed') {
+      _lastAsyncQueryResult = null;
+    }
+    return snapshot;
   }
 
   /// Remember the latest user-submitted image for semantic text-agent delegation.

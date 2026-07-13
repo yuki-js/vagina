@@ -86,7 +86,7 @@ final class CallTextAgentApi implements TextAgentApi {
   }
 
   @override
-  Future<Map<String, dynamic>> getLastAsyncQueryResult() async {
-    return _textAgentService.getLastAsyncQueryResult();
+  Future<Map<String, dynamic>> pollLastAsyncQueryResult() async {
+    return _textAgentService.pollLastAsyncQueryResult();
   }
 }

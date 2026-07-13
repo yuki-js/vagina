@@ -41,23 +41,30 @@ bool FlutterWindow::OnCreate() {
   storage_channel->SetMethodCallHandler(
       [](const flutter::MethodCall<flutter::EncodableValue>& call,
          std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result) {
-        if (call.method_name() != "getNonBackupStorageRoot") {
-          result->NotImplemented();
+        if (call.method_name() == "hasPackageIdentity") {
+          try {
+            result->Success(flutter::EncodableValue(HasPackageIdentity()));
+          } catch (const std::exception& exception) {
+            result->Error("package_identity_unavailable", exception.what());
+          }
           return;
         }
-
-        try {
-          const std::string root =
-              Utf8FromUtf16(GetNonBackupStorageRoot().c_str());
-          if (root.empty()) {
-            result->Error("non_backup_storage_unavailable",
-                          "Resolved non-backup storage path is empty.");
-            return;
+        if (call.method_name() == "getNonBackupStorageRoot") {
+          try {
+            const std::string root =
+                Utf8FromUtf16(GetNonBackupStorageRoot().c_str());
+            if (root.empty()) {
+              result->Error("non_backup_storage_unavailable",
+                            "Resolved non-backup storage path is empty.");
+              return;
+            }
+            result->Success(flutter::EncodableValue(root));
+          } catch (const std::exception& exception) {
+            result->Error("non_backup_storage_unavailable", exception.what());
           }
-          result->Success(flutter::EncodableValue(root));
-        } catch (const std::exception& exception) {
-          result->Error("non_backup_storage_unavailable", exception.what());
+          return;
         }
+        result->NotImplemented();
       });
   non_backup_storage_channel_ = std::move(storage_channel);
 

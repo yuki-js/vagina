@@ -97,37 +97,38 @@ class _SessionDetailContent extends StatelessWidget {
         .where((item) => item.isVisible)
         .toList(growable: false);
 
-    return Column(
-      children: [
-        _SessionMetadataHeader(session: session),
-        Expanded(
-          child: visibleItems == null || visibleItems.isEmpty
-              ? _EmptyThreadState(
-                  title: l10n.sessionDetailThreadEmptyTitle,
-                  message: l10n.sessionDetailThreadEmptyMessage,
-                )
-              : RealtimeThreadView(
-                  items: thread!.items,
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-                  onToolTap: (item) {
-                    showModalBottomSheet<void>(
-                      context: context,
-                      isScrollControlled: true,
-                      backgroundColor: AppTheme.surfaceColor,
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.vertical(
-                          top: Radius.circular(20),
-                        ),
-                      ),
-                      builder: (context) => RealtimeThreadToolDetailsSheet(
-                        itemId: item.id,
-                        initialItems: thread.items,
-                      ),
-                    );
-                  },
-                ),
-        ),
-      ],
+    if (visibleItems == null || visibleItems.isEmpty) {
+      return Column(
+        children: [
+          _SessionMetadataHeader(session: session),
+          Expanded(
+            child: _EmptyThreadState(
+              title: l10n.sessionDetailThreadEmptyTitle,
+              message: l10n.sessionDetailThreadEmptyMessage,
+            ),
+          ),
+        ],
+      );
+    }
+
+    return RealtimeThreadView(
+      items: thread!.items,
+      leading: _SessionMetadataHeader(session: session),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+      onToolTap: (item) {
+        showModalBottomSheet<void>(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: AppTheme.surfaceColor,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          builder: (context) => RealtimeThreadToolDetailsSheet(
+            itemId: item.id,
+            initialItems: thread.items,
+          ),
+        );
+      },
     );
   }
 }
@@ -143,7 +144,7 @@ class _SessionMetadataHeader extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppTheme.lightSurfaceColor,

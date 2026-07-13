@@ -119,56 +119,121 @@ void main() {
       },
     );
 
-    test('switches long-running query to async result retrieval', () async {
-      final subAgentResponse = Completer<String>();
+    test(
+      'keeps pending readable and consumes completed exactly once',
+      () async {
+        final subAgentResponse = Completer<String>();
+        final textAgentApi = _FakeTextAgentApi(
+          onSendQuery: ({attachLastUserImage = false, onCancel}) {
+            return subAgentResponse.future;
+          },
+        );
+        final queryTool = QueryTextAgentTool(asyncFallbackDelay: Duration.zero);
+        await queryTool.init(
+          ToolContext(
+            toolKey: QueryTextAgentTool.toolKeyName,
+            filesystemApi: _NoopFilesystemApi(),
+            callApi: _NoopCallApi(),
+            textAgentApi: textAgentApi,
+          ),
+        );
+        final getTool = await _initializedGetLastResponseTool(textAgentApi);
+
+        final initialOutput =
+            jsonDecode(
+                  await queryTool.execute(<String, dynamic>{
+                    'agent_id': 'agent-1',
+                    'prompt': 'slow research',
+                  }),
+                )
+                as Map<String, dynamic>;
+        expect(initialOutput['async'], isTrue);
+        expect(initialOutput['status'], 'pending');
+
+        for (var poll = 0; poll < 2; poll += 1) {
+          final pendingOutput =
+              jsonDecode(await getTool.execute(<String, dynamic>{}))
+                  as Map<String, dynamic>;
+          expect(pendingOutput['status'], 'pending');
+        }
+
+        subAgentResponse.complete('done later');
+        await _flushAsyncWork();
+
+        final completedOutput =
+            jsonDecode(await getTool.execute(<String, dynamic>{}))
+                as Map<String, dynamic>;
+        expect(completedOutput['status'], 'completed');
+        expect(completedOutput['text'], 'done later');
+        await expectLater(
+          getTool.execute(<String, dynamic>{}),
+          throwsA(isA<StateError>()),
+        );
+      },
+    );
+
+    test('consumes failed result exactly once', () async {
       final textAgentApi = _FakeTextAgentApi(
-        onSendQuery: ({attachLastUserImage = false, onCancel}) {
-          return subAgentResponse.future;
-        },
+        onSendQuery: ({attachLastUserImage = false, onCancel}) async =>
+            'unused',
       );
-      final queryTool = QueryTextAgentTool(asyncFallbackDelay: Duration.zero);
-      await queryTool.init(
-        ToolContext(
-          toolKey: QueryTextAgentTool.toolKeyName,
-          filesystemApi: _NoopFilesystemApi(),
-          callApi: _NoopCallApi(),
-          textAgentApi: textAgentApi,
-        ),
-      );
+      textAgentApi.setLastAsyncQueryResult(<String, dynamic>{
+        'status': 'failed',
+        'success': false,
+        'error': 'background failure',
+      });
+      final getTool = await _initializedGetLastResponseTool(textAgentApi);
 
-      final initialOutput =
-          jsonDecode(
-                await queryTool.execute(<String, dynamic>{
-                  'agent_id': 'agent-1',
-                  'prompt': 'slow research',
-                }),
-              )
-              as Map<String, dynamic>;
-      expect(initialOutput['async'], isTrue);
-      expect(initialOutput['status'], 'pending');
-
-      final getTool = GetLastTextAgentResponseTool();
-      await getTool.init(
-        ToolContext(
-          toolKey: GetLastTextAgentResponseTool.toolKeyName,
-          filesystemApi: _NoopFilesystemApi(),
-          callApi: _NoopCallApi(),
-          textAgentApi: textAgentApi,
-        ),
-      );
-      var lastOutput =
+      final failedOutput =
           jsonDecode(await getTool.execute(<String, dynamic>{}))
               as Map<String, dynamic>;
-      expect(lastOutput['status'], 'pending');
+      expect(failedOutput['status'], 'failed');
+      expect(failedOutput['error'], 'background failure');
+      await expectLater(
+        getTool.execute(<String, dynamic>{}),
+        throwsA(isA<StateError>()),
+      );
+    });
 
-      subAgentResponse.complete('done later');
-      await _flushAsyncWork();
+    test('throws when no asynchronous result is available', () async {
+      final textAgentApi = _FakeTextAgentApi(
+        onSendQuery: ({attachLastUserImage = false, onCancel}) async =>
+            'unused',
+      );
+      final getTool = await _initializedGetLastResponseTool(textAgentApi);
 
-      lastOutput =
-          jsonDecode(await getTool.execute(<String, dynamic>{}))
-              as Map<String, dynamic>;
-      expect(lastOutput['status'], 'completed');
-      expect(lastOutput['text'], 'done later');
+      await expectLater(
+        getTool.execute(<String, dynamic>{}),
+        throwsA(isA<StateError>()),
+      );
+    });
+
+    test('only one competing poll receives a completed result', () async {
+      final textAgentApi = _FakeTextAgentApi(
+        onSendQuery: ({attachLastUserImage = false, onCancel}) async =>
+            'unused',
+      );
+      textAgentApi.setLastAsyncQueryResult(<String, dynamic>{
+        'status': 'completed',
+        'success': true,
+        'text': 'one shot',
+      });
+      final firstTool = await _initializedGetLastResponseTool(textAgentApi);
+      final secondTool = await _initializedGetLastResponseTool(textAgentApi);
+
+      final outcomes = await Future.wait<Object>([
+        firstTool
+            .execute(<String, dynamic>{})
+            .then<Object>((value) => value)
+            .catchError((Object error) => error),
+        secondTool
+            .execute(<String, dynamic>{})
+            .then<Object>((value) => value)
+            .catchError((Object error) => error),
+      ]);
+
+      expect(outcomes.whereType<String>(), hasLength(1));
+      expect(outcomes.whereType<StateError>(), hasLength(1));
     });
 
     test(
@@ -207,6 +272,21 @@ void main() {
       },
     );
   });
+}
+
+Future<GetLastTextAgentResponseTool> _initializedGetLastResponseTool(
+  TextAgentApi textAgentApi,
+) async {
+  final tool = GetLastTextAgentResponseTool();
+  await tool.init(
+    ToolContext(
+      toolKey: GetLastTextAgentResponseTool.toolKeyName,
+      filesystemApi: _NoopFilesystemApi(),
+      callApi: _NoopCallApi(),
+      textAgentApi: textAgentApi,
+    ),
+  );
+  return tool;
 }
 
 Future<void> _flushAsyncWork() async {
@@ -251,8 +331,13 @@ final class _FakeTextAgentApi implements TextAgentApi {
   }
 
   @override
-  Future<Map<String, dynamic>> getLastAsyncQueryResult() async {
-    return Map<String, dynamic>.from(_lastAsyncQueryResult);
+  Future<Map<String, dynamic>> pollLastAsyncQueryResult() async {
+    final result = Map<String, dynamic>.from(_lastAsyncQueryResult);
+    final status = result['status'];
+    if (status == 'completed' || status == 'failed') {
+      _lastAsyncQueryResult = const <String, dynamic>{'status': 'none'};
+    }
+    return result;
   }
 }
 

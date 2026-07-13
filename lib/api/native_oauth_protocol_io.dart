@@ -1,10 +1,25 @@
 import 'dart:io';
 
 import 'package:vagina/core/config/constants.dart';
+import 'package:vagina/services/platform/platform_storage_service.dart';
 import 'package:win32_registry/win32_registry.dart';
+
+bool shouldRegisterNativeOAuthProtocol({
+  required bool isWindows,
+  required bool hasPackageIdentity,
+}) => isWindows && !hasPackageIdentity;
 
 Future<void> registerNativeOAuthProtocol() async {
   if (!Platform.isWindows) {
+    return;
+  }
+
+  final hasPackageIdentity = await PlatformStorageService()
+      .hasWindowsPackageIdentity();
+  if (!shouldRegisterNativeOAuthProtocol(
+    isWindows: true,
+    hasPackageIdentity: hasPackageIdentity,
+  )) {
     return;
   }
 
