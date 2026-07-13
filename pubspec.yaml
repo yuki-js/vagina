@@ -4,7 +4,7 @@ publish_to: "none"
 version: 1.0.0+1
 
 environment:
-  sdk: ">=3.8.0 <4.0.0"
+  sdk: ">=3.11.0 <4.0.0"
 
 dependencies:
   flutter:
@@ -27,7 +27,7 @@ dependencies:
   riverpod_annotation: any
 
   # Audio handling
-  flutter_soloud: 3.3.9
+  flutter_soloud: 4.0.12
   record: ^6.2.0
 
   # Network & WebSocket
