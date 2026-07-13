@@ -1,9 +1,8 @@
 #include "non_backup_storage.h"
 
-#include <windows.h>
-
 #include <appmodel.h>
 #include <shlobj.h>
+#include <windows.h>
 
 #include <cstdlib>
 #include <memory>
