@@ -2,17 +2,75 @@ import 'package:flutter/material.dart';
 import 'package:vagina/feat/text_agents/controllers/text_agent_form_controller.dart';
 import 'package:vagina/l10n/app_localizations.dart';
 
-class TextAgentBasicInfoSection extends StatelessWidget {
+class TextAgentBasicInfoSection extends StatefulWidget {
   final TextAgentFormController controller;
 
   const TextAgentBasicInfoSection({super.key, required this.controller});
 
   @override
+  State<TextAgentBasicInfoSection> createState() =>
+      _TextAgentBasicInfoSectionState();
+}
+
+class _TextAgentBasicInfoSectionState extends State<TextAgentBasicInfoSection> {
+  late final TextEditingController _nameController;
+  late final TextEditingController _descriptionController;
+  late final TextEditingController _promptController;
+
+  @override
+  void initState() {
+    super.initState();
+    final draft = widget.controller.draft;
+    _nameController = TextEditingController(text: draft.name);
+    _descriptionController = TextEditingController(text: draft.description);
+    _promptController = TextEditingController(text: draft.prompt);
+    widget.controller.addListener(_syncFromDraft);
+  }
+
+  @override
+  void didUpdateWidget(TextAgentBasicInfoSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller == widget.controller) return;
+    oldWidget.controller.removeListener(_syncFromDraft);
+    widget.controller.addListener(_syncFromDraft);
+    _syncFromDraft();
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_syncFromDraft);
+    _nameController.dispose();
+    _descriptionController.dispose();
+    _promptController.dispose();
+    super.dispose();
+  }
+
+  void _syncFromDraft() {
+    final draft = widget.controller.draft;
+    _syncText(_nameController, draft.name);
+    _syncText(_descriptionController, draft.description);
+    _syncText(_promptController, draft.prompt);
+  }
+
+  void _syncText(TextEditingController textController, String text) {
+    if (textController.text == text) return;
+    final currentOffset = textController.selection.baseOffset;
+    final offset = currentOffset < 0
+        ? text.length
+        : currentOffset > text.length
+        ? text.length
+        : currentOffset;
+    textController.value = TextEditingValue(
+      text: text,
+      selection: TextSelection.collapsed(offset: offset),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) => ListenableBuilder(
-    listenable: controller,
+    listenable: widget.controller,
     builder: (context, child) {
       final l10n = AppLocalizations.of(context);
-      final draft = controller.draft;
       return Card(
         elevation: 0,
         shape: RoundedRectangleBorder(
@@ -24,8 +82,7 @@ class TextAgentBasicInfoSection extends StatelessWidget {
           child: Column(
             children: [
               TextFormField(
-                key: ValueKey(('name', draft.name)),
-                initialValue: draft.name,
+                controller: _nameController,
                 decoration: InputDecoration(
                   labelText: '${l10n.textAgentsFieldAgentName} *',
                   hintText: l10n.textAgentsFieldNameHint,
@@ -34,15 +91,14 @@ class TextAgentBasicInfoSection extends StatelessWidget {
                   ),
                   filled: true,
                   fillColor: Colors.grey[50],
-                  errorText: controller.errors.name,
+                  errorText: widget.controller.errors.name,
                 ),
                 textInputAction: TextInputAction.next,
-                onChanged: controller.updateName,
+                onChanged: widget.controller.updateName,
               ),
               const SizedBox(height: 16),
               TextFormField(
-                key: ValueKey(('description', draft.description)),
-                initialValue: draft.description,
+                controller: _descriptionController,
                 decoration: InputDecoration(
                   labelText: l10n.textAgentsFieldDescriptionOptional,
                   hintText: l10n.textAgentsFieldDescriptionHint,
@@ -54,12 +110,11 @@ class TextAgentBasicInfoSection extends StatelessWidget {
                 ),
                 maxLines: 3,
                 textInputAction: TextInputAction.next,
-                onChanged: controller.updateDescription,
+                onChanged: widget.controller.updateDescription,
               ),
               const SizedBox(height: 16),
               TextFormField(
-                key: ValueKey(('prompt', draft.prompt)),
-                initialValue: draft.prompt,
+                controller: _promptController,
                 decoration: InputDecoration(
                   labelText: l10n.textAgentsFieldSystemPromptOptional,
                   hintText: l10n.textAgentsFieldSystemPromptHint,
@@ -71,7 +126,7 @@ class TextAgentBasicInfoSection extends StatelessWidget {
                 ),
                 maxLines: 5,
                 textInputAction: TextInputAction.next,
-                onChanged: controller.updatePrompt,
+                onChanged: widget.controller.updatePrompt,
               ),
             ],
           ),

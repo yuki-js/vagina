@@ -3,14 +3,61 @@ import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/feat/speed_dial/controllers/speed_dial_form_controller.dart';
 import 'package:vagina/l10n/app_localizations.dart';
 
-class SpeedDialPromptSection extends StatelessWidget {
+class SpeedDialPromptSection extends StatefulWidget {
   final SpeedDialFormController controller;
 
   const SpeedDialPromptSection({super.key, required this.controller});
 
   @override
+  State<SpeedDialPromptSection> createState() => _SpeedDialPromptSectionState();
+}
+
+class _SpeedDialPromptSectionState extends State<SpeedDialPromptSection> {
+  late final TextEditingController _promptController;
+
+  @override
+  void initState() {
+    super.initState();
+    _promptController = TextEditingController(
+      text: widget.controller.draft.systemPrompt,
+    );
+    widget.controller.addListener(_syncFromDraft);
+  }
+
+  @override
+  void didUpdateWidget(SpeedDialPromptSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller == widget.controller) return;
+    oldWidget.controller.removeListener(_syncFromDraft);
+    widget.controller.addListener(_syncFromDraft);
+    _syncFromDraft();
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_syncFromDraft);
+    _promptController.dispose();
+    super.dispose();
+  }
+
+  void _syncFromDraft() {
+    final prompt = widget.controller.draft.systemPrompt;
+    if (_promptController.text == prompt) return;
+    final currentOffset = _promptController.selection.baseOffset;
+    final offset = currentOffset < 0
+        ? prompt.length
+        : currentOffset > prompt.length
+        ? prompt.length
+        : currentOffset;
+    _promptController.value = TextEditingValue(
+      text: prompt,
+      selection: TextSelection.collapsed(offset: offset),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) => ListenableBuilder(
-    listenable: controller,
+    listenable: widget.controller,
     builder: (context, child) {
       final l10n = AppLocalizations.of(context);
       return Card(
@@ -37,8 +84,7 @@ class SpeedDialPromptSection extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               TextFormField(
-                key: ValueKey(('prompt', controller.draft.systemPrompt)),
-                initialValue: controller.draft.systemPrompt,
+                controller: _promptController,
                 decoration: InputDecoration(
                   hintText: l10n.speedDialConfigSystemPromptHint,
                   border: OutlineInputBorder(
@@ -46,11 +92,11 @@ class SpeedDialPromptSection extends StatelessWidget {
                   ),
                   filled: true,
                   fillColor: Colors.grey[50],
-                  errorText: controller.errors.systemPrompt,
+                  errorText: widget.controller.errors.systemPrompt,
                 ),
                 style: const TextStyle(color: AppTheme.lightTextPrimary),
                 maxLines: 8,
-                onChanged: controller.updateSystemPrompt,
+                onChanged: widget.controller.updateSystemPrompt,
               ),
             ],
           ),

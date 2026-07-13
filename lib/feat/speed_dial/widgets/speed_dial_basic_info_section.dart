@@ -3,7 +3,7 @@ import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/feat/speed_dial/controllers/speed_dial_form_controller.dart';
 import 'package:vagina/l10n/app_localizations.dart';
 
-class SpeedDialBasicInfoSection extends StatelessWidget {
+class SpeedDialBasicInfoSection extends StatefulWidget {
   final SpeedDialFormController controller;
   final VoidCallback onSelectEmoji;
 
@@ -14,17 +14,72 @@ class SpeedDialBasicInfoSection extends StatelessWidget {
   });
 
   @override
+  State<SpeedDialBasicInfoSection> createState() =>
+      _SpeedDialBasicInfoSectionState();
+}
+
+class _SpeedDialBasicInfoSectionState extends State<SpeedDialBasicInfoSection> {
+  late final TextEditingController _nameController;
+  late final TextEditingController _descriptionController;
+
+  @override
+  void initState() {
+    super.initState();
+    final draft = widget.controller.draft;
+    _nameController = TextEditingController(text: draft.name);
+    _descriptionController = TextEditingController(text: draft.description);
+    widget.controller.addListener(_syncFromDraft);
+  }
+
+  @override
+  void didUpdateWidget(SpeedDialBasicInfoSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller == widget.controller) return;
+    oldWidget.controller.removeListener(_syncFromDraft);
+    widget.controller.addListener(_syncFromDraft);
+    _syncFromDraft();
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_syncFromDraft);
+    _nameController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
+  void _syncFromDraft() {
+    final draft = widget.controller.draft;
+    _syncText(_nameController, draft.name);
+    _syncText(_descriptionController, draft.description);
+  }
+
+  void _syncText(TextEditingController textController, String text) {
+    if (textController.text == text) return;
+    final currentOffset = textController.selection.baseOffset;
+    final offset = currentOffset < 0
+        ? text.length
+        : currentOffset > text.length
+        ? text.length
+        : currentOffset;
+    textController.value = TextEditingValue(
+      text: text,
+      selection: TextSelection.collapsed(offset: offset),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) => ListenableBuilder(
-    listenable: controller,
+    listenable: widget.controller,
     builder: (context, child) {
       final l10n = AppLocalizations.of(context);
-      final draft = controller.draft;
-      final isDefault = controller.original?.isDefault ?? false;
+      final draft = widget.controller.draft;
+      final isDefault = widget.controller.original?.isDefault ?? false;
       return Column(
         children: [
           Card(
             child: InkWell(
-              onTap: onSelectEmoji,
+              onTap: widget.onSelectEmoji,
               borderRadius: BorderRadius.circular(12),
               child: Padding(
                 padding: const EdgeInsets.all(16),
@@ -78,8 +133,7 @@ class SpeedDialBasicInfoSection extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
-                    key: ValueKey(('name', draft.name)),
-                    initialValue: draft.name,
+                    controller: _nameController,
                     enabled: !isDefault,
                     decoration: InputDecoration(
                       hintText: l10n.speedDialConfigNameHint,
@@ -91,10 +145,10 @@ class SpeedDialBasicInfoSection extends StatelessWidget {
                       helperText: isDefault
                           ? l10n.speedDialConfigDefaultNameLocked
                           : null,
-                      errorText: controller.errors.name,
+                      errorText: widget.controller.errors.name,
                     ),
                     style: const TextStyle(color: AppTheme.lightTextPrimary),
-                    onChanged: controller.updateName,
+                    onChanged: widget.controller.updateName,
                   ),
                 ],
               ),
@@ -117,8 +171,7 @@ class SpeedDialBasicInfoSection extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
-                    key: ValueKey(('description', draft.description)),
-                    initialValue: draft.description,
+                    controller: _descriptionController,
                     decoration: InputDecoration(
                       hintText: l10n.speedDialConfigDescriptionHint,
                       border: OutlineInputBorder(
@@ -129,7 +182,7 @@ class SpeedDialBasicInfoSection extends StatelessWidget {
                     ),
                     style: const TextStyle(color: AppTheme.lightTextPrimary),
                     maxLines: 2,
-                    onChanged: controller.updateDescription,
+                    onChanged: widget.controller.updateDescription,
                   ),
                 ],
               ),

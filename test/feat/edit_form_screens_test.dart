@@ -43,6 +43,22 @@ void main() {
     await tester.tap(find.text('Discard changes'));
     await tester.pumpAndSettle();
     expect(_barOpacity(tester), 0);
+    expect(_textFieldText(tester, find.byType(TextFormField).first), isEmpty);
+  });
+
+  testWidgets('Speed Dial text fields keep focus while editing', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_app(const SpeedDialConfigScreen()));
+    await tester.pump();
+
+    final field = find.byType(TextFormField).first;
+    await tester.tap(field);
+    await tester.pump();
+    tester.testTextInput.enterText('A');
+    await tester.pump();
+
+    expect(_textFieldHasFocus(tester, field), isTrue);
   });
 
   testWidgets('Speed Dial save stays open and hides the bar', (tester) async {
@@ -85,6 +101,22 @@ void main() {
     await tester.tap(find.text('Discard changes'));
     await tester.pumpAndSettle();
     expect(_barOpacity(tester), 0);
+    expect(_textFieldText(tester, find.byType(TextFormField).first), isEmpty);
+  });
+
+  testWidgets('Text Agent text fields keep focus while editing', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_app(const AgentFormScreen()));
+    await tester.pump();
+
+    final field = find.byType(TextFormField).first;
+    await tester.tap(field);
+    await tester.pump();
+    tester.testTextInput.enterText('A');
+    await tester.pump();
+
+    expect(_textFieldHasFocus(tester, field), isTrue);
   });
 
   testWidgets('Text Agent save stays open and hides the bar', (tester) async {
@@ -110,6 +142,20 @@ double _barOpacity(WidgetTester tester) {
     ),
   );
   return opacity.opacity;
+}
+
+bool _textFieldHasFocus(WidgetTester tester, Finder field) {
+  final editableText = tester.widget<EditableText>(
+    find.descendant(of: field, matching: find.byType(EditableText)),
+  );
+  return editableText.focusNode.hasFocus;
+}
+
+String _textFieldText(WidgetTester tester, Finder field) {
+  final editableText = tester.widget<EditableText>(
+    find.descendant(of: field, matching: find.byType(EditableText)),
+  );
+  return editableText.controller.text;
 }
 
 Widget _app(Widget child) => ProviderScope(
