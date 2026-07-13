@@ -58,6 +58,9 @@ jobs:
       - name: Install Flutter dependencies
         run: flutter pub get
 
+      - name: Prebuild generated sources
+        run: bash scripts/prebuild.sh
+
       - name: Enable Windows desktop support
         run: flutter config --enable-windows-desktop
 
