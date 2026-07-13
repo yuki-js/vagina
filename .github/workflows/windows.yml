@@ -59,7 +59,7 @@ jobs:
 
   build-windows-debug:
     name: Build Windows (Debug)
-    runs-on: windows-2022
+    runs-on: windows-latest
     needs: [preprocess]
     permissions:
       contents: read
@@ -115,7 +115,7 @@ jobs:
 
   build-windows-release:
     name: Build Windows (Release)
-    runs-on: windows-2022
+    runs-on: windows-latest
     needs: [preprocess]
     permissions:
       contents: read
