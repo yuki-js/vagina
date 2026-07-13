@@ -27,12 +27,10 @@ jobs:
           channel: "stable"
           cache: true
 
-      - name: Cache pub dependencies
+      - name: Cache pub packages
         uses: actions/cache@v6
         with:
-          path: |
-            ~/.pub-cache
-            .dart_tool
+          path: ~/.pub-cache
           key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
           restore-keys: |
             ${{ runner.os }}-pub-
@@ -48,14 +46,6 @@ jobs:
 
       - name: Run tests
         run: flutter test
-
-      # Cache the .dart_tool directory for Windows builds
-      - name: Upload .dart_tool cache
-        uses: actions/upload-artifact@v7
-        with:
-          name: dart-tool-cache
-          path: .dart_tool
-          retention-days: 1
 
   build-windows-debug:
     name: Build Windows (Debug)
@@ -73,35 +63,32 @@ jobs:
           channel: "stable"
           cache: true
 
-      # Download preprocessed cache
-      - name: Download .dart_tool cache
-        uses: actions/download-artifact@v8
-        with:
-          name: dart-tool-cache
-          path: .dart_tool
-        continue-on-error: true
-
-      # Cache pub dependencies with Windows-specific key
-      - name: Cache pub dependencies
+      - name: Cache pub packages
         uses: actions/cache@v6
         with:
-          path: |
-            ~\AppData\Local\Pub\Cache
-            .dart_tool
+          path: ~\AppData\Local\Pub\Cache
           key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
           restore-keys: |
             ${{ runner.os }}-pub-
 
-      # Cache Flutter build outputs
-      - name: Cache Flutter build
+      - name: Cache Windows native build tree (debug)
         uses: actions/cache@v6
         with:
-          path: |
-            build\windows
-          key: ${{ runner.os }}-flutter-build-debug-${{ hashFiles('windows/**', 'lib/**', 'pubspec.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-flutter-build-debug-
-            ${{ runner.os }}-flutter-build-
+          path: build\windows\x64
+          key: >-
+            windows-native-v2-${{ runner.os }}-${{ runner.arch }}-debug-${{
+              hashFiles(
+                'pubspec.yaml',
+                'pubspec.lock',
+                'windows/**',
+                'lib/**',
+                'assets/**',
+                'openapi/**',
+                'l10n.yaml',
+                'scripts/prebuild.sh',
+                '.github/workflows/windows.yml'
+              )
+            }}
 
       - name: Install dependencies
         run: flutter pub get
@@ -143,35 +130,32 @@ jobs:
           channel: "stable"
           cache: true
 
-      # Download preprocessed cache
-      - name: Download .dart_tool cache
-        uses: actions/download-artifact@v8
-        with:
-          name: dart-tool-cache
-          path: .dart_tool
-        continue-on-error: true
-
-      # Cache pub dependencies with Windows-specific key
-      - name: Cache pub dependencies
+      - name: Cache pub packages
         uses: actions/cache@v6
         with:
-          path: |
-            ~\AppData\Local\Pub\Cache
-            .dart_tool
+          path: ~\AppData\Local\Pub\Cache
           key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
           restore-keys: |
             ${{ runner.os }}-pub-
 
-      # Cache Flutter build outputs
-      - name: Cache Flutter build
+      - name: Cache Windows native build tree (release)
         uses: actions/cache@v6
         with:
-          path: |
-            build\windows
-          key: ${{ runner.os }}-flutter-build-release-${{ hashFiles('windows/**', 'lib/**', 'pubspec.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-flutter-build-release-
-            ${{ runner.os }}-flutter-build-
+          path: build\windows\x64
+          key: >-
+            windows-native-v2-${{ runner.os }}-${{ runner.arch }}-release-${{
+              hashFiles(
+                'pubspec.yaml',
+                'pubspec.lock',
+                'windows/**',
+                'lib/**',
+                'assets/**',
+                'openapi/**',
+                'l10n.yaml',
+                'scripts/prebuild.sh',
+                '.github/workflows/windows.yml'
+              )
+            }}
 
       - name: Install dependencies
         run: flutter pub get
