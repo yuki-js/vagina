@@ -2,7 +2,8 @@ import 'dart:async';
 import 'dart:collection';
 import 'dart:typed_data';
 
-import 'package:taudio/taudio.dart';
+import 'package:vagina/feat/call/services/pcm_playback_backend.dart';
+import 'package:vagina/feat/call/services/soloud_pcm_playback_backend.dart';
 import 'package:vagina/feat/call/services/subservice.dart';
 
 /// Immutable snapshot of [PlaybackService] buffering state.
@@ -45,9 +46,8 @@ final class PlaybackMetrics {
 /// Owns PCM playback buffering, input-stream binding, and interruption
 /// semantics for assistant audio responses.
 final class PlaybackService extends SubService {
-  /// Buffer size for audio playback streaming
-  static const int playbackBufferSize = 8192;
   static const Duration drainCancellationTimeout = Duration(milliseconds: 100);
+  static const Duration _nativeBufferingTime = Duration(milliseconds: 100);
   static const int _sampleRate = 24000;
   static const int _channels = 1;
   static const int _minAudioBufferSizeBeforeStart = 4800;
@@ -59,7 +59,7 @@ final class PlaybackService extends SubService {
       StreamController<bool>.broadcast();
   final StreamController<PlaybackMetrics> _metricsController =
       StreamController<PlaybackMetrics>.broadcast();
-  final FlutterSoundPlayer _player = FlutterSoundPlayer();
+  final PcmPlaybackBackend _backend;
 
   StreamSubscription<Uint8List>? _inputSubscription;
   Future<void>? _drainFuture;
@@ -68,10 +68,11 @@ final class PlaybackService extends SubService {
   PlaybackMetrics _metrics = const PlaybackMetrics.idle();
   int _bufferedBytes = 0;
   int _generation = 0;
-  bool _playerOpened = false;
+  bool _backendInitialized = false;
   bool _playerStreaming = false;
 
-  PlaybackService();
+  PlaybackService({PcmPlaybackBackend? backend})
+    : _backend = backend ?? SoloudPcmPlaybackBackend();
 
   bool get isPlaying => _isPlaying;
 
@@ -89,12 +90,12 @@ final class PlaybackService extends SubService {
   Future<void> start() async {
     await super.start();
 
-    if (_playerOpened) {
+    if (_backendInitialized) {
       return;
     }
 
-    await _player.openPlayer();
-    _playerOpened = true;
+    await _backend.initialize();
+    _backendInitialized = true;
     _emitMetrics();
   }
 
@@ -168,6 +169,9 @@ final class PlaybackService extends SubService {
 
   @override
   Future<void> dispose() async {
+    if (isDisposed) {
+      return;
+    }
     await super.dispose();
 
     _generation += 1;
@@ -186,10 +190,8 @@ final class PlaybackService extends SubService {
     _bufferedBytes = 0;
 
     await _stopPlayerIfNeeded();
-    if (_playerOpened) {
-      await _player.closePlayer();
-      _playerOpened = false;
-    }
+    await _backend.dispose();
+    _backendInitialized = false;
 
     await _playingStateController.close();
     await _muteStateController.close();
@@ -235,6 +237,13 @@ final class PlaybackService extends SubService {
     while (generation == _generation && !isDisposed && !_isMuted) {
       if (_bufferQueue.isEmpty) {
         if (_metrics.isResponseComplete) {
+          if (_playerStreaming) {
+            await _backend.finishStream();
+            _playerStreaming = false;
+          }
+          if (generation != _generation || isDisposed || _isMuted) {
+            return;
+          }
           _setPlayingState(false);
           _metrics = _metrics.copyWith(isResponseComplete: false);
           _emitMetrics();
@@ -243,6 +252,7 @@ final class PlaybackService extends SubService {
       }
 
       final shouldStartPlayback =
+          _isPlaying ||
           _bufferedBytes >= _minAudioBufferSizeBeforeStart ||
           _metrics.isResponseComplete;
       if (!shouldStartPlayback) {
@@ -265,7 +275,7 @@ final class PlaybackService extends SubService {
       final chunk = _bufferQueue.removeFirst();
       _bufferedBytes -= chunk.length;
       _emitMetrics();
-      await _player.feedUint8FromStream(chunk);
+      await _backend.feed(chunk);
     }
   }
 
@@ -302,12 +312,10 @@ final class PlaybackService extends SubService {
 
     _playerStreaming = true;
     try {
-      await _player.startPlayerFromStream(
-        codec: Codec.pcm16,
+      await _backend.startStream(
         sampleRate: _sampleRate,
-        numChannels: _channels,
-        bufferSize: playbackBufferSize,
-        interleaved: true,
+        channels: _channels,
+        bufferingTime: _nativeBufferingTime,
       );
     } catch (e, stackTrace) {
       logger.severe('Failed to start audio player', e, stackTrace);
@@ -317,12 +325,12 @@ final class PlaybackService extends SubService {
   }
 
   Future<void> _stopPlayerIfNeeded() async {
-    if (!_playerOpened || !_playerStreaming) {
+    if (!_backendInitialized || !_playerStreaming) {
       return;
     }
 
     try {
-      await _player.stopPlayer();
+      await _backend.stopStream();
     } catch (e, stackTrace) {
       logger.warning('Error stopping audio player', e, stackTrace);
     } finally {

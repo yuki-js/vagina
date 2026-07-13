@@ -456,22 +456,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.1.0"
-  flutter_sound_platform_interface:
-    dependency: transitive
+  flutter_soloud:
+    dependency: "direct main"
     description:
-      name: flutter_sound_platform_interface
-      sha256: c0d261be2bf0b6a45cbb9570f095fbf48286d1b5b4f94564072fdebc9d59cb5c
+      name: flutter_soloud
+      sha256: "5ffc8db6d9e5751ff2e8c3b7934b1973dc788fb541b9000561b1168c7798dae0"
       url: "https://pub.dev"
     source: hosted
-    version: "10.3.8"
-  flutter_sound_web:
-    dependency: transitive
-    description:
-      name: flutter_sound_web
-      sha256: e4405a235924fd757a206066f176c251a8bc664549762720cd3b154bf81719f9
-      url: "https://pub.dev"
-    source: hosted
-    version: "10.3.8"
+    version: "4.0.12"
   flutter_test:
     dependency: "direct dev"
     description: flutter
@@ -684,14 +676,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.0.0"
-  logger:
-    dependency: transitive
-    description:
-      name: logger
-      sha256: a7967e31b703831a893bbc3c3dd11db08126fe5f369b5c648a36f821979f5be3
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.6.2"
   logging:
     dependency: "direct main"
     description:
@@ -1281,14 +1265,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.4.0"
-  taudio:
-    dependency: "direct main"
-    description:
-      name: taudio
-      sha256: b8176afa649d2f447f313a50b6c5c332e35b1e32f3583d36b0c07e08666d8953
-      url: "https://pub.dev"
-    source: hosted
-    version: "10.3.8"
   term_glyph:
     dependency: transitive
     description:

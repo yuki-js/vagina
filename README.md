@@ -247,8 +247,8 @@ A: プラットフォーム固有の権限設定が必要です。`AndroidManife
 |---------|------|------|
 | フレームワーク | Flutter 3.27.1 | クロスプラットフォームUI |
 | 状態管理 | Riverpod 3.1.0 | 依存性注入・状態管理 |
-| 音声入力 | record 6.1.2 | マイク録音 (PCM 24kHz) |
-| 音声再生 | just_audio / taudio | 音声再生 (Windows対応) |
+| 音声入力 | record 6.2.0 | マイク録音 (PCM 24kHz) |
+| 音声再生 | Flutter SoLoud / just_audio | ライブPCM・フィードバック音再生 |
 | 通信 | web_socket_channel 3.0.3 | WebSocket接続 |
 | ストレージ | path_provider | ファイル保存 |
 | UI | Google Fonts, Flutter Markdown | フォント・Markdown表示 |
@@ -325,8 +325,8 @@ fvm flutter run -d chrome
 ### トラブルシューティング
 
 #### Windows で音声再生ができない
-- `taudio` パッケージを使用しているため、Windows固有の設定が必要です
-- 詳細は [Windows 版ガイド](docs/WINDOWS.md) を参照
+- ライブ音声は Flutter SoLoud のネイティブバックエンドを使用します
+- 音声出力デバイスとWindowsの音量ミキサー設定を確認してください
 
 #### マイクが認識されない
 - Android: マニフェストファイルに録音権限が必要

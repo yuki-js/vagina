@@ -156,7 +156,7 @@ test/
 ## Platform-Specific Guidelines
 
 ### Windows
-- Use `taudio` for audio playback
+- Use the shared PCM playback backend for live assistant audio
 - Test audio functionality thoroughly
 - See `docs/WINDOWS_BUILD.md`
 

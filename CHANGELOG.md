@@ -5,6 +5,19 @@ All notable changes to the VAGINA project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- Replaced `taudio` assistant PCM playback with Flutter SoLoud buffer streams on all supported platforms.
+- Preserved 24 kHz mono PCM16 playback, 100 ms prebuffering, interruption, mute, and response-drain behavior behind an injectable playback backend.
+
+### Fixed
+- Fixed Windows call startup failing with `MissingPluginException` for the unimplemented `xyz.canardoux.flutter_sound_player` channel.
+- Delayed native SoLoud library loading until audio initialization so non-native widget tests and call-screen navigation remain supported.
+
+### Testing
+- Added deterministic playback lifecycle tests and a Windows-native PCM playback smoke target.
+
 ## [1.1.0] - 2026-01-18
 
 ### Added
