@@ -48,7 +48,7 @@ dependencies:
   wakelock_plus: ^1.5.1
 
   # Window management
-  window_manager: ^0.5.1
+  window_manager: ^0.5.2
   just_audio: ^0.10.5
   path: ^1.9.1
   async: ^2.13.1
