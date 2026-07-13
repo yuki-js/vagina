@@ -32,7 +32,6 @@ void main() {
         iconEmoji: '🦄',
         voice: 'verse',
         enabledTools: const {'document_read': false, 'calculator': true},
-        reasoningEffort: SpeedDialReasoningEffort.high,
         toolChoiceRequired: true,
         createdAt: DateTime.utc(2026, 1, 2, 3, 4, 5),
       );
@@ -146,7 +145,6 @@ class _FakeSpeedDialRepository implements SpeedDialRepository {
     String voice = 'alloy',
     String voiceAgentId = SpeedDial.defaultVoiceAgentId,
     Map<String, bool> enabledTools = const {},
-    SpeedDialReasoningEffort reasoningEffort = SpeedDialReasoningEffort.off,
     bool toolChoiceRequired = false,
   }) async {
     final speedDial = SpeedDial(
@@ -158,7 +156,6 @@ class _FakeSpeedDialRepository implements SpeedDialRepository {
       voice: voice,
       voiceAgentId: voiceAgentId,
       enabledTools: enabledTools,
-      reasoningEffort: reasoningEffort,
       toolChoiceRequired: toolChoiceRequired,
     );
     _saved[speedDial.id] = speedDial;

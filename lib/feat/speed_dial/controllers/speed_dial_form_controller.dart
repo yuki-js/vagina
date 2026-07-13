@@ -13,7 +13,6 @@ class SpeedDialFormDraft {
   final String voiceAgentId;
   final String emoji;
   final Map<String, bool> enabledTools;
-  final SpeedDialReasoningEffort reasoningEffort;
   final bool toolChoiceRequired;
 
   const SpeedDialFormDraft({
@@ -24,7 +23,6 @@ class SpeedDialFormDraft {
     required this.voiceAgentId,
     required this.emoji,
     required this.enabledTools,
-    required this.reasoningEffort,
     required this.toolChoiceRequired,
   });
 
@@ -36,7 +34,6 @@ class SpeedDialFormDraft {
     voiceAgentId: SpeedDial.defaultVoiceAgentId,
     emoji: '⭐',
     enabledTools: {},
-    reasoningEffort: SpeedDialReasoningEffort.off,
     toolChoiceRequired: false,
   );
 
@@ -49,7 +46,6 @@ class SpeedDialFormDraft {
         voiceAgentId: speedDial.voiceAgentId,
         emoji: speedDial.iconEmoji ?? '⭐',
         enabledTools: Map.unmodifiable(speedDial.enabledTools),
-        reasoningEffort: speedDial.reasoningEffort,
         toolChoiceRequired: speedDial.toolChoiceRequired,
       );
 
@@ -61,7 +57,6 @@ class SpeedDialFormDraft {
     String? voiceAgentId,
     String? emoji,
     Map<String, bool>? enabledTools,
-    SpeedDialReasoningEffort? reasoningEffort,
     bool? toolChoiceRequired,
   }) => SpeedDialFormDraft(
     name: name ?? this.name,
@@ -71,7 +66,6 @@ class SpeedDialFormDraft {
     voiceAgentId: voiceAgentId ?? this.voiceAgentId,
     emoji: emoji ?? this.emoji,
     enabledTools: Map.unmodifiable(enabledTools ?? this.enabledTools),
-    reasoningEffort: reasoningEffort ?? this.reasoningEffort,
     toolChoiceRequired: toolChoiceRequired ?? this.toolChoiceRequired,
   );
 
@@ -84,7 +78,6 @@ class SpeedDialFormDraft {
       voice == other.voice &&
       voiceAgentId == other.voiceAgentId &&
       emoji == other.emoji &&
-      reasoningEffort == other.reasoningEffort &&
       toolChoiceRequired == other.toolChoiceRequired &&
       mapEquals(enabledTools, other.enabledTools);
 
@@ -96,20 +89,12 @@ class SpeedDialFormDraft {
     voice,
     voiceAgentId,
     emoji,
-    reasoningEffort,
     toolChoiceRequired,
     Object.hashAllUnordered(enabledTools.entries),
   );
 }
 
-enum SpeedDialFormSection {
-  basicInfo,
-  voice,
-  voiceAgent,
-  systemPrompt,
-  tools,
-  reasoning,
-}
+enum SpeedDialFormSection { basicInfo, voice, voiceAgent, systemPrompt, tools }
 
 @immutable
 class SpeedDialFormErrors {
@@ -235,8 +220,6 @@ class SpeedDialFormController extends ChangeNotifier {
   void updateEmoji(String value) => _update(_draft.copyWith(emoji: value));
   void updateEnabledTools(Map<String, bool> value) =>
       _update(_draft.copyWith(enabledTools: value));
-  void updateReasoningEffort(SpeedDialReasoningEffort value) =>
-      _update(_draft.copyWith(reasoningEffort: value));
   void updateToolChoiceRequired(bool value) =>
       _update(_draft.copyWith(toolChoiceRequired: value));
 
@@ -294,7 +277,6 @@ class SpeedDialFormController extends ChangeNotifier {
           voiceAgentId: _draft.voiceAgentId,
           iconEmoji: _draft.emoji,
           enabledTools: Map.of(_draft.enabledTools),
-          reasoningEffort: _draft.reasoningEffort,
           toolChoiceRequired: _draft.toolChoiceRequired,
         );
       } else {
@@ -308,7 +290,6 @@ class SpeedDialFormController extends ChangeNotifier {
             voiceAgentId: _draft.voiceAgentId,
             iconEmoji: _draft.emoji,
             enabledTools: Map.of(_draft.enabledTools),
-            reasoningEffort: _draft.reasoningEffort,
             toolChoiceRequired: _draft.toolChoiceRequired,
             createdAt: persisted.createdAt,
           ),

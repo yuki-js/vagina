@@ -9,7 +9,6 @@ import 'package:vagina/feat/speed_dial/state/speed_dial_providers.dart';
 import 'package:vagina/feat/speed_dial/widgets/emoji_picker.dart';
 import 'package:vagina/feat/speed_dial/widgets/speed_dial_basic_info_section.dart';
 import 'package:vagina/feat/speed_dial/widgets/speed_dial_prompt_section.dart';
-import 'package:vagina/feat/speed_dial/widgets/speed_dial_reasoning_section.dart';
 import 'package:vagina/feat/speed_dial/widgets/speed_dial_tools_section.dart';
 import 'package:vagina/feat/speed_dial/widgets/speed_dial_voice_agent_section.dart';
 import 'package:vagina/feat/speed_dial/widgets/speed_dial_voice_section.dart';
@@ -221,11 +220,6 @@ class _SpeedDialConfigScreenState extends ConsumerState<SpeedDialConfigScreen> {
                   KeyedSubtree(
                     key: _sectionKeys[SpeedDialFormSection.tools],
                     child: SpeedDialToolsSection(controller: _controller),
-                  ),
-                  const SizedBox(height: 16),
-                  KeyedSubtree(
-                    key: _sectionKeys[SpeedDialFormSection.reasoning],
-                    child: SpeedDialReasoningSection(controller: _controller),
                   ),
                 ],
               ),

@@ -546,38 +546,6 @@
   "@speedDialConfigToolChoiceRequiredHint": {
     "description": "Speed dial configuration label."
   },
-  "speedDialConfigReasoningEffortLabel": "Reasoning effort",
-  "@speedDialConfigReasoningEffortLabel": {
-    "description": "Speed dial configuration label."
-  },
-  "speedDialConfigReasoningEffortHint": "Turn this off for models that do not support reasoning.",
-  "@speedDialConfigReasoningEffortHint": {
-    "description": "Speed dial configuration label."
-  },
-  "speedDialConfigReasoningEffortOff": "Off",
-  "@speedDialConfigReasoningEffortOff": {
-    "description": "Speed dial configuration label."
-  },
-  "speedDialConfigReasoningEffortMinimal": "Minimal",
-  "@speedDialConfigReasoningEffortMinimal": {
-    "description": "Speed dial configuration label."
-  },
-  "speedDialConfigReasoningEffortLow": "Low",
-  "@speedDialConfigReasoningEffortLow": {
-    "description": "Speed dial configuration label."
-  },
-  "speedDialConfigReasoningEffortMedium": "Medium",
-  "@speedDialConfigReasoningEffortMedium": {
-    "description": "Speed dial configuration label."
-  },
-  "speedDialConfigReasoningEffortHigh": "High",
-  "@speedDialConfigReasoningEffortHigh": {
-    "description": "Speed dial configuration label."
-  },
-  "speedDialConfigReasoningEffortXhigh": "ExtraHigh",
-  "@speedDialConfigReasoningEffortXhigh": {
-    "description": "Speed dial configuration label."
-  },
   "speedDialEmojiPickerTitle": "Choose an icon",
   "@speedDialEmojiPickerTitle": {
     "description": "Header title inside the emoji picker dialog used by the speed dial configuration flow."

@@ -11,7 +11,6 @@ abstract class SpeedDialRepository {
     String voice = 'alloy',
     String voiceAgentId = SpeedDial.defaultVoiceAgentId,
     Map<String, bool> enabledTools = const {},
-    SpeedDialReasoningEffort reasoningEffort = SpeedDialReasoningEffort.off,
     bool toolChoiceRequired = false,
   });
 

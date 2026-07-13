@@ -74,7 +74,6 @@ class _SpeedDials implements SpeedDialRepository {
     String voice = 'alloy',
     String voiceAgentId = SpeedDial.defaultVoiceAgentId,
     Map<String, bool> enabledTools = const {},
-    SpeedDialReasoningEffort reasoningEffort = SpeedDialReasoningEffort.off,
     bool toolChoiceRequired = false,
   }) => throw UnimplementedError();
   @override

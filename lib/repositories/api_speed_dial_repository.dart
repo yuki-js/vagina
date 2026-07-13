@@ -4,13 +4,7 @@ import 'package:vagina/repositories/api_repository_error.dart';
 import 'package:vagina/api/generated/core/json_optional.dart';
 import 'package:vagina/api/generated/models/speed_dial.dart' as api_model;
 import 'package:vagina/api/generated/models/speed_dial_create_request.dart';
-import 'package:vagina/api/generated/models/speed_dial_create_request_reasoning_effort.dart'
-    as api_create_reasoning;
-import 'package:vagina/api/generated/models/speed_dial_reasoning_effort.dart'
-    as api_reasoning;
 import 'package:vagina/api/generated/models/speed_dial_update_request.dart';
-import 'package:vagina/api/generated/models/speed_dial_update_request_reasoning_effort.dart'
-    as api_update_reasoning;
 import 'package:vagina/api/generated/responses/create_speed_dial_response.dart';
 import 'package:vagina/api/generated/responses/delete_speed_dial_response.dart';
 import 'package:vagina/api/generated/responses/get_speed_dial_response.dart';
@@ -37,7 +31,6 @@ class ApiSpeedDialRepository implements SpeedDialRepository {
     String voice = 'alloy',
     String voiceAgentId = SpeedDial.defaultVoiceAgentId,
     Map<String, bool> enabledTools = const {},
-    SpeedDialReasoningEffort reasoningEffort = SpeedDialReasoningEffort.off,
     bool toolChoiceRequired = false,
   }) async {
     _logger.fine('Creating speed dial');
@@ -50,7 +43,6 @@ class ApiSpeedDialRepository implements SpeedDialRepository {
         voice: voice,
         voiceAgentId: voiceAgentId,
         enabledTools: Map<String, dynamic>.from(enabledTools),
-        reasoningEffort: _reasoningEffortToCreateApi(reasoningEffort),
         toolChoiceRequired: toolChoiceRequired,
       ),
     );
@@ -140,7 +132,6 @@ class ApiSpeedDialRepository implements SpeedDialRepository {
         voice: speedDial.voice,
         voiceAgentId: speedDial.voiceAgentId,
         enabledTools: Map<String, dynamic>.from(speedDial.enabledTools),
-        reasoningEffort: _reasoningEffortToUpdateApi(speedDial.reasoningEffort),
         toolChoiceRequired: speedDial.toolChoiceRequired,
       ),
     );
@@ -207,7 +198,6 @@ class ApiSpeedDialRepository implements SpeedDialRepository {
       voice: speedDial.voice,
       voiceAgentId: speedDial.voiceAgentId,
       enabledTools: _boolMapFromDynamic(speedDial.enabledTools),
-      reasoningEffort: _reasoningEffortFromApi(speedDial.reasoningEffort),
       toolChoiceRequired: speedDial.toolChoiceRequired,
       createdAt: speedDial.createdAt,
     );
@@ -215,38 +205,5 @@ class ApiSpeedDialRepository implements SpeedDialRepository {
 
   Map<String, bool> _boolMapFromDynamic(Map<String, dynamic> value) {
     return value.map((key, value) => MapEntry(key, value == true));
-  }
-
-  SpeedDialReasoningEffort _reasoningEffortFromApi(
-    api_reasoning.SpeedDialReasoningEffort value,
-  ) {
-    for (final effort in SpeedDialReasoningEffort.values) {
-      if (effort.name == value.name) {
-        return effort;
-      }
-    }
-    return SpeedDialReasoningEffort.off;
-  }
-
-  api_create_reasoning.SpeedDialCreateRequestReasoningEffort
-  _reasoningEffortToCreateApi(SpeedDialReasoningEffort value) {
-    for (final effort
-        in api_create_reasoning.SpeedDialCreateRequestReasoningEffort.values) {
-      if (effort.name == value.name) {
-        return effort;
-      }
-    }
-    return api_create_reasoning.SpeedDialCreateRequestReasoningEffort.off;
-  }
-
-  api_update_reasoning.SpeedDialUpdateRequestReasoningEffort
-  _reasoningEffortToUpdateApi(SpeedDialReasoningEffort value) {
-    for (final effort
-        in api_update_reasoning.SpeedDialUpdateRequestReasoningEffort.values) {
-      if (effort.name == value.name) {
-        return effort;
-      }
-    }
-    return api_update_reasoning.SpeedDialUpdateRequestReasoningEffort.off;
   }
 }

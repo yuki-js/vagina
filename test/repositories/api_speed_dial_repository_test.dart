@@ -5,7 +5,6 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vagina/api/vagina_api_client.dart';
-import 'package:vagina/models/speed_dial.dart';
 import 'package:vagina/repositories/api_speed_dial_repository.dart';
 
 void main() {
@@ -38,7 +37,6 @@ void main() {
         'document_read': true,
         'document_patch': false,
       });
-      expect(speedDial.reasoningEffort, SpeedDialReasoningEffort.high);
       expect(speedDial.toolChoiceRequired, isTrue);
     });
 

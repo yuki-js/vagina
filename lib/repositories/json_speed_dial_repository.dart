@@ -23,7 +23,6 @@ class JsonSpeedDialRepository implements SpeedDialRepository {
     String voice = 'alloy',
     String voiceAgentId = SpeedDial.defaultVoiceAgentId,
     Map<String, bool> enabledTools = const {},
-    SpeedDialReasoningEffort reasoningEffort = SpeedDialReasoningEffort.off,
     bool toolChoiceRequired = false,
   }) async {
     final speedDial = SpeedDial(
@@ -35,7 +34,6 @@ class JsonSpeedDialRepository implements SpeedDialRepository {
       voice: voice,
       voiceAgentId: voiceAgentId,
       enabledTools: enabledTools,
-      reasoningEffort: reasoningEffort,
       toolChoiceRequired: toolChoiceRequired,
       createdAt: DateTime.now(),
     );

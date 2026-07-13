@@ -12,7 +12,6 @@ class VoiceAgentInfo {
   final String prompt;
   final VoiceAgentApiConfig apiConfig;
   final List<String> enabledTools;
-  final SpeedDialReasoningEffort reasoningEffort;
   final bool toolChoiceRequired;
 
   const VoiceAgentInfo({
@@ -24,7 +23,6 @@ class VoiceAgentInfo {
     required this.prompt,
     required this.apiConfig,
     this.enabledTools = const [],
-    this.reasoningEffort = SpeedDialReasoningEffort.off,
     this.toolChoiceRequired = false,
   });
 
@@ -40,7 +38,6 @@ class VoiceAgentInfo {
           .map((tool) => tool.definition.toolKey)
           .where((toolKey) => speedDial.enabledTools[toolKey] ?? true)
           .toList(growable: false),
-      reasoningEffort: speedDial.reasoningEffort,
       toolChoiceRequired: speedDial.toolChoiceRequired,
       apiConfig: HostedVoiceAgentApiConfig(
         speedDialId: speedDial.id,

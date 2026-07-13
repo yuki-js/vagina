@@ -775,7 +775,7 @@ paths:
       operationId: listVoiceAgents
       responses:
         "200":
-          description: Voice agents available to the authenticated user.
+          description: Voice agents visible to the authenticated user.
           content:
             application/json:
               schema:
@@ -802,9 +802,8 @@ paths:
                       example: true
                     isAvailable:
                       type: boolean
-                      description: >-
-                        Whether the authenticated user may select and use this
-                        voice agent. Public catalog items can be returned with
+                      description: Whether the authenticated user may select and use
+                        this voice agent. Public catalog items can be returned with
                         false so clients can render them as locked.
                       example: true
                   additionalProperties: false
@@ -1276,7 +1275,7 @@ paths:
       operationId: listTextAgentModels
       responses:
         "200":
-          description: Text agent model presets available to the authenticated user.
+          description: Text agent model presets visible to the authenticated user.
           content:
             application/json:
               schema:
@@ -1304,9 +1303,8 @@ paths:
                       example: true
                     isAvailable:
                       type: boolean
-                      description: >-
-                        Whether the authenticated user may select and use this
-                        text agent model. Public catalog items can be returned
+                      description: Whether the authenticated user may select and use
+                        this text agent model. Public catalog items can be returned
                         with false so clients can render them as locked.
                       example: true
                   additionalProperties: false
@@ -1467,7 +1465,6 @@ components:
       - enabledTools
       - id
       - name
-      - reasoningEffort
       - systemPrompt
       - toolChoiceRequired
       - voice
@@ -1510,17 +1507,6 @@ components:
           type: string
           description: Server registry voice-agent id selected for this speed dial.
           example: voice-agent-prod
-        reasoningEffort:
-          type: string
-          example: "off"
-          default: "off"
-          enum:
-          - "off"
-          - minimal
-          - low
-          - medium
-          - high
-          - xhigh
         toolChoiceRequired:
           type: boolean
           example: false
@@ -1544,7 +1530,6 @@ components:
       required:
       - enabledTools
       - name
-      - reasoningEffort
       - systemPrompt
       - toolChoiceRequired
       - voice
@@ -1582,17 +1567,6 @@ components:
           type: string
           description: Server registry voice-agent id selected for this speed dial.
           example: voice-agent-prod
-        reasoningEffort:
-          type: string
-          example: "off"
-          default: "off"
-          enum:
-          - "off"
-          - minimal
-          - low
-          - medium
-          - high
-          - xhigh
         toolChoiceRequired:
           type: boolean
           example: false
@@ -1612,7 +1586,6 @@ components:
       required:
       - enabledTools
       - name
-      - reasoningEffort
       - systemPrompt
       - toolChoiceRequired
       - voice
@@ -1650,17 +1623,6 @@ components:
           type: string
           description: Server registry voice-agent id selected for this speed dial.
           example: voice-agent-prod
-        reasoningEffort:
-          type: string
-          example: "off"
-          default: "off"
-          enum:
-          - "off"
-          - minimal
-          - low
-          - medium
-          - high
-          - xhigh
         toolChoiceRequired:
           type: boolean
           example: false

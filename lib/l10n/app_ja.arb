@@ -546,38 +546,6 @@
   "@speedDialConfigToolChoiceRequiredHint": {
     "description": "Speed dial configuration label."
   },
-  "speedDialConfigReasoningEffortLabel": "Reasoning effort",
-  "@speedDialConfigReasoningEffortLabel": {
-    "description": "Speed dial configuration label."
-  },
-  "speedDialConfigReasoningEffortHint": "思考モデルでない場合はオフにしてください。",
-  "@speedDialConfigReasoningEffortHint": {
-    "description": "Speed dial configuration label."
-  },
-  "speedDialConfigReasoningEffortOff": "オフ",
-  "@speedDialConfigReasoningEffortOff": {
-    "description": "Speed dial configuration label."
-  },
-  "speedDialConfigReasoningEffortMinimal": "最小",
-  "@speedDialConfigReasoningEffortMinimal": {
-    "description": "Speed dial configuration label."
-  },
-  "speedDialConfigReasoningEffortLow": "低",
-  "@speedDialConfigReasoningEffortLow": {
-    "description": "Speed dial configuration label."
-  },
-  "speedDialConfigReasoningEffortMedium": "中",
-  "@speedDialConfigReasoningEffortMedium": {
-    "description": "Speed dial configuration label."
-  },
-  "speedDialConfigReasoningEffortHigh": "高",
-  "@speedDialConfigReasoningEffortHigh": {
-    "description": "Speed dial configuration label."
-  },
-  "speedDialConfigReasoningEffortXhigh": "最高",
-  "@speedDialConfigReasoningEffortXhigh": {
-    "description": "Speed dial configuration label."
-  },
   "speedDialEmojiPickerTitle": "アイコンを選択",
   "@speedDialEmojiPickerTitle": {
     "description": "スピードダイヤル設定フローで使う絵文字ピッカーのヘッダータイトル。"
