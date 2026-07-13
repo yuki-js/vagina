@@ -48,6 +48,15 @@ class PlatformStorageService {
     return path.join(directory.path, fileName);
   }
 
+  /// Whether this Windows process is running with MSIX package identity.
+  Future<bool> hasWindowsPackageIdentity() async {
+    if (!PlatformCompat.isWindows) {
+      return false;
+    }
+    return await _storageChannel.invokeMethod<bool>('hasPackageIdentity') ??
+        false;
+  }
+
   Future<String> _getStorageRootPath() async {
     final injectedProvider = _nativeStorageRootProvider;
     if (injectedProvider != null) {
