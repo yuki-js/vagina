@@ -57,11 +57,10 @@ function Get-MsixConfigValue {
   return $line.Matches[0].Groups[1].Value
 }
 
-function Assert-CertificatePublisher {
+function Get-SideloadPublisher {
   param(
     [Parameter(Mandatory = $true)][string]$Path,
-    [Parameter(Mandatory = $true)][string]$Password,
-    [Parameter(Mandatory = $true)][string]$ExpectedPublisher
+    [Parameter(Mandatory = $true)][string]$Password
   )
 
   if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
@@ -77,15 +76,10 @@ function Assert-CertificatePublisher {
     [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::EphemeralKeySet
   )
   try {
-    $expectedName = [System.Security.Cryptography.X509Certificates.X500DistinguishedName]::new($ExpectedPublisher)
-    $actualSubject = [Convert]::ToBase64String($certificate.SubjectName.RawData)
-    $expectedSubject = [Convert]::ToBase64String($expectedName.RawData)
-    if ($actualSubject -cne $expectedSubject) {
-      throw "Certificate subject '$($certificate.Subject)' does not exactly match Partner Center Publisher '$ExpectedPublisher'."
-    }
     if (-not $certificate.HasPrivateKey) {
       throw "The sideload certificate does not contain a private key."
     }
+    return $certificate.Subject
   } finally {
     $certificate.Dispose()
   }
@@ -163,13 +157,19 @@ function Assert-MsixContents {
 }
 
 $identityName = Get-MsixConfigValue -Name "identity_name"
-$publisher = Get-MsixConfigValue -Name "publisher"
+$storePublisher = Get-MsixConfigValue -Name "publisher"
 $publisherDisplayName = Get-MsixConfigValue -Name "publisher_display_name"
 $version = Get-MsixVersion
 $outputDirectory = Join-Path "build\windows\msix" $Mode.ToLowerInvariant()
 $outputName = "vagina-$($Mode.ToLowerInvariant())-$version-x64"
 $packagePath = Join-Path $outputDirectory "$outputName.msix"
 New-Item -ItemType Directory -Path $outputDirectory -Force | Out-Null
+
+$publisher = if ($Mode -eq "Store") {
+  $storePublisher
+} else {
+  Get-SideloadPublisher -Path $CertificatePath -Password $CertificatePassword
+}
 
 $arguments = @(
   "run", "msix:create",
@@ -186,7 +186,6 @@ $arguments = @(
 if ($Mode -eq "Store") {
   $arguments += "--store"
 } else {
-  Assert-CertificatePublisher -Path $CertificatePath -Password $CertificatePassword -ExpectedPublisher $publisher
   $arguments += @("--certificate-path", $CertificatePath, "--certificate-password", $CertificatePassword)
 }
 
