@@ -27,7 +27,7 @@ dependencies:
   riverpod_annotation: any
 
   # Audio handling
-  flutter_soloud: 4.0.12
+  flutter_soloud: 3.5.4
   record: ^6.2.0
 
   # Network & WebSocket

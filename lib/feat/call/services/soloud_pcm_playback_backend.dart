@@ -32,10 +32,7 @@ final class SoloudPcmPlaybackBackend implements PcmPlaybackBackend {
       return;
     }
 
-    final initialization = _soloud.init(
-      automaticCleanup: false,
-      lowLatency: true,
-    );
+    final initialization = _soloud.init(automaticCleanup: false);
     _initialization = initialization;
     try {
       await initialization;
@@ -85,7 +82,7 @@ final class SoloudPcmPlaybackBackend implements PcmPlaybackBackend {
     );
 
     try {
-      final handle = _soloud.play(source);
+      final handle = await _soloud.play(source);
       _source = source;
       _handle = handle;
     } catch (_) {
