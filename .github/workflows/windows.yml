@@ -92,17 +92,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pub-
 
-      # Cache Flutter build outputs
-      - name: Cache Flutter build
-        uses: actions/cache@v5
-        with:
-          path: |
-            build\windows
-          key: ${{ runner.os }}-flutter-build-debug-${{ hashFiles('windows/**', 'lib/**', 'pubspec.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-flutter-build-debug-
-            ${{ runner.os }}-flutter-build-
-
       - name: Install dependencies
         run: flutter pub get
 
@@ -161,17 +150,6 @@ jobs:
           key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
           restore-keys: |
             ${{ runner.os }}-pub-
-
-      # Cache Flutter build outputs
-      - name: Cache Flutter build
-        uses: actions/cache@v5
-        with:
-          path: |
-            build\windows
-          key: ${{ runner.os }}-flutter-build-release-${{ hashFiles('windows/**', 'lib/**', 'pubspec.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-flutter-build-release-
-            ${{ runner.os }}-flutter-build-
 
       - name: Install dependencies
         run: flutter pub get
