@@ -53,7 +53,10 @@ final class AndroidBackgroundService implements BackgroundService {
         allowWakeLock: true,
         allowWifiLock: false,
         allowAutoRestart: false,
-        stopWithTask: true,
+        // flutter_foreground_task 9.2.2 interprets true as "stop when
+        // every Activity is paused", not merely when Android removes the task.
+        // Keep the call alive while the user goes Home or turns the screen off.
+        stopWithTask: false,
       ),
     );
     FlutterForegroundTask.addTaskDataCallback(_onTaskData);
@@ -140,10 +143,9 @@ final class _BackgroundServiceTaskHandler extends TaskHandler {
 
   @override
   Future<void> onDestroy(DateTime timestamp, bool isTimeout) async {
-    // With stopWithTask enabled, removing the Android task explicitly stops
-    // this service. The main isolate may already be terminating, so server
-    // notification, note persistence, and normal call cleanup are best effort;
-    // this callback intentionally does not pretend those steps are guaranteed.
+    // Android may destroy the service independently of the UI isolate. Session
+    // recovery and server-side retention handle an unexpected termination; no
+    // UI-isolate cleanup can be made reliable from this callback.
   }
 
   @override

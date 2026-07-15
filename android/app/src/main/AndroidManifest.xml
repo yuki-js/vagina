@@ -52,7 +52,8 @@
         <service
             android:name="com.pravera.flutter_foreground_task.service.ForegroundService"
             android:exported="false"
-            android:foregroundServiceType="microphone" />
+            android:foregroundServiceType="microphone"
+            android:stopWithTask="false" />
         <meta-data
             android:name="app.aoki.yuki.vagina.call_foreground_notification_icon"
             android:resource="@mipmap/ic_launcher_foreground" />
