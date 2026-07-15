@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:vagina/core/config/constants.dart';
 import 'package:vagina/core/theme/app_theme.dart';
+import 'package:vagina/feat/oobe/services/notification_permission_support.dart';
 import 'package:vagina/feat/oobe/widgets/permission_card.dart';
 import 'package:vagina/l10n/app_localizations.dart';
 
@@ -9,12 +10,16 @@ import 'package:vagina/l10n/app_localizations.dart';
 class PermissionsScreen extends StatefulWidget {
   final VoidCallback onContinue;
   final VoidCallback onBack;
+  final NotificationPermissionSupport notificationPermissionSupport;
 
-  const PermissionsScreen({
+  PermissionsScreen({
     super.key,
     required this.onContinue,
     required this.onBack,
-  });
+    NotificationPermissionSupport? notificationPermissionSupport,
+  }) : notificationPermissionSupport =
+           notificationPermissionSupport ??
+           PlatformNotificationPermissionSupport();
 
   @override
   State<PermissionsScreen> createState() => _PermissionsScreenState();
@@ -40,17 +45,32 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
     final l10n = AppLocalizations.of(context);
 
     final micStatus = await Permission.microphone.status;
+    final shouldShowNotification = await widget.notificationPermissionSupport
+        .shouldShowNotificationPermission();
+    final notificationStatus = shouldShowNotification
+        ? await Permission.notification.status
+        : null;
 
     if (mounted) {
       setState(() {
         _permissions = [
           PermissionItem(
+            permission: Permission.microphone,
             title: l10n.permissionsMicrophoneTitle,
             description: l10n.permissionsMicrophoneDescription,
             icon: Icons.mic,
             isRequired: true,
             isGranted: micStatus.isGranted,
           ),
+          if (notificationStatus != null)
+            PermissionItem(
+              permission: Permission.notification,
+              title: l10n.permissionsNotificationTitle,
+              description: l10n.permissionsNotificationDescription,
+              icon: Icons.notifications,
+              isRequired: false,
+              isGranted: notificationStatus.isGranted,
+            ),
         ];
         _isLoading = false;
       });
@@ -62,7 +82,7 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
     bool granted = false;
 
     try {
-      final status = await Permission.microphone.request();
+      final status = await permission.permission.request();
       granted = status.isGranted;
 
       if (status.isPermanentlyDenied) {

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
+import 'dart:ui';
 
 import 'package:vagina/feat/call/models/active_file.dart';
 import 'package:vagina/feat/call/models/realtime/realtime_adapter_models.dart';
@@ -23,6 +24,8 @@ import 'package:vagina/feat/call/services/toolapi/call_control_api.dart';
 import 'package:vagina/feat/call/services/toolapi/call_filesystem_api.dart';
 import 'package:vagina/feat/call/services/toolapi/text_agent_api.dart';
 import 'package:vagina/interfaces/virtual_filesystem_repository.dart';
+import 'package:vagina/l10n/app_localizations.dart';
+import 'package:vagina/services/background_service.dart';
 import 'package:vagina/services/tools_runtime/tool.dart';
 import 'package:vagina/services/tools_runtime/tool_definition.dart';
 
@@ -44,9 +47,15 @@ enum CallState {
 /// - RecorderService: microphone input
 /// - PlaybackService: audio output
 class CallService {
+  static const String _callBackgroundChannelId = 'vagina_active_call';
+  static const int _callBackgroundServiceId = 4101;
+  static const String _callBackgroundIconMetadataName =
+      'app.aoki.yuki.vagina.call_foreground_notification_icon';
+
   VoiceAgentInfo? _voiceAgent;
   List<TextAgentInfo>? _textAgents;
   final VirtualFilesystemRepository _filesystemRepository;
+  late final BackgroundService _backgroundService;
   late final VirtualFilesystemService _vfs;
   late final NotepadService _notepadService;
   late final RealtimeService _realtimeService;
@@ -317,6 +326,24 @@ class CallService {
 
   /// サービスインスタンス生成
   Future<void> _instantiateServices() async {
+    final deviceLocale = PlatformDispatcher.instance.locale;
+    final locale = Locale(deviceLocale.languageCode == 'ja' ? 'ja' : 'en');
+    final localizations = lookupAppLocalizations(locale);
+
+    _backgroundService = createBackgroundService(
+      BackgroundServiceConfig(
+        channelId: _callBackgroundChannelId,
+        serviceId: _callBackgroundServiceId,
+        iconMetadataName: _callBackgroundIconMetadataName,
+        channelName: localizations.callForegroundChannelName,
+        channelDescription: localizations.callForegroundChannelDescription,
+        notificationTitle: localizations.callForegroundTitle,
+        notificationText: localizations.callForegroundText,
+        notificationActionButtonText: localizations.callForegroundEndButton,
+        serviceType: BackgroundServiceType.microphone,
+        onStopRequested: endCall,
+      ),
+    );
     _playbackService = PlaybackService();
     _feedbackService = FeedbackService(this);
     _timerService = TimerService(this, silenceTimeout: _silenceTimeout);
@@ -360,6 +387,7 @@ class CallService {
   /// リソース確保と接続開始
   Future<void> _igniteCall() async {
     await Future.wait<void>([
+      _backgroundService.start(),
       _feedbackService.start(),
       _vfs.start(),
       _recorderService.start(),
@@ -639,6 +667,7 @@ class CallService {
 
     try {
       await Future.wait<void>([
+        _backgroundService.dispose(),
         _realtimeService.dispose(),
         _recorderService.dispose(),
         _playbackService.dispose(),

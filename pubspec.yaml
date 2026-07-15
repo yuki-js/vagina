@@ -29,6 +29,7 @@ dependencies:
   # Audio handling
   flutter_soloud: 4.0.12
   record: ^6.2.0
+  flutter_foreground_task: 9.2.2
 
   # Network & WebSocket
   web_socket_channel: ^3.0.3

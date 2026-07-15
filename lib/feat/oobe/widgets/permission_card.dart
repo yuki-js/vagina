@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:vagina/core/theme/app_theme.dart';
 
 /// Permission item configuration
 class PermissionItem {
+  final Permission permission;
   final String title;
   final String description;
   final IconData icon;
@@ -10,6 +12,7 @@ class PermissionItem {
   bool isGranted;
 
   PermissionItem({
+    required this.permission,
     required this.title,
     required this.description,
     required this.icon,
