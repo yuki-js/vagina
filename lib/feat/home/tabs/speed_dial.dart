@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vagina/feat/speed_dial/state/speed_dial_providers.dart';
 import 'package:vagina/models/speed_dial.dart';
@@ -179,12 +180,13 @@ class SpeedDialTab extends ConsumerWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Icon/Emoji - Headset for default, emoji for custom
+              // Icon/Emoji - Brand logo for default, emoji for custom
               if (isDefault)
-                const Icon(
-                  Icons.headset_mic,
-                  size: 48,
-                  color: AppTheme.primaryColor,
+                SvgPicture.asset(
+                  'assets/icons/web/favicon-transparent-primary.svg',
+                  width: 48,
+                  height: 48,
+                  semanticsLabel: speedDial.name,
                 )
               else
                 Text(

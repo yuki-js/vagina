@@ -1,11 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:vagina/core/config/constants.dart';
 import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/l10n/app_localizations.dart';
 
-/// First OOBE screen - Welcome experience with mic motif and features
+/// First OOBE screen - Welcome experience with the VAGINA logo and features
 class WelcomeScreen extends StatefulWidget {
   final VoidCallback onContinue;
 
@@ -76,7 +77,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Pulsating microphone visualizer
+              // Pulsating brand visualizer
               AnimatedBuilder(
                 animation: _pulseController,
                 builder: (context, child) {
@@ -94,8 +95,13 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                         stops: [0.0, 0.5 + (_pulseController.value * 0.3), 1.0],
                       ),
                     ),
-                    child: const Center(
-                      child: Icon(Icons.mic, size: 80, color: Colors.white),
+                    child: Center(
+                      child: SvgPicture.asset(
+                        'assets/icons/web/favicon-transparent.svg',
+                        width: 112,
+                        height: 112,
+                        semanticsLabel: Constants.appName,
+                      ),
                     ),
                   );
                 },

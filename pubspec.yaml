@@ -13,6 +13,7 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.9
   google_fonts: ^8.0.2
+  flutter_svg: ^2.2.4
   web: ^1.1.0
   crypto: ^3.0.6
 
@@ -99,6 +100,7 @@ flutter:
     - assets/fonts/
     - assets/audio/
     - assets/announcements/
+    - assets/icons/web/
   fonts:
     - family: NotoSansJP
       fonts:

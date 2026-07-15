@@ -3,6 +3,7 @@ import 'dart:math';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter/services.dart';
 import 'package:vagina/core/config/constants.dart';
 import 'package:vagina/core/theme/app_theme.dart';
@@ -454,10 +455,11 @@ class _CallPaneState extends State<CallPane> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           if (widget.speedDial.isDefault)
-                            const Icon(
-                              Icons.headset_mic,
-                              size: 80,
-                              color: AppTheme.primaryColor,
+                            SvgPicture.asset(
+                              'assets/icons/web/favicon-transparent.svg',
+                              width: 80,
+                              height: 80,
+                              semanticsLabel: Constants.appName,
                             )
                           else if (widget.speedDial.iconEmoji != null)
                             Text(
@@ -465,10 +467,11 @@ class _CallPaneState extends State<CallPane> {
                               style: const TextStyle(fontSize: 80),
                             )
                           else
-                            const Icon(
-                              Icons.headset_mic,
-                              size: 80,
-                              color: AppTheme.primaryColor,
+                            SvgPicture.asset(
+                              'assets/icons/web/favicon-transparent.svg',
+                              width: 80,
+                              height: 80,
+                              semanticsLabel: widget.speedDial.name,
                             ),
                           const SizedBox(height: 16),
                           Text(
