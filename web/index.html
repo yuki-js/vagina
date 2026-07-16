@@ -1,7 +1,7 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <!--
+<!doctype html>
+<html lang="en">
+  <head>
+    <!--
     If you are serving your web app in a path other than the root, change the
     href value below to reflect the base path you are serving from.
 
@@ -14,101 +14,181 @@
     This is a placeholder for base href that will be replaced by the value of
     the `--base-href` argument provided to `flutter build`.
   -->
-  <base href="$FLUTTER_BASE_HREF">
+    <base href="$FLUTTER_BASE_HREF" />
 
-  <meta charset="UTF-8">
-  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="VAGINA: Voice AGI Notepad Agent - a hosted voice assistant client">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta charset="UTF-8" />
+    <meta content="IE=Edge" http-equiv="X-UA-Compatible" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
 
-  <!-- iOS meta tags & icons -->
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="VAGINA">
-  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+    <!-- Search metadata -->
+    <title>VAGINA — Voice AGI Notepad Agent</title>
+    <meta
+      name="description"
+      content="A voice-first AGI for conversations, notes, and agent workflows."
+    />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://vagina.app/" />
 
-  <!-- PWA meta tags -->
-  <meta name="theme-color" content="#6C63FF">
-  
-  <!-- Permissions Policy for clipboard write -->
-  <meta http-equiv="Permissions-Policy" content="clipboard-write=*">
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://vagina.app/" />
+    <meta property="og:site_name" content="VAGINA" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:title" content="VAGINA — Voice AGI Notepad Agent" />
+    <meta
+      property="og:description"
+      content="A voice-first AGI for conversations, notes, and agent workflows."
+    />
+    <meta
+      property="og:image"
+      content="https://vagina.app/icons/og-image.png"
+    />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="VAGINA — Voice AGI Notepad Agent"
+    />
 
-  <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png"/>
+    <!-- X Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="VAGINA — Voice AGI Notepad Agent" />
+    <meta
+      name="twitter:description"
+      content="A voice-first AGI for conversations, notes, and agent workflows."
+    />
+    <meta
+      name="twitter:image"
+      content="https://vagina.app/icons/og-image.png"
+    />
+    <meta
+      name="twitter:image:alt"
+      content="VAGINA — Voice AGI Notepad Agent"
+    />
 
-  <title>VAGINA</title>
-  <link rel="manifest" href="manifest.json">
+    <!-- iOS meta tags & icons -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta name="apple-mobile-web-app-title" content="VAGINA" />
+    <link rel="apple-touch-icon" href="icons/Icon-192.png" />
 
-  <!-- Flutter SoLoud's WebAssembly module must be loaded before audio use. -->
-  <script src="assets/packages/flutter_soloud/web/libflutter_soloud_plugin.js" defer></script>
-  <script src="assets/packages/flutter_soloud/web/init_module.dart.js" defer></script>
+    <!-- PWA meta tags -->
+    <meta name="theme-color" content="#6C63FF" />
 
-  <style>
-    #oauth-callback-status {
-      display: none;
-      min-height: 100vh;
-      box-sizing: border-box;
-      padding: 48px 24px;
-      font: 16px/1.5 system-ui, sans-serif;
-      text-align: center;
-    }
-  </style>
-</head>
-<body>
-  <main id="oauth-callback-status" role="status"></main>
-  <script>
-    (() => {
-      const callbackPath = '/callback';
-      const nativeCallback = 'app.aoki.yuki.vagina://oauth/callback';
-      const allowedParameters = ['code', 'state', 'error', 'error_description'];
-      const parameters = new URLSearchParams(window.location.search);
-      const isCallback = window.location.pathname === callbackPath &&
+    <!-- Permissions Policy for clipboard write -->
+    <meta http-equiv="Permissions-Policy" content="clipboard-write=*" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="favicon.png" />
+
+    <link rel="manifest" href="manifest.json" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "VAGINA",
+        "alternateName": "Voice AGI Notepad Agent",
+        "url": "https://vagina.app/",
+        "sameAs": "https://vagina.tel/",
+        "description": "A voice-first AGI for conversations, notes, and agent workflows.",
+        "applicationCategory": "ProductivityApplication",
+        "operatingSystem": "Web",
+        "inLanguage": "en",
+        "image": "https://vagina.app/icons/og-image.png"
+      }
+    </script>
+
+    <!-- Flutter SoLoud's WebAssembly module must be loaded before audio use. -->
+    <script
+      src="assets/packages/flutter_soloud/web/libflutter_soloud_plugin.js"
+      defer
+    ></script>
+    <script
+      src="assets/packages/flutter_soloud/web/init_module.dart.js"
+      defer
+    ></script>
+
+    <style>
+      #oauth-callback-status {
+        display: none;
+        min-height: 100vh;
+        box-sizing: border-box;
+        padding: 48px 24px;
+        font:
+          16px/1.5 system-ui,
+          sans-serif;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <main id="oauth-callback-status" role="status"></main>
+    <script>
+      (() => {
+        const callbackPath = "/callback";
+        const nativeCallback = "app.aoki.yuki.vagina://oauth/callback";
+        const allowedParameters = [
+          "code",
+          "state",
+          "error",
+          "error_description",
+        ];
+        const parameters = new URLSearchParams(window.location.search);
+        const isCallback =
+          window.location.pathname === callbackPath &&
           allowedParameters.some((name) => parameters.has(name));
 
-      if (!isCallback) {
-        window.__vaginaLoadFlutter = true;
-        return;
-      }
-
-      const state = (parameters.get('state') || '').trim();
-      const match = /^([wmd])\.(.+)$/.exec(state);
-      if (!match) {
-        showStatus('Sign-in callback failed because its state is invalid.');
-        window.__vaginaLoadFlutter = false;
-        return;
-      }
-
-      if (match[1] === 'w') {
-        window.__vaginaLoadFlutter = true;
-        return;
-      }
-
-      const forwarded = new URLSearchParams();
-      for (const name of allowedParameters) {
-        if (parameters.has(name)) {
-          forwarded.set(name, parameters.get(name));
+        if (!isCallback) {
+          window.__vaginaLoadFlutter = true;
+          return;
         }
-      }
 
-      window.__vaginaLoadFlutter = false;
-      showStatus('Returning to the VAGINA app… If it does not open, return to the app manually.');
-      window.location.replace(`${nativeCallback}?${forwarded.toString()}`);
+        const state = (parameters.get("state") || "").trim();
+        const match = /^([wmd])\.(.+)$/.exec(state);
+        if (!match) {
+          showStatus("Sign-in callback failed because its state is invalid.");
+          window.__vaginaLoadFlutter = false;
+          return;
+        }
 
-      function showStatus(message) {
-        const status = document.getElementById('oauth-callback-status');
-        status.textContent = message;
-        status.style.display = 'block';
+        if (match[1] === "w") {
+          window.__vaginaLoadFlutter = true;
+          return;
+        }
+
+        const forwarded = new URLSearchParams();
+        for (const name of allowedParameters) {
+          if (parameters.has(name)) {
+            forwarded.set(name, parameters.get(name));
+          }
+        }
+
+        window.__vaginaLoadFlutter = false;
+        showStatus(
+          "Returning to the VAGINA app… If it does not open, return to the app manually.",
+        );
+        window.location.replace(`${nativeCallback}?${forwarded.toString()}`);
+
+        function showStatus(message) {
+          const status = document.getElementById("oauth-callback-status");
+          status.textContent = message;
+          status.style.display = "block";
+        }
+      })();
+    </script>
+    <script>
+      if (window.__vaginaLoadFlutter) {
+        const bootstrap = document.createElement("script");
+        bootstrap.src = "flutter_bootstrap.js";
+        bootstrap.async = true;
+        document.body.appendChild(bootstrap);
       }
-    })();
-  </script>
-  <script>
-    if (window.__vaginaLoadFlutter) {
-      const bootstrap = document.createElement('script');
-      bootstrap.src = 'flutter_bootstrap.js';
-      bootstrap.async = true;
-      document.body.appendChild(bootstrap);
-    }
-  </script>
-</body>
+    </script>
+  </body>
 </html>

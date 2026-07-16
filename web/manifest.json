@@ -1,11 +1,15 @@
 {
+    "id": "/",
     "name": "VAGINA - Voice AGI Notepad Agent",
     "short_name": "VAGINA",
+    "lang": "en",
+    "dir": "ltr",
     "start_url": ".",
+    "scope": "/",
     "display": "standalone",
     "background_color": "#6C63FF",
     "theme_color": "#6C63FF",
-    "description": "VAGINA: Voice AGI Notepad Agent - a hosted voice assistant client",
+    "description": "A voice-first AGI for conversations, notes, and agent workflows.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

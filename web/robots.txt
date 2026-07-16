@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://vagina-app.example.com/sitemap.xml
+Sitemap: https://vagina.app/sitemap.xml
