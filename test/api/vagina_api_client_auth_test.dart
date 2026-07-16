@@ -123,7 +123,14 @@ VaginaApiClient _client({
   required AuthTokenSupplier getAccessToken,
   Future<void> Function()? onAuthenticationFailure,
 }) {
-  final dio = Dio(BaseOptions(baseUrl: 'https://api.example.test'));
+  final dio = Dio(
+    BaseOptions(
+      baseUrl: 'https://api.example.test',
+      connectTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(seconds: 30),
+      sendTimeout: const Duration(seconds: 30),
+    ),
+  );
   dio.httpClientAdapter = adapter;
   return VaginaApiClient(
     dioOverride: dio,

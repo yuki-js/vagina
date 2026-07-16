@@ -43,6 +43,11 @@ void main() {
       expect(adapter.requests, hasLength(1));
       expect(adapter.requests.single.method, 'POST');
       expect(adapter.requests.single.path, '/text-agents/agent-1/query');
+      expect(adapter.requests.single.sendTimeout, const Duration(minutes: 30));
+      expect(
+        adapter.requests.single.receiveTimeout,
+        const Duration(minutes: 30),
+      );
       expect(
         adapter.requestJsonBodies.single,
         containsPair('voiceSessionId', 'vs_0123456789abcdef'),

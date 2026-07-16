@@ -15,6 +15,7 @@ typedef AuthTokenSupplier = Future<String> Function({bool forceRefresh});
 /// Builds API clients backed by florval-generated clients and models.
 class VaginaApiClient {
   static const String _authRetryExtraKey = 'vagina.auth.retry';
+  static const Duration _textAgentQueryTimeout = Duration(minutes: 30);
 
   final Dio dio;
   final AuthApiClient auth;
@@ -51,6 +52,18 @@ class VaginaApiClient {
             sendTimeout: const Duration(milliseconds: 30000),
           ),
         );
+
+    dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) {
+          if (_isTextAgentQuery(options.path)) {
+            options.sendTimeout = _textAgentQueryTimeout;
+            options.receiveTimeout = _textAgentQueryTimeout;
+          }
+          handler.next(options);
+        },
+      ),
+    );
 
     if (getAccessToken != null) {
       final retryDio = _buildRetryDio(dio);
@@ -144,6 +157,14 @@ class VaginaApiClient {
       headers: Map<String, dynamic>.from(source.headers),
       extra: <String, dynamic>{...source.extra, _authRetryExtraKey: true},
     );
+  }
+
+  static bool _isTextAgentQuery(String path) {
+    final segments = Uri.parse(path).pathSegments;
+    return segments.length == 3 &&
+        segments.first == 'text-agents' &&
+        segments.last == 'query' &&
+        segments[1].isNotEmpty;
   }
 
   static bool _shouldAttachAuthorization(String path) {
