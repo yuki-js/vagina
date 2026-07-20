@@ -45,7 +45,7 @@ dependencies:
   path_provider: ^2.1.6
   device_info_plus: ^12.3.0
   flutter_markdown: ^0.7.7+1
-  share_plus: ^12.0.1
+  share_plus: ^12.0.2
   wakelock_plus: ^1.5.1
 
   # Window management
