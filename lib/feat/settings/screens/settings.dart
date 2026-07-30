@@ -10,7 +10,9 @@ import 'package:vagina/core/widgets/keycap.dart';
 import 'package:vagina/feat/oobe/screens/oobe_flow.dart';
 import 'package:vagina/feat/settings/widgets/settings_card.dart';
 import 'package:vagina/l10n/app_localizations.dart';
+import 'package:vagina/models/global_hotkey_binding.dart';
 import 'package:vagina/models/push_to_talk_key_binding.dart';
+import 'package:vagina/services/platform/global_hotkey_service.dart';
 
 /// 設定画面 - API設定など
 class SettingsScreen extends StatelessWidget {
@@ -42,6 +44,14 @@ class SettingsScreen extends StatelessWidget {
                 const SizedBox(height: 12),
                 const _CallPreferencesCard(),
                 const SizedBox(height: 24),
+
+                // System-wide shortcuts, where the platform supports them.
+                if (GlobalHotkeyService.isSupportedPlatform) ...[
+                  SectionHeader(title: l10n.settingsGlobalHotkeySectionTitle),
+                  const SizedBox(height: 12),
+                  const _GlobalHotkeyCard(),
+                  const SizedBox(height: 24),
+                ],
 
                 const _OtherSettingsCard(),
                 const SizedBox(height: 32),
@@ -413,6 +423,363 @@ class _CallPreferencesCardState extends State<_CallPreferencesCard> {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Assigns the system-wide shortcuts that drive a call from another window.
+class _GlobalHotkeyCard extends StatefulWidget {
+  const _GlobalHotkeyCard();
+
+  @override
+  State<_GlobalHotkeyCard> createState() => _GlobalHotkeyCardState();
+}
+
+class _GlobalHotkeyCardState extends State<_GlobalHotkeyCard> {
+  Map<GlobalHotkeyAction, GlobalHotkeyBinding> _bindings =
+      const <GlobalHotkeyAction, GlobalHotkeyBinding>{};
+  Set<GlobalHotkeyAction> _rejectedActions = const <GlobalHotkeyAction>{};
+  bool _isLoading = true;
+  int _validationGeneration = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBindings();
+  }
+
+  Future<void> _loadBindings() async {
+    final bindings = await AppContainer.preferences
+        .getPreferredGlobalHotkeyBindings();
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _bindings = bindings;
+      _isLoading = false;
+    });
+    await _refreshRejectedActions(bindings);
+  }
+
+  /// Registers the bindings briefly to learn which ones the OS refuses.
+  ///
+  /// A refusal means another application already owns the combination, which is
+  /// only visible by asking the OS, so settings asks here rather than leaving
+  /// the user with a shortcut that silently does nothing during a call.
+  Future<void> _refreshRejectedActions(
+    Map<GlobalHotkeyAction, GlobalHotkeyBinding> bindings,
+  ) async {
+    // A newer check supersedes an older one, whose answer is about a set of
+    // bindings the user has already moved on from.
+    final generation = ++_validationGeneration;
+
+    if (bindings.isEmpty) {
+      if (mounted && _rejectedActions.isNotEmpty) {
+        setState(() {
+          _rejectedActions = const <GlobalHotkeyAction>{};
+        });
+      }
+      return;
+    }
+
+    final service = GlobalHotkeyService();
+    try {
+      final rejectedActions = await service.apply(bindings);
+      if (!mounted || generation != _validationGeneration) {
+        return;
+      }
+      setState(() {
+        _rejectedActions = rejectedActions;
+      });
+    } finally {
+      await service.dispose();
+    }
+  }
+
+  Future<void> _openRecorder(GlobalHotkeyAction action) async {
+    final result = await showDialog<_GlobalHotkeyRecorderResult>(
+      context: context,
+      builder: (context) =>
+          _GlobalHotkeyRecorderDialog(initialBinding: _bindings[action]),
+    );
+    if (!mounted || result == null) {
+      return;
+    }
+
+    final binding = result.binding;
+    if (binding == _bindings[action]) {
+      return;
+    }
+
+    await AppContainer.preferences.setPreferredGlobalHotkeyBinding(
+      action,
+      binding,
+    );
+    final bindings = Map<GlobalHotkeyAction, GlobalHotkeyBinding>.of(_bindings);
+    if (binding == null) {
+      bindings.remove(action);
+    } else {
+      bindings[action] = binding;
+    }
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _bindings = bindings;
+    });
+    await _refreshRejectedActions(bindings);
+  }
+
+  String _actionLabel(AppLocalizations l10n, GlobalHotkeyAction action) {
+    return switch (action) {
+      GlobalHotkeyAction.pushToTalk =>
+        l10n.settingsGlobalHotkeyActionPushToTalk,
+      GlobalHotkeyAction.pushToTalkToggle =>
+        l10n.settingsGlobalHotkeyActionPushToTalkToggle,
+      GlobalHotkeyAction.cancelInput =>
+        l10n.settingsGlobalHotkeyActionCancelInput,
+      GlobalHotkeyAction.interrupt => l10n.settingsGlobalHotkeyActionInterrupt,
+      GlobalHotkeyAction.muteToggle =>
+        l10n.settingsGlobalHotkeyActionMuteToggle,
+    };
+  }
+
+  String _actionHelper(AppLocalizations l10n, GlobalHotkeyAction action) {
+    return switch (action) {
+      GlobalHotkeyAction.pushToTalk =>
+        l10n.settingsGlobalHotkeyActionPushToTalkHelper,
+      GlobalHotkeyAction.pushToTalkToggle =>
+        l10n.settingsGlobalHotkeyActionPushToTalkToggleHelper,
+      GlobalHotkeyAction.cancelInput =>
+        l10n.settingsGlobalHotkeyActionCancelInputHelper,
+      GlobalHotkeyAction.interrupt =>
+        l10n.settingsGlobalHotkeyActionInterruptHelper,
+      GlobalHotkeyAction.muteToggle =>
+        l10n.settingsGlobalHotkeyActionMuteToggleHelper,
+    };
+  }
+
+  String? _actionWarning(AppLocalizations l10n, GlobalHotkeyAction action) {
+    if (_rejectedActions.contains(action)) {
+      return l10n.settingsGlobalHotkeyConflictWarning;
+    }
+    if (_bindings[action]?.isBareKey ?? false) {
+      return l10n.settingsGlobalHotkeyBareKeyWarning;
+    }
+    return null;
+  }
+
+  Widget _buildActionTile(AppLocalizations l10n, GlobalHotkeyAction action) {
+    final warning = _actionWarning(l10n, action);
+
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      enabled: !_isLoading,
+      title: Text(
+        _actionLabel(l10n, action),
+        style: Theme.of(
+          context,
+        ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+      ),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(_actionHelper(l10n, action)),
+          if (warning != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              warning,
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: AppTheme.warningColor),
+            ),
+          ],
+        ],
+      ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _GlobalHotkeyBindingPreview(
+            binding: _bindings[action],
+            unsetLabel: l10n.settingsCallPushToTalkKeyUnset,
+          ),
+          const SizedBox(width: 8),
+          const Icon(Icons.chevron_right),
+        ],
+      ),
+      onTap: () => _openRecorder(action),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
+    return SettingsCard(
+      child: Material(
+        type: MaterialType.transparency,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              l10n.settingsGlobalHotkeyHelper,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            for (final action in GlobalHotkeyAction.values)
+              _buildActionTile(l10n, action),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _GlobalHotkeyBindingPreview extends StatelessWidget {
+  final GlobalHotkeyBinding? binding;
+  final String unsetLabel;
+
+  const _GlobalHotkeyBindingPreview({
+    required this.binding,
+    required this.unsetLabel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final binding = this.binding;
+    if (binding == null) {
+      return Keycap(token: unsetLabel, isMuted: true);
+    }
+
+    return KeycapSequence(tokens: binding.displayTokens);
+  }
+}
+
+class _GlobalHotkeyRecorderResult {
+  final GlobalHotkeyBinding? binding;
+
+  const _GlobalHotkeyRecorderResult(this.binding);
+}
+
+class _GlobalHotkeyRecorderDialog extends StatefulWidget {
+  final GlobalHotkeyBinding? initialBinding;
+
+  const _GlobalHotkeyRecorderDialog({required this.initialBinding});
+
+  @override
+  State<_GlobalHotkeyRecorderDialog> createState() =>
+      _GlobalHotkeyRecorderDialogState();
+}
+
+class _GlobalHotkeyRecorderDialogState
+    extends State<_GlobalHotkeyRecorderDialog> {
+  late final FocusNode _focusNode;
+  GlobalHotkeyBinding? _candidateBinding;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode = FocusNode();
+    _candidateBinding = widget.initialBinding;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _focusNode.requestFocus();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent) {
+      return KeyEventResult.handled;
+    }
+    if (event.logicalKey == LogicalKeyboardKey.escape) {
+      Navigator.of(context).pop();
+      return KeyEventResult.handled;
+    }
+
+    final pressedKeys = HardwareKeyboard.instance.logicalKeysPressed.toSet()
+      ..add(event.logicalKey);
+    // A bare modifier press cannot be a system-wide shortcut, so recording
+    // continues until a usable primary key arrives.
+    final binding = GlobalHotkeyBinding.fromKeyDown(
+      logicalKey: event.logicalKey,
+      pressedKeys: pressedKeys,
+    );
+    if (binding != null) {
+      setState(() {
+        _candidateBinding = binding;
+      });
+    }
+
+    return KeyEventResult.handled;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final candidateBinding = _candidateBinding;
+
+    return AlertDialog(
+      title: Text(l10n.settingsGlobalHotkeyDialogTitle),
+      content: Focus(
+        focusNode: _focusNode,
+        onKeyEvent: _handleKeyEvent,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minWidth: 280),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(l10n.settingsGlobalHotkeyDialogPrompt),
+              const SizedBox(height: 16),
+              Center(
+                child: candidateBinding == null
+                    ? Keycap(
+                        token: l10n.settingsCallPushToTalkKeyUnset,
+                        isMuted: true,
+                      )
+                    : KeycapSequence(tokens: candidateBinding.displayTokens),
+              ),
+              if (candidateBinding?.isBareKey ?? false) ...[
+                const SizedBox(height: 16),
+                Text(
+                  l10n.settingsGlobalHotkeyBareKeyWarning,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: AppTheme.warningColor),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(l10n.settingsCommonCancel),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(
+            context,
+          ).pop(const _GlobalHotkeyRecorderResult(null)),
+          child: Text(l10n.settingsCommonClear),
+        ),
+        FilledButton(
+          onPressed: candidateBinding == null
+              ? null
+              : () => Navigator.of(
+                  context,
+                ).pop(_GlobalHotkeyRecorderResult(candidateBinding)),
+          child: Text(l10n.settingsCommonSave),
+        ),
+      ],
     );
   }
 }

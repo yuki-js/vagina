@@ -2,16 +2,20 @@ import 'dart:async';
 import 'dart:math';
 import 'dart:ui';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter/services.dart';
 import 'package:vagina/core/config/constants.dart';
 import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/l10n/app_localizations.dart';
+import 'package:vagina/feat/call/controllers/global_hotkey_call_controller.dart';
 import 'package:vagina/feat/call/services/call_service.dart';
 import 'package:vagina/feat/call/services/realtime/realtime_provider_extensions.dart';
+import 'package:vagina/models/global_hotkey_binding.dart';
 import 'package:vagina/models/push_to_talk_key_binding.dart';
 import 'package:vagina/models/speed_dial.dart';
+import 'package:vagina/services/platform/global_hotkey_service.dart';
 import 'package:vagina/utils/duration_formatter.dart';
 
 enum _TalkMode { ptt, hf }
@@ -23,6 +27,11 @@ class CallPane extends StatefulWidget {
   final CallService callService;
   final bool initialPushToTalkEnabled;
   final PushToTalkKeyBinding? pushToTalkKeyBinding;
+
+  /// System-wide hotkeys registered for as long as this pane is mounted.
+  ///
+  /// They let the call be driven while another window owns keyboard focus.
+  final Map<GlobalHotkeyAction, GlobalHotkeyBinding> globalHotkeyBindings;
   final Future<void> Function(bool enabled) onPushToTalkPreferenceChanged;
   final VoidCallback onChatPressed;
   final VoidCallback onNotepadPressed;
@@ -34,6 +43,7 @@ class CallPane extends StatefulWidget {
     required this.callService,
     required this.initialPushToTalkEnabled,
     required this.pushToTalkKeyBinding,
+    required this.globalHotkeyBindings,
     required this.onPushToTalkPreferenceChanged,
     required this.onChatPressed,
     required this.onNotepadPressed,
@@ -46,6 +56,9 @@ class CallPane extends StatefulWidget {
 
 class _CallPaneState extends State<CallPane> {
   late _TalkMode _talkMode;
+  late final GlobalHotkeyService _globalHotkeyService;
+  late final GlobalHotkeyCallController _globalHotkeyController;
+  StreamSubscription<GlobalHotkeyEvent>? _globalHotkeySubscription;
   _NoiseReductionMode _noiseReductionMode = _NoiseReductionMode.nearField;
   bool _keyboardPttActive = false;
   bool _pttActive = false;
@@ -55,6 +68,22 @@ class _CallPaneState extends State<CallPane> {
     super.initState();
     _talkMode = widget.initialPushToTalkEnabled ? _TalkMode.ptt : _TalkMode.hf;
     HardwareKeyboard.instance.addHandler(_handleHardwareKeyEvent);
+    _globalHotkeyController = GlobalHotkeyCallController(
+      isPushToTalkMode: () => _isPttMode,
+      onInputStart: _handlePttPressStart,
+      onInputSend: _handlePttPressEnd,
+      onInputCancel: () {
+        _keyboardPttActive = false;
+        _handlePttPressCancel();
+      },
+      onInterrupt: () => unawaited(_handleInterrupt()),
+      onMuteToggle: _handleMuteToggle,
+    );
+    _globalHotkeyService = GlobalHotkeyService();
+    _globalHotkeySubscription = _globalHotkeyService.events.listen(
+      _handleGlobalHotkeyEvent,
+    );
+    unawaited(_globalHotkeyService.apply(widget.globalHotkeyBindings));
   }
 
   @override
@@ -74,11 +103,20 @@ class _CallPaneState extends State<CallPane> {
       _keyboardPttActive = false;
       unawaited(widget.callService.cancelPushToTalk());
     }
+
+    if (!mapEquals(
+      oldWidget.globalHotkeyBindings,
+      widget.globalHotkeyBindings,
+    )) {
+      unawaited(_globalHotkeyService.apply(widget.globalHotkeyBindings));
+    }
   }
 
   @override
   void dispose() {
     HardwareKeyboard.instance.removeHandler(_handleHardwareKeyEvent);
+    unawaited(_globalHotkeySubscription?.cancel());
+    unawaited(_globalHotkeyService.dispose());
     super.dispose();
   }
 
@@ -162,6 +200,16 @@ class _CallPaneState extends State<CallPane> {
     }
 
     return false;
+  }
+
+  /// Applies a system-wide hotkey, which may arrive while another window has
+  /// keyboard focus.
+  void _handleGlobalHotkeyEvent(GlobalHotkeyEvent event) {
+    if (!mounted) {
+      return;
+    }
+
+    _globalHotkeyController.handle(event);
   }
 
   bool get _isEditableFocusActive {
@@ -267,6 +315,10 @@ class _CallPaneState extends State<CallPane> {
     setState(() {
       _talkMode = value;
     });
+    if (value != _TalkMode.ptt) {
+      _globalHotkeyController.reset();
+      _setPttActive(false);
+    }
     unawaited(widget.onPushToTalkPreferenceChanged(value == _TalkMode.ptt));
 
     final callService = _activeCallService;

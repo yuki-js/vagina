@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Added Windows system-wide hotkeys so voice input can be driven while another window owns keyboard focus, covering hold-to-talk, start/send toggling, discarding the current input, interrupting the assistant, and microphone mute.
+- Added a Windows-only settings section for assigning those hotkeys, with no default binding, a warning for combinations that claim a bare key, and a warning when the OS refuses a combination another application already owns.
+
 ### Changed
 - Replaced `taudio` assistant PCM playback with Flutter SoLoud buffer streams on all supported platforms.
 - Preserved 24 kHz mono PCM16 playback, 100 ms prebuffering, interruption, mute, and response-drain behavior behind an injectable playback backend.
@@ -17,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Testing
 - Added deterministic playback lifecycle tests and a Windows-native PCM playback smoke target.
+- Added coverage for global hotkey capture, virtual-key mapping, persistence, and the platform channel contract.
 
 ## [1.1.0] - 2026-01-18
 

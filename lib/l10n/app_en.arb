@@ -350,6 +350,70 @@
   "@settingsCallPushToTalkKeyDialogPrompt": {
     "description": "Prompt shown in the keyboard push-to-talk shortcut recorder dialog."
   },
+  "settingsGlobalHotkeySectionTitle": "System-wide shortcuts",
+  "@settingsGlobalHotkeySectionTitle": {
+    "description": "Section header for shortcuts that stay active while another window has keyboard focus."
+  },
+  "settingsGlobalHotkeyHelper": "These shortcuts work while you are using another window, and are registered only during a call. Input actions require push-to-talk mode.",
+  "@settingsGlobalHotkeyHelper": {
+    "description": "Helper text describing the scope and lifetime of system-wide shortcuts."
+  },
+  "settingsGlobalHotkeyActionPushToTalk": "Hold to talk",
+  "@settingsGlobalHotkeyActionPushToTalk": {
+    "description": "Row label for the system-wide shortcut that records while held and sends on release."
+  },
+  "settingsGlobalHotkeyActionPushToTalkHelper": "Records while held and sends on release.",
+  "@settingsGlobalHotkeyActionPushToTalkHelper": {
+    "description": "Helper text for the hold-to-talk system-wide shortcut."
+  },
+  "settingsGlobalHotkeyActionPushToTalkToggle": "Start and send input",
+  "@settingsGlobalHotkeyActionPushToTalkToggle": {
+    "description": "Row label for the system-wide shortcut that starts an input turn and sends it on the next press."
+  },
+  "settingsGlobalHotkeyActionPushToTalkToggleHelper": "Press once to start recording, press again to send.",
+  "@settingsGlobalHotkeyActionPushToTalkToggleHelper": {
+    "description": "Helper text for the toggling start and send system-wide shortcut."
+  },
+  "settingsGlobalHotkeyActionCancelInput": "Discard input",
+  "@settingsGlobalHotkeyActionCancelInput": {
+    "description": "Row label for the system-wide shortcut that discards the input turn being recorded."
+  },
+  "settingsGlobalHotkeyActionCancelInputHelper": "Stops recording without sending.",
+  "@settingsGlobalHotkeyActionCancelInputHelper": {
+    "description": "Helper text for the discard input system-wide shortcut."
+  },
+  "settingsGlobalHotkeyActionInterrupt": "Interrupt the assistant",
+  "@settingsGlobalHotkeyActionInterrupt": {
+    "description": "Row label for the system-wide shortcut that interrupts assistant playback."
+  },
+  "settingsGlobalHotkeyActionInterruptHelper": "Stops the assistant while it is speaking.",
+  "@settingsGlobalHotkeyActionInterruptHelper": {
+    "description": "Helper text for the interrupt system-wide shortcut."
+  },
+  "settingsGlobalHotkeyActionMuteToggle": "Toggle microphone mute",
+  "@settingsGlobalHotkeyActionMuteToggle": {
+    "description": "Row label for the system-wide shortcut that toggles the microphone mute state."
+  },
+  "settingsGlobalHotkeyActionMuteToggleHelper": "Mutes and unmutes the microphone.",
+  "@settingsGlobalHotkeyActionMuteToggleHelper": {
+    "description": "Helper text for the microphone mute system-wide shortcut."
+  },
+  "settingsGlobalHotkeyDialogTitle": "System-wide shortcut",
+  "@settingsGlobalHotkeyDialogTitle": {
+    "description": "Title of the dialog used to record a system-wide shortcut."
+  },
+  "settingsGlobalHotkeyDialogPrompt": "Press the key combination to use. A modifier key on its own cannot be registered.",
+  "@settingsGlobalHotkeyDialogPrompt": {
+    "description": "Prompt shown in the system-wide shortcut recorder dialog."
+  },
+  "settingsGlobalHotkeyBareKeyWarning": "Without a modifier, this key is taken away from every other application while a call is running.",
+  "@settingsGlobalHotkeyBareKeyWarning": {
+    "description": "Warning shown when a system-wide shortcut uses a key with no modifier."
+  },
+  "settingsGlobalHotkeyConflictWarning": "Another application already uses this combination, so it could not be registered. Choose a different key.",
+  "@settingsGlobalHotkeyConflictWarning": {
+    "description": "Warning shown when the operating system refused to register a system-wide shortcut."
+  },
   "settingsTermsOfServiceTitle": "Terms of Service",
   "@settingsTermsOfServiceTitle": {
     "description": "Placeholder row title for the future terms of service link on the settings screen."

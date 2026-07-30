@@ -1,6 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vagina/core/data/in_memory_store.dart';
+import 'package:vagina/models/global_hotkey_binding.dart';
 import 'package:vagina/models/push_to_talk_key_binding.dart';
 import 'package:vagina/repositories/preferences_repository.dart';
 
@@ -123,6 +124,85 @@ void main() {
         () => repository.setPreferredCallIdleDisconnectTimeoutSeconds(120),
         throwsArgumentError,
       );
+    });
+  });
+
+  group('PreferencesRepository global hotkey preference', () {
+    const GlobalHotkeyBinding holdBinding = GlobalHotkeyBinding(
+      virtualKeyCode: 0x20,
+      modifiers: [GlobalHotkeyModifier.control],
+      displayTokens: ['Ctrl', 'Space'],
+    );
+    const GlobalHotkeyBinding interruptBinding = GlobalHotkeyBinding(
+      virtualKeyCode: 0x78,
+      modifiers: [GlobalHotkeyModifier.alt],
+      displayTokens: ['Alt', 'F9'],
+    );
+
+    Future<PreferencesRepository> buildRepository() async {
+      final store = InMemoryStore();
+      await store.initialize();
+      return PreferencesRepository(store);
+    }
+
+    test('defaults to no bindings when nothing was saved', () async {
+      final repository = await buildRepository();
+
+      expect(await repository.getPreferredGlobalHotkeyBindings(), isEmpty);
+    });
+
+    test('persists a binding per action', () async {
+      final repository = await buildRepository();
+
+      await repository.setPreferredGlobalHotkeyBinding(
+        GlobalHotkeyAction.pushToTalk,
+        holdBinding,
+      );
+      await repository.setPreferredGlobalHotkeyBinding(
+        GlobalHotkeyAction.interrupt,
+        interruptBinding,
+      );
+
+      expect(await repository.getPreferredGlobalHotkeyBindings(), {
+        GlobalHotkeyAction.pushToTalk: holdBinding,
+        GlobalHotkeyAction.interrupt: interruptBinding,
+      });
+    });
+
+    test('clears one action without touching the others', () async {
+      final repository = await buildRepository();
+
+      await repository.setPreferredGlobalHotkeyBinding(
+        GlobalHotkeyAction.pushToTalk,
+        holdBinding,
+      );
+      await repository.setPreferredGlobalHotkeyBinding(
+        GlobalHotkeyAction.interrupt,
+        interruptBinding,
+      );
+      await repository.setPreferredGlobalHotkeyBinding(
+        GlobalHotkeyAction.pushToTalk,
+        null,
+      );
+
+      expect(await repository.getPreferredGlobalHotkeyBindings(), {
+        GlobalHotkeyAction.interrupt: interruptBinding,
+      });
+    });
+
+    test('drops entries that cannot be read back', () async {
+      final store = InMemoryStore();
+      await store.initialize();
+      final repository = PreferencesRepository(store);
+      await store.set('preferred_global_hotkey_bindings', <String, dynamic>{
+        'interrupt': interruptBinding.toJson(),
+        'pushToTalk': 'Ctrl+Space',
+        'summonHelicopter': holdBinding.toJson(),
+      });
+
+      expect(await repository.getPreferredGlobalHotkeyBindings(), {
+        GlobalHotkeyAction.interrupt: interruptBinding,
+      });
     });
   });
 }

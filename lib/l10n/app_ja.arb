@@ -350,6 +350,70 @@
   "@settingsCallPushToTalkKeyDialogPrompt": {
     "description": "キーボードのプッシュトゥトークショートカット記録ダイアログに表示する案内文。"
   },
+  "settingsGlobalHotkeySectionTitle": "グローバルショートカット",
+  "@settingsGlobalHotkeySectionTitle": {
+    "description": "別ウィンドウ操作中でも有効なショートカットのセクション見出し。"
+  },
+  "settingsGlobalHotkeyHelper": "別のウィンドウを操作している間も使えます。登録されるのは通話中だけです。入力の操作にはPTTモードが必要です。",
+  "@settingsGlobalHotkeyHelper": {
+    "description": "グローバルショートカットの適用範囲と有効期間を説明する補助文。"
+  },
+  "settingsGlobalHotkeyActionPushToTalk": "押している間だけ話す",
+  "@settingsGlobalHotkeyActionPushToTalk": {
+    "description": "押している間だけ録音し離すと送信するグローバルショートカットの行ラベル。"
+  },
+  "settingsGlobalHotkeyActionPushToTalkHelper": "押している間だけ録音し、離すと送信します。",
+  "@settingsGlobalHotkeyActionPushToTalkHelper": {
+    "description": "押している間だけ話すグローバルショートカットの補助文。"
+  },
+  "settingsGlobalHotkeyActionPushToTalkToggle": "入力の開始・送信",
+  "@settingsGlobalHotkeyActionPushToTalkToggle": {
+    "description": "1回目で入力を開始し2回目で送信するグローバルショートカットの行ラベル。"
+  },
+  "settingsGlobalHotkeyActionPushToTalkToggleHelper": "1回押すと録音を開始し、もう1回押すと送信します。",
+  "@settingsGlobalHotkeyActionPushToTalkToggleHelper": {
+    "description": "開始と送信を切り替えるグローバルショートカットの補助文。"
+  },
+  "settingsGlobalHotkeyActionCancelInput": "入力を破棄",
+  "@settingsGlobalHotkeyActionCancelInput": {
+    "description": "録音中の入力を破棄するグローバルショートカットの行ラベル。"
+  },
+  "settingsGlobalHotkeyActionCancelInputHelper": "送信せずに録音を中止します。",
+  "@settingsGlobalHotkeyActionCancelInputHelper": {
+    "description": "入力を破棄するグローバルショートカットの補助文。"
+  },
+  "settingsGlobalHotkeyActionInterrupt": "アシスタントに割り込む",
+  "@settingsGlobalHotkeyActionInterrupt": {
+    "description": "アシスタントの再生に割り込むグローバルショートカットの行ラベル。"
+  },
+  "settingsGlobalHotkeyActionInterruptHelper": "アシスタントの発話を止めます。",
+  "@settingsGlobalHotkeyActionInterruptHelper": {
+    "description": "割り込みのグローバルショートカットの補助文。"
+  },
+  "settingsGlobalHotkeyActionMuteToggle": "マイクのミュート切替",
+  "@settingsGlobalHotkeyActionMuteToggle": {
+    "description": "マイクのミュート状態を切り替えるグローバルショートカットの行ラベル。"
+  },
+  "settingsGlobalHotkeyActionMuteToggleHelper": "マイクのミュートと解除を切り替えます。",
+  "@settingsGlobalHotkeyActionMuteToggleHelper": {
+    "description": "マイクのミュート切替グローバルショートカットの補助文。"
+  },
+  "settingsGlobalHotkeyDialogTitle": "グローバルショートカット",
+  "@settingsGlobalHotkeyDialogTitle": {
+    "description": "グローバルショートカットを記録するダイアログのタイトル。"
+  },
+  "settingsGlobalHotkeyDialogPrompt": "使うキーの組み合わせを押してください。修飾キー単独では登録できません。",
+  "@settingsGlobalHotkeyDialogPrompt": {
+    "description": "グローバルショートカット記録ダイアログに表示する案内文。"
+  },
+  "settingsGlobalHotkeyBareKeyWarning": "修飾キーなしの場合、通話中はこのキーが他のすべてのアプリで使えなくなります。",
+  "@settingsGlobalHotkeyBareKeyWarning": {
+    "description": "修飾キーなしのグローバルショートカットに表示する警告。"
+  },
+  "settingsGlobalHotkeyConflictWarning": "他のアプリがこの組み合わせを使用中のため登録できませんでした。別のキーを選んでください。",
+  "@settingsGlobalHotkeyConflictWarning": {
+    "description": "OSがグローバルショートカットの登録を拒否したときに表示する警告。"
+  },
   "settingsTermsOfServiceTitle": "利用規約",
   "@settingsTermsOfServiceTitle": {
     "description": "設定画面に将来の利用規約リンクとして表示するプレースホルダー行タイトル。"

@@ -12,6 +12,7 @@ import 'package:vagina/feat/call/panes/chat.dart';
 import 'package:vagina/feat/call/panes/notepad.dart';
 import 'package:vagina/feat/call/services/call_service.dart';
 import 'package:vagina/feat/call/widgets/call_screen_shell.dart';
+import 'package:vagina/models/global_hotkey_binding.dart';
 import 'package:vagina/models/push_to_talk_key_binding.dart';
 import 'package:vagina/models/speed_dial.dart';
 
@@ -34,6 +35,8 @@ class _CallScreenState extends State<CallScreen> {
   StreamSubscription<CallState>? _callStateSubscription;
   bool _preferredPushToTalkEnabled = false;
   PushToTalkKeyBinding? _preferredPushToTalkKeyBinding;
+  Map<GlobalHotkeyAction, GlobalHotkeyBinding> _globalHotkeyBindings =
+      const <GlobalHotkeyAction, GlobalHotkeyBinding>{};
 
   @override
   void initState() {
@@ -65,6 +68,8 @@ class _CallScreenState extends State<CallScreen> {
           .getPreferredCallIdleDisconnectTimeoutSeconds();
       final pushToTalkKeyBinding = await AppContainer.preferences
           .getPreferredCallPushToTalkKeyBinding();
+      final globalHotkeyBindings = await AppContainer.preferences
+          .getPreferredGlobalHotkeyBindings();
       final voiceAgent = VoiceAgentInfo.fromSpeedDial(widget.speedDial);
       final textAgents = await _buildTextAgents();
       if (!mounted) return;
@@ -72,6 +77,7 @@ class _CallScreenState extends State<CallScreen> {
       setState(() {
         _preferredPushToTalkEnabled = preferredPushToTalkEnabled;
         _preferredPushToTalkKeyBinding = pushToTalkKeyBinding;
+        _globalHotkeyBindings = globalHotkeyBindings;
       });
       await _callService.setPushToTalkEnabled(preferredPushToTalkEnabled);
       _callService.setSilenceTimeout(
@@ -162,6 +168,7 @@ class _CallScreenState extends State<CallScreen> {
               callService: _callService,
               initialPushToTalkEnabled: _preferredPushToTalkEnabled,
               pushToTalkKeyBinding: _preferredPushToTalkKeyBinding,
+              globalHotkeyBindings: _globalHotkeyBindings,
               onPushToTalkPreferenceChanged: _savePushToTalkPreference,
               onChatPressed: _layoutController.goToLeft,
               onNotepadPressed: _layoutController.goToRight,

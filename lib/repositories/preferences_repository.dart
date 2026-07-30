@@ -1,4 +1,5 @@
 import 'package:vagina/interfaces/key_value_store.dart';
+import 'package:vagina/models/global_hotkey_binding.dart';
 import 'package:vagina/models/push_to_talk_key_binding.dart';
 
 /// Repository for app preferences and settings
@@ -17,6 +18,8 @@ class PreferencesRepository {
       'preferred_call_idle_disconnect_timeout_seconds';
   static const String _keyPreferredCallPushToTalkKeyBinding =
       'preferred_call_push_to_talk_key_binding';
+  static const String _keyPreferredGlobalHotkeyBindings =
+      'preferred_global_hotkey_bindings';
   static const String _keyAuthRefreshToken = 'auth_refresh_token';
   static const String _keyLegacyAuthSession = 'auth_session';
   static const String _keyPendingPkceVerifier = 'pending_pkce_verifier';
@@ -215,6 +218,62 @@ class PreferencesRepository {
     }
 
     await _store.set(_keyPreferredCallPushToTalkKeyBinding, binding.toJson());
+  }
+
+  /// Returns the persisted system-wide hotkey bindings, keyed by action.
+  ///
+  /// Actions the user never assigned are absent from the returned map.
+  /// Unreadable entries are dropped so one bad record cannot disable the rest.
+  Future<Map<GlobalHotkeyAction, GlobalHotkeyBinding>>
+  getPreferredGlobalHotkeyBindings() async {
+    final stored = await _store.get(_keyPreferredGlobalHotkeyBindings);
+    if (stored is! Map) {
+      return <GlobalHotkeyAction, GlobalHotkeyBinding>{};
+    }
+
+    final bindings = <GlobalHotkeyAction, GlobalHotkeyBinding>{};
+    for (final entry in stored.entries) {
+      final key = entry.key;
+      if (key is! String) {
+        continue;
+      }
+
+      final action = GlobalHotkeyAction.fromStorageValue(key);
+      final binding = GlobalHotkeyBinding.fromJson(entry.value);
+      if (action == null || binding == null) {
+        continue;
+      }
+
+      bindings[action] = binding;
+    }
+
+    return bindings;
+  }
+
+  /// Persists the system-wide hotkey binding for [action].
+  ///
+  /// Passing `null` clears the binding for that action and leaves the others
+  /// untouched.
+  Future<void> setPreferredGlobalHotkeyBinding(
+    GlobalHotkeyAction action,
+    GlobalHotkeyBinding? binding,
+  ) async {
+    final bindings = await getPreferredGlobalHotkeyBindings();
+    if (binding == null) {
+      bindings.remove(action);
+    } else {
+      bindings[action] = binding;
+    }
+
+    if (bindings.isEmpty) {
+      await _store.delete(_keyPreferredGlobalHotkeyBindings);
+      return;
+    }
+
+    await _store.set(_keyPreferredGlobalHotkeyBindings, <String, dynamic>{
+      for (final entry in bindings.entries)
+        entry.key.storageValue: entry.value.toJson(),
+    });
   }
 
   /// Returns the persisted authentication refresh token, if present.
