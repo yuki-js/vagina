@@ -11,7 +11,7 @@ import 'package:vagina/feat/call/panes/call.dart';
 import 'package:vagina/feat/call/panes/chat.dart';
 import 'package:vagina/feat/call/panes/notepad.dart';
 import 'package:vagina/feat/call/services/call_service.dart';
-import 'package:vagina/feat/call/services/push_to_talk_key_source.dart';
+import 'package:vagina/feat/call/services/push_to_talk_input_service.dart';
 import 'package:vagina/feat/call/widgets/call_screen_shell.dart';
 import 'package:vagina/models/push_to_talk_key_binding.dart';
 import 'package:vagina/models/speed_dial.dart';
@@ -32,9 +32,9 @@ class _CallScreenState extends State<CallScreen> {
   final AdaptiveTriColumnController _layoutController =
       AdaptiveTriColumnController();
   late final CallService _callService;
-  late final PushToTalkKeySource _pushToTalkKeySource;
+  final PushToTalkInputService _pushToTalkInput = PushToTalkInputService();
   StreamSubscription<CallState>? _callStateSubscription;
-  StreamSubscription<bool>? _pushToTalkHeldSubscription;
+  StreamSubscription<bool>? _pushToTalkActiveSubscription;
   bool _preferredPushToTalkEnabled = false;
   PushToTalkKeyBinding? _preferredPushToTalkKeyBinding;
 
@@ -42,14 +42,12 @@ class _CallScreenState extends State<CallScreen> {
   void initState() {
     super.initState();
     _callService = CallService(filesystemRepository: AppContainer.filesystem);
-    _pushToTalkKeySource = PushToTalkKeySource();
 
-    // Both keyboard routes arrive here already merged, so this is the only
-    // place either of them reaches CallService.
-    _pushToTalkHeldSubscription = _pushToTalkKeySource.heldUpdates.listen((
-      held,
+    // 全ての入力はここで合流済み。PTTがCallServiceに届く唯一の場所。
+    _pushToTalkActiveSubscription = _pushToTalkInput.activeUpdates.listen((
+      active,
     ) {
-      if (held) {
+      if (active) {
         unawaited(_callService.beginPushToTalk());
       } else {
         unawaited(_callService.endPushToTalk());
@@ -68,7 +66,7 @@ class _CallScreenState extends State<CallScreen> {
 
       // 状態変化時にpaneを再構築
       setState(() {});
-      unawaited(_syncPushToTalkKeySource().catchError((_) {}));
+      unawaited(_syncPushToTalkInput().catchError((_) {}));
     });
 
     unawaited(_initializeCallService());
@@ -103,7 +101,7 @@ class _CallScreenState extends State<CallScreen> {
         return;
       }
 
-      await _syncPushToTalkKeySource();
+      await _syncPushToTalkInput();
     } catch (e) {
       if (!mounted) return;
       final l10n = AppLocalizations.of(context);
@@ -146,33 +144,28 @@ class _CallScreenState extends State<CallScreen> {
     }
 
     await AppContainer.preferences.setPreferredCallPushToTalkEnabled(enabled);
-    await _syncPushToTalkKeySource();
+    await _syncPushToTalkInput();
   }
 
-  /// キーソースのbindingと有効状態を現在のdesired stateに合わせる。
+  /// 入力サービスを現在の意図に合わせる。
   ///
-  /// 直列化はキーソース側が持っているため、ここでは順に渡すだけでよい。
-  Future<void> _syncPushToTalkKeySource() async {
+  /// PTTを切るときは先に[CallService.setPushToTalkEnabled]を通す。あちらが内部で
+  /// cancelPushToTalkを呼んで進行中のターンを破棄するので、直後にconfigureが
+  /// 保持を落として走るendPushToTalkは`!_pushToTalkActive`で素通りする。
+  /// 競争ではなく順序で決まる。
+  Future<void> _syncPushToTalkInput() async {
     final enabled =
         _callService.state == CallState.active && _preferredPushToTalkEnabled;
-
-    await _pushToTalkKeySource.setBinding(_preferredPushToTalkKeyBinding);
-    await _pushToTalkKeySource.setEnabled(enabled);
-
-    // 無効化はPTTを中断させる。押しっぱなしのまま無効になった場合、キーソースは
-    // heldをfalseに落とすためendPushToTalk()が走るが、本来ここは音声を送らず
-    // 破棄する場面。cancelPushToTalk()が世代カウンタを進めることで、
-    // endPushToTalk()の200msデバウンス中の送信が取り消される。
-    if (!enabled) {
-      await _callService.cancelPushToTalk();
-    }
+    await _pushToTalkInput.configure(
+      binding: _preferredPushToTalkKeyBinding,
+      enabled: enabled,
+    );
   }
 
   @override
   void dispose() {
-    _pushToTalkHeldSubscription?.cancel();
-    _pushToTalkHeldSubscription = null;
-    unawaited(_pushToTalkKeySource.dispose());
+    _pushToTalkActiveSubscription?.cancel();
+    unawaited(_pushToTalkInput.dispose());
     _callStateSubscription?.cancel();
     if (_callService.state != CallState.uninitialized &&
         _callService.state != CallState.disposed) {
@@ -203,7 +196,7 @@ class _CallScreenState extends State<CallScreen> {
               speedDial: widget.speedDial,
               callService: _callService,
               initialPushToTalkEnabled: _preferredPushToTalkEnabled,
-              pushToTalkKeyHeld: _pushToTalkKeySource.heldUpdates,
+              pushToTalkInput: _pushToTalkInput,
               onPushToTalkPreferenceChanged: _savePushToTalkPreference,
               onChatPressed: _layoutController.goToLeft,
               onNotepadPressed: _layoutController.goToRight,

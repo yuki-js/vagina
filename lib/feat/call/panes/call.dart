@@ -8,6 +8,7 @@ import 'package:vagina/core/config/constants.dart';
 import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/l10n/app_localizations.dart';
 import 'package:vagina/feat/call/services/call_service.dart';
+import 'package:vagina/feat/call/services/push_to_talk_input_service.dart';
 import 'package:vagina/feat/call/services/realtime/realtime_provider_extensions.dart';
 import 'package:vagina/models/speed_dial.dart';
 import 'package:vagina/utils/duration_formatter.dart';
@@ -20,11 +21,7 @@ class CallPane extends StatefulWidget {
   final SpeedDial speedDial;
   final CallService callService;
   final bool initialPushToTalkEnabled;
-
-  /// The merged keyboard hold state — in-window and global routes combined.
-  /// Used for the button highlight only; CallScreen is what drives the call
-  /// service from it.
-  final Stream<bool> pushToTalkKeyHeld;
+  final PushToTalkInputService pushToTalkInput;
   final Future<void> Function(bool enabled) onPushToTalkPreferenceChanged;
   final VoidCallback onChatPressed;
   final VoidCallback onNotepadPressed;
@@ -35,7 +32,7 @@ class CallPane extends StatefulWidget {
     required this.speedDial,
     required this.callService,
     required this.initialPushToTalkEnabled,
-    required this.pushToTalkKeyHeld,
+    required this.pushToTalkInput,
     required this.onPushToTalkPreferenceChanged,
     required this.onChatPressed,
     required this.onNotepadPressed,
@@ -49,15 +46,11 @@ class CallPane extends StatefulWidget {
 class _CallPaneState extends State<CallPane> {
   late _TalkMode _talkMode;
   _NoiseReductionMode _noiseReductionMode = _NoiseReductionMode.nearField;
-  bool _pointerHeld = false;
-  bool _keyHeld = false;
-  StreamSubscription<bool>? _keyHeldSubscription;
 
   @override
   void initState() {
     super.initState();
     _talkMode = widget.initialPushToTalkEnabled ? _TalkMode.ptt : _TalkMode.hf;
-    _keyHeldSubscription = widget.pushToTalkKeyHeld.listen(_setKeyHeld);
   }
 
   @override
@@ -70,17 +63,6 @@ class _CallPaneState extends State<CallPane> {
             : _TalkMode.hf;
       });
     }
-
-    if (oldWidget.pushToTalkKeyHeld != widget.pushToTalkKeyHeld) {
-      _keyHeldSubscription?.cancel();
-      _keyHeldSubscription = widget.pushToTalkKeyHeld.listen(_setKeyHeld);
-    }
-  }
-
-  @override
-  void dispose() {
-    _keyHeldSubscription?.cancel();
-    super.dispose();
   }
 
   CallService? get _activeCallService {
@@ -251,57 +233,16 @@ class _CallPaneState extends State<CallPane> {
     );
   }
 
-  /// Whether the button should read as engaged, from either input route.
-  bool get _pttActive => _pointerHeld || _keyHeld;
-
-  void _setKeyHeld(bool value) {
-    if (!mounted || _keyHeld == value) {
-      return;
-    }
-    setState(() {
-      _keyHeld = value;
-    });
-  }
-
-  void _setPointerHeld(bool value) {
-    if (_pointerHeld == value) {
-      return;
-    }
-    setState(() {
-      _pointerHeld = value;
-    });
-  }
-
   void _handlePttPressStart() {
-    final callService = _activeCallService;
-    if (callService == null) {
-      return;
-    }
-
-    _setPointerHeld(true);
-    unawaited(callService.beginPushToTalk());
+    widget.pushToTalkInput.setPointerActive(true);
   }
 
   void _handlePttPressEnd() {
-    final callService = _activeCallService;
-    if (callService == null) {
-      _setPointerHeld(false);
-      return;
-    }
-
-    _setPointerHeld(false);
-    unawaited(callService.endPushToTalk());
+    widget.pushToTalkInput.setPointerActive(false);
   }
 
   void _handlePttPressCancel() {
-    final callService = _activeCallService;
-    if (callService == null) {
-      _setPointerHeld(false);
-      return;
-    }
-
-    _setPointerHeld(false);
-    unawaited(callService.cancelPushToTalk());
+    widget.pushToTalkInput.setPointerActive(false);
   }
 
   Future<void> _handleSpeakerToggle() async {
@@ -552,7 +493,8 @@ class _CallPaneState extends State<CallPane> {
                                       const SizedBox(width: 12),
                                       Expanded(
                                         child: _PttHoldButton(
-                                          isActive: _pttActive,
+                                          pushToTalkInput:
+                                              widget.pushToTalkInput,
                                           onPressStart: _handlePttPressStart,
                                           onPressEnd: _handlePttPressEnd,
                                           onPressCancel: _handlePttPressCancel,
@@ -738,13 +680,13 @@ class _ControlButton extends StatelessWidget {
 }
 
 class _PttHoldButton extends StatelessWidget {
-  final bool isActive;
+  final PushToTalkInputService pushToTalkInput;
   final VoidCallback onPressStart;
   final VoidCallback onPressEnd;
   final VoidCallback onPressCancel;
 
   const _PttHoldButton({
-    required this.isActive,
+    required this.pushToTalkInput,
     required this.onPressStart,
     required this.onPressEnd,
     required this.onPressCancel,
@@ -752,6 +694,14 @@ class _PttHoldButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return StreamBuilder<bool>(
+      stream: pushToTalkInput.activeUpdates,
+      initialData: pushToTalkInput.isActive,
+      builder: (context, snapshot) => _build(context, snapshot.data ?? false),
+    );
+  }
+
+  Widget _build(BuildContext context, bool isActive) {
     final l10n = AppLocalizations.of(context);
     final backgroundColor = isActive
         ? AppTheme.primaryColor.withValues(alpha: 0.22)

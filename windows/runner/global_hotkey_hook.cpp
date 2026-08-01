@@ -171,14 +171,12 @@ LRESULT CALLBACK GlobalHotKeyHook::LowLevelKeyboardProc(int nCode, WPARAM wParam
   // Recompute whether the binding holds right now instead of branching on the
   // event being a press or a release, then report only transitions. A single
   // path means the release is still detected when a modifier is let go before
-  // the primary key, or when VAGINA takes the foreground mid-press.
+  // the primary key.
+  //
+  // Which window has the foreground is deliberately not consulted. This hook is
+  // the only key route while it is installed, so there is no second reader to
+  // stay out of the way of.
   bool is_satisfied = IsKeyHeld(primary_key, event_key, event_is_key_up);
-
-  // While VAGINA is in the foreground the app's own input handling owns the
-  // key, so the global binding never counts as satisfied.
-  if (is_satisfied && GetForegroundWindow() == target_window) {
-    is_satisfied = false;
-  }
 
   // Modifiers match as a subset: a required modifier must be held, while a
   // modifier that is not required is never inspected. Requiring absence here
