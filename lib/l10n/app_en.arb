@@ -90,6 +90,14 @@
   "@permissionsScreenTitle": {
     "description": "Main heading on the OOBE permissions screen."
   },
+  "permissionsNotificationTitle": "Notifications",
+  "@permissionsNotificationTitle": {
+    "description": "Optional notification permission card title shown on Android 13 and later during OOBE."
+  },
+  "permissionsNotificationDescription": "Shows call status and an end-call action in notifications",
+  "@permissionsNotificationDescription": {
+    "description": "Explains why optional notification access is useful during calls."
+  },
   "permissionsMicrophoneTitle": "Microphone",
   "@permissionsMicrophoneTitle": {
     "description": "Permission card title for microphone access on the OOBE permissions screen."
@@ -687,6 +695,26 @@
   "textAgentsFieldModel": "Model",
   "@textAgentsFieldModel": {
     "description": "Field label for the server-backed text model preset input on the text agent form screen."
+  },
+  "callForegroundChannelName": "VAGINA calls",
+  "@callForegroundChannelName": {
+    "description": "Android notification channel name. Android keeps the language used when the channel is first created."
+  },
+  "callForegroundChannelDescription": "Shows when VAGINA is using the microphone during a call",
+  "@callForegroundChannelDescription": {
+    "description": "Android notification channel description. Android keeps the language used when the channel is first created."
+  },
+  "callForegroundTitle": "VAGINA call in progress",
+  "@callForegroundTitle": {
+    "description": "Title of the Android foreground notification shown during a call."
+  },
+  "callForegroundText": "Using the microphone for this call",
+  "@callForegroundText": {
+    "description": "Body of the Android foreground notification shown during a call."
+  },
+  "callForegroundEndButton": "End call",
+  "@callForegroundEndButton": {
+    "description": "Button in the Android foreground notification that ends the active call."
   },
   "callConnectionFailedTitle": "Unable to connect",
   "@callConnectionFailedTitle": {

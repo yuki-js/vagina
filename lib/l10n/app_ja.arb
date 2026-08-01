@@ -90,6 +90,14 @@
   "@permissionsScreenTitle": {
     "description": "OOBE 権限画面のメイン見出し。"
   },
+  "permissionsNotificationTitle": "通知",
+  "@permissionsNotificationTitle": {
+    "description": "Android 13 以降の OOBE で表示する任意の通知権限カードタイトル。"
+  },
+  "permissionsNotificationDescription": "通話中の状態と終了操作を通知に表示します",
+  "@permissionsNotificationDescription": {
+    "description": "通話中に任意の通知権限を利用する理由を説明する文。"
+  },
   "permissionsMicrophoneTitle": "マイク",
   "@permissionsMicrophoneTitle": {
     "description": "OOBE 権限画面でマイク権限カードに表示するタイトル。"
@@ -687,6 +695,26 @@
   "textAgentsFieldModel": "モデル",
   "@textAgentsFieldModel": {
     "description": "サーバーバック型テキストモデルプリセット入力欄のラベル。"
+  },
+  "callForegroundChannelName": "VAGINA の通話",
+  "@callForegroundChannelName": {
+    "description": "Android 通知チャンネル名。初回作成時の言語で固定される。"
+  },
+  "callForegroundChannelDescription": "VAGINA の通話中にマイクを使用していることを通知します",
+  "@callForegroundChannelDescription": {
+    "description": "Android 通知チャンネル説明。初回作成時の言語で固定される。"
+  },
+  "callForegroundTitle": "VAGINA で通話中",
+  "@callForegroundTitle": {
+    "description": "通話中に表示する Android foreground 通知タイトル。"
+  },
+  "callForegroundText": "通話のためにマイクを使用しています",
+  "@callForegroundText": {
+    "description": "通話中に表示する Android foreground 通知本文。"
+  },
+  "callForegroundEndButton": "通話を終了",
+  "@callForegroundEndButton": {
+    "description": "通話を終了する Android foreground 通知ボタン。"
   },
   "callConnectionFailedTitle": "接続できません",
   "@callConnectionFailedTitle": {
