@@ -29,7 +29,7 @@ dependencies:
 
   # Audio handling
   flutter_soloud: 4.0.12
-  record: ^6.2.0
+  record: ^7.1.1
 
   # Network & WebSocket
   web_socket_channel: ^3.0.3
