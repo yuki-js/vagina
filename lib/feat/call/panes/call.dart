@@ -4,13 +4,11 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:flutter/services.dart';
 import 'package:vagina/core/config/constants.dart';
 import 'package:vagina/core/theme/app_theme.dart';
 import 'package:vagina/l10n/app_localizations.dart';
 import 'package:vagina/feat/call/services/call_service.dart';
 import 'package:vagina/feat/call/services/realtime/realtime_provider_extensions.dart';
-import 'package:vagina/models/push_to_talk_key_binding.dart';
 import 'package:vagina/models/speed_dial.dart';
 import 'package:vagina/utils/duration_formatter.dart';
 
@@ -22,7 +20,11 @@ class CallPane extends StatefulWidget {
   final SpeedDial speedDial;
   final CallService callService;
   final bool initialPushToTalkEnabled;
-  final PushToTalkKeyBinding? pushToTalkKeyBinding;
+
+  /// The merged keyboard hold state — in-window and global routes combined.
+  /// Used for the button highlight only; CallScreen is what drives the call
+  /// service from it.
+  final Stream<bool> pushToTalkKeyHeld;
   final Future<void> Function(bool enabled) onPushToTalkPreferenceChanged;
   final VoidCallback onChatPressed;
   final VoidCallback onNotepadPressed;
@@ -33,7 +35,7 @@ class CallPane extends StatefulWidget {
     required this.speedDial,
     required this.callService,
     required this.initialPushToTalkEnabled,
-    required this.pushToTalkKeyBinding,
+    required this.pushToTalkKeyHeld,
     required this.onPushToTalkPreferenceChanged,
     required this.onChatPressed,
     required this.onNotepadPressed,
@@ -47,14 +49,15 @@ class CallPane extends StatefulWidget {
 class _CallPaneState extends State<CallPane> {
   late _TalkMode _talkMode;
   _NoiseReductionMode _noiseReductionMode = _NoiseReductionMode.nearField;
-  bool _keyboardPttActive = false;
-  bool _pttActive = false;
+  bool _pointerHeld = false;
+  bool _keyHeld = false;
+  StreamSubscription<bool>? _keyHeldSubscription;
 
   @override
   void initState() {
     super.initState();
     _talkMode = widget.initialPushToTalkEnabled ? _TalkMode.ptt : _TalkMode.hf;
-    HardwareKeyboard.instance.addHandler(_handleHardwareKeyEvent);
+    _keyHeldSubscription = widget.pushToTalkKeyHeld.listen(_setKeyHeld);
   }
 
   @override
@@ -68,17 +71,15 @@ class _CallPaneState extends State<CallPane> {
       });
     }
 
-    if ((!_isPttMode || widget.pushToTalkKeyBinding == null) &&
-        _keyboardPttActive) {
-      _setPttActive(false);
-      _keyboardPttActive = false;
-      unawaited(widget.callService.cancelPushToTalk());
+    if (oldWidget.pushToTalkKeyHeld != widget.pushToTalkKeyHeld) {
+      _keyHeldSubscription?.cancel();
+      _keyHeldSubscription = widget.pushToTalkKeyHeld.listen(_setKeyHeld);
     }
   }
 
   @override
   void dispose() {
-    HardwareKeyboard.instance.removeHandler(_handleHardwareKeyEvent);
+    _keyHeldSubscription?.cancel();
     super.dispose();
   }
 
@@ -120,58 +121,6 @@ class _CallPaneState extends State<CallPane> {
   }
 
   bool get _showsNoiseReductionSettings => false;
-
-  bool _handleHardwareKeyEvent(KeyEvent event) {
-    final binding = widget.pushToTalkKeyBinding;
-    if (binding == null || !_isPttMode || _isEditableFocusActive) {
-      if (_keyboardPttActive && event is KeyUpEvent) {
-        _setPttActive(false);
-        _keyboardPttActive = false;
-        unawaited(widget.callService.endPushToTalk());
-      }
-      return false;
-    }
-
-    if (event is KeyRepeatEvent) {
-      return binding.matchesPressedKeys(
-        HardwareKeyboard.instance.logicalKeysPressed,
-      );
-    }
-
-    if (event is KeyDownEvent) {
-      if (!binding.matchesPressedKeys(
-        HardwareKeyboard.instance.logicalKeysPressed,
-      )) {
-        return false;
-      }
-      if (!_keyboardPttActive) {
-        _keyboardPttActive = true;
-        _handlePttPressStart();
-      }
-      return true;
-    }
-
-    if (event is KeyUpEvent && _keyboardPttActive) {
-      if (!binding.matchesPressedKeys(
-        HardwareKeyboard.instance.logicalKeysPressed,
-      )) {
-        _keyboardPttActive = false;
-        _handlePttPressEnd();
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  bool get _isEditableFocusActive {
-    final focusContext = FocusManager.instance.primaryFocus?.context;
-    if (focusContext == null) {
-      return false;
-    }
-    return focusContext.widget is EditableText ||
-        focusContext.findAncestorWidgetOfExactType<EditableText>() != null;
-  }
 
   List<Widget> _buildPrimaryControls({
     required bool isSpeakerMuted,
@@ -302,12 +251,24 @@ class _CallPaneState extends State<CallPane> {
     );
   }
 
-  void _setPttActive(bool value) {
-    if (_pttActive == value) {
+  /// Whether the button should read as engaged, from either input route.
+  bool get _pttActive => _pointerHeld || _keyHeld;
+
+  void _setKeyHeld(bool value) {
+    if (!mounted || _keyHeld == value) {
       return;
     }
     setState(() {
-      _pttActive = value;
+      _keyHeld = value;
+    });
+  }
+
+  void _setPointerHeld(bool value) {
+    if (_pointerHeld == value) {
+      return;
+    }
+    setState(() {
+      _pointerHeld = value;
     });
   }
 
@@ -317,29 +278,29 @@ class _CallPaneState extends State<CallPane> {
       return;
     }
 
-    _setPttActive(true);
+    _setPointerHeld(true);
     unawaited(callService.beginPushToTalk());
   }
 
   void _handlePttPressEnd() {
     final callService = _activeCallService;
     if (callService == null) {
-      _setPttActive(false);
+      _setPointerHeld(false);
       return;
     }
 
-    _setPttActive(false);
+    _setPointerHeld(false);
     unawaited(callService.endPushToTalk());
   }
 
   void _handlePttPressCancel() {
     final callService = _activeCallService;
     if (callService == null) {
-      _setPttActive(false);
+      _setPointerHeld(false);
       return;
     }
 
-    _setPttActive(false);
+    _setPointerHeld(false);
     unawaited(callService.cancelPushToTalk());
   }
 

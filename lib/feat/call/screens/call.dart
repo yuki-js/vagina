@@ -11,11 +11,10 @@ import 'package:vagina/feat/call/panes/call.dart';
 import 'package:vagina/feat/call/panes/chat.dart';
 import 'package:vagina/feat/call/panes/notepad.dart';
 import 'package:vagina/feat/call/services/call_service.dart';
+import 'package:vagina/feat/call/services/push_to_talk_key_source.dart';
 import 'package:vagina/feat/call/widgets/call_screen_shell.dart';
 import 'package:vagina/models/push_to_talk_key_binding.dart';
 import 'package:vagina/models/speed_dial.dart';
-import 'package:vagina/services/platform/global_hotkey_service.dart';
-import 'package:vagina/services/platform/windows_virtual_key_codes.dart';
 
 /// Layout scaffold for the call screen.
 class CallScreen extends StatefulWidget {
@@ -33,32 +32,24 @@ class _CallScreenState extends State<CallScreen> {
   final AdaptiveTriColumnController _layoutController =
       AdaptiveTriColumnController();
   late final CallService _callService;
-  late final GlobalHotkeyService _globalHotkeyService;
+  late final PushToTalkKeySource _pushToTalkKeySource;
   StreamSubscription<CallState>? _callStateSubscription;
-  StreamSubscription<GlobalHotkeyTransition>? _globalHotkeySubscription;
+  StreamSubscription<bool>? _pushToTalkHeldSubscription;
   bool _preferredPushToTalkEnabled = false;
   PushToTalkKeyBinding? _preferredPushToTalkKeyBinding;
-
-  /// dispose()の先頭でtrueになる。プラットフォーム往復中にdispose()が走った
-  /// 場合に、解除より後からsetActive(true)が到達するのを防ぐためのガード。
-  bool _disposed = false;
-
-  /// グローバルホットキー操作の直列化チェーン。
-  /// 古いsyncが新しいsyncのdesired stateを上書きしないよう、
-  /// setBinding/setActiveの呼び出しは必ずこのチェーン上で順に実行する。
-  Future<void> _globalHotkeySync = Future<void>.value();
 
   @override
   void initState() {
     super.initState();
     _callService = CallService(filesystemRepository: AppContainer.filesystem);
-    _globalHotkeyService = createGlobalHotkeyService();
+    _pushToTalkKeySource = PushToTalkKeySource();
 
-    // Subscribe to global hotkey transitions
-    _globalHotkeySubscription = _globalHotkeyService.transitions.listen((
-      transition,
+    // Both keyboard routes arrive here already merged, so this is the only
+    // place either of them reaches CallService.
+    _pushToTalkHeldSubscription = _pushToTalkKeySource.heldUpdates.listen((
+      held,
     ) {
-      if (transition == GlobalHotkeyTransition.down) {
+      if (held) {
         unawaited(_callService.beginPushToTalk());
       } else {
         unawaited(_callService.endPushToTalk());
@@ -77,7 +68,7 @@ class _CallScreenState extends State<CallScreen> {
 
       // 状態変化時にpaneを再構築
       setState(() {});
-      unawaited(_scheduleGlobalHotkeySync().catchError((_) {}));
+      unawaited(_syncPushToTalkKeySource().catchError((_) {}));
     });
 
     unawaited(_initializeCallService());
@@ -112,7 +103,7 @@ class _CallScreenState extends State<CallScreen> {
         return;
       }
 
-      await _scheduleGlobalHotkeySync();
+      await _syncPushToTalkKeySource();
     } catch (e) {
       if (!mounted) return;
       final l10n = AppLocalizations.of(context);
@@ -155,59 +146,33 @@ class _CallScreenState extends State<CallScreen> {
     }
 
     await AppContainer.preferences.setPreferredCallPushToTalkEnabled(enabled);
-    await _scheduleGlobalHotkeySync();
+    await _syncPushToTalkKeySource();
   }
 
-  /// [_syncGlobalHotkey]を直列化して実行する。
+  /// キーソースのbindingと有効状態を現在のdesired stateに合わせる。
   ///
-  /// 進行中のsync(およびdispose時のteardown)が完了してから次のsyncを走らせる
-  /// ため、古い呼び出しが新しいdesired stateを上書きすることはない。
-  /// 戻り値は今回スケジュールしたsync自身のFutureで、失敗はそのまま呼び出し元へ
-  /// 伝播する（チェーン自体はcatchErrorで継続する）。
-  Future<void> _scheduleGlobalHotkeySync() {
-    final scheduled = _globalHotkeySync.then((_) => _syncGlobalHotkey());
-    _globalHotkeySync = scheduled.catchError((_) {});
-    return scheduled;
-  }
+  /// 直列化はキーソース側が持っているため、ここでは順に渡すだけでよい。
+  Future<void> _syncPushToTalkKeySource() async {
+    final enabled =
+        _callService.state == CallState.active && _preferredPushToTalkEnabled;
 
-  Future<void> _syncGlobalHotkey() async {
-    // dispose済みなら、以降のsetBinding/setActiveは一切実行しない。
-    if (_disposed) return;
+    await _pushToTalkKeySource.setBinding(_preferredPushToTalkKeyBinding);
+    await _pushToTalkKeySource.setEnabled(enabled);
 
-    final shouldEnable =
-        _callService.state == CallState.active &&
-        _preferredPushToTalkEnabled &&
-        _preferredPushToTalkKeyBinding != null &&
-        windowsGlobalHotkeyPayloadForBinding(_preferredPushToTalkKeyBinding!) !=
-            null;
-
-    if (shouldEnable) {
-      await _globalHotkeyService.setBinding(_preferredPushToTalkKeyBinding);
-      // プラットフォーム往復中にdispose()が走っている可能性があるため再確認。
-      if (_disposed) return;
-      await _globalHotkeyService.setActive(true);
-    } else {
-      await _globalHotkeyService.setActive(false);
+    // 無効化はPTTを中断させる。押しっぱなしのまま無効になった場合、キーソースは
+    // heldをfalseに落とすためendPushToTalk()が走るが、本来ここは音声を送らず
+    // 破棄する場面。cancelPushToTalk()が世代カウンタを進めることで、
+    // endPushToTalk()の200msデバウンス中の送信が取り消される。
+    if (!enabled) {
+      await _callService.cancelPushToTalk();
     }
-  }
-
-  /// グローバルホットキーの解除とサービス解放。
-  /// 直列化チェーン上で実行されるため、進行中のsyncのsetActive(true)が
-  /// この解除より後に到達することはない。
-  Future<void> _teardownGlobalHotkey() async {
-    await _globalHotkeyService.setActive(false);
-    await _globalHotkeyService.dispose();
   }
 
   @override
   void dispose() {
-    _disposed = true;
-    _globalHotkeySubscription?.cancel();
-    _globalHotkeySubscription = null;
-    _globalHotkeySync = _globalHotkeySync
-        .then((_) => _teardownGlobalHotkey())
-        .catchError((_) {});
-    unawaited(_globalHotkeySync);
+    _pushToTalkHeldSubscription?.cancel();
+    _pushToTalkHeldSubscription = null;
+    unawaited(_pushToTalkKeySource.dispose());
     _callStateSubscription?.cancel();
     if (_callService.state != CallState.uninitialized &&
         _callService.state != CallState.disposed) {
@@ -238,7 +203,7 @@ class _CallScreenState extends State<CallScreen> {
               speedDial: widget.speedDial,
               callService: _callService,
               initialPushToTalkEnabled: _preferredPushToTalkEnabled,
-              pushToTalkKeyBinding: _preferredPushToTalkKeyBinding,
+              pushToTalkKeyHeld: _pushToTalkKeySource.heldUpdates,
               onPushToTalkPreferenceChanged: _savePushToTalkPreference,
               onChatPressed: _layoutController.goToLeft,
               onNotepadPressed: _layoutController.goToRight,

@@ -61,6 +61,10 @@ class WindowsGlobalHotkeyService implements GlobalHotkeyService {
   }
 
   @override
+  bool supportsBinding(PushToTalkKeyBinding binding) =>
+      windowsGlobalHotkeyPayloadForBinding(binding) != null;
+
+  @override
   Future<bool> setActive(bool active) async {
     try {
       final result = await _methodChannel.invokeMethod<bool>(

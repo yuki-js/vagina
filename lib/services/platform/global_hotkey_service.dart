@@ -42,6 +42,13 @@ abstract class GlobalHotkeyService {
   /// checked. Extra modifiers held by the user never suppress the hotkey.
   Future<void> setBinding(PushToTalkKeyBinding? binding);
 
+  /// Whether [binding] can actually be registered on this platform.
+  ///
+  /// False when the primary key has no equivalent in the platform's key
+  /// numbering, and always false where global hotkeys are unsupported. Callers
+  /// use this to avoid installing a hook that could never match.
+  bool supportsBinding(PushToTalkKeyBinding binding);
+
   /// Activates or deactivates the global hotkey hook.
   ///
   /// Returns true if the operation succeeded (hook installed/removed as needed).

@@ -18,6 +18,9 @@ class NoopGlobalHotkeyService implements GlobalHotkeyService {
   Future<void> setBinding(PushToTalkKeyBinding? binding) async {}
 
   @override
+  bool supportsBinding(PushToTalkKeyBinding binding) => false;
+
+  @override
   Future<bool> setActive(bool active) async => false;
 
   @override
