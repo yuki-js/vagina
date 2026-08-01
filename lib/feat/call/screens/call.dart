@@ -11,6 +11,7 @@ import 'package:vagina/feat/call/panes/call.dart';
 import 'package:vagina/feat/call/panes/chat.dart';
 import 'package:vagina/feat/call/panes/notepad.dart';
 import 'package:vagina/feat/call/services/call_service.dart';
+import 'package:vagina/feat/call/services/push_to_talk_input_service.dart';
 import 'package:vagina/feat/call/widgets/call_screen_shell.dart';
 import 'package:vagina/models/push_to_talk_key_binding.dart';
 import 'package:vagina/models/speed_dial.dart';
@@ -31,7 +32,9 @@ class _CallScreenState extends State<CallScreen> {
   final AdaptiveTriColumnController _layoutController =
       AdaptiveTriColumnController();
   late final CallService _callService;
+  final PushToTalkInputService _pushToTalkInput = PushToTalkInputService();
   StreamSubscription<CallState>? _callStateSubscription;
+  StreamSubscription<bool>? _pushToTalkActiveSubscription;
   bool _preferredPushToTalkEnabled = false;
   PushToTalkKeyBinding? _preferredPushToTalkKeyBinding;
 
@@ -39,6 +42,17 @@ class _CallScreenState extends State<CallScreen> {
   void initState() {
     super.initState();
     _callService = CallService(filesystemRepository: AppContainer.filesystem);
+
+    // 全ての入力はここで合流済み。PTTがCallServiceに届く唯一の場所。
+    _pushToTalkActiveSubscription = _pushToTalkInput.activeUpdates.listen((
+      active,
+    ) {
+      if (active) {
+        unawaited(_callService.beginPushToTalk());
+      } else {
+        unawaited(_callService.endPushToTalk());
+      }
+    });
 
     // CallStateの変化を監視してpaneを再構築
     _callStateSubscription = _callService.states.listen((state) {
@@ -52,6 +66,7 @@ class _CallScreenState extends State<CallScreen> {
 
       // 状態変化時にpaneを再構築
       setState(() {});
+      unawaited(_syncPushToTalkInput().catchError((_) {}));
     });
 
     unawaited(_initializeCallService());
@@ -85,6 +100,8 @@ class _CallScreenState extends State<CallScreen> {
         await _callService.endCall();
         return;
       }
+
+      await _syncPushToTalkInput();
     } catch (e) {
       if (!mounted) return;
       final l10n = AppLocalizations.of(context);
@@ -127,10 +144,28 @@ class _CallScreenState extends State<CallScreen> {
     }
 
     await AppContainer.preferences.setPreferredCallPushToTalkEnabled(enabled);
+    await _syncPushToTalkInput();
+  }
+
+  /// 入力サービスを現在の意図に合わせる。
+  ///
+  /// PTTを切るときは先に[CallService.setPushToTalkEnabled]を通す。あちらが内部で
+  /// cancelPushToTalkを呼んで進行中のターンを破棄するので、直後にconfigureが
+  /// 保持を落として走るendPushToTalkは`!_pushToTalkActive`で素通りする。
+  /// 競争ではなく順序で決まる。
+  Future<void> _syncPushToTalkInput() async {
+    final enabled =
+        _callService.state == CallState.active && _preferredPushToTalkEnabled;
+    await _pushToTalkInput.configure(
+      binding: _preferredPushToTalkKeyBinding,
+      enabled: enabled,
+    );
   }
 
   @override
   void dispose() {
+    _pushToTalkActiveSubscription?.cancel();
+    unawaited(_pushToTalkInput.dispose());
     _callStateSubscription?.cancel();
     if (_callService.state != CallState.uninitialized &&
         _callService.state != CallState.disposed) {
@@ -161,7 +196,7 @@ class _CallScreenState extends State<CallScreen> {
               speedDial: widget.speedDial,
               callService: _callService,
               initialPushToTalkEnabled: _preferredPushToTalkEnabled,
-              pushToTalkKeyBinding: _preferredPushToTalkKeyBinding,
+              pushToTalkInput: _pushToTalkInput,
               onPushToTalkPreferenceChanged: _savePushToTalkPreference,
               onChatPressed: _layoutController.goToLeft,
               onNotepadPressed: _layoutController.goToRight,
