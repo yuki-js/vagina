@@ -14,6 +14,8 @@ import 'package:vagina/feat/call/services/call_service.dart';
 import 'package:vagina/feat/call/widgets/call_screen_shell.dart';
 import 'package:vagina/models/push_to_talk_key_binding.dart';
 import 'package:vagina/models/speed_dial.dart';
+import 'package:vagina/services/platform/global_hotkey_service.dart';
+import 'package:vagina/services/platform/windows_virtual_key_codes.dart';
 
 /// Layout scaffold for the call screen.
 class CallScreen extends StatefulWidget {
@@ -31,14 +33,37 @@ class _CallScreenState extends State<CallScreen> {
   final AdaptiveTriColumnController _layoutController =
       AdaptiveTriColumnController();
   late final CallService _callService;
+  late final GlobalHotkeyService _globalHotkeyService;
   StreamSubscription<CallState>? _callStateSubscription;
+  StreamSubscription<GlobalHotkeyTransition>? _globalHotkeySubscription;
   bool _preferredPushToTalkEnabled = false;
   PushToTalkKeyBinding? _preferredPushToTalkKeyBinding;
+
+  /// dispose()の先頭でtrueになる。プラットフォーム往復中にdispose()が走った
+  /// 場合に、解除より後からsetActive(true)が到達するのを防ぐためのガード。
+  bool _disposed = false;
+
+  /// グローバルホットキー操作の直列化チェーン。
+  /// 古いsyncが新しいsyncのdesired stateを上書きしないよう、
+  /// setBinding/setActiveの呼び出しは必ずこのチェーン上で順に実行する。
+  Future<void> _globalHotkeySync = Future<void>.value();
 
   @override
   void initState() {
     super.initState();
     _callService = CallService(filesystemRepository: AppContainer.filesystem);
+    _globalHotkeyService = createGlobalHotkeyService();
+
+    // Subscribe to global hotkey transitions
+    _globalHotkeySubscription = _globalHotkeyService.transitions.listen((
+      transition,
+    ) {
+      if (transition == GlobalHotkeyTransition.down) {
+        unawaited(_callService.beginPushToTalk());
+      } else {
+        unawaited(_callService.endPushToTalk());
+      }
+    });
 
     // CallStateの変化を監視してpaneを再構築
     _callStateSubscription = _callService.states.listen((state) {
@@ -52,6 +77,7 @@ class _CallScreenState extends State<CallScreen> {
 
       // 状態変化時にpaneを再構築
       setState(() {});
+      unawaited(_scheduleGlobalHotkeySync().catchError((_) {}));
     });
 
     unawaited(_initializeCallService());
@@ -85,6 +111,8 @@ class _CallScreenState extends State<CallScreen> {
         await _callService.endCall();
         return;
       }
+
+      await _scheduleGlobalHotkeySync();
     } catch (e) {
       if (!mounted) return;
       final l10n = AppLocalizations.of(context);
@@ -127,10 +155,59 @@ class _CallScreenState extends State<CallScreen> {
     }
 
     await AppContainer.preferences.setPreferredCallPushToTalkEnabled(enabled);
+    await _scheduleGlobalHotkeySync();
+  }
+
+  /// [_syncGlobalHotkey]を直列化して実行する。
+  ///
+  /// 進行中のsync(およびdispose時のteardown)が完了してから次のsyncを走らせる
+  /// ため、古い呼び出しが新しいdesired stateを上書きすることはない。
+  /// 戻り値は今回スケジュールしたsync自身のFutureで、失敗はそのまま呼び出し元へ
+  /// 伝播する（チェーン自体はcatchErrorで継続する）。
+  Future<void> _scheduleGlobalHotkeySync() {
+    final scheduled = _globalHotkeySync.then((_) => _syncGlobalHotkey());
+    _globalHotkeySync = scheduled.catchError((_) {});
+    return scheduled;
+  }
+
+  Future<void> _syncGlobalHotkey() async {
+    // dispose済みなら、以降のsetBinding/setActiveは一切実行しない。
+    if (_disposed) return;
+
+    final shouldEnable =
+        _callService.state == CallState.active &&
+        _preferredPushToTalkEnabled &&
+        _preferredPushToTalkKeyBinding != null &&
+        windowsGlobalHotkeyPayloadForBinding(_preferredPushToTalkKeyBinding!) !=
+            null;
+
+    if (shouldEnable) {
+      await _globalHotkeyService.setBinding(_preferredPushToTalkKeyBinding);
+      // プラットフォーム往復中にdispose()が走っている可能性があるため再確認。
+      if (_disposed) return;
+      await _globalHotkeyService.setActive(true);
+    } else {
+      await _globalHotkeyService.setActive(false);
+    }
+  }
+
+  /// グローバルホットキーの解除とサービス解放。
+  /// 直列化チェーン上で実行されるため、進行中のsyncのsetActive(true)が
+  /// この解除より後に到達することはない。
+  Future<void> _teardownGlobalHotkey() async {
+    await _globalHotkeyService.setActive(false);
+    await _globalHotkeyService.dispose();
   }
 
   @override
   void dispose() {
+    _disposed = true;
+    _globalHotkeySubscription?.cancel();
+    _globalHotkeySubscription = null;
+    _globalHotkeySync = _globalHotkeySync
+        .then((_) => _teardownGlobalHotkey())
+        .catchError((_) {});
+    unawaited(_globalHotkeySync);
     _callStateSubscription?.cancel();
     if (_callService.state != CallState.uninitialized &&
         _callService.state != CallState.disposed) {
